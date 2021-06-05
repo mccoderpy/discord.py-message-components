@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
+import typing
 from collections import deque, OrderedDict
 import copy
 import datetime
@@ -536,13 +537,12 @@ class ConnectionState:
     def parse_interaction_create(self, data):
         if data.get('type', data.get('t', None)) != 3:
             return
-        self.self_id
         raw = RawInteractionCreateEvent(data=data, http=self.http)
         raw.message = self._get_message(raw.message_id)
         if raw.guild_id:
             raw.guild: Guild = self._get_guild(raw.guild_id)
-            raw.channel = raw.guild.get_channel(raw.channel_id)
-            raw.member = Member(guild=raw.guild, data=raw._member, state=self)
+            raw.channel: TextChannel = raw.guild.get_channel(raw.channel_id)
+            raw.member: Member = Member(guild=raw.guild, data=raw._member, state=self)
         else:
             raw.channel = self._get_private_channel(raw.channel_id)
             raw.__setattr__('user', User(data=raw._member, state=self))

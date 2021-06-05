@@ -23,7 +23,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+import typing
 from .member import Member
+from .message import Message
 from .errors import NotFound
 
 class _RawReprMixin:
@@ -248,7 +250,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
         self.channel = None
         self.member: Member = None
         self.button = ClickEvent(self._data)
-        self.message = None
+        self.message: Message = None
         self._deferred = False
 
     async def defer(self):
