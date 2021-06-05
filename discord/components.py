@@ -25,6 +25,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+
+
 import re
 import typing
 from .emoji import Emoji
@@ -131,6 +133,10 @@ class Button:
     def custom_id(self) -> str:
         return self._custom_id
 
+    def update(self, **kwargs):
+        self.__setattr__(**kwargs)
+        return self
+
     def set_custom_id(self, custom_id: str):
         if len(custom_id) > 100:
             raise InvalidArgument(
@@ -217,21 +223,36 @@ def create_option(label: str, value: str):
     return {'label': label, 'value': value}
 
 class DropdownMenue:
+    """
+    Represents an Discord-dropdown-Menue
+     .. note ::
+        This Feature is ``not`` released jet!
+    """
     def __init__(self, **kwargs):
-        self._options: list = kwargs.get('options', [])
+        self.__options: list = kwargs.get('options', [])
         if not [type(obj) == dict for obj in self._options]:
-            raise InvalidData("DropdownMenue-Options have to bee an Dict like `{'label': 'that wath should show up in Discord', 'value': 'that wath the Discord-API sends to your Application if the option is chosen'}`, or usaly an :function:`discord.components.create_option`.")
-        self._custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
+            raise InvalidData("DropdownMenue-Options have to bee an Dict like `{'label': 'that wath should show up in Discord', 'value': 'that wath the Discord-API sends to your Application if the option is choosen'}`, or usaly an :function:`discord.components.create_option`.")
+        self.__custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
 
     def to_dict(self) -> dict:
-        return {'type': 3, 'custom_id': self._custom_id, 'options': self._options}
+        return {'type': 3, 'custom_id': self.__custom_id, 'options': self.__options}
+
+    def update(self, **kwargs):
+        return self.__setattr__(**kwargs)
 
     @classmethod
     def from_dict(cls, data: dict):
         _custom_id = data.get('custom_id', None)
         _options = data.get('options', None)
+        return cls(custom_id=__custom_id, options=_options)
 
-        return cls(custom_id=_custom_id, options=_options)
+    @property
+    def options(self):
+        return self.__options
+
+    @property
+    def custom_id(self):
+        return self.__custom_id
 
 
 class ActionRow:
@@ -242,28 +263,39 @@ class ActionRow:
             For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
         """
         self.base: dict = {'type': 1, 'components': []}
+        self.components = []
         self.force = kwargs.get('force', False)
         for obj in args:
             if isinstance(obj, Button):
                 self.base['components'].append(obj.to_dict())
+                self.components.append(obj)
             elif isinstance(obj, DropdownMenue):
                 self.base['components'].append(obj.to_dict())
+                self.components.append(obj)
             elif isinstance(obj, dict):
                 if not obj.get('type', None) in [2, 3]:
                     raise InvalidData('if you use an Dict instad of Button, DropdownMenue you have to pass an type')
                 self.base['components'].append({1: Button.from_dict(obj).to_dict(), 2: DropdownMenue.from_dict(obj).to_dict()}.get(obj.get('type')))
+                self.components.append({1: Button.from_dict(obj), 2: DropdownMenue.from_dict(obj)}.get(obj.get('type')))
 
     def sendable(self) -> Union[dict, EmptyActionRow]:
         if not len(self.base['components']) >= 1 and self.force is False:
             raise EmptyActionRow()
         return self.base
 
+    def edit_obj(self, index: int, **kwargs):
+        obj: Union[Button, DropdownMenue] = self.components.pop(index)
+        self.base['components'].pop(index)
+        self.components.insert(index, obj.update(**kwargs))
+        self.base['components'].insert(index, obj.update(**kwargs))
+        return self
+
     @property
     def raw(self) -> dict:
         return self.base
 
     @classmethod
-    def from_dict(cls, data) -> Union[ActionRow, None]:
+    def from_dict(cls, data):
         if data.get('type') != 1:
             return InvalidData("%s could not be implemented as an ActionRow" % data)
         else:
