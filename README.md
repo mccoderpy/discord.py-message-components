@@ -68,6 +68,8 @@ client.run('You Bot-Token here')
 ---------------------------------------------------------------
 
 ```py
+# Another command where a small embed is sent where you can move the small white ⬜ with the buttons.
+
 pointers = []
 
 
@@ -79,7 +81,7 @@ class Pointer:
 
     @property
     def possition_x(self):
-        return self._possition_x
+        return _possition_x
 
     def set_x(self, x: int):
         self._possition_x += x
@@ -143,9 +145,9 @@ def arrow_button():
 async def start_game(ctx: commands.Context):
     pointer: Pointer = get_pointer(ctx.guild)
     await ctx.send(embed=discord.Embed(title="Little Game",
-                                       description=self.display(x=0, y=0)),
-                   components=[discord.ActionRow(self.empty_button, self.arrow_button.set_label('↑').set_custom_id('up'), self.empty_button),
-                               discord.ActionRow(self.arrow_button.set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), self.arrow_button.set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0), self.arrow_button.set_label('→').set_custom_id('right'))
+                                       description=display(x=0, y=0)),
+                   components=[discord.ActionRow(empty_button, arrow_button.set_label('↑').set_custom_id('up'), empty_button),
+                               discord.ActionRow(arrow_button.set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), arrow_button.set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0), arrow_button.set_label('→').set_custom_id('right'))
                                ]
                    )
 
