@@ -1,3 +1,4 @@
+import typing
 import discord
 from discord.ext import commands
 from discord import ActionRow, Button, ButtonColor
@@ -12,7 +13,7 @@ client = commands.Bot(command_prefix=commands.when_mentioned_or('.!'), intents=d
 async def buttons(ctx: commands.Context):
     components = [ActionRow(Button(label='Option Nr.1',
                                    custom_id='option1',
-                                   emoji='1️1️⃣2️',
+                                   emoji='1️⃣',
                                    style=ButtonColor.green
                                    ),
                             Button(label='Option Nr.2',
@@ -21,6 +22,7 @@ async def buttons(ctx: commands.Context):
                                    style=ButtonColor.blurple)),
                   ActionRow(Button(label='A Other Row',
                                    custom_id='sec_row_1st option',
+                                   style=ButtonColor.red,
                                    emoji='😀'),
                             Button(url='https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                                    label="This is an Link",
@@ -37,16 +39,8 @@ async def buttons(ctx: commands.Context):
 
     # This sends the Discord-API that the interaction has been received and is being "processed" (if this is not used, Discord will indicate that the interaction failed).
     await interaction.defer()
-
-    if button_id == "option1":
-        await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'), components=[components[0].edit_obj(0, disabled=True), components[1]])
-
-    elif button_id == "option2":
-        await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'), components=[components[0].edit_obj(1, disabled=True), components[1]])
-
-    elif button_id == 'sec_row_1st option':
-        await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'),
-                                       components=[components[0], components[1].edit_obj(0, disabled=True)])
+    await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'),
+                                   components=[components[0].disable_all_buttons(), components[1].disable_all_buttons()])
 
     # The Discord API doesn't send an event when you press a link button so we can't "receive" that.
 
