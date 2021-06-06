@@ -87,6 +87,7 @@ def get_pointer(obj: typing.Union[discord.Guild, int]):
         for p in pointers:
             if p.guild.id == obj.id:
                 return p
+        pointers.append(Pointer(obj))
         return get_pointer(obj)
 
     elif isinstance(obj, int):
@@ -126,6 +127,18 @@ def arrow_button():
     return discord.Button(style=discord.ButtonStyle.Primary)
 
 
+@client.command(name="start_game")
+async def start_game(ctx: commands.Context):
+    pointer: Pointer = get_pointer(ctx.guild)
+    await ctx.send(embed=discord.Embed(title="Little Game",
+                                       description=self.display(x=0, y=0)),
+                   components=[discord.ActionRow(self.empty_button, self.arrow_button.set_label('↑').set_custom_id('up'), self.empty_button),
+                               discord.ActionRow(self.arrow_button.set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), self.arrow_button.set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0), self.arrow_button.set_label('→').set_custom_id('right'))
+                               ]
+                   )
+
+
+@client.event
 async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEvent):
     await interaction.defer()
     pointer: Pointer = get_pointer(interaction.guild)
