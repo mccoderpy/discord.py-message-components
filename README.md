@@ -1,11 +1,11 @@
-# discord.py-with-message-components
+# discord.py-message-components
 The Original [discord.py](https://github.com/Rapptz/discord.py) Libary made by [Rapptz](https://github.com/Rapptz) with implementation of the [Discord-Message-Components](https://discord.com/developers/docs/interactions/message-components) by [mccoderpy](https://github.com/mccoderpy/)
 
 ([discord](https://discord.com/channels/@me)-User `mccuber04#2960`)
 
 ## Installation:
 ### With pip:
-#### first uninstall the normal discord.py Libary:
+#### first uninstall the normal [discord.py](https://pypi.org/project/discord.py/) Libary:
 ```ps
 # Linux/macOS
 python3 -m pip uninstall discord.py
@@ -13,7 +13,7 @@ python3 -m pip uninstall discord.py
 # Windows
 py -3 -m pip uninstall discord.py
 ```
-#### then install this libary using:
+#### then install [this Libary](https://pypi.org/project/discord.py-message-components) using:
 ```ps
 # Linux/macOS
 python3 -m pip install -U discord.py-message-components
@@ -26,8 +26,10 @@ py -3 -m pip install -U discord.py-message-components
 Replace the discord folder in the site-packages with the discord folder contained in this repository or yust clone it with git.
 ```
 
+-----------------------
+
 ## Questions or ideas?
-Open an Pull request on [GitHub](https://github.com/mccoderpy/discord.py-with-message-components/pulls) or Send me a direct-message on [Discord](https://discord.com/channels/@me): `mccuber04#2960`
+Open an Pull request on [GitHub](https://github.com/mccoderpy/discord.py-message-components/pulls) or Send me a direct-message on [Discord](https://discord.com/channels/@me): `mccuber04#2960`
 
 --------------------------------------------------------
 
