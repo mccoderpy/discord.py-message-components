@@ -64,16 +64,15 @@ async def buttons(ctx: commands.Context):
         await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'), components=[components[0].edit_obj(1, disabled=True), components[1]])
 
     elif button_id == 'sec_row_1st option':
-        await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'),
-                                       components=[components[0], components[1].edit_obj(0, disabled=True)])
+        await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'), components=[components[0], components[1].edit_obj(0, disabled=True)])
 
     # The Discord API doesn't send an event when you press a link button so we can't "receive" that.
-
-client.run('Your Bot-Token here')
+    
+client.run('You Bot-Token here')
 ```
-----------------------------------------------------------------------------------------------------
-```py
+---------------------------------------------------------------
 
+```py
 # Another command where a small embed is sent where you can move the small white ⬜ with the buttons.
 
 pointers = []
@@ -107,6 +106,7 @@ def get_pointer(obj: typing.Union[discord.Guild, int]):
         for p in pointers:
             if p.guild.id == obj.id:
                 return p
+        pointers.append(Pointer(obj))
         return get_pointer(obj)
 
     elif isinstance(obj, int):
@@ -146,6 +146,18 @@ def arrow_button():
     return discord.Button(style=discord.ButtonStyle.Primary)
 
 
+@client.command(name="start_game")
+async def start_game(ctx: commands.Context):
+    pointer: Pointer = get_pointer(ctx.guild)
+    await ctx.send(embed=discord.Embed(title="Little Game",
+                                       description=self.display(x=0, y=0)),
+                   components=[discord.ActionRow(self.empty_button, self.arrow_button.set_label('↑').set_custom_id('up'), self.empty_button),
+                               discord.ActionRow(self.arrow_button.set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), self.arrow_button.set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0), self.arrow_button.set_label('→').set_custom_id('right'))
+                               ]
+                   )
+
+
+@client.event
 async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEvent):
     await interaction.defer()
     pointer: Pointer = get_pointer(interaction.guild)
