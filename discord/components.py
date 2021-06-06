@@ -35,6 +35,7 @@ from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, InvalidData, EmptyActionRow
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 
+
 class ButtonStyle:
     """
     :class:`ButtonS
@@ -51,6 +52,7 @@ class ButtonStyle:
 
     __repr__ = [Primary, Secondary, Success, Danger, Link_Button]
 
+
 class ButtonColor:
     """
     :class:`ButtonColor`
@@ -65,23 +67,24 @@ class ButtonColor:
     grey_url = ButtonStyle.Link_Button
 
 
-class Button:
+class Button(object):
     """
     :class:`Button`
 
-    Represens an ``Discord-Button``
+    Represents an ``Discord-Button``
 
     .. note ::
         For more information Discord-Button's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_.
     """
+
     def __init__(self, **kwargs):
         self._style = kwargs.get('style', kwargs.get('color', ButtonStyle.Secondary))
         self._url: str = kwargs.get('url', None)
         if self._url and not re.match(URL_REGEX, self.url):
             raise InvalidButtonUrl(self.url)
-        if not self._style in [1, 2, 3, 4, 5]:
+        if self._style not in [1, 2, 3, 4, 5]:
             raise InvalidArgument(
-                "The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usaly an Integer betwean 1 and 5")
+                "The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
         if self._style == ButtonStyle.Link_Button and not self.url:
             raise MissingRequiredArgument(
                 'You must also pass a URL if the ButtonStyle is a link.')
@@ -90,12 +93,12 @@ class Button:
         self._custom_id: str = kwargs.get('custom_id', None)
         if self._custom_id and len(self.custom_id) > 100:
             raise InvalidArgument(
-                'The maximum length of Button-custom_id\'s are 100; youre one is %s long. (%s Characters to long)' % (len(self.custom_id), len(self.custom_id) - 100))
+                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(self.custom_id), len(self.custom_id) - 100))
         if self._custom_id and self.url:
             raise URLAndCustomIDNotAlowed(self.custom_id)
         self._label: str = kwargs.get('label', kwargs.get('name', 'I\'m an Button'))
         if self._label and len(self._label) > 80:
-            raise InvalidArgument(f'The maximum length of Button-Labels\'s are 80; youre one is {len(self.label)} long. ({len(self.label) - 100} Characters to long)')
+            raise InvalidArgument(f'The maximum length of Button-Labels\'s are 80; your one is {len(self.label)} long. ({len(self.label) - 100} Characters to long)')
         self._emoji = kwargs.get('emoji', None)
         if isinstance(self._emoji, Emoji):
             self._emoji = PartialEmoji(name=self._emoji.name, animated=self._emoji.animated, id=self._emoji.id)
@@ -105,8 +108,11 @@ class Button:
             self._emoji = None
         self._disabled: bool = kwargs.get('disabled', False)
 
+    def __repr__(self):
+        return f'<discord.Button {" ".join([k+"="+v for k, v in self.__dict__.items()])}'
+
     @property
-    def style(self) -> ButtonStyle:
+    def style(self) -> int:
         return self._style
 
     @property
@@ -115,7 +121,7 @@ class Button:
 
     def set_label(self, label: str):
         if len(label) > 80:
-            raise InvalidArgument(f'The maximum length of Button-Labels\'s are 80; youre one is {len(label)} long. ({len(label) - 100} Characters to long)')
+            raise InvalidArgument(f'The maximum length of Button-Labels\'s are 80; your one is {len(label)} long. ({len(label) - 100} Characters to long)')
         self._label = label
         return self
 
@@ -134,13 +140,13 @@ class Button:
         return self._custom_id
 
     def update(self, **kwargs):
-        self.__setattr__(**kwargs)
+        self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
         return self
 
     def set_custom_id(self, custom_id: str):
         if len(custom_id) > 100:
             raise InvalidArgument(
-                'The maximum length of Button-custom_id\'s are 100; youre one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
+                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
         if self._custom_id and self.url:
             raise URLAndCustomIDNotAlowed(self.custom_id)
         self._custom_id = custom_id
@@ -161,7 +167,7 @@ class Button:
         ______________
 
         ``Parameters:``
-            - ``check:`` could be an :class:`bool` or usaly any :obj:`Callable` that returns an :class:`bool`
+            - ``check:`` could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`
             - ``**kwargs:`` :obj:`kwargs` that should passed in to the :pram:`check` if it is an :obj:`Callable`
 
         :return: :class:`discord.Button`
@@ -176,7 +182,7 @@ class Button:
 
     def set_color_if(self, check: Union[bool, typing.Callable], color: any(ButtonStyle.__repr__), **kwargs):
         """
-        Sets the Color(Style) of an :class:`discord.Button` to the providet ``color`` if the passed ``check`` returns :bool:`True`.
+        Sets the Color(Style) of an :class:`discord.Button` to the provided ``color`` if the passed ``check`` returns :bool:`True`.
 
         ______________
 
@@ -219,8 +225,10 @@ class Button:
 
         return cls(style=style, label=label, emoji=emoji, custom_id=custom_id, url=url, disabled=disabled)
 
+
 def create_option(label: str, value: str):
     return {'label': label, 'value': value}
+
 
 class DropdownMenue:
     """
@@ -228,17 +236,20 @@ class DropdownMenue:
      .. note ::
         This Feature is ``not`` released jet!
     """
+    __slots__ = ['__custom_id', '__options']
+
     def __init__(self, **kwargs):
         self.__options: list = kwargs.get('options', [])
         if not [type(obj) == dict for obj in self._options]:
-            raise InvalidData("DropdownMenue-Options have to bee an Dict like `{'label': 'that wath should show up in Discord', 'value': 'that wath the Discord-API sends to your Application if the option is choosen'}`, or usaly an :function:`discord.components.create_option`.")
+            raise InvalidData("DropdownMenue-Options have to bee an Dict like `{'label': 'that what should show up in Discord', 'value': 'that what the Discord-API sends to your Application if the option is chosen'}`, or usually an :function:`discord.components.create_option`.")
         self.__custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
 
     def to_dict(self) -> dict:
         return {'type': 3, 'custom_id': self.__custom_id, 'options': self.__options}
 
     def update(self, **kwargs):
-        return self.__setattr__(**kwargs)
+        self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
+        return self
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -262,37 +273,37 @@ class ActionRow:
         .. note ::
             For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
         """
-        self.base: dict = {'type': 1, 'components': []}
         self.components = []
         self.force = kwargs.get('force', False)
         for obj in args:
             if isinstance(obj, Button):
-                self.base['components'].append(obj.to_dict())
                 self.components.append(obj)
             elif isinstance(obj, DropdownMenue):
-                self.base['components'].append(obj.to_dict())
                 self.components.append(obj)
             elif isinstance(obj, dict):
                 if not obj.get('type', None) in [2, 3]:
-                    raise InvalidData('if you use an Dict instad of Button, DropdownMenue you have to pass an type')
-                self.base['components'].append({1: Button.from_dict(obj).to_dict(), 2: DropdownMenue.from_dict(obj).to_dict()}.get(obj.get('type')))
+                    raise InvalidData('if you use an Dict instead of Button, DropdownMenue you have to pass an type')
                 self.components.append({1: Button.from_dict(obj), 2: DropdownMenue.from_dict(obj)}.get(obj.get('type')))
 
     def sendable(self) -> Union[dict, EmptyActionRow]:
-        if not len(self.base['components']) >= 1 and self.force is False:
+        base = {'type': 1, 'components': [obj.to_dict() for obj in self.components]}
+        if not len(base['components']) >= 1 and self.force is False:
             raise EmptyActionRow()
-        return self.base
+        return base
 
     def edit_obj(self, index: int, **kwargs):
         obj: Union[Button, DropdownMenue] = self.components.pop(index)
-        self.base['components'].pop(index)
+        self.components.pop(index)
         self.components.insert(index, obj.update(**kwargs))
-        self.base['components'].insert(index, obj.update(**kwargs))
+        return self
+
+    def disable_all_buttons(self):
+        [obj.__setattr__('_disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
     @property
     def raw(self) -> dict:
-        return self.base
+        return {'type': 1, 'components': [obj.to_dict() for obj in self.components]}
 
     @classmethod
     def from_dict(cls, data):
@@ -344,6 +355,7 @@ class ClickEvent:
     def component_type(self):
         return self._component_type
 
+
 class DecodeMessageComponents:
     def __init__(self, value):
         self._action_rows = []
@@ -353,7 +365,6 @@ class DecodeMessageComponents:
                 self._other_elements.append(ActionRow.from_dict(obj))
             except InvalidData:
                 self._other_elements.append(obj)
-        return self._action_rows
 
     @property
     def action_rows(self):

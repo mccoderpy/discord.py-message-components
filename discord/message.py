@@ -59,6 +59,7 @@ __all__ = (
     'DeletedReferencedMessage',
 )
 
+
 def convert_emoji_reaction(emoji):
     if isinstance(emoji, Reaction):
         emoji = emoji.emoji
@@ -406,6 +407,7 @@ class MessageReference:
 
     to_message_reference_dict = to_dict
 
+
 def flatten_handlers(cls):
     prefix = len('_handle_')
     handlers = [
@@ -421,6 +423,7 @@ def flatten_handlers(cls):
         attr for attr in cls.__slots__ if attr.startswith('_cs_')
     ]
     return cls
+
 
 @flatten_handlers
 class Message(Hashable):
@@ -1100,25 +1103,24 @@ class Message(Hashable):
             pass
         else:
             if components is not None:
-                from .components import Button, ActionRow
+                from .components import Button, DropdownMenue, ActionRow
                 components_list = []
                 for component in ([components] if not type(components) == list else components):
                     if isinstance(component, Button):
                         components_list.append(component.to_dict())
-                    elif isinstance(component, DropDownMenu):
+                    elif isinstance(component, DropdownMenue):
                         components_list.append(component.to_dict())
                     elif isinstance(component, ActionRow):
                         components_list.append(component.sendable())
-                components = components_list
                 fields['components'] = components_list
         try:
             suppress = fields.pop('suppress')
         except KeyError:
             pass
         else:
-             flags = MessageFlags._from_value(self.flags.value)
-             flags.suppress_embeds = suppress
-             fields['flags'] = flags.value
+            flags = MessageFlags._from_value(self.flags.value)
+            flags.suppress_embeds = suppress
+            fields['flags'] = flags.value
 
         delete_after = fields.pop('delete_after', None)
 
@@ -1414,12 +1416,14 @@ class Message(Hashable):
 
         return data
 
+
 def implement_partial_methods(cls):
     msg = Message
     for name in cls._exported_names:
         func = getattr(msg, name)
         setattr(cls, name, func)
     return cls
+
 
 @implement_partial_methods
 class PartialMessage(Hashable):
@@ -1607,9 +1611,9 @@ class PartialMessage(Hashable):
         except KeyError:
             pass
         else:
-             flags = MessageFlags._from_value(0)
-             flags.suppress_embeds = suppress
-             fields['flags'] = flags.value
+            flags = MessageFlags._from_value(0)
+            flags.suppress_embeds = suppress
+            fields['flags'] = flags.value
 
         delete_after = fields.pop('delete_after', None)
 
