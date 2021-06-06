@@ -6,7 +6,7 @@ from discord import ActionRow, Button, ButtonColor
 client = commands.Bot(command_prefix=commands.when_mentioned_or('.!'), intents=discord.Intents.all(), case_insensitive=True)
 
 
-# an Command that sends you an Message and edit it if you click an Button
+# a command that sends you a message and processes it when you click a button
 
 
 @client.command(name='buttons', description='sends you some nice Buttons')
