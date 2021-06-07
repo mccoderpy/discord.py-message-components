@@ -5,8 +5,6 @@ The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
 
-Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
-
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -30,10 +28,12 @@ from .member import Member
 from .message import Message
 from .errors import NotFound
 
+
 class _RawReprMixin:
     def __repr__(self):
         value = ' '.join('%s=%r' % (attr, getattr(self, attr)) for attr in self.__slots__)
         return '<%s %s>' % (self.__class__.__name__, value)
+
 
 class RawMessageDeleteEvent(_RawReprMixin):
     """Represents the event payload for a :func:`on_raw_message_delete` event.
@@ -61,6 +61,7 @@ class RawMessageDeleteEvent(_RawReprMixin):
         except KeyError:
             self.guild_id = None
 
+
 class RawBulkMessageDeleteEvent(_RawReprMixin):
     """Represents the event payload for a :func:`on_raw_bulk_message_delete` event.
 
@@ -87,6 +88,7 @@ class RawBulkMessageDeleteEvent(_RawReprMixin):
             self.guild_id = int(data['guild_id'])
         except KeyError:
             self.guild_id = None
+
 
 class RawMessageUpdateEvent(_RawReprMixin):
     """Represents the payload for a :func:`on_raw_message_edit` event.
@@ -123,6 +125,7 @@ class RawMessageUpdateEvent(_RawReprMixin):
             self.guild_id = int(data['guild_id'])
         except KeyError:
             self.guild_id = None
+
 
 class RawReactionActionEvent(_RawReprMixin):
     """Represents the payload for a :func:`on_raw_reaction_add` or
@@ -169,6 +172,7 @@ class RawReactionActionEvent(_RawReprMixin):
         except KeyError:
             self.guild_id = None
 
+
 class RawReactionClearEvent(_RawReprMixin):
     """Represents the payload for a :func:`on_raw_reaction_clear` event.
 
@@ -192,6 +196,7 @@ class RawReactionClearEvent(_RawReprMixin):
             self.guild_id = int(data['guild_id'])
         except KeyError:
             self.guild_id = None
+
 
 class RawReactionClearEmojiEvent(_RawReprMixin):
     """Represents the payload for a :func:`on_raw_reaction_clear_emoji` event.
@@ -222,6 +227,7 @@ class RawReactionClearEmojiEvent(_RawReprMixin):
         except KeyError:
             self.guild_id = None
 
+
 class RawInteractionCreateEvent(_RawReprMixin):
 
     __slots__ = ('_data', '_member', '_message_id', '_channel_id', '_guild_id', '__token')
@@ -242,15 +248,17 @@ class RawInteractionCreateEvent(_RawReprMixin):
             self._type = data.get('type', None)
             self.__token = data.get('token', None)
         self._message_id = data.get('message').get('id', None)
-        self._data =data.get('data', None)
-        self._member = data.get('member')
+        self._data = data.get('data', None)
+        self._member = data.get('member', None)
         self.__interaction_id = data.get('id', 0)
         self._guild_id = data.get('guild_id', 0)
         self._channel_id = data.get('channel_id', 0)
         self.__application_id = data.get('application_id', 0)
-        self.guild  = None
+        self.guild = None
         self.channel = None
         self.member: Member = None
+        self.user = None
+        self._user = dict(self.member._user) if self.member else data.get('user')
         self.button = ClickEvent(self._data)
         self.message: Message = None
         self._deferred = False
@@ -279,6 +287,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
     @property
     def initeraction_id(self):
         return int(self.__interaction_id)
+
     @property
     def guild_id(self):
         return int(self._guild_id)
@@ -290,6 +299,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
     @property
     def message_id(self):
         return int(self._message_id)
+
 
 class ClickEvent:
     def __init__(self, data):
