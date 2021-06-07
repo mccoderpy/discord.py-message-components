@@ -545,7 +545,7 @@ class ConnectionState:
             raw.member: Member = Member(guild=raw.guild, data=raw._member, state=self)
         else:
             raw.channel = self._get_private_channel(raw.channel_id)
-            raw.__setattr__('user', User(data=raw._member, state=self))
+        raw.user = User(data=raw._user, state=self)
         if raw.message:
             self.dispatch('raw_interaction_create', raw)
             self.dispatch('interaction_create', raw)
