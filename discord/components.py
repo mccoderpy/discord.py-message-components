@@ -38,7 +38,7 @@ URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^
 
 class ButtonStyle:
     """
-    :class:`ButtonS
+    :class:`ButtonStyle`
     Represents the Style for an :class:`discord.Button`
 
     .. note ::
@@ -240,7 +240,7 @@ class DropdownMenue:
 
     def __init__(self, **kwargs):
         self.__options: list = kwargs.get('options', [])
-        if not [type(obj) == dict for obj in self._options]:
+        if not [type(obj) == dict for obj in self.__options]:
             raise InvalidData("DropdownMenue-Options have to bee an Dict like `{'label': 'that what should show up in Discord', 'value': 'that what the Discord-API sends to your Application if the option is chosen'}`, or usually an :function:`discord.components.create_option`.")
         self.__custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
 
