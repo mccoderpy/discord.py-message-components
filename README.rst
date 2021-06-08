@@ -10,6 +10,9 @@ discord.py-message-components
 .. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
     :target: https://pypi.python.org/pypi/discord.py-message-components
     :alt: PyPI supported Python versions
+.. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
+    :target: https://pepy.tech/project/discord.py-message-components
+    :alt: Total downloads for the project
 
 The Original `discord.py <https://pypi.org/project/discord.py>`_ Libary made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
 
@@ -51,7 +54,7 @@ Examples
 A Command that sends you a Message and edit it when you click a Button:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: py
+.. code-block:: python
 
     import typing
     import discord
@@ -105,7 +108,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-.. code-block:: py
+.. code-block:: python
 
     pointers = []
 
