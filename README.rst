@@ -2,33 +2,33 @@ discord.py-message-components
 =============================
 
 .. image:: https://discord.com/api/guilds/720395641255100528/embed.png
-    :target: https://discord.gg/cqRR42pxHW
-    :alt: Discord Server Invite
+  :target: https://discord.gg/cqRR42pxHW
+  :alt: Discord Server Invite
 .. image:: https://img.shields.io/pypi/v/discord.py-message-components.svg
-    :target: https://pypi.python.org/pypi/discord.py-message-components
-    :alt: PyPI version info
+  :target: https://pypi.python.org/pypi/discord.py-message-components
+  :alt: PyPI version info
 .. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
-    :target: https://pypi.python.org/pypi/discord.py-message-components
-    :alt: PyPI supported Python versions
+  :target: https://pypi.python.org/pypi/discord.py-message-components
+  :alt: PyPI supported Python versions
 .. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
-    :target: https://pepy.tech/project/discord.py-message-components
-    :alt: Total downloads for the project
+  :target: https://pepy.tech/project/discord.py-message-components
+  :alt: Total downloads for the project
 
 The Original `discord.py <https://pypi.org/project/discord.py>`_ Libary made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
 
 (`discord <https://discord.com/channels/@me>`_-User ``mccuber04#2960``)
 
-Questions, Bugs or Ideas?
-___________________
+Questions, Bugs or Ideas
+________________________
 
-Open a Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/cqRR42pxHW>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/cqRR42pxHW>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
 
 Installing
 __________
 
 **Python 3.5.3 or higher is required**
 
-first uninstall the original `discord.py <https://pypi.org/project/discord.py/>`_ Libary:
+first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_ Libary:
 
 .. code:: sh
 
@@ -52,7 +52,7 @@ Examples
 --------
 
 A Command that sends you a Message and edit it when you click a Button:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -71,12 +71,12 @@ A Command that sends you a Message and edit it when you click a Button:
     async def buttons(ctx: commands.Context):
         components = [ActionRow(Button(label='Option Nr.1',
                                        custom_id='option1',
-                                       emoji='1️⃣',
+                                       emoji="🆒",
                                        style=ButtonColor.green
                                        ),
                                 Button(label='Option Nr.2',
                                        custom_id='option2',
-                                       emoji='2️⃣',
+                                       emoji="🆗",
                                        style=ButtonColor.blurple)),
                       ActionRow(Button(label='A Other Row',
                                        custom_id='sec_row_1st option',
@@ -104,10 +104,9 @@ A Command that sends you a Message and edit it when you click a Button:
 
     client.run('You Bot-Token here')
 
+
 Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: python
 
     pointers = []
