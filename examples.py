@@ -62,7 +62,7 @@ class Pointer:
 
     @property
     def possition_x(self):
-        return self._possition_x
+        return _possition_x
 
     def set_x(self, x: int):
         self._possition_x += x
@@ -117,6 +117,7 @@ def display(x: int, y: int):
 empty_button = discord.Button(style=discord.ButtonStyle.Secondary, label=" ", custom_id="empty", disabled=True)
 
 
+@property
 def arrow_button():
     return discord.Button(style=discord.ButtonStyle.Primary)
 
@@ -127,45 +128,48 @@ async def start_game(ctx: commands.Context):
     await ctx.send(embed=discord.Embed(title="Little Game",
                                        description=display(x=0, y=0)),
                    components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                               discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0), arrow_button().set_label('→').set_custom_id('right'))
+                               discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
+                                                 arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0),
+                                                 arrow_button().set_label('→').set_custom_id('right'))
                                ]
                    )
 
 
 @client.event
 async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEvent):
-    await interaction.defer()
-    pointer: Pointer = get_pointer(interaction.guild)
-    if not (message := interaction.message):
-        message: discord.Message = await interaction.channel.fetch_message(interaction.message_id)
     if interaction.button.custom_id == "up":
         pointer.set_y(1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await interaction.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                            components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up').disable_if(pointer.possition_y >= 9), empty_button),
-                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), arrow_button().set_label('↓').set_custom_id('down'), arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
+                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
+                                                         arrow_button().set_label('↓').set_custom_id('down'),
+                                                         arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
                            )
     elif interaction.button.custom_id == "down":
         pointer.set_y(-1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await interaction.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                            components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0), arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
+                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
+                                                         arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0),
+                                                         arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
                            )
     elif interaction.button.custom_id == "right":
         pointer.set_x(1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await interaction.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                            components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left'), arrow_button().set_label('↓').set_custom_id('down'), arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
+                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left'),
+                                                         arrow_button().set_label('↓').set_custom_id('down'),
+                                                         arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
                            )
     elif interaction.button.custom_id == "left":
         pointer.set_x(-1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await interaction.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                            components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0), arrow_button().set_label('↓').set_custom_id('down'), arrow_button().set_label('→').set_custom_id('right'))]
+                                       discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
+                                                         arrow_button().set_label('↓').set_custom_id('down'),
+                                                         arrow_button().set_label('→').set_custom_id('right'))]
                            )
-
-
-client.run('You Bot-Token here')
