@@ -535,7 +535,10 @@ class ConnectionState:
             self.dispatch('raw_message_edit', raw)
 
     def parse_interaction_create(self, data):
+
         if data.get('type', data.get('t', None)) != 3:
+            #to make sure that other-libraries like `discord-py-slash-command` still work
+            self.dispatch('socket_responce', data)
             return
         raw = RawInteractionCreateEvent(data=data, http=self.http)
         raw.message = self._get_message(raw.message_id)
@@ -545,10 +548,11 @@ class ConnectionState:
             raw.member: Member = Member(guild=raw.guild, data=raw._member, state=self)
         else:
             raw.channel = self._get_private_channel(raw.channel_id)
-        raw.user = User(data=raw._user, state=self)
-        if raw.message:
-            self.dispatch('raw_interaction_create', raw)
+        if raw._user is not None:
+            raw.user = self.get_user(raw._user.get('id', None))
+        if raw.message is not None:
             self.dispatch('interaction_create', raw)
+            self.dispatch('raw_interaction_create', raw)
         else:
             self.dispatch('raw_interaction_create', raw)
 

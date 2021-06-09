@@ -40,9 +40,9 @@ except ImportError:
 from .partial_emoji import PartialEmoji
 from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum
-from .errors import InvalidArgument, ClientException, HTTPException
+from .errors import InvalidArgument, ClientException, HTTPException, NotFound
 from .embeds import Embed
-from .components import DecodeMessageComponents
+from .components import DecodeMessageComponents, Button, DropdownMenue, ActionRow
 from .member import Member
 from .flags import MessageFlags
 from .file import File
@@ -557,7 +557,7 @@ class Message(Hashable):
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
         self.attachments = [Attachment(data=a, state=self._state) for a in data['attachments']]
         self.embeds = [Embed.from_dict(a) for a in data['embeds']]
-        self.components = data.get('components', None)
+        self.components = data.get('components', [])
         self.application = data.get('application')
         self.activity = data.get('activity')
         self.channel = channel
@@ -842,7 +842,7 @@ class Message(Hashable):
         .. note::
 
             This *does not* affect markdown. If you want to escape
-            or remove markdown then use :func:`utils.escape_markdown` or :func:`utils.remove_markdown` 
+            or remove markdown then use :func:`utils.escape_markdown` or :func:`utils.remove_markdown`
             respectively, along with this function.
         """
 
@@ -1053,6 +1053,8 @@ class Message(Hashable):
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
+        components: List[:class:`discord.ActionRow`]
+            A list of :type:`discord.Actionrow`'s
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
@@ -1090,15 +1092,23 @@ class Message(Hashable):
                 fields['content'] = str(content)
 
         try:
-            embed = fields['embed']
+            embed = fields.pop('embed')
         except KeyError:
             pass
         else:
             if embed is not None:
-                fields['embed'] = embed.to_dict()
+                fields['embeds'] = [embed.to_dict()]
 
         try:
-            components = fields.get('components')
+            embeds = fields['embeds']
+        except KeyError:
+            pass
+        else:
+            if embeds is not None and not embed:
+                fields['embeds'] = [e.to_dict() for e in embeds]
+
+        try:
+            components = fields['components']
         except KeyError:
             pass
         else:
@@ -1111,7 +1121,7 @@ class Message(Hashable):
                     elif isinstance(component, DropdownMenue):
                         components_list.append(component.to_dict())
                     elif isinstance(component, ActionRow):
-                        components_list.append(component.sendable())
+                        components_list.extend(component.sendable())
                 fields['components'] = components_list
         try:
             suppress = fields.pop('suppress')
@@ -1136,10 +1146,31 @@ class Message(Hashable):
                     allowed_mentions = allowed_mentions.to_dict()
                 fields['allowed_mentions'] = allowed_mentions
 
-        if fields:
-            data = await self._state.http.edit_message(self.channel.id, self.id, **fields)
-            self._update(data)
+        is_interaction_responce = fields.pop('__is_interaction_responce', None)
+        if is_interaction_responce is True:
+            deffered = fields.pop('__deffered', False)
+            use_webhook = fields.pop('__use_webhook', False)
+            interaction_id = fields.pop('__interaction_id', None)
+            interaction_token = fields.pop('__interaction_token', None)
+            application_id = fields.pop('__application_id', None)
+            payload = {'data': fields}
+            if not deffered is True:
+                payload['type'] = 7
+            if payload:
+                try:
+                    data = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
+                                                                            interaction_id=interaction_id,
+                                                                            token=interaction_token,
+                                                                            application_id=application_id,
+                                                                            fields=payload)
+                except NotFound:
+                    raise NotFound("You have already responded to this Interaction!")
+                else:
+                    self._update(dict(data))
 
+        elif is_interaction_responce is None:
+            payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
+            self._update(payload)
         if delete_after is not None:
             await self.delete(delay=delete_after)
 
@@ -1548,6 +1579,8 @@ class PartialMessage(Hashable):
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
+        components: List[:class:`discord.ActionRow`]
+            A list of :type:`discord.Actionrow`'s
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
@@ -1590,21 +1623,36 @@ class PartialMessage(Hashable):
                 fields['content'] = str(content)
 
         try:
-            embed = fields['embed']
+            embed = fields.pop('embed')
         except KeyError:
             pass
         else:
             if embed is not None:
-                fields['embed'] = embed.to_dict()
+                fields['embeds'] = [embed.to_dict()]
+
+        try:
+            embeds = fields['embeds']
+        except KeyError:
+            pass
+        else:
+            if embeds is not None and not embed:
+                fields['embeds'] = [e.to_dict() for e in embeds]
 
         try:
             components = fields['components']
         except KeyError:
             pass
         else:
+            _components = []
             if components is not None:
-                #print(components)
-                fields['components'] = components.to_dict()
+                for component in ([components] if not type(components) == list else components):
+                    if isinstance(component, Button):
+                        _components.append(component.to_dict())
+                    elif isinstance(component, DropdownMenue):
+                        _components.append(component.to_dict())
+                    elif isinstance(component, ActionRow):
+                        _components.extend(component.sendable())
+                fields['components'] = _components
 
         try:
             suppress = fields.pop('suppress')
@@ -1629,8 +1677,31 @@ class PartialMessage(Hashable):
                     allowed_mentions = allowed_mentions.to_dict()
                 fields['allowed_mentions'] = allowed_mentions
 
-        if fields:
-            data = await self._state.http.edit_message(self.channel.id, self.id, **fields)
+        is_interaction_responce = fields.pop('__is_interaction_responce', None)
+        if is_interaction_responce is True:
+            deffered = fields.pop('__deffered', False)
+            use_webhook = fields.pop('__use_webhook', False)
+            interaction_id = fields.pop('__interaction_id', None)
+            interaction_token = fields.pop('__interaction_token', None)
+            application_id = fields.pop('__application_id', None)
+            payload = {'data': fields}
+            if not deffered is True:
+                payload['type'] = 7
+            if payload:
+                try:
+                    r = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
+                                                                     interaction_id=interaction_id,
+                                                                     token=interaction_token,
+                                                                     application_id=application_id,
+                                                                     fields=payload)
+                except NotFound:
+                    raise NotFound(r, "You have already responded to this Interaction!")
+                else:
+                    self._update(payload['data'])
+
+        elif is_interaction_responce is None:
+            payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
+            self._update(payload)
 
         if delete_after is not None:
             await self.delete(delay=delete_after)

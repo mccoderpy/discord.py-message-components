@@ -5,6 +5,8 @@ The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
 
+Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -95,6 +97,9 @@ class HTTPClient:
 
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
+
+    # we have to overwride that beacuse interactions are using v8
+    V8BASE = 'https://discord.com/api/v8'
 
     def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True):
         self.loop = asyncio.get_event_loop() if loop is None else loop
@@ -443,13 +448,16 @@ class HTTPClient:
 
     def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
         r_url = f"/webhooks/{application_id}/{token}" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
-        r = Route("POST", r_url, base='https://discord.com/api/v8')
-        try:
-            request = self.request(r, json=_resp)
-        except NotFound:
-            raise HTTPException("You have already responded to this Interaction!")
+        r = Route("POST", r_url, self.V8BASE)
+        return self.request(r, json=_resp )
+
+    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, fields):
+        r_url = f"/webhooks/{application_id}/{token}" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
+        if fields.get('type', None) == 7:
+            r = Route("POST", r_url, self.V8BASE)
         else:
-            return request
+            r = Route('PATCH', f"/webhooks/{application_id}/{token}/messages/@original" if use_webhook is True else f"/interactions/{application_id}/{token}/messages/@original", self.V8BASE)
+        return self.request(r, json=fields)
 
     def add_reaction(self, channel_id, message_id, emoji):
         r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',

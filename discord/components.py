@@ -26,7 +26,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-
 import re
 import typing
 from .emoji import Emoji
@@ -282,13 +281,17 @@ class ActionRow:
                 self.components.append(obj)
             elif isinstance(obj, dict):
                 if not obj.get('type', None) in [2, 3]:
-                    raise InvalidData('if you use an Dict instead of Button, DropdownMenue you have to pass an type')
+                    raise InvalidData('if you use an Dict instead of Button, DropdownMenue you have to pass an type betwean 2 or 3')
                 self.components.append({1: Button.from_dict(obj), 2: DropdownMenue.from_dict(obj)}.get(obj.get('type')))
 
     def sendable(self) -> Union[dict, EmptyActionRow]:
-        base = {'type': 1, 'components': [obj.to_dict() for obj in self.components]}
-        if not len(base['components']) >= 1 and self.force is False:
+        base = []
+        base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
+        objects = len([i['components'] for i in base])
+        if any(len(ar['components']) < 1 for ar in base) and self.force is False:
             raise EmptyActionRow()
+        elif len(base) > 5 or objects > 5*5 :
+            raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 buttons each; you have {len(base)} ActionRow's passed with {objects} objects")
         return base
 
     def edit_obj(self, index: int, **kwargs):
@@ -303,7 +306,7 @@ class ActionRow:
 
     @property
     def raw(self) -> dict:
-        return {'type': 1, 'components': [obj.to_dict() for obj in self.components]}
+        yield (o for o in self.components)
 
     @classmethod
     def from_dict(cls, data):
@@ -365,6 +368,8 @@ class DecodeMessageComponents:
                 self._other_elements.append(ActionRow.from_dict(obj))
             except InvalidData:
                 self._other_elements.append(obj)
+        if self._other_elements:
+            raise InvalidArgument(f"Invalid Type(s): {[o for o in self._other_elements]} are/is of type(s) {[type(o) for o in self._other_elements]} but has to bee an discord.ActionRow.")
 
     @property
     def action_rows(self):

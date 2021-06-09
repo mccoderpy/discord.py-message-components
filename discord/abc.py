@@ -961,6 +961,8 @@ class Messageable(metaclass=abc.ABCMeta):
             Indicates if the message should be sent using text-to-speech.
         embed: :class:`~discord.Embed`
             The rich embed for the content.
+        components: List[:class:`discord.ActionRow`]
+            A list of :type:`discord.Actionrow`'s
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -1031,7 +1033,6 @@ class Messageable(metaclass=abc.ABCMeta):
                     components_list.append(component.sendable())
             components = components_list
             
-
 
         if allowed_mentions is not None:
             if state.allowed_mentions is not None:

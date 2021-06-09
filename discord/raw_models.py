@@ -5,6 +5,8 @@ The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
 
+Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -247,6 +249,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
             self._version = data.get('version', None)
             self._type = data.get('type', None)
             self.__token = data.get('token', None)
+        self._raw = data
         self._message_id = data.get('message').get('id', None)
         self._data = data.get('data', None)
         self._member = data.get('member', None)
@@ -268,13 +271,28 @@ class RawInteractionCreateEvent(_RawReprMixin):
         'Defers' the response, showing a loading state to the user
         """
         if self._deferred:
-            raise Exception("You have already responded to this Interaction!")
+            return print("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": 6}
         try:
             await self.http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id, token=self.__token, application_id=self.__application_id)
         except NotFound:
             pass
-        self._deferred = True
+        else:
+            self._deferred = True
+
+    async def edit(self, **fields):
+        """
+        'Defers' if it isn't yet and edit the message
+        """
+        if not self.message:
+            self.message: Message = await self.channel.fetch_message(self._message_id)
+
+        try:
+            await self.message.edit(__is_interaction_responce=True, __deffered=self._deferred, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
+        except NotFound:
+            pass
+        else:
+            self._deferred = True
 
     @property
     def deffered(self):
