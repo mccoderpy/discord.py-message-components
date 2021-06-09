@@ -6,19 +6,19 @@ from discord import ActionRow, Button, ButtonColor
 client = commands.Bot(command_prefix=commands.when_mentioned_or('.!'), intents=discord.Intents.all(), case_insensitive=True)
 
 
-# a command that sends you a message and processes it when you click a button
+# A Command that sends you a Message and edit it when you click a Button
 
 
 @client.command(name='buttons', description='sends you some nice Buttons')
 async def buttons(ctx: commands.Context):
     components = [ActionRow(Button(label='Option Nr.1',
                                    custom_id='option1',
-                                   emoji='1️⃣',
+                                   emoji="🆒",
                                    style=ButtonColor.green
                                    ),
                             Button(label='Option Nr.2',
                                    custom_id='option2',
-                                   emoji='2️⃣',
+                                   emoji="🆗",
                                    style=ButtonColor.blurple)),
                   ActionRow(Button(label='A Other Row',
                                    custom_id='sec_row_1st option',
@@ -37,14 +37,16 @@ async def buttons(ctx: commands.Context):
     interaction: discord.RawInteractionCreateEvent = await client.wait_for('interaction_create', check=_check)
     button_id = interaction.button.custom_id
 
-    # This sends the Discord-API that the interaction has been received and is being "processed" (if this is not used, Discord will indicate that the interaction failed).
+    # This sends the Discord-API that the interaction has been received and is being "processed"
+    #(if this is not used, and you don't edit the message like below  Discord will indicate that the interaction failed).
     await interaction.defer()
-    await interaction.message.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'),
+
+    await interaction.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'),
                                    components=[components[0].disable_all_buttons(), components[1].disable_all_buttons()])
 
     # The Discord API doesn't send an event when you press a link button so we can't "receive" that.
 
-
+client.run('You Bot-Token here')
 ########################################################################################################################
 
 # Another command where a small embed is sent where you can move the small white ⬜ with the buttons.
