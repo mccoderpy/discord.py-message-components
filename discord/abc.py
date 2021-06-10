@@ -1030,8 +1030,9 @@ class Messageable(metaclass=abc.ABCMeta):
                 elif isinstance(component, DropdownMenue):
                     coponent_liste.append(component.to_dict())
                 elif isinstance(component, ActionRow):
-                    components_list.append(component.sendable())
+                    components_list.extend(component.sendable())
             components = components_list
+            print(component)
             
 
         if allowed_mentions is not None:

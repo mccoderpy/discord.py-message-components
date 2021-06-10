@@ -40,7 +40,7 @@ except ImportError:
 from .partial_emoji import PartialEmoji
 from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum
-from .errors import InvalidArgument, ClientException, HTTPException, NotFound
+from .errors import InvalidArgument, ClientException, HTTPException, NotFound, UnknowInteraction
 from .embeds import Embed
 from .components import DecodeMessageComponents, Button, DropdownMenue, ActionRow
 from .member import Member
@@ -842,7 +842,7 @@ class Message(Hashable):
         .. note::
 
             This *does not* affect markdown. If you want to escape
-            or remove markdown then use :func:`utils.escape_markdown` or :func:`utils.remove_markdown`
+            or remove markdown then use :func:`utils.escape_markdown` or :func:`utils.remove_markdown` 
             respectively, along with this function.
         """
 
@@ -1154,7 +1154,7 @@ class Message(Hashable):
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
             payload = {'data': fields}
-            if not deffered is True:
+            if not deffered:
                 payload['type'] = 7
             if payload:
                 try:
@@ -1162,9 +1162,11 @@ class Message(Hashable):
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
+                                                                            deffered=deffered,
                                                                             fields=payload)
-                except NotFound:
-                    raise NotFound("You have already responded to this Interaction!")
+                except Exception as exc:
+                    print (exc)
+                    raise UnknowInteraction(application_id)
                 else:
                     self._update(dict(data))
 
@@ -1685,19 +1687,16 @@ class PartialMessage(Hashable):
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
             payload = {'data': fields}
-            if not deffered is True:
-                payload['type'] = 7
             if payload:
                 try:
-                    r = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
-                                                                     interaction_id=interaction_id,
-                                                                     token=interaction_token,
-                                                                     application_id=application_id,
-                                                                     fields=payload)
+                    data = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
+                                                                            interaction_id=interaction_id,
+                                                                            token=interaction_token,
+                                                                            application_id=application_id,
+                                                                            deffered=deffered,
+                                                                            fields=payload)
                 except NotFound:
-                    raise NotFound(r, "You have already responded to this Interaction!")
-                else:
-                    self._update(payload['data'])
+                    raise UnknowInteraction(application_id)
 
         elif is_interaction_responce is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)

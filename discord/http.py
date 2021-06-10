@@ -451,12 +451,14 @@ class HTTPClient:
         r = Route("POST", r_url, self.V8BASE)
         return self.request(r, json=_resp )
 
-    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, fields):
-        r_url = f"/webhooks/{application_id}/{token}" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
-        if fields.get('type', None) == 7:
-            r = Route("POST", r_url, self.V8BASE)
+    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deffered, fields):
+        print(deffered)
+        if not deffered:
+            fields['type'] = 7
+            r = Route("POST", f"/webhooks/{application_id}/{token}" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
         else:
             r = Route('PATCH', f"/webhooks/{application_id}/{token}/messages/@original" if use_webhook is True else f"/interactions/{application_id}/{token}/messages/@original", self.V8BASE)
+        print(fields)
         return self.request(r, json=fields)
 
     def add_reaction(self, channel_id, message_id, emoji):

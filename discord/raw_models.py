@@ -288,7 +288,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
             self.message: Message = await self.channel.fetch_message(self._message_id)
 
         try:
-            await self.message.edit(__is_interaction_responce=True, __deffered=self._deferred, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
+            await self.message.edit(__is_interaction_responce=True, __deffered=self.deffered, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
         except NotFound:
             pass
         else:
