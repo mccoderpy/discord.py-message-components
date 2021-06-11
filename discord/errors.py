@@ -230,6 +230,13 @@ class EmptyActionRow(DiscordException):
         You could supress this Error by setting :attr:`force` in the __init__ of the :class:`discord.ActionRow`  to :bool:`True`
     """
     def __init__(self):
-        msg = "The Discord-API alows you to send an empty ActionRow but wy should you do that? You will not see anything apearing in Discord.\n" \
-              "Note: this Error could be supressed by adding `force=True` to the Innit of the ActionRow"
+        msg = 'The Discord-API alows you to send an empty ActionRow but wy should you do that?' \
+              'You will not see anything apearing in Discord.\n' \
+              'Note: this Error could be supressed by adding `force=True` to the Innit of the ActionRow'
+        super().__init__(msg)
+
+class UnknowInteraction(DiscordException):
+    def __init__(self, interaction_id: int):
+        msg = f'You have already replied to this interaction ({interaction_id})' \
+              f' and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
         super().__init__(msg)

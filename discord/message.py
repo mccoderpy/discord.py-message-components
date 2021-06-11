@@ -713,7 +713,7 @@ class Message(Hashable):
         self.embeds = [Embed.from_dict(data) for data in value]
 
     def _handle_components(self, value):
-        self.components = [DecodeMessageComponents for data in value]
+        self.components = [ActionRow.from_dict(data) for data in value]
 
     def _handle_nonce(self, value):
         self.nonce = value
@@ -1153,28 +1153,28 @@ class Message(Hashable):
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
-            payload = {'data': fields}
-            if not deffered:
-                payload['type'] = 7
-            if payload:
+            if fields:
                 try:
                     data = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deffered=deffered,
-                                                                            fields=payload)
-                except Exception as exc:
-                    print (exc)
+                                                                            deffered=deffered,**fields)
+                except NotFound:
+                    is_interaction_responce = None
                     raise UnknowInteraction(application_id)
                 else:
-                    self._update(dict(data))
+                    [self.__setattr__(k, v) for k, v in fields.items()]
 
         elif is_interaction_responce is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
             self._update(payload)
         if delete_after is not None:
             await self.delete(delay=delete_after)
+
+    @property
+    def dict(self):
+        return {s: self.__getattribute__(s) for s in self.__slots__ if not s.startswith('_')}
 
     async def publish(self):
         """|coro|
@@ -1686,17 +1686,18 @@ class PartialMessage(Hashable):
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
-            payload = {'data': fields}
-            if payload:
+            if fields:
                 try:
                     data = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deffered=deffered,
-                                                                            fields=payload)
+                                                                            deffered=deffered, **fields)
                 except NotFound:
+                    is_interaction_responce = None
                     raise UnknowInteraction(application_id)
+                else:
+                    [self.__setattr__(k, v) for k, v in fields.items()]
 
         elif is_interaction_responce is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)

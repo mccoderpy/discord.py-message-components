@@ -266,7 +266,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
         self.message: Message = None
         self._deferred = False
 
-    async def defer(self):
+    async def defer(self, ):
         """
         'Defers' the response, showing a loading state to the user
         """
@@ -286,13 +286,8 @@ class RawInteractionCreateEvent(_RawReprMixin):
         """
         if not self.message:
             self.message: Message = await self.channel.fetch_message(self._message_id)
-
-        try:
-            await self.message.edit(__is_interaction_responce=True, __deffered=self.deffered, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
-        except NotFound:
-            pass
-        else:
-            self._deferred = True
+        await self.message.edit(__is_interaction_responce=True, __deffered=self.deffered, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
+        self._deferred = True
 
     @property
     def deffered(self):

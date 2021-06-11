@@ -447,18 +447,18 @@ class HTTPClient:
         return self.request(r, json=fields)
 
     def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
-        r_url = f"/webhooks/{application_id}/{token}" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
+        r_url = f"/webhooks/{application_id}/{token}/callback" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
         r = Route("POST", r_url, self.V8BASE)
-        return self.request(r, json=_resp )
+        return self.request(r, json=_resp)
 
-    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deffered, fields):
-        print(deffered)
+    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deffered, **fields):
         if not deffered:
-            fields['type'] = 7
-            r = Route("POST", f"/webhooks/{application_id}/{token}" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
+            base = {'data': fields}
+            base['type'] = 7
+            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
         else:
-            r = Route('PATCH', f"/webhooks/{application_id}/{token}/messages/@original" if use_webhook is True else f"/interactions/{application_id}/{token}/messages/@original", self.V8BASE)
-        print(fields)
+            base = fields
+            r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original', self.V8BASE)
         return self.request(r, json=fields)
 
     def add_reaction(self, channel_id, message_id, emoji):
