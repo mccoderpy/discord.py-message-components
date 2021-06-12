@@ -453,11 +453,10 @@ class HTTPClient:
 
     def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deffered, **fields):
         if not deffered:
-            base = {'data': fields}
-            base['type'] = 7
+            fields = {'data': fields}
+            fields['type'] = 7
             r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
         else:
-            base = fields
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original', self.V8BASE)
         return self.request(r, json=fields)
 
