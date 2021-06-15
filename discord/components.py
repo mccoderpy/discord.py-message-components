@@ -95,7 +95,7 @@ class Button(object):
                 'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(self.custom_id), len(self.custom_id) - 100))
         if self._custom_id and self.url:
             raise URLAndCustomIDNotAlowed(self.custom_id)
-        self._label: str = kwargs.get('label', kwargs.get('name', 'I\'m an Button'))
+        self._label: str = kwargs.get('label', kwargs.get('name', ''))
         if self._label and len(self._label) > 80:
             raise InvalidArgument(f'The maximum length of Button-Labels\'s are 80; your one is {len(self.label)} long. ({len(self.label) - 100} Characters to long)')
         self._emoji = kwargs.get('emoji', None)

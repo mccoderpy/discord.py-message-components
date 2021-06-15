@@ -25,10 +25,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+import sys
 import typing
 from .member import Member
+from .user import User
 from .message import Message
-from .errors import NotFound
+from .errors import NotFound, UnknowInteraction
 
 
 class _RawReprMixin:
@@ -253,6 +255,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
         self._message_id = data.get('message').get('id', None)
         self._data = data.get('data', None)
         self._member = data.get('member', None)
+        self._user = data.get('user', self._member.get('user'))
         self.__interaction_id = data.get('id', 0)
         self._guild_id = data.get('guild_id', 0)
         self._channel_id = data.get('channel_id', 0)
@@ -260,8 +263,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
         self.guild = None
         self.channel = None
         self.member: Member = None
-        self.user = None
-        self._user = dict(self.member._user) if self.member else data.get('user')
+        self.user: User = None
         self.button = ClickEvent(self._data)
         self.message: Message = None
         self._deferred = False
@@ -276,7 +278,8 @@ class RawInteractionCreateEvent(_RawReprMixin):
         try:
             await self.http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id, token=self.__token, application_id=self.__application_id)
         except NotFound:
-            pass
+            sys.stderr.write(f'You have already replied to this interaction ({self.__interaction_id})\nand/or 15 minutes have passed since the interaction, which is why'
+                             f' Discord has deleted the interaction.')
         else:
             self._deferred = True
 

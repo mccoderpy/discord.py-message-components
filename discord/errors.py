@@ -23,11 +23,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+import sys
+
 
 class DiscordException(Exception):
     """Base exception class for discord.py
 
     Ideally speaking, this could be caught to handle any exceptions thrown from this library.
+    """
+    pass
+
+class DiscordWarning(Warning):
+    """Base warning class for discord.py
+
+    Ideally speaking, this could be caught to handle any warnings thrown from this library.
     """
     pass
 
@@ -235,7 +244,7 @@ class EmptyActionRow(DiscordException):
               'Note: this Error could be supressed by adding `force=True` to the Innit of the ActionRow'
         super().__init__(msg)
 
-class UnknowInteraction(DiscordException):
+class UnknowInteraction(DiscordWarning):
     def __init__(self, interaction_id: int):
         msg = f'You have already replied to this interaction ({interaction_id})' \
               f' and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'

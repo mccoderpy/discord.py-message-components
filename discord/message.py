@@ -1159,10 +1159,9 @@ class Message(Hashable):
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deffered=deffered,**fields)
+                                                                            deffered=deffered, **fields)
                 except NotFound:
                     is_interaction_responce = None
-                    raise UnknowInteraction(application_id)
                 else:
                     [self.__setattr__(k, v) for k, v in fields.items()]
 
@@ -1695,7 +1694,6 @@ class PartialMessage(Hashable):
                                                                             deffered=deffered, **fields)
                 except NotFound:
                     is_interaction_responce = None
-                    raise UnknowInteraction(application_id)
                 else:
                     [self.__setattr__(k, v) for k, v in fields.items()]
 
