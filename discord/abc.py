@@ -1023,16 +1023,17 @@ class Messageable(metaclass=abc.ABCMeta):
             embed = embed.to_dict()
 
         if components:
-            components_list = []
-            for component in ([components] if not type(components) == list else components):
+            _components = []
+            for component in ([components] if not isinstance(components, list) else components):
                 if isinstance(component, Button):
-                    components_list.append(component.to_dict())
+                    _components.extend(ActionRow(component).sendable())
                 elif isinstance(component, DropdownMenue):
-                    coponent_liste.append(component.to_dict())
+                    _components.append(component.to_dict())
                 elif isinstance(component, ActionRow):
-                    components_list.extend(component.sendable())
-            components = components_list
-            
+                    _components.extend(component.sendable())
+                elif isinstance(component, list):
+                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
+            components = _components
 
         if allowed_mentions is not None:
             if state.allowed_mentions is not None:

@@ -1113,16 +1113,19 @@ class Message(Hashable):
             pass
         else:
             if components is not None:
-                from .components import Button, DropdownMenue, ActionRow
-                components_list = []
-                for component in ([components] if not type(components) == list else components):
-                    if isinstance(component, Button):
-                        components_list.append(component.to_dict())
-                    elif isinstance(component, DropdownMenue):
-                        components_list.append(component.to_dict())
-                    elif isinstance(component, ActionRow):
-                        components_list.extend(component.sendable())
-                fields['components'] = components_list
+                _components = []
+                if components is not None:
+                    for component in ([components] if not type(components) == list else components):
+                        if isinstance(component, Button):
+                            _components.extend(ActionRow(component).sendable())
+                        elif isinstance(component, DropdownMenue):
+                            _components.append(component.to_dict())
+                        elif isinstance(component, ActionRow):
+                            _components.extend(component.sendable())
+                        elif isinstance(component, list):
+                            _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
+                    fields['components'] = _components
+
         try:
             suppress = fields.pop('suppress')
         except KeyError:
@@ -1648,11 +1651,13 @@ class PartialMessage(Hashable):
             if components is not None:
                 for component in ([components] if not type(components) == list else components):
                     if isinstance(component, Button):
-                        _components.append(component.to_dict())
+                        _components.extend(ActionRow(component).sendable())
                     elif isinstance(component, DropdownMenue):
                         _components.append(component.to_dict())
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
+                    elif isinstance(component, list):
+                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
                 fields['components'] = _components
 
         try:
