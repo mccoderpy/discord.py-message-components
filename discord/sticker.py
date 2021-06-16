@@ -72,11 +72,11 @@ class Sticker(Hashable):
     def __init__(self, *, state, data):
         self._state = state
         self.id = int(data['id'])
-        self.name = data['name']
-        self.description = data['description']
-        self.pack_id = int(data['pack_id'])
-        self.format = try_enum(StickerType, data['format_type'])
-        self.image = data['asset']
+        self.name: str = data['name']
+        self.description: str = data['description']
+        self.pack_id: int = int(data.get('pack_id', 0))
+        self.format: StickerType = try_enum(StickerType, data['format_type'])
+        self.image: str = data['asset']
 
         try:
             self.tags = [tag.strip() for tag in data['tags'].split(',')]
