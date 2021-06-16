@@ -1,4 +1,4 @@
-.. image:: https://cdn.discordapp.com/attachments/852908252907569163/854654647997038612/discord.py-message-components.png
+.. image:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
     :target: https://pypi.org/project/discord.py-message-components
     :alt: Name of the project
             
