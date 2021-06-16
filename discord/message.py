@@ -1115,7 +1115,7 @@ class Message(Hashable):
             if components is not None:
                 _components = []
                 if components is not None:
-                    for component in ([components] if not type(components) == list else components):
+                    for component in ([components] if not isinstance(components, list) else components):
                         if isinstance(component, Button):
                             _components.extend(ActionRow(component).sendable())
                         elif isinstance(component, DropdownMenue):
@@ -1649,7 +1649,7 @@ class PartialMessage(Hashable):
         else:
             _components = []
             if components is not None:
-                for component in ([components] if not type(components) == list else components):
+                for component in ([components] if not isinstance(components, list) else components):
                     if isinstance(component, Button):
                         _components.extend(ActionRow(component).sendable())
                     elif isinstance(component, DropdownMenue):
