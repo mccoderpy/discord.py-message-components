@@ -972,12 +972,18 @@ class Client:
         """
 
         future = self.loop.create_future()
-        if check is None:
+        if event.lower().lstrip('raw_') in ('button_click', 'selection_select'):
+            ck = check
             def _check(*args):
-                return True
+                return ck(*args) if check else True and args[0].component.component_type == {'button_click': 2, 'selection_select': 3}.get(event.lower().lstrip('raw_'))
             check = _check
-
-        ev = event.lower()
+            ev = event.lower()
+        else:
+            if check is None:
+                def _check(*args):
+                    return True
+                check = _check
+            ev = event.lower()
         try:
             listeners = self._listeners[ev]
         except KeyError:

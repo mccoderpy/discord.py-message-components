@@ -41,7 +41,8 @@ from .permissions import Permissions, PermissionOverwrite
 from .role import Role, RoleTags
 from .file import File
 from .colour import Color, Colour
-from .integrations import Integration, IntegrationAccount
+from .integrations import Integration, IntegrationAccount, BotIntegration, IntegrationApplication, StreamIntegration
+from .interactions import Interaction, ButtonClick, SelectionSelect
 from .invite import Invite, PartialInviteChannel, PartialInviteGuild
 from .template import Template
 from .widget import Widget, WidgetMember, WidgetChannel
@@ -50,7 +51,7 @@ from .reaction import Reaction
 from . import utils, opus, abc
 from .enums import *
 from .embeds import Embed
-from .components import Button, DropdownMenue, ActionRow, ButtonColor, ButtonStyle
+from .components import Button, SelectionMenu, ActionRow, ButtonColor, ButtonStyle, select_option
 from .mentions import AllowedMentions
 from .shard import AutoShardedClient, ShardInfo
 from .player import *
