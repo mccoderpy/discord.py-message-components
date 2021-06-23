@@ -42,7 +42,7 @@ from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum
 from .errors import InvalidArgument, ClientException, HTTPException, NotFound, UnknowInteraction
 from .embeds import Embed
-from .components import DecodeMessageComponents, Button, SelectionMenu, ActionRow
+from .components import DecodeMessageComponents, Button, DropdownMenue, ActionRow
 from .member import Member
 from .flags import MessageFlags
 from .file import File
@@ -552,12 +552,12 @@ class Message(Hashable):
 
     def __init__(self, *, state, channel, data):
         self._state = state
-        self.id = utils._get_as_snowflake(data, 'id')
+        self.id = int(data['id'])
         self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
-        self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
-        self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
-        self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
+        self.attachments = [Attachment(data=a, state=self._state) for a in data['attachments']]
+        self.embeds = [Embed.from_dict(a) for a in data['embeds']]
+        self.components = data.get('components', [])
         self.application = data.get('application')
         self.activity = data.get('activity')
         self.channel = channel
@@ -1114,19 +1114,17 @@ class Message(Hashable):
         else:
             if components is not None:
                 _components = []
-                for component in ([components] if not isinstance(components, list) else components):
-                    if isinstance(component, Button):
-                        _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, SelectionMenu):
-                        _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, ActionRow):
-                        _components.extend(component.sendable())
-                    elif isinstance(component, list):
-                        _components.extend(ActionRow(
-                            *[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]
-                        ).sendable())
-                components = _components
-                fields['components'] = _components
+                if components is not None:
+                    for component in ([components] if not isinstance(components, list) else components):
+                        if isinstance(component, Button):
+                            _components.extend(ActionRow(component).sendable())
+                        elif isinstance(component, DropdownMenue):
+                            _components.append(component.to_dict())
+                        elif isinstance(component, ActionRow):
+                            _components.extend(component.sendable())
+                        elif isinstance(component, list):
+                            _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
+                    fields['components'] = _components
 
         try:
             suppress = fields.pop('suppress')
@@ -1153,7 +1151,7 @@ class Message(Hashable):
 
         is_interaction_responce = fields.pop('__is_interaction_responce', None)
         if is_interaction_responce is True:
-            deferred = fields.pop('__deferred', False)
+            deffered = fields.pop('__deffered', False)
             use_webhook = fields.pop('__use_webhook', False)
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
@@ -1164,7 +1162,7 @@ class Message(Hashable):
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deferred=deferred, **fields)
+                                                                            deffered=deffered, **fields)
                 except NotFound:
                     is_interaction_responce = None
                 else:
@@ -1649,20 +1647,17 @@ class PartialMessage(Hashable):
         except KeyError:
             pass
         else:
+            _components = []
             if components is not None:
-                _components = []
                 for component in ([components] if not isinstance(components, list) else components):
                     if isinstance(component, Button):
                         _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, SelectionMenu):
-                        _components.extend(ActionRow(component).sendable())
+                    elif isinstance(component, DropdownMenue):
+                        _components.append(component.to_dict())
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(
-                            *[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]
-                        ).sendable())
-                components = _components
+                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
                 fields['components'] = _components
 
         try:
@@ -1690,7 +1685,7 @@ class PartialMessage(Hashable):
 
         is_interaction_responce = fields.pop('__is_interaction_responce', None)
         if is_interaction_responce is True:
-            deferred = fields.pop('__deferred', False)
+            deffered = fields.pop('__deffered', False)
             use_webhook = fields.pop('__use_webhook', False)
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
@@ -1701,7 +1696,7 @@ class PartialMessage(Hashable):
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deferred=deferred, **fields)
+                                                                            deffered=deffered, **fields)
                 except NotFound:
                     is_interaction_responce = None
                 else:
