@@ -451,14 +451,69 @@ class HTTPClient:
         r = Route("POST", r_url, self.V8BASE)
         return self.request(r, json=_resp)
 
-    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deffered, **fields):
-        if not deffered:
+    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, **fields):
+        if not deferred:
             fields = {'data': fields}
             fields['type'] = 7
             r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
         else:
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original', self.V8BASE)
         return self.request(r, json=fields)
+
+    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, **fields):
+        form = []
+        content = fields.pop('content', None)
+        tts = fields.pop('tts', False)
+        embed = fields.pop('embed', None)
+        components = fields.pop('components', None)
+        files = fields.pop('files', None)
+        nonce = fields.pop('nonce', None)
+        allowed_mentions = fields.pop('allowed_mentions')
+        message_reference = fields.pop('message_reference', None)
+        flags = fields.pop('flags', None)
+        payload = {'tts': tts}
+        if content:
+            payload['content'] = content
+        if embed:
+            payload['embeds'] = [embed]
+        if components:
+            payload['components'] = components
+        if nonce:
+            payload['nonce'] = nonce
+        if allowed_mentions:
+            payload['allowed_mentions'] = allowed_mentions
+        if message_reference:
+            payload['message_reference'] = message_reference
+        if flags:
+            payload['flags'] = flags
+        if not deferred is True:
+            payload = {'data': payload}
+            payload['type'] = 4
+            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
+        else:
+            r = Route('POST', f'/webhooks/{application_id}/{token}', self.V8BASE)
+        if files is not None:
+            form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
+            if len(files) == 1:
+                file = files[0]
+                form.append({
+                    'name': 'file',
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream'
+                })
+            else:
+                for index, file in enumerate(files):
+                    form.append({
+                        'name': 'file%s' % index,
+                        'value': file.fp,
+                        'filename': file.filename,
+                        'content_type': 'application/octet-stream'
+                    })
+
+            return self.request(r, form=form, files=files)
+        else:
+            return self.request(r, json=payload)
 
     def add_reaction(self, channel_id, message_id, emoji):
         r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',

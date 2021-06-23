@@ -57,6 +57,7 @@ from . import utils
 from .flags import Intents, MemberCacheFlags
 from .object import Object
 from .invite import Invite
+from .interactions import Interaction, ComponentType, InteractionType
 
 class ChunkRequest:
     def __init__(self, guild_id, loop, resolver, *, cache=True):
@@ -539,7 +540,8 @@ class ConnectionState:
             #to make sure that other-libraries like `discord-py-slash-command` still work
             self.dispatch('socket_responce', data)
             return
-        raw = RawInteractionCreateEvent(data=data, http=self.http)
+
+        raw = Interaction(data=data, http=self.http)
         raw.message = self._get_message(raw.message_id)
         if raw.guild_id:
             raw.guild: Guild = self._get_guild(raw.guild_id)
@@ -549,10 +551,22 @@ class ConnectionState:
             raw.channel = self._get_private_channel(raw.channel_id)
         raw.user = User(state=self, data=raw._user)
         if raw.message is not None:
+            if raw.interaction_type == InteractionType.Component:
+                if raw.component_type == 2:
+                    self.dispatch('button_click', raw, raw.component)
+                    self.dispatch('raw_button_click', raw)
+                elif raw.component_type == 3:
+                    self.dispatch('selection_select', raw, raw.component)
+                    self.dispatch('raw_selection_select', raw)
             self.dispatch('interaction_create', raw)
             self.dispatch('raw_interaction_create', raw)
         else:
             self.dispatch('raw_interaction_create', raw)
+            if raw.interaction_type == InteractionType.Component:
+                if raw.component_type == 2:
+                    self.dispatch('raw_button_click', raw)
+                elif raw.component_type == 3:
+                    self.dispatch('raw_selection_select', raw)
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']

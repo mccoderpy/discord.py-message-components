@@ -40,9 +40,9 @@ except ImportError:
 from .partial_emoji import PartialEmoji
 from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum
-from .errors import InvalidArgument, ClientException, HTTPException, NotFound, UnknowInteraction
+from .errors import InvalidArgument, ClientException, HTTPException, NotFound
 from .embeds import Embed
-from .components import DecodeMessageComponents, Button, DropdownMenue, ActionRow
+from .components import Button, SelectionMenu, ActionRow
 from .member import Member
 from .flags import MessageFlags
 from .file import File
@@ -76,6 +76,7 @@ def convert_emoji_reaction(emoji):
     raise InvalidArgument('emoji argument must be str, Emoji, or Reaction not {.__class__.__name__}.'.format(emoji))
 
 class Attachment(Hashable):
+
     """Represents an attachment from Discord.
 
     .. container:: operations
@@ -300,6 +301,7 @@ class DeletedReferencedMessage:
 
 
 class MessageReference:
+
     """Represents a reference to a :class:`~discord.Message`.
 
     .. versionadded:: 1.5
@@ -552,12 +554,12 @@ class Message(Hashable):
 
     def __init__(self, *, state, channel, data):
         self._state = state
-        self.id = int(data['id'])
+        self.id = utils._get_as_snowflake(data, 'id')
         self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
-        self.attachments = [Attachment(data=a, state=self._state) for a in data['attachments']]
-        self.embeds = [Embed.from_dict(a) for a in data['embeds']]
-        self.components = data.get('components', [])
+        self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
+        self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
+        self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')
         self.activity = data.get('activity')
         self.channel = channel
@@ -842,7 +844,7 @@ class Message(Hashable):
         .. note::
 
             This *does not* affect markdown. If you want to escape
-            or remove markdown then use :func:`utils.escape_markdown` or :func:`utils.remove_markdown` 
+            or remove markdown then use :func:`utils.escape_markdown` or :func:`utils.remove_markdown`
             respectively, along with this function.
         """
 
@@ -1114,17 +1116,19 @@ class Message(Hashable):
         else:
             if components is not None:
                 _components = []
-                if components is not None:
-                    for component in ([components] if not isinstance(components, list) else components):
-                        if isinstance(component, Button):
-                            _components.extend(ActionRow(component).sendable())
-                        elif isinstance(component, DropdownMenue):
-                            _components.append(component.to_dict())
-                        elif isinstance(component, ActionRow):
-                            _components.extend(component.sendable())
-                        elif isinstance(component, list):
-                            _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
-                    fields['components'] = _components
+                for component in ([components] if not isinstance(components, list) else components):
+                    if isinstance(component, Button):
+                        _components.extend(ActionRow(component).sendable())
+                    elif isinstance(component, SelectionMenu):
+                        _components.extend(ActionRow(component).sendable())
+                    elif isinstance(component, ActionRow):
+                        _components.extend(component.sendable())
+                    elif isinstance(component, list):
+                        _components.extend(ActionRow(
+                            *[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]
+                        ).sendable())
+                components = _components
+                fields['components'] = _components
 
         try:
             suppress = fields.pop('suppress')
@@ -1151,7 +1155,7 @@ class Message(Hashable):
 
         is_interaction_responce = fields.pop('__is_interaction_responce', None)
         if is_interaction_responce is True:
-            deffered = fields.pop('__deffered', False)
+            deferred = fields.pop('__deferred', False)
             use_webhook = fields.pop('__use_webhook', False)
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
@@ -1162,7 +1166,7 @@ class Message(Hashable):
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deffered=deffered, **fields)
+                                                                            deferred=deferred, **fields)
                 except NotFound:
                     is_interaction_responce = None
                 else:
@@ -1462,6 +1466,7 @@ def implement_partial_methods(cls):
 
 @implement_partial_methods
 class PartialMessage(Hashable):
+
     """Represents a partial message to aid with working messages when only
     a message and channel ID are present.
 
@@ -1647,17 +1652,20 @@ class PartialMessage(Hashable):
         except KeyError:
             pass
         else:
-            _components = []
             if components is not None:
+                _components = []
                 for component in ([components] if not isinstance(components, list) else components):
                     if isinstance(component, Button):
                         _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, DropdownMenue):
-                        _components.append(component.to_dict())
+                    elif isinstance(component, SelectionMenu):
+                        _components.extend(ActionRow(component).sendable())
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
+                        _components.extend(ActionRow(
+                            *[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]
+                        ).sendable())
+                components = _components
                 fields['components'] = _components
 
         try:
@@ -1685,7 +1693,7 @@ class PartialMessage(Hashable):
 
         is_interaction_responce = fields.pop('__is_interaction_responce', None)
         if is_interaction_responce is True:
-            deffered = fields.pop('__deffered', False)
+            deferred = fields.pop('__deferred', False)
             use_webhook = fields.pop('__use_webhook', False)
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
@@ -1696,7 +1704,7 @@ class PartialMessage(Hashable):
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deffered=deffered, **fields)
+                                                                            deferred=deferred, **fields)
                 except NotFound:
                     is_interaction_responce = None
                 else:

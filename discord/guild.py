@@ -44,7 +44,7 @@ from .iterators import AuditLogIterator, MemberIterator
 from .widget import Widget
 from .asset import Asset
 from .flags import SystemChannelFlags
-from .integrations import Integration
+from .integrations import BotIntegration, StreamIntegration, _integration_factory
 
 
 BanEntry = namedtuple('BanEntry', 'reason user')
@@ -1690,28 +1690,30 @@ class Guild(Hashable):
 
     async def integrations(self):
         """|coro|
-
         Returns a list of all integrations attached to the guild.
-
         You must have the :attr:`~Permissions.manage_guild` permission to
         do this.
-
         .. versionadded:: 1.4
-
         Raises
         -------
         Forbidden
             You do not have permission to create the integration.
         HTTPException
             Fetching the integrations failed.
-
         Returns
         --------
         List[:class:`Integration`]
             The list of integrations that are attached to the guild.
         """
         data = await self._state.http.get_all_integrations(self.id)
-        return [Integration(guild=self, data=d) for d in data]
+
+        def convert(d):
+            factory, itype = _integration_factory(d['type'])
+            if factory is None:
+                raise InvalidData('Unknown integration type {type!r} for integration ID {id}'.format_map(d))
+            return factory(guild=self, data=d)
+
+        return [convert(d) for d in data]
 
     async def fetch_emojis(self):
         r"""|coro|
