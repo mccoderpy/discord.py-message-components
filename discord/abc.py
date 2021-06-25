@@ -933,7 +933,7 @@ class Messageable(metaclass=abc.ABCMeta):
     async def _get_channel(self):
         raise NotImplementedError
 
-    async def send(self, content=None, *, tts=False, embed=None, components=None, file=None,
+    async def send(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
                                           files=None, delete_after=None, nonce=None,
                                           allowed_mentions=None, reference=None,
                                           mention_author=None, hidden=None, **kwargs):
@@ -1036,7 +1036,7 @@ class Messageable(metaclass=abc.ABCMeta):
                 elif isinstance(component, ActionRow):
                     _components.extend(component.sendable())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]).sendable())
+                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
             components = _components
 
         if allowed_mentions is not None:
@@ -1066,8 +1066,20 @@ class Messageable(metaclass=abc.ABCMeta):
         interaction_id = kwargs.pop('__interaction_id', None)
         interaction_token = kwargs.pop('__interaction_token', None)
         application_id = kwargs.pop('__application_id', None)
-        if is_interaction_responce == False or None:
+        followup = kwargs.pop('followup', False)
+        if is_interaction_responce is False or None:
             hidden = None
+        if hidden is not None:
+            embedlist = []
+            if embed:
+                embedlist.append(embed.to_dict())
+            if embeds:
+                embedlist.extend([e.to_dict() for e in embeds])
+            embeds = embedlist
+            if len(embeds) > 10:
+                raise InvalidArgument(f'The maximum number of embeds that can be sent with a response is 10, get: {len(embeds)}')
+        elif embeds:
+            raise InvalidArgument('Normal Messages dont support multible Embeds.')
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')
@@ -1080,10 +1092,11 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                       application_id=application_id,
                                                                       deferred=deferred,
                                                                       files=[file], allowed_mentions=allowed_mentions,
-                                                                      content=content, tts=tts, embed=embed,
+                                                                      content=content, tts=tts, embeds=embeds,
                                                                       components=components,
                                                                       nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden else None)
+                                                                      flags=64 if hidden else None,
+                                                                      followup=followup)
                 else:
                     data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
                                                        content=content, tts=tts, embed=embed, components=components,
@@ -1105,13 +1118,14 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                       application_id=application_id,
                                                                       deferred=deferred,
                                                                       files=file, allowed_mentions=allowed_mentions,
-                                                                      content=content, tts=tts, embed=embed,
+                                                                      content=content, tts=tts, embeds=embeds,
                                                                       components=components,
                                                                       nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden else None)
+                                                                      flags=64 if hidden else None,
+                                                                      followup=followup)
                 else:
                     data = await state.http.send_files(channel.id, files=files, content=content, tts=tts,
-                                                       embed=embed, components=components, nonce=nonce,
+                                                       embeds=embeds, components=components, nonce=nonce,
                                                        allowed_mentions=allowed_mentions, message_reference=reference)
             finally:
                 for f in files:
@@ -1123,15 +1137,17 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                   token=interaction_token,
                                                                   application_id=application_id,
                                                                   deferred=deferred, allowed_mentions=allowed_mentions,
-                                                                  content=content, tts=tts, embed=embed,
+                                                                  content=content, tts=tts, embeds=embeds,
                                                                   components=components,
                                                                   nonce=nonce, message_reference=reference,
-                                                                  flags=64 if hidden else None)
+                                                                  flags=64 if hidden else None,
+                                                                  followup=followup)
             else:
                 data = await state.http.send_message(channel.id, content, tts=tts, embed=embed, components=components,
                                                                           nonce=nonce, allowed_mentions=allowed_mentions,
                                                                           message_reference=reference)
-        if not hidden is True:
+
+        if not hidden is True and isinstance(data, dict):
             ret = state.create_message(channel=channel, data=data)
             if delete_after is not None and hidden is None:
                 await ret.delete(delay=delete_after)

@@ -1124,9 +1124,7 @@ class Message(Hashable):
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(
-                            *[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]
-                        ).sendable())
+                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
                 components = _components
                 fields['components'] = _components
 
@@ -1662,9 +1660,7 @@ class PartialMessage(Hashable):
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(
-                            *[obj for obj in component if any(isinstance(obj, Button) or isinstance(obj, SelectionMenu))]
-                        ).sendable())
+                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
                 components = _components
                 fields['components'] = _components
 
