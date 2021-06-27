@@ -976,7 +976,6 @@ class Client:
             def _check(*args):
                 return True
             check = _check
-
         ev = event.lower()
         try:
             listeners = self._listeners[ev]

@@ -31,6 +31,7 @@ from .member import Member
 from .user import User
 from .message import Message
 from .errors import NotFound, UnknowInteraction
+from .channel import DMChannel
 
 
 class _RawReprMixin:
@@ -233,12 +234,8 @@ class RawReactionClearEmojiEvent(_RawReprMixin):
 
 
 class RawInteractionCreateEvent(_RawReprMixin):
-
-    __slots__ = ('_data', '_member', '_message_id', '_channel_id', '_guild_id', '__token')
-
     def __init__(self, data, http=None):
-        from .http import HTTPClient
-        self.http: HTTPClient = http
+        self.http = http
         self._type = data.get('t', data.get('type', None))
         d = data.get('d', None)
         if d:
@@ -264,72 +261,6 @@ class RawInteractionCreateEvent(_RawReprMixin):
         self.channel = None
         self.member: Member = None
         self.user: User = None
-        self.button = ClickEvent(self._data)
+        self.button = (self._data)
         self.message: Message = None
         self._deferred = False
-
-    async def defer(self, ):
-        """
-        'Defers' the response, showing a loading state to the user
-        """
-        if self._deferred:
-            return print("\033[91You have already responded to this Interaction!\033[0m")
-        base = {"type": 6}
-        try:
-            await self.http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id, token=self.__token, application_id=self.__application_id)
-        except NotFound:
-            sys.stderr.write(f'You have already replied to this interaction ({self.__interaction_id})\nand/or 15 minutes have passed since the interaction, which is why'
-                             f' Discord has deleted the interaction.')
-        else:
-            self._deferred = True
-
-    async def edit(self, **fields):
-        """
-        'Defers' if it isn't yet and edit the message
-        """
-        if not self.message:
-            self.message: Message = await self.channel.fetch_message(self._message_id)
-        await self.message.edit(__is_interaction_responce=True, __deffered=self.deffered, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
-        self._deferred = True
-
-    @property
-    def deffered(self):
-        return self._deferred
-
-    @property
-    def token(self):
-        return self.__token
-
-    @property
-    def initeraction_id(self):
-        return int(self.__interaction_id)
-
-    @property
-    def guild_id(self):
-        return int(self._guild_id)
-
-    @property
-    def channel_id(self):
-        return int(self._channel_id)
-
-    @property
-    def message_id(self):
-        return int(self._message_id)
-
-
-class ClickEvent:
-    def __init__(self, data):
-        if data:
-            self._custom_id = data.get('custom_id', None)
-            self._component_type = data.get('component_type')
-
-    def __repr__(self):
-        return f"<ClickEvent {self._custom_id, self._component_type}"
-
-    @property
-    def custom_id(self):
-        return self._custom_id
-
-    @property
-    def component_type(self):
-        return self._component_type

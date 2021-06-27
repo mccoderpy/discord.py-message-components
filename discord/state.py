@@ -57,6 +57,7 @@ from . import utils
 from .flags import Intents, MemberCacheFlags
 from .object import Object
 from .invite import Invite
+from .interactions import Interaction, ComponentType, InteractionType
 
 class ChunkRequest:
     def __init__(self, guild_id, loop, resolver, *, cache=True):
@@ -535,12 +536,12 @@ class ConnectionState:
             self.dispatch('raw_message_edit', raw)
 
     def parse_interaction_create(self, data):
-        if data.get('type', data.get('t', None)) != 3:
+        if data.get('type', data.get('t', 0)) < 3:
             #to make sure that other-libraries like `discord-py-slash-command` still work
             self.dispatch('socket_responce', data)
             return
-        raw = RawInteractionCreateEvent(data=data, http=self.http)
-        raw.message = self._get_message(raw.message_id)
+        raw = Interaction(self, data=data)
+        raw.message = self._get_message(raw.message_id) if raw.message is None else raw.message
         if raw.guild_id:
             raw.guild: Guild = self._get_guild(raw.guild_id)
             raw.channel: TextChannel = raw.guild.get_channel(raw.channel_id)
@@ -551,8 +552,26 @@ class ConnectionState:
         if raw.message is not None:
             self.dispatch('interaction_create', raw)
             self.dispatch('raw_interaction_create', raw)
+            if raw.interaction_type == InteractionType.Component:
+                if raw.component_type == 2:
+                    if not raw.message_is_hidden:
+                        self.dispatch('button_click', raw, raw.component)
+                        self.dispatch('raw_button_click', raw)
+                    else:
+                        self.dispatch('hidden_button_click', raw)
+                elif raw.component_type == 3:
+                    if not raw.message_is_hidden:
+                        self.dispatch('selection_select', raw, raw.component)
+                        self.dispatch('raw_selection_select', raw)
+                    else:
+                        self.dispatch('hidden_selection_select', raw)
         else:
             self.dispatch('raw_interaction_create', raw)
+            if raw.interaction_type == InteractionType.Component:
+                if raw.component_type == 2:
+                    self.dispatch('raw_button_click', raw)
+                elif raw.component_type == 3:
+                    self.dispatch('raw_selection_select', raw)
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']

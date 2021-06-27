@@ -34,22 +34,28 @@ from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, InvalidData, EmptyActionRow
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 
+__all__ = ('ButtonStyle', 'ButtonColor', 'Button', 'SelectionMenu', 'ActionRow', 'select_option')
+
 
 class ButtonStyle:
     """
-    :class:`ButtonS
+    :class:`Button`
     Represents the Style for an :class:`discord.Button`
 
     .. note ::
         For more information about the Button-Styles visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
     """
+
+    def __repr__(self):
+        return f'<ButtonStyle {" ".join(k+"="+str(v) for k,v in ButtonStyle.__dict__.items())}>'
+
     Primary = 1
     Secondary = 2
     Success = 3
     Danger = 4
     Link_Button = 5
 
-    __repr__ = [Primary, Secondary, Success, Danger, Link_Button]
+
 
 
 class ButtonColor:
@@ -65,8 +71,10 @@ class ButtonColor:
     red = ButtonStyle.Danger
     grey_url = ButtonStyle.Link_Button
 
+    def __repr__():
+        return f'<ButtonColor {" ".join(k+"="+str(v) for k, v in ButtonColor.__dict__.items())}>'
 
-class Button(object):
+class Button:
     """
     :class:`Button`
 
@@ -74,6 +82,7 @@ class Button(object):
 
     .. note ::
         For more information Discord-Button's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_.
+    
     """
 
     def __init__(self, **kwargs):
@@ -85,7 +94,7 @@ class Button(object):
             raise InvalidArgument(
                 "The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
         if self._style == ButtonStyle.Link_Button and not self.url:
-            raise MissingRequiredArgument(
+            raise InvalidArgument(
                 'You must also pass a URL if the ButtonStyle is a link.')
         if self._url and self._style != ButtonStyle.Link_Button:
             self._style = ButtonStyle.Link_Button
@@ -95,20 +104,22 @@ class Button(object):
                 'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(self.custom_id), len(self.custom_id) - 100))
         if self._custom_id and self.url:
             raise URLAndCustomIDNotAlowed(self.custom_id)
-        self._label: str = kwargs.get('label', kwargs.get('name', ''))
+        self._label: str = kwargs.get('label', kwargs.get('name', None))
         if self._label and len(self._label) > 80:
             raise InvalidArgument(f'The maximum length of Button-Labels\'s are 80; your one is {len(self.label)} long. ({len(self.label) - 100} Characters to long)')
-        self._emoji = kwargs.get('emoji', None)
-        if isinstance(self._emoji, Emoji):
-            self._emoji = PartialEmoji(name=self._emoji.name, animated=self._emoji.animated, id=self._emoji.id)
-        elif isinstance(self._emoji, str):
-            self._emoji = PartialEmoji(name=self._emoji)
+        _emoji = kwargs.get('emoji', None)
+        if isinstance(_emoji, Emoji):
+            self._emoji = PartialEmoji(name=_emoji.name, animated=_emoji.animated, id=_emoji.id)
+        elif isinstance(_emoji, PartialEmoji):
+            self._emoji = _emoji
+        elif isinstance(_emoji, str):
+            self._emoji = PartialEmoji(name=_emoji)
         else:
             self._emoji = None
         self._disabled: bool = kwargs.get('disabled', False)
 
     def __repr__(self):
-        return f'<discord.Button {" ".join([k+"="+v for k, v in self.__dict__.items()])}'
+        return f'<Button {" ".join([str(k)+"="+str(v) for k, v in self.__dict__.items()])}'
 
     @property
     def style(self) -> int:
@@ -163,7 +174,6 @@ class Button(object):
         """
         Disable the :class:`discord.Button` if the passed ``check`` returns :bool:`True`.
 
-        ______________
 
         ``Parameters:``
             - ``check:`` could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`
@@ -179,11 +189,9 @@ class Button(object):
                 self._disabled = True
         return self
 
-    def set_color_if(self, check: Union[bool, typing.Callable], color: any(ButtonStyle.__repr__), **kwargs):
+    def set_color_if(self, check: Union[bool, typing.Callable], color: any([1, 2, 3, 4, 5]), **kwargs):
         """
         Sets the Color(Style) of an :class:`discord.Button` to the provided ``color`` if the passed ``check`` returns :bool:`True`.
-
-        ______________
 
         ``Parameters:``
             - ``check:`` could be an :class:`bool` or usaly any :obj:`Callable` that returns an :class:`bool`
@@ -225,26 +233,49 @@ class Button(object):
         return cls(style=style, label=label, emoji=emoji, custom_id=custom_id, url=url, disabled=disabled)
 
 
-def create_option(label: str, value: str):
-    return {'label': label, 'value': value}
+def select_option(label: str, value: str, emoji: Union[PartialEmoji, str]=None, description: str=None, default=False) -> dict:
+    if isinstance(emoji, PartialEmoji):
+        emoji = emoji
+    if isinstance(emoji, Emoji):
+        emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
+    elif isinstance(emoji, str):
+        emoji = PartialEmoji(name=emoji)
+    else:
+        emoji = None
+
+    base = {'label': label,
+            'value': value,
+            'description': description,
+            'default': default}
+    if emoji:
+        base['emoji'] = emoji.to_dict()
+    return base
 
 
-class DropdownMenue:
+class SelectionMenu:
+
     """
     Represents an Discord-dropdown-Menue
      .. note ::
         This Feature is ``not`` released jet!
     """
-    __slots__ = ['__custom_id', '__options']
+
+    __slots__ = ('custom_id', 'options', 'placeholder', 'min_values', 'max_values')
 
     def __init__(self, **kwargs):
-        self.__options: list = kwargs.get('options', [])
-        if not [type(obj) == dict for obj in self._options]:
-            raise InvalidData("DropdownMenue-Options have to bee an Dict like `{'label': 'that what should show up in Discord', 'value': 'that what the Discord-API sends to your Application if the option is chosen'}`, or usually an :function:`discord.components.create_option`.")
-        self.__custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
+        self.options: list = kwargs.get('options', [])
+        if not any([isinstance(obj, dict) for obj in self.options]):
+            raise InvalidData("SelectionMenu-Options have to bee an Dict like `{'label': 'that what should show up in Discord', 'value': 'that what the Discord-API sends to your Application if the option is chosen'}`, or usually an :function:`discord.components.create_option`.")
+        self.custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
+        self.placeholder: str = kwargs.get('placeholder', None)
+        self.min_values = kwargs.get('min_values', None)
+        self.max_values = kwargs.get('max_values', None)
+
+    def __repr__(self):
+        return f'<SelectionMenu {", ".join([k + "=" + getattr(self, k, ) for k in self.__slots__])}>'
 
     def to_dict(self) -> dict:
-        return {'type': 3, 'custom_id': self.__custom_id, 'options': self.__options}
+        return {'type': 3, 'custom_id': self.custom_id, 'options': self.options, 'placeholder': self.placeholder, 'min_values': self.min_values, 'max_values': self.max_values}
 
     def update(self, **kwargs):
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
@@ -252,37 +283,42 @@ class DropdownMenue:
 
     @classmethod
     def from_dict(cls, data: dict):
-        _custom_id = data.get('custom_id', None)
-        _options = data.get('options', None)
-        return cls(custom_id=__custom_id, options=_options)
+        custom_id = data.get('custom_id', None)
+        options = data.get('options', None)
+        placeholder = data.get('placeholder', None)
+        min_values = data.get('min_values', None)
+        max_values = data.get('max_values', None)
+        return cls(custom_id=custom_id,
+                   options=options,
+                   placeholder=placeholder,
+                   min_values=min_values,
+                   max_values=max_values)
 
-    @property
-    def options(self):
-        return self.__options
-
-    @property
-    def custom_id(self):
-        return self.__custom_id
 
 
 class ActionRow:
     def __init__(self, *args, **kwargs):
+
         """Represents an ActionRow-Part for the components of an :class:`discord.Message`
 
         .. note ::
             For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
         """
+
         self.components = []
-        self.force = kwargs.get('force', False)
+        self.force = kwargs.pop('force', False)
         for obj in args:
             if isinstance(obj, Button):
                 self.components.append(obj)
-            elif isinstance(obj, DropdownMenue):
+            elif isinstance(obj, SelectionMenu):
                 self.components.append(obj)
             elif isinstance(obj, dict):
                 if not obj.get('type', None) in [2, 3]:
-                    raise InvalidData('if you use an Dict instead of Button, DropdownMenue you have to pass an type betwean 2 or 3')
-                self.components.append({1: Button.from_dict(obj), 2: DropdownMenue.from_dict(obj)}.get(obj.get('type')))
+                    raise InvalidData('if you use an Dict instead of Button or SelectionMenu you have to pass an type betwean 2 or 3')
+                self.components.append({2: Button.from_dict(obj), 3: SelectionMenu.from_dict(obj)}.get(obj.get('type')))
+    
+    def __repr__(self):
+        return f'<ActionRow components={self.components}>'
 
     def sendable(self) -> Union[dict, EmptyActionRow]:
         base = []
@@ -295,18 +331,39 @@ class ActionRow:
         return base
 
     def edit_obj(self, index: int, **kwargs):
-        obj: Union[Button, DropdownMenue] = self.components.pop(index)
-        self.components.pop(index)
+        obj: Union[Button, SelectionMenu] = self.components.pop(index)
         self.components.insert(index, obj.update(**kwargs))
         return self
 
     def disable_all_buttons(self):
+        """Disable all :type:`object`'s of type :class:`discord.Button` in this :class:`ActionRow`.
+
+        :return: :class`discord.ActionRow`"""
         [obj.__setattr__('_disabled', True) for obj in self.components if isinstance(obj, Button)]
+        return self
+
+    def disable_all_buttons_if(self, check: typing.Union[bool, typing.Callable], **kwargs):
+        """
+        Disable all :class:`discord.Button` in this :class:`ActionRow` if the passed ``check`` returns :bool:`True`.
+    
+        ``Parameters:``
+            - ``check:`` could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`
+            - ``**kwargs:`` :obj:`kwargs` that should passed in to the :pram:`check` if it is an :obj:`Callable`
+
+        :return: :class:`discord.ActionRow`
+        """
+        if isinstance(check, typing.Callable):
+            if check(**kwargs) is True:
+                [obj.__setattr__('_disabled', True) for obj in self.components if isinstance(obj, Button)]
+        else:
+            if check is True:
+                [obj.__setattr__('_disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
     @property
     def raw(self) -> dict:
-        yield (o for o in self.components)
+        for c in self.components:
+            yield c
 
     @classmethod
     def from_dict(cls, data):
@@ -316,60 +373,17 @@ class ActionRow:
             return cls(data.get('components'), force=True)
 
 
-class DecodeInteractionCreateResponse:
-    def __init__(self, data: dict):
-        self._type = data['t']
-        if self._type != 'INTERACTION_CREATE':
-            return
-        self._version = data['d'].get('version', None)
-        self._type = data['d'].get('type', None)
-        self._token = data['d'].get('token')
-        self._message = data.get('message')
-        self._data = data.get('data', None)
-        self._member = Member(data.get('member'))
-        self._id = data.get('id', 0)
-        self._guild_id = data.get('guild_id', 0)
-        self._channel_id = data.get('channel_id', 0)
-        self.application_id = data.get('application_id', 0)
-
-    @property
-    def button(self):
-        return ClickEvent(self._data)
-
-    @property
-    def token(self):
-        return self._token
-
-    @property
-    def message(self):
-        return self._message
-
-
-class ClickEvent:
-    def __init__(self, data: dict):
-        self._custom_id = data.get('custom_id', None)
-        self._component_type = data.get('component_type')
-
-    @property
-    def custom_id(self):
-        return self._custom_id
-
-    @property
-    def component_type(self):
-        return self._component_type
-
-
 class DecodeMessageComponents:
     def __init__(self, value):
         self._action_rows = []
         self._other_elements = []
         for obj in value:
             try:
-                self._other_elements.append(ActionRow.from_dict(obj))
+                self._other_elements.extend(ActionRow.from_dict(obj))
             except InvalidData:
                 self._other_elements.append(obj)
         if self._other_elements:
-            raise InvalidArgument(f"Invalid Type(s): {[o for o in self._other_elements]} are/is of type(s) {[type(o) for o in self._other_elements]} but has to bee an discord.ActionRow.")
+            raise InvalidArgument(f"Invalid Type(s): {[o for o in self._other_elements]} is/are of type(s) {[type(o) for o in self._other_elements]} but has to bee an discord.ActionRow.")
 
     @property
     def action_rows(self):
@@ -378,3 +392,7 @@ class DecodeMessageComponents:
     @property
     def other_elements(self):
         return self._other_elements
+
+class ComponentType:
+    Button = 2
+    SlectionMenu = 3

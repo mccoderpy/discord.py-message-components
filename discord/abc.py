@@ -40,7 +40,7 @@ from .permissions import PermissionOverwrite, Permissions
 from .role import Role
 from .invite import Invite
 from .file import File
-from .components import Button, DropdownMenue, ActionRow
+from .components import Button, SelectionMenu, ActionRow
 from .voice_client import VoiceClient, VoiceProtocol
 from . import utils
 
@@ -933,10 +933,10 @@ class Messageable(metaclass=abc.ABCMeta):
     async def _get_channel(self):
         raise NotImplementedError
 
-    async def send(self, content=None, *, tts=False, embed=None, components=None, file=None,
+    async def send(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
                                           files=None, delete_after=None, nonce=None,
                                           allowed_mentions=None, reference=None,
-                                          mention_author=None):
+                                          mention_author=None, hidden=None, **kwargs):
         """|coro|
 
         Sends a message to the destination with the content given.
@@ -997,6 +997,10 @@ class Messageable(metaclass=abc.ABCMeta):
 
             .. versionadded:: 1.6
 
+        hidden: Optional[:class:`bool`]
+            If :bool:`True` the message will be only bee visible for the performer of the interaction.
+            If this isnt called within an :class:`RawInteractionCreateEvent` it will be ignored
+
         Raises
         --------
         ~discord.HTTPException
@@ -1027,12 +1031,12 @@ class Messageable(metaclass=abc.ABCMeta):
             for component in ([components] if not isinstance(components, list) else components):
                 if isinstance(component, Button):
                     _components.extend(ActionRow(component).sendable())
-                elif isinstance(component, DropdownMenue):
-                    _components.append(component.to_dict())
+                elif isinstance(component, SelectionMenu):
+                    _components.extend(ActionRow(component).sendable())
                 elif isinstance(component, ActionRow):
                     _components.extend(component.sendable())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, Button)]).sendable())
+                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
             components = _components
 
         if allowed_mentions is not None:
@@ -1056,14 +1060,47 @@ class Messageable(metaclass=abc.ABCMeta):
         if file is not None and files is not None:
             raise InvalidArgument('cannot pass both file and files parameter to send()')
 
+        is_interaction_responce = kwargs.pop('__is_interaction_responce', None)
+        deferred = kwargs.pop('__deferred', False)
+        use_webhook = kwargs.pop('__use_webhook', False)
+        interaction_id = kwargs.pop('__interaction_id', None)
+        interaction_token = kwargs.pop('__interaction_token', None)
+        application_id = kwargs.pop('__application_id', None)
+        followup = kwargs.pop('followup', False)
+        if is_interaction_responce is False or None:
+            hidden = None
+        if hidden is not None:
+            embedlist = []
+            if embed:
+                embedlist.append(embed.to_dict())
+            if embeds:
+                embedlist.extend([e.to_dict() for e in embeds])
+            embeds = embedlist
+            if len(embeds) > 10:
+                raise InvalidArgument(f'The maximum number of embeds that can be sent with a response is 10, get: {len(embeds)}')
+        elif embeds:
+            raise InvalidArgument('Normal Messages dont support multible Embeds.')
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')
 
             try:
-                data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
-                                                   content=content, tts=tts, embed=embed, components=components,
-                                                   nonce=nonce, message_reference=reference)
+                if hidden is not None:
+                    data = await state.http.send_interaction_response(use_webhook=use_webhook,
+                                                                      interaction_id=interaction_id,
+                                                                      token=interaction_token,
+                                                                      application_id=application_id,
+                                                                      deferred=deferred,
+                                                                      files=[file], allowed_mentions=allowed_mentions,
+                                                                      content=content, tts=tts, embeds=embeds,
+                                                                      components=components,
+                                                                      nonce=nonce, message_reference=reference,
+                                                                      flags=64 if hidden else None,
+                                                                      followup=followup)
+                else:
+                    data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
+                                                       content=content, tts=tts, embed=embed, components=components,
+                                                       nonce=nonce, message_reference=reference)
             finally:
                 file.close()
 
@@ -1074,21 +1111,48 @@ class Messageable(metaclass=abc.ABCMeta):
                 raise InvalidArgument('files parameter must be a list of File')
 
             try:
-                data = await state.http.send_files(channel.id, files=files, content=content, tts=tts,
-                                                   embed=embed, components=components, nonce=nonce,
-                                                   allowed_mentions=allowed_mentions, message_reference=reference)
+                if hidden is not None:
+                    data = await state.http.send_interaction_response(use_webhook=use_webhook,
+                                                                      interaction_id=interaction_id,
+                                                                      token=interaction_token,
+                                                                      application_id=application_id,
+                                                                      deferred=deferred,
+                                                                      files=file, allowed_mentions=allowed_mentions,
+                                                                      content=content, tts=tts, embeds=embeds,
+                                                                      components=components,
+                                                                      nonce=nonce, message_reference=reference,
+                                                                      flags=64 if hidden else None,
+                                                                      followup=followup)
+                else:
+                    data = await state.http.send_files(channel.id, files=files, content=content, tts=tts,
+                                                       embeds=embeds, components=components, nonce=nonce,
+                                                       allowed_mentions=allowed_mentions, message_reference=reference)
             finally:
                 for f in files:
                     f.close()
         else:
-            data = await state.http.send_message(channel.id, content, tts=tts, embed=embed, components=components,
-                                                                      nonce=nonce, allowed_mentions=allowed_mentions,
-                                                                      message_reference=reference)
+            if hidden is not None:
+                data = await state.http.send_interaction_response(use_webhook=use_webhook,
+                                                                  interaction_id=interaction_id,
+                                                                  token=interaction_token,
+                                                                  application_id=application_id,
+                                                                  deferred=deferred, allowed_mentions=allowed_mentions,
+                                                                  content=content, tts=tts, embeds=embeds,
+                                                                  components=components,
+                                                                  nonce=nonce, message_reference=reference,
+                                                                  flags=64 if hidden else None,
+                                                                  followup=followup)
+            else:
+                data = await state.http.send_message(channel.id, content, tts=tts, embed=embed, components=components,
+                                                                          nonce=nonce, allowed_mentions=allowed_mentions,
+                                                                          message_reference=reference)
 
-        ret = state.create_message(channel=channel, data=data)
-        if delete_after is not None:
-            await ret.delete(delay=delete_after)
-        return ret
+        if not hidden is True and isinstance(data, dict):
+            ret = state.create_message(channel=channel, data=data)
+            if delete_after is not None and hidden is None:
+                await ret.delete(delay=delete_after)
+            return ret
+        return None
 
     async def trigger_typing(self):
         """|coro|

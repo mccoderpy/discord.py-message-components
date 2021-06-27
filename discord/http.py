@@ -53,12 +53,12 @@ async def json_or_text(response):
     return text
 
 class Route:
-    BASE = 'https://discord.com/api/v7'
+    BASE = 'https://discord.com/api/v9'
 
-    def __init__(self, method, path, base=BASE, **parameters):
+    def __init__(self, method, path, **parameters):
         self.path = path
         self.method = method
-        url = (base + self.path)
+        url = (self.BASE + self.path)
         if parameters:
             self.url = url.format(**{k: _uriquote(v) if isinstance(v, str) else v for k, v in parameters.items()})
         else:
@@ -97,9 +97,6 @@ class HTTPClient:
 
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
-
-    # we have to overwride that beacuse interactions are using v8
-    V8BASE = 'https://discord.com/api/v8'
 
     def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True):
         self.loop = asyncio.get_event_loop() if loop is None else loop
@@ -448,17 +445,75 @@ class HTTPClient:
 
     def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
         r_url = f"/webhooks/{application_id}/{token}/callback" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
-        r = Route("POST", r_url, self.V8BASE)
+        r = Route("POST", r_url)
         return self.request(r, json=_resp)
 
-    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deffered, **fields):
-        if not deffered:
+    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, **fields):
+        if not deferred:
             fields = {'data': fields}
             fields['type'] = 7
-            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback", self.V8BASE)
+            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
-            r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original', self.V8BASE)
+            r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original')
         return self.request(r, json=fields)
+
+    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup, **fields):
+        form = []
+        content = fields.pop('content', None)
+        tts = fields.pop('tts', False)
+        embeds = fields.pop('embeds', fields.pop('embed', None))
+        if not isinstance(embeds, list) and embeds is not None:
+            embeds = [embeds]
+        components = fields.pop('components', None)
+        files = fields.pop('files', None)
+        nonce = fields.pop('nonce', None)
+        allowed_mentions = fields.pop('allowed_mentions')
+        message_reference = fields.pop('message_reference', None)
+        flags = fields.pop('flags', 0)
+        payload = {'tts': tts}
+        if content:
+            payload['content'] = content
+        if embeds:
+            payload['embeds'] = embeds
+        if components:
+            payload['components'] = components
+        if nonce:
+            payload['nonce'] = nonce
+        if allowed_mentions:
+            payload['allowed_mentions'] = allowed_mentions
+        if message_reference:
+            payload['message_reference'] = message_reference
+        if flags:
+            payload['flags'] = flags
+        if not deferred is True:
+            payload = {'data': payload}
+            payload['type'] = 4
+            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
+        elif followup is True:
+            r = Route('POST', f'/webhooks/{application_id}/{token}')
+
+        if files is not None:
+            form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
+            if len(files) == 1:
+                file = files[0]
+                form.append({
+                    'name': 'file',
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream'
+                })
+            else:
+                for index, file in enumerate(files):
+                    form.append({
+                        'name': 'file%s' % index,
+                        'value': file.fp,
+                        'filename': file.filename,
+                        'content_type': 'application/octet-stream'
+                    })
+
+            return self.request(r, form=form, files=files)
+        else:
+            return self.request(r, json=payload)
 
     def add_reaction(self, channel_id, message_id, emoji):
         r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
