@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
+    <title>Components &#8212; discord.py-message-components 1.7.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="components">
+<h1>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h1>
+<section id="discord-actionrow-args-kwargs">
+<h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#discord-actionrow-args-kwargs" title="Permalink to this headline">¶</a></h2>
+<p>Represents an <code class="docutils literal notranslate"><span class="pre">ActionRow</span></code>-Part for the components of an <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code></p>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">*args</span></code>: [Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionMenu</span></code>]]</dt><dd><p>An array of :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>Button`(s) and/or :class:<a href="#id3"><span class="problematic" id="id4">`</span></a>SelectionMenu`(s).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">force</span></code>: Optional[Bool]</dt><dd><p>When set to <code class="docutils literal notranslate"><span class="pre">True</span></code> an Empty <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> will be ignored</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information about ActionRow’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#actionrow">Discord-API Documentation</a>.</p>
+</div>
+</section>
+<section id="methodes">
+<h3>Methodes<a class="headerlink" href="#methodes" title="Permalink to this headline">¶</a></h3>
+<dl>
+<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">sendable()</span></code>: Dict</dt><dd><p>Makes the <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> sendable to discord.</p>
+</dd>
+<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_all_buttons()</span></code></dt><dd><p>Disable all objects’s of type <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> in this <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow</span></code></p>
+</dd>
+</dl>
+</dd>
+<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_all_buttons_if(check:</span> <span class="pre">Union[Bool,</span> <span class="pre">Callable],</span> <span class="pre">**kwargs)()</span></code></dt><dd><p>Disable all <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> in this <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code>: Union[Bool, Callable]</dt><dd><p>could be an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">**kwargs</span></code></dt><dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">kwargs</span></code> that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is an <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code></p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</section>
+<section id="discord-button-kwargs">
+<h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code><a class="headerlink" href="#discord-button-kwargs" title="Permalink to this headline">¶</a></h2>
+<p>Represents an <code class="docutils literal notranslate"><span class="pre">Discord-Button</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information Discord-Button’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons">Discord-API Documentation</a>.</p>
+</div>
+<section id="id6">
+<h3>Attributes<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<dl>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">label</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></dt><dd><p>The Text displayed in discord on the Button. Maximal lenght is 80 Chars.</p>
+</dd>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</dt><dd><p>The custom_id discord send us when a User press the Button. The max. lenght of this is 100.</p>
+</dd>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">style</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonColor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle</span></code>, Any[1, 2, 3, 4, 5]]</dt><dd><p>The Style of the Button.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To get more infos about the styles visit
+<a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons-button-styles">the Discord-API Documentation</a>.</p>
+</div>
+</dd>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">emoji</span></code>: Optional[Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.PartialEmoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Emoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</dt><dd><p>The Emoji that will be displayed on the left side of the Button.</p>
+</dd>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code>: Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</dt><dd><p>The url the Button includes</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>if you set this, the <code class="xref py py-attr docutils literal notranslate"><span class="pre">style</span></code> will automaticly set to <code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle.Link_Button</span></code></p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>You cant pass an <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> and a <code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code> beacuse discord dont send anything when clicking on an <code class="docutils literal notranslate"><span class="pre">URL-Button</span></code> so it dont accept both; <code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code>/ButtonStyle.Link_Button and <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>!</p>
+</div>
+</dd>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">disabled</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">Bool</span></code></dt><dd><p>Whether the Button is disabled; defauld False.</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h3>Methodes<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_if()</span></code>
+Disable the <code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code>: typing.Union[bool, typing.Callable]</dt><dd><p>Could be an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> that returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">**kwargs</span></code>: Any[SupportsIndex]</dt><dd><p>Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is an <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code></p>
+</dd>
+</dl>
+</div></blockquote>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_color_if()</span></code>
+Sets the Color(Style) of an <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> to the provided <code class="xref py py-attr docutils literal notranslate"><span class="pre">color</span></code> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code>: could be an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usaly any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p></li>
+<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">color</span></code>: the Color(Style) that should set if the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">**kwargs</span></code>: <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is an <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code></p>
+</dd>
+</dl>
+</div></blockquote>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">discord.py-message-components</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Mathieu Corsham aka. mccoder.py.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/components.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
