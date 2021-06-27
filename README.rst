@@ -1,6 +1,6 @@
 .. image:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
-    :target: https://pypi.org/project/discord.py-message-components
-    :alt: Name of the project
+  :target: https://pypi.org/project/discord.py-message-components
+  :alt: Name of the project
             
 .. image:: https://discord.com/api/guilds/852871920411475968/embed.png
   :target: https://discord.gg/sb69muSqsg
