@@ -38,12 +38,14 @@ __all__ = ('ButtonStyle', 'ButtonColor', 'Button', 'SelectionMenu', 'ActionRow',
 
 
 class ButtonStyle:
+    
     """
     :class:`Button`
     Represents the Style for an :class:`discord.Button`
 
     .. note ::
         For more information about the Button-Styles visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
+    
     """
 
     def __repr__(self):
@@ -59,11 +61,13 @@ class ButtonStyle:
 
 
 class ButtonColor:
+
     """
     :class:`ButtonColor`
 
     .. note ::
         This is just an Aliase to :class:`ButtonStyle`
+
     """
     blurple = ButtonStyle.Primary
     grey = ButtonStyle.Secondary

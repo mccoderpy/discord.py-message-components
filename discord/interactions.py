@@ -104,16 +104,16 @@ class Interaction:
         msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
                                        files=files, delete_after=delete_after, nonce=nonce,allowed_mentions=allowed_mentions,
                                        reference=reference, mention_author=mention_author, hidden=hidden,
-                                       __is_interaction_responce=True, __deferred=self._deferred or self._deferred_hidden, __use_webhook=False,
+                                       __is_interaction_responce=True, __deferred=self._deferred, __use_webhook=False,
                                        __interaction_id=self.__interaction_id, __interaction_token=self.__token,
-                                       __application_id=self.__application_id, followup=True if self._deferred or self._deferred_hidden else False)
+                                       __application_id=self.__application_id, followup=True if self.callback_message else False)
 
-        self._deffered = True
         if hidden is True:
             self._deferred_hidden = True
+        self._deffered = True
         if not self.callback_message:
             self.callback_message = msg if msg else EphemeralMessage()
-        return msg if msg else self.callback_message
+        return msg
 
     @property
     def author(self) -> typing.Union[Member, User]:
