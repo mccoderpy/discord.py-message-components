@@ -6,6 +6,34 @@
 Welcome to discord.py-message-component's documentation!
 =========================================================
 
+.. image:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
+    :target: https://pypi.org/project/discord.py-message-components
+    :alt: Name of the project
+            
+.. image:: https://discord.com/api/guilds/852871920411475968/embed.png
+  :target: https://discord.gg/sb69muSqsg
+  :alt: Discord Server Invite
+
+.. image:: https://img.shields.io/pypi/v/discord.py-message-components.svg
+  :target: https://pypi.python.org/pypi/discord.py-message-components
+  :alt: PyPI version info
+
+.. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
+  :target: https://pypi.python.org/pypi/discord.py-message-components
+  :alt: PyPI supported Python versions
+  
+.. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
+  :target: https://pepy.tech/project/discord.py-message-components
+  :alt: Total downloads for the project
+
+.. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
+  :target: https://discordpy-message-components.readthedocs.io/en/latest/
+  :alt: Documentation Status
+
+The Original `discord.py <https://pypi.org/project/discord.py>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+
+- `read the docs <https://discordpy-message-components.readthedocs.io/en/latest/>`_
+
 Installing:
 ___________
 
@@ -115,12 +143,13 @@ respond to an button when he pressed by a user
    client.run('Your Bot-Token')
 
 .. note:: 
-   You could set the Paramerter ``hidden`` in the respond to True, to make the Message ephemeral.
-   .. seealso:: `discord.Interaction.respond <./interaction.html#respond>`_
+
+   You could set the parameter :attr:`hidden` in the respond to ``True`` to make the message ephemeral.
+   Visit `discord.Interaction.respond <./interaction.html#interaction-respond>`_ for more information about :meth:`respond()`.
 
 
 .. toctree:: 
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents: 
 
    components.rst
@@ -128,7 +157,7 @@ respond to an button when he pressed by a user
 
 
 Indices and tables
-==================
+__________________
 
 * :ref:`genindex`
 * :ref:`modindex`
