@@ -452,7 +452,7 @@ class HTTPClient:
         if not deferred:
             fields = {'data': fields}
             fields['type'] = 7
-            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
+            r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original')
         return self.request(r, json=fields)
@@ -485,13 +485,12 @@ class HTTPClient:
             payload['message_reference'] = message_reference
         if flags:
             payload['flags'] = flags
-        if not deferred is True:
+        if not deferred and not followup:
             payload = {'data': payload}
             payload['type'] = 4
-            r = Route("POST", f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
-        elif followup is True:
+            r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
+        else:
             r = Route('POST', f'/webhooks/{application_id}/{token}')
-
         if files is not None:
             form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
             if len(files) == 1:
@@ -515,6 +514,10 @@ class HTTPClient:
         else:
             return self.request(r, json=payload)
 
+    def get_original_interaction_response(self, interaction_token, application_id):
+        r = Route('GET', f'/webhooks/{application_id}/{interaction_token}/messages/@original')
+        return self.request(r)
+        
     def add_reaction(self, channel_id, message_id, emoji):
         r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
                   channel_id=channel_id, message_id=message_id, emoji=emoji)

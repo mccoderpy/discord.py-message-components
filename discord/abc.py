@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import abc
+import json
 import sys
 import copy
 import asyncio
@@ -1072,7 +1073,7 @@ class Messageable(metaclass=abc.ABCMeta):
         if hidden is not None:
             embedlist = []
             if embed:
-                embedlist.append(embed.to_dict())
+                embedlist.append(embed)
             if embeds:
                 embedlist.extend([e.to_dict() for e in embeds])
             embeds = embedlist
@@ -1095,7 +1096,7 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                       content=content, tts=tts, embeds=embeds,
                                                                       components=components,
                                                                       nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden else None,
+                                                                      flags=64 if hidden is True else None,
                                                                       followup=followup)
                 else:
                     data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
@@ -1121,8 +1122,8 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                       content=content, tts=tts, embeds=embeds,
                                                                       components=components,
                                                                       nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden else None,
-                                                                      followup=followup)
+                                                                      flags=64 if hidden is True else None,
+                                                                      followup=followup or deferred)
                 else:
                     data = await state.http.send_files(channel.id, files=files, content=content, tts=tts,
                                                        embeds=embeds, components=components, nonce=nonce,
@@ -1140,19 +1141,20 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                   content=content, tts=tts, embeds=embeds,
                                                                   components=components,
                                                                   nonce=nonce, message_reference=reference,
-                                                                  flags=64 if hidden else None,
+                                                                  flags=64 if hidden is True else None,
                                                                   followup=followup)
             else:
                 data = await state.http.send_message(channel.id, content, tts=tts, embed=embed, components=components,
                                                                           nonce=nonce, allowed_mentions=allowed_mentions,
                                                                           message_reference=reference)
-
-        if not hidden is True and isinstance(data, dict):
+        if not hidden is True:
+            if not isinstance(data, dict) and not hidden is None:
+                """Thanks Discord that they dont return the message when we send the interaction callback"""
+                data = await state.http.get_original_interaction_response(application_id=application_id, interaction_token=interaction_token)
             ret = state.create_message(channel=channel, data=data)
-            if delete_after is not None and hidden is None:
+            if (delete_after is not None) and (not hidden is True):
                 await ret.delete(delay=delete_after)
             return ret
-        return None
 
     async def trigger_typing(self):
         """|coro|

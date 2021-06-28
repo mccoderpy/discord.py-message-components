@@ -38,12 +38,14 @@ __all__ = ('ButtonStyle', 'ButtonColor', 'Button', 'SelectionMenu', 'ActionRow',
 
 
 class ButtonStyle:
+    
     """
-    :class:`ButtonS
+    :class:`Button`
     Represents the Style for an :class:`discord.Button`
 
     .. note ::
         For more information about the Button-Styles visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
+    
     """
 
     def __repr__(self):
@@ -59,11 +61,13 @@ class ButtonStyle:
 
 
 class ButtonColor:
+
     """
     :class:`ButtonColor`
 
     .. note ::
         This is just an Aliase to :class:`ButtonStyle`
+
     """
     blurple = ButtonStyle.Primary
     grey = ButtonStyle.Secondary
@@ -82,6 +86,7 @@ class Button:
 
     .. note ::
         For more information Discord-Button's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_.
+    
     """
 
     def __init__(self, **kwargs):
@@ -93,7 +98,7 @@ class Button:
             raise InvalidArgument(
                 "The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
         if self._style == ButtonStyle.Link_Button and not self.url:
-            raise MissingRequiredArgument(
+            raise InvalidArgument(
                 'You must also pass a URL if the ButtonStyle is a link.')
         if self._url and self._style != ButtonStyle.Link_Button:
             self._style = ButtonStyle.Link_Button
@@ -236,7 +241,7 @@ def select_option(label: str, value: str, emoji: Union[PartialEmoji, str]=None, 
     if isinstance(emoji, PartialEmoji):
         emoji = emoji
     if isinstance(emoji, Emoji):
-        self._emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
+        emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
     elif isinstance(emoji, str):
         emoji = PartialEmoji(name=emoji)
     else:
@@ -315,6 +320,7 @@ class ActionRow:
                 if not obj.get('type', None) in [2, 3]:
                     raise InvalidData('if you use an Dict instead of Button or SelectionMenu you have to pass an type betwean 2 or 3')
                 self.components.append({2: Button.from_dict(obj), 3: SelectionMenu.from_dict(obj)}.get(obj.get('type')))
+    
     def __repr__(self):
         return f'<ActionRow components={self.components}>'
 
@@ -334,7 +340,7 @@ class ActionRow:
         return self
 
     def disable_all_buttons(self):
-        """Disable all :type:`object`'s of type :class:`discord.Button` in this :class:`ActionRow`
+        """Disable all :type:`object`'s of type :class:`discord.Button` in this :class:`ActionRow`.
 
         :return: :class`discord.ActionRow`"""
         [obj.__setattr__('_disabled', True) for obj in self.components if isinstance(obj, Button)]
@@ -343,7 +349,7 @@ class ActionRow:
     def disable_all_buttons_if(self, check: typing.Union[bool, typing.Callable], **kwargs):
         """
         Disable all :class:`discord.Button` in this :class:`ActionRow` if the passed ``check`` returns :bool:`True`.
-
+    
         ``Parameters:``
             - ``check:`` could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`
             - ``**kwargs:`` :obj:`kwargs` that should passed in to the :pram:`check` if it is an :obj:`Callable`
@@ -369,34 +375,6 @@ class ActionRow:
             return InvalidData("%s could not be implemented as an ActionRow" % data)
         else:
             return cls(data.get('components'), force=True)
-
-class DecodeInteractionCreateResponse:
-    def __init__(self, data: dict):
-        self._type = data['t']
-        if self._type != 'INTERACTION_CREATE':
-            return
-        self._version = data['d'].get('version', None)
-        self._type = data['d'].get('type', None)
-        self._token = data['d'].get('token')
-        self._message = data.get('message', None)
-        self._data = data.get('data', None)
-        self._member = Member(data.get('member'))
-        self._id = data.get('id', 0)
-        self._guild_id = data.get('guild_id', 0)
-        self._channel_id = data.get('channel_id', 0)
-        self.application_id = data.get('application_id', 0)
-
-    @property
-    def button(self):
-        return ClickEvent(self._data)
-
-    @property
-    def token(self):
-        return self._token
-
-    @property
-    def message(self):
-        return self._message
 
 
 class DecodeMessageComponents:

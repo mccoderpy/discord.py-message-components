@@ -13,6 +13,14 @@ from .components import ActionRow, Button, SelectionMenu, ComponentType
 log = logging.getLogger(__name__)
 
 
+class EphemeralMessage:
+
+    """
+    Since Discord doesn't return anything when we send a ephemeral message,
+    this class has no attributes and you can't do anything with it.
+    """
+
+
 class Interaction:
 
     """
@@ -25,9 +33,9 @@ class Interaction:
     def __repr__(self):
         return f'<Interaction {" ".join([f"{a}={getattr(self, a)}" for a in self.__all__])}>'
 
-    # __slots__ = ('member', 'user', 'message', 'channel', 'guild', '__token', '__interaction_id', '_type', 'interaction_type', 'component_type', 'component', 'http')
+    # __slots__ = ('author', 'member', 'user', 'message', 'channel', 'guild', '__token', '__interaction_id', '_type', 'interaction_type', 'component_type', 'component', 'http')
 
-    __all__ = ('member', 'user', 'guild', 'channel', 'message', '_deferred', 'component')
+    __all__ = ('author', 'member', 'user', 'guild', 'channel', 'message', '_deferred', 'component')
 
     def __init__(self, state, data):
         self.state = state
@@ -44,12 +52,12 @@ class Interaction:
         self.__interaction_id = int(data.get('id', 0))
         self._guild_id = int(data.get('guild_id', 0))
         self._channel_id = int(data.get('channel_id', 0))
-        self.__application_id = int(data.get('application_id', 0))
+        self.__application_id = int(data.get('application_id'))
         self.guild = None
         self.channel = None
+        self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
         self.member: Member = None
         self.user: User = None
-        self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
         self._deferred = False
         self._deferred_hidden = False
         self.callback_message = None
@@ -60,8 +68,7 @@ class Interaction:
         # maybe ``later`` this library will alsow supports Slash-Commands
         # self.command = None
 
-
-    async def defer(self):
+    async def defer(self) -> None:
         """
         'Defers' the response, showing a loading state to the user
         """
@@ -74,7 +81,7 @@ class Interaction:
             log.warn(f'Unknow Interaction {self.__interaction_id}')
         self._deferred = True
 
-    async def edit(self, **fields):
+    async def edit(self, **fields) -> Message:
         """
         'Defers' if it isn't yet and edit the message
         """
@@ -89,7 +96,7 @@ class Interaction:
     async def respond(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
                                           files=None, delete_after=None, nonce=None,
                                           allowed_mentions=None, reference=None,
-                                          mention_author=None, hidden=False):
+                                          mention_author=None, hidden=False) -> typing.Union[Message, EphemeralMessage]:
         """Responds to an interaction by sending a message that can be made visible only to the person who performed the
          interaction by setting the `hidden` parameter to :bool:`True`."""
         if not self.channel:
@@ -97,70 +104,75 @@ class Interaction:
         msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
                                        files=files, delete_after=delete_after, nonce=nonce,allowed_mentions=allowed_mentions,
                                        reference=reference, mention_author=mention_author, hidden=hidden,
-                                       __is_interaction_responce=True, __deferred=self._deferred or self._deferred_hidden, __use_webhook=False,
+                                       __is_interaction_responce=True, __deferred=self._deferred, __use_webhook=False,
                                        __interaction_id=self.__interaction_id, __interaction_token=self.__token,
-                                       __application_id=self.__application_id, followup=True if self._deferred or self._deferred_hidden else False)
+                                       __application_id=self.__application_id, followup=True if self.callback_message else False)
 
-        self._deffered = True
         if hidden is True:
             self._deferred_hidden = True
+        self._deffered = True
         if not self.callback_message:
             self.callback_message = msg if msg else EphemeralMessage()
-        return msg if msg else self.callback_message
+        return msg
 
     @property
-    def message_is_dm(self):
+    def author(self) -> typing.Union[Member, User]:
+        return self.member if self.member else self.user
+    
+
+    @property
+    def message_is_dm(self) -> bool:
         if self.message:
             return isinstance(self.channel, DMChannel)
 
     @property
-    def deferred(self):
+    def deferred(self) -> bool:
         return self._deferred
 
     @property
-    def token(self):
+    def token(self) -> str:
         return self.__token
 
     @property
-    def initeraction_id(self):
+    def initeraction_id(self) -> int:
         return int(self.__interaction_id)
 
     @property
-    def guild_id(self):
+    def guild_id(self) -> int:
         if self._guild_id:
             return int(self._guild_id)
 
     @property
-    def channel_id(self):
+    def channel_id(self) -> int:
         return int(self._channel_id)
 
     @property
-    def message_id(self):
+    def message_id(self) -> int:
         if self._message_id:
             return int(self._message_id)
 
 
     @property
-    def message_is_hidden(self):
+    def message_is_hidden(self) -> bool:
         return self.message_flags == 64
 
 class ButtonClick:
-    def __init__(self, data):
+    def __init__(self, data) -> object:
         self.component_type = data.get('component_type')
-        self.custom_id = data.get('custom_id', None)
+        self.custom_id = data.get('custom_id')
         self.__hash__ = data.get('hash', None)
 
     def __hash__(self):
         return self.__hash__
 
     def __repr__(self):
-        return f"<ButtonClick custom_id={self.custom_id}>"
+        return f"<ButtonClick custom_id={self.custom_id} {'hash='+self.__hash__ if self.__hash__ else ''}>"
 
 
 class SelectionSelect:
-    def __init__(self, data):
+    def __init__(self, data) -> object:
         self.component_type = data.get('component_type')
-        self.custom_id = data.get('custom_id', None)
+        self.custom_id = data.get('custom_id')
         self.value = data.get('value')
 
 
@@ -188,10 +200,3 @@ class InteractionType:
     DeferredUpdateMessage = 6
     UpdateMessage = 7
 
-
-class EphemeralMessage:
-
-    """
-    Since Discord doesn't return anything when we send a ephemeral message,
-    this class has no attributes and you can't do anything with it.
-    """
