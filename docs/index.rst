@@ -116,11 +116,12 @@ respond to an button when he pressed by a user
 
 .. note:: 
    You could set the Paramerter ``hidden`` in the respond to True, to make the Message ephemeral.
-   .. seealso:: `discord.Interaction.respond <./interaction.html#respond>`_
+   
+   Wisit `discord.Interaction.respond <./interaction.html#respond>`_  to get more information about the :meth:`respond`.
 
 
 .. toctree:: 
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents: 
 
    components.rst
@@ -128,7 +129,7 @@ respond to an button when he pressed by a user
 
 
 Indices and tables
-==================
+__________________
 
 * :ref:`genindex`
 * :ref:`modindex`

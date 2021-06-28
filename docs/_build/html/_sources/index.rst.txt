@@ -6,14 +6,6 @@
 Welcome to discord.py-message-component's documentation!
 =========================================================
 
-.. toctree:: 
-   :maxdepth: 3
-   :caption: Contents: 
-   
-   index.rst
-   interaction.rst
-   components.rst
-
 Installing:
 ___________
 
@@ -124,14 +116,20 @@ respond to an button when he pressed by a user
 
 .. note:: 
    You could set the Paramerter ``hidden`` in the respond to True, to make the Message ephemeral.
-   .. seealso:: `discord.Interaction.respond <./interaction.html#respond>`_
+   
+   Wisit `discord.Interaction.respond <./interaction.html#respond>`_  to get more information about the :meth:`respond`.
 
 
+.. toctree:: 
+   :maxdepth: 3
+   :caption: Contents: 
 
+   components.rst
+   interaction.rst
 
 
 Indices and tables
-==================
+__________________
 
 * :ref:`genindex`
 * :ref:`modindex`

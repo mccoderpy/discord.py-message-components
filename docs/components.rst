@@ -66,12 +66,11 @@ Attributes
     The Style of the Button.
 
     .. note::
-        To get more infos about the styles visit
+        To get more infos about the styles wisit
         `the Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
 
 :attr:`emoji`: Optional[Union[:class:`discord.PartialEmoji`, :class:`discord.Emoji`, :class:`str`]]
     The Emoji that will be displayed on the left side of the Button.
-
 :attr:`url`: Optional[:class:`str`]
     The url the Button includes
 
@@ -92,10 +91,10 @@ Methodes
 :meth:`disable_if`
 Disable the :class:`Button` if the passed :attr:`check` returns ``True``.
 
-    - :attr:`check`: typing.Union[bool, typing.Callable]
+    * :attr:`check`: typing.Union[bool, typing.Callable]
         Could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`
 
-    - :attr:`**kwargs`: Any[SupportsIndex]
+    * :attr:`**kwargs`: Any[SupportsIndex]
         Arguments that should passed in to the :attr:`check` if it is an :class:`Callable`
 
     :return: :class:`discord.Button`
@@ -103,20 +102,17 @@ Disable the :class:`Button` if the passed :attr:`check` returns ``True``.
 :meth:`set_color_if`
 Sets the Color(Style) of an :class:`discord.Button` to the provided :attr:`color` if the passed :attr:`check` returns ``True``.
     
-    - :attr:`check`: could be an :class:`bool` or usaly any :obj:`Callable` that returns an :class:`bool`
+    * :attr:`check`: could be an :class:`bool` or usaly any :obj:`Callable` that returns an :class:`bool`
     
-    - :attr:`color`: the Color(Style) that should set if the :attr:`check` returns ``True``
+    * :attr:`color`: the Color(Style) that should set if the :attr:`check` returns ``True``
    
-    - :attr:`**kwargs`: ``kwargs`` that should passed in to the :attr:`check` if it is an :class:`Callable`
+    * :attr:`**kwargs`: ``kwargs`` that should passed in to the :attr:`check` if it is an :class:`Callable`
 
     :return: :class:`discord.Button`
 
 .. toctree::   
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents: 
-
-   index.rst
-   interaction.rst
 
 Indices and tables
 ~~~~~~~~~~~~~~~~~~

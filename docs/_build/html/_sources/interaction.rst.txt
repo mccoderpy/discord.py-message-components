@@ -6,9 +6,8 @@
 Interaction
 ===========
 
-
 :class:`discord.Interaction`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+____________________________
 
 Represents an interaction createt in discord like click an :class:`discord.Button` or select an option of :class:`discord.SelectionMenu`
    
@@ -19,7 +18,8 @@ Represents an interaction createt in discord like click an :class:`discord.Butto
    Do not initiate this Class manually
    
 Attributes
-__________
+----------
+
    :attr:`author`: :class:`discord.abc.User`
       A :class:`Member` that invoked the interaction. If :attr:`channel` is a
       private channel or the user has left the guild, then it is a :class:`User` instead.
@@ -44,12 +44,12 @@ __________
          If this is passed in an ``[on_]button_click`` or ``[on_]selection_select`` Event there wuild be a second parameter that includes this attribute.
 
 Methodes
-________
+--------
 
    :meth:`defer`: None
       'Defers' the response, showing a loading state to the use.
 
-      .. warning::
+      .. important::
          If you dont respond with an message using :meth:`respond` 
          or edit the original message using :meth:`edit` within less than 3 seconds,
          discord will indicates that the interaction failed and the interaction-token will be invalidated.
@@ -75,11 +75,11 @@ ________
       Responds to an interaction by sending a message that can be made visible only to the person who invoked the interaction by setting the :attr:`hidden` to ``True``.
 
 .. toctree:: 
-   :maxdepth: 2
-   :caption: Contents: index.rst, interaction.rst
+   :maxdepth: 3
+   :caption: Contents: 
 
 Indices and tables
-==================
+__________________
 
 * :ref:`genindex`
 * :ref:`modindex`
