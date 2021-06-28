@@ -89,6 +89,9 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="interaction.html">Interaction</a></li>
 </ul>
 
@@ -159,6 +162,16 @@
             
   <div class="section" id="welcome-to-discord-py-message-component-s-documentation">
 <h1>Welcome to discord.py-message-component’s documentation!<a class="headerlink" href="#welcome-to-discord-py-message-component-s-documentation" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://pypi.org/project/discord.py-message-components"><img alt="Name of the project" src="https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png" /></a>
+<a class="reference external image-reference" href="https://discord.gg/sb69muSqsg"><img alt="Discord Server Invite" src="https://discord.com/api/guilds/852871920411475968/embed.png" /></a>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/discord.py-message-components"><img alt="PyPI version info" src="https://img.shields.io/pypi/v/discord.py-message-components.svg" /></a>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/discord.py-message-components"><img alt="PyPI supported Python versions" src="https://img.shields.io/pypi/pyversions/discord.py-message-components.svg" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/project/discord.py-message-components"><img alt="Total downloads for the project" src="https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=green&amp;left_text=Downloads" /></a>
+<a class="reference external image-reference" href="https://discordpy-message-components.readthedocs.io/en/latest/"><img alt="Documentation Status" src="https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest" /></a>
+<p>The Original <a class="reference external" href="https://pypi.org/project/discord.py">discord.py</a> Library made by <a class="reference external" href="https://github.com/Rapptz">Rapptz</a> with implementation of the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components">Discord-Message-Components</a> by <a class="reference external" href="https://github.com/mccoderpy/">mccoderpy</a></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://discordpy-message-components.readthedocs.io/en/latest/">read the docs</a></p></li>
+</ul>
 <div class="section" id="installing">
 <h2>Installing:<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h2>
 <p><strong>Python 3.5.3 or higher is required</strong></p>
@@ -257,21 +270,23 @@ py -3 -m pip install -U discord.py-message-components
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You could set the Paramerter <code class="docutils literal notranslate"><span class="pre">hidden</span></code> in the respond to True, to make the Message ephemeral.</p>
-<p>Wisit <a class="reference external" href="./interaction.html#respond">discord.Interaction.respond</a>  to get more information about the <code class="xref py py-meth docutils literal notranslate"><span class="pre">respond()</span></code>.</p>
+<p>You could set the parameter <code class="xref py py-attr docutils literal notranslate"><span class="pre">hidden</span></code> in the respond to <code class="docutils literal notranslate"><span class="pre">True</span></code> to make the message ephemeral.
+Visit <a class="reference external" href="./interaction.html#interaction-respond">discord.Interaction.respond</a> for more information about <code class="xref py py-meth docutils literal notranslate"><span class="pre">respond()</span></code>.</p>
 </div>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="components.html#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="components.html#attributes">Attributes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="components.html#methodes">Methodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="components.html#attributes">Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html#methodes">Methodes</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="components.html#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="components.html#id2">Attributes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="components.html#id3">Methodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="components.html#button-attributes">Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html#button-methodes">Methodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="components.html#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
 </ul>

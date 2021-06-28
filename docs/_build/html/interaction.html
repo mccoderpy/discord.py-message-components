@@ -169,6 +169,7 @@
             
   <div class="section" id="interaction">
 <h1>Interaction<a class="headerlink" href="#interaction" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference internal" href="#interaction-respond"><span class="std std-ref">Hallo</span></a></p>
 <div class="section" id="discord-interaction">
 <h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code><a class="headerlink" href="#discord-interaction" title="Permalink to this headline">¶</a></h2>
 <p>Represents an interaction createt in discord like click an <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> or select an option of <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.SelectionMenu</span></code></p>
@@ -183,10 +184,12 @@
 <div class="section" id="attributes">
 <h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><dl>
+<div><dl class="simple" id="interaction-author">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">author</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.abc.User</span></code></dt><dd><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">Member</span></code> that invoked the interaction. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">channel</span></code> is a
 private channel or the user has left the guild, then it is a <code class="xref py py-class docutils literal notranslate"><span class="pre">User</span></code> instead.</p>
 </dd>
+</dl>
+<dl id="interaction-message">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">message</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code></dt><dd><p>The message the component was attachet to.
 This will be equal to <code class="docutils literal notranslate"><span class="pre">None</span></code> if the <code class="xref py py-attr docutils literal notranslate"><span class="pre">component_type</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> or the message the component is attached to is <code class="docutils literal notranslate"><span class="pre">emphemberal</span></code>.</p>
 <div class="admonition note">
@@ -195,12 +198,18 @@ This will be equal to <code class="docutils literal notranslate"><span class="pr
 (or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the message is emphemberal) beacuse it only gets initiatet when the interaction_type is highter than 2</p>
 </div>
 </dd>
+</dl>
+<dl class="simple" id="interaction-channel">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">channel</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.TextChannel</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.DMChannel</span></code>]</dt><dd><p>The Channel the interaction was createt in this is aiter an object of <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.TextChannel</span></code> if it’s
 inside a guild else it’s an object of type <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.DMChannel</span></code>.</p>
 </dd>
+</dl>
+<dl class="simple" id="interaction-guild">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">guild</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Guild</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code>]</dt><dd><p>The guild asotiatet with the interaction; aiter an object of type <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Guild</span></code>,
 except the interaction was inside an dm-channel then this would be equal to <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
+</dl>
+<dl id="interaction-component">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">component</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code>]</dt><dd><p>The component that invoked this interaction: Aiter an object of type <code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -213,7 +222,7 @@ except the interaction was inside an dm-channel then this would be equal to <cod
 <div class="section" id="methodes">
 <h3>Methodes<a class="headerlink" href="#methodes" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><dl>
+<div><dl id="interaction-defer">
 <dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">defer()</span></code>: None</dt><dd><p>‘Defers’ the response, showing a loading state to the use.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
@@ -229,6 +238,8 @@ After that time you have to edit the original message with the Methode <code cla
 (you could not do this hidden as it isn’t an respond anymore and also you could not pass more than one <code class="xref py py-class docutils literal notranslate"><span class="pre">Embed</span></code>)</p>
 </div>
 </dd>
+</dl>
+<dl id="interaction-respond">
 <dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">respond()</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.EphemeralMessage</span></code>]</dt><dd><p>You could pass the same Paramerts as using <code class="xref py py-meth docutils literal notranslate"><span class="pre">discord.Messageable.send()</span></code> but there are two more optional:</p>
 <ul>
 <li><dl class="simple">
