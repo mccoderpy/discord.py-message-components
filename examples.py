@@ -57,9 +57,8 @@ pointers = []
 
 class Pointer:
     
-    """
-    Just a small class that facilitates holding and changing the position of the square
-    """
+    """Just a small class that facilitates holding and changing the position of the square"""
+    
     def __init__(self, guild: discord.Guild):
         self.guild = guild
         self._possition_x = 0
@@ -102,6 +101,7 @@ def get_pointer(obj: typing.Union[discord.Guild, int]):
 
 
 def display(x: int, y: int):
+    """This function ``renders`` and returns the image"""
     base = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
