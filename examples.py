@@ -56,9 +56,7 @@ pointers = []
 
 
 class Pointer:
-    
     """Just a small class that facilitates holding and changing the position of the square."""
-    
     def __init__(self, guild: discord.Guild):
         self.guild = guild
         self._possition_x = 0
