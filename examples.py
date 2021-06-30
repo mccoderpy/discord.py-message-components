@@ -31,11 +31,11 @@ async def buttons(ctx: commands.Context):
     an_embed = discord.Embed(title='Here are some Button\'s', description='Choose an option', color=discord.Color.random())
     msg = await ctx.send(embed=an_embed, components=components)
 
-    def _check(i: discord.RawInteractionCreateEvent):
-        return i.message == msg and i.member == ctx.author
+    def _check(i: discord.Interaction, b: discord.ButtonClick):
+        return i.message == msg and i.author ctx.author
 
-    interaction: discord.RawInteractionCreateEvent = await client.wait_for('interaction_create', check=_check)
-    button_id = interaction.button.custom_id
+    interaction, button = await client.wait_for('button_click', check=_check)
+    button_id = button.custom_id
 
     # This sends the Discord-API that the interaction has been received and is being "processed"
     await interaction.defer()  # if this is not used and you also do not edit the message within 3 seconds as described below, Discord will indicate that the interaction has failed.
@@ -136,12 +136,12 @@ async def start_game(ctx: commands.Context):
 
 
 @client.event
-async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEvent):
+async def on_raw_button_click(interaction: discord.Interaction, button: discord.ButtonClick):
     await interaction.defer()
     pointer: Pointer = get_pointer(interaction.guild)
     if not (message := interaction.message):
         message: discord.Message = await interaction.channel.fetch_message(interaction.message_id)
-    if interaction.button.custom_id == "up":
+    if button.custom_id == "up":
         pointer.set_y(1)
         await message.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
@@ -150,7 +150,7 @@ async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEve
                                                          arrow_button().set_label('↓').set_custom_id('down'),
                                                          arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
                            )
-    elif interaction.button.custom_id == "down":
+    elif button.custom_id == "down":
         pointer.set_y(-1)
         await message.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
@@ -159,7 +159,7 @@ async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEve
                                                          arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0),
                                                          arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
                            )
-    elif interaction.button.custom_id == "right":
+    elif button.custom_id == "right":
         pointer.set_x(1)
         await message.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
@@ -168,7 +168,7 @@ async def on_raw_interaction_create(interaction: discord.RawInteractionCreateEve
                                                          arrow_button().set_label('↓').set_custom_id('down'),
                                                          arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
                            )
-    elif interaction.button.custom_id == "left":
+    elif button.custom_id == "left":
         pointer.set_x(-1)
         await message.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
