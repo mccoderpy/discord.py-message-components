@@ -32,7 +32,7 @@ async def buttons(ctx: commands.Context):
     msg = await ctx.send(embed=an_embed, components=components)
 
     def _check(i: discord.Interaction, b: discord.ButtonClick):
-        return i.message == msg and i.author ctx.author
+        return i.message == msg and i.author == ctx.author
 
     interaction, button = await client.wait_for('button_click', check=_check)
     button_id = button.custom_id
