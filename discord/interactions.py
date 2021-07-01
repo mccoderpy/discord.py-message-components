@@ -173,11 +173,15 @@ class SelectionSelect:
     def __init__(self, data) -> object:
         self.component_type = data.get('component_type')
         self.custom_id = data.get('custom_id')
-        self.value = data.get('value')
+        values = data.get('values')
+        if len(values) == 1:
+            self.values = values[0]
+        else:
+            self.values = values
 
 
     def __repr__(self):
-        return f'<SelectionSelect custom_id={self.custom_id} value={self.value}>'
+        return f'<SelectionSelect custom_id={self.custom_id} values={self.values}>'
 
 
 def _component_factory(data):
