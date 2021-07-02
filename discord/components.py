@@ -288,7 +288,7 @@ class SelectMenu:
         if min_values > 25 or min_values < 0:
             raise ValueError('The minimum number of elements to be selected must be between 0 and 25') 
         self.max_values = max_values
-        if self.min_values < 25 or min_values < 0:
+        if self.max_values < 25 or self.max_values < 0:
             raise ValueError('The maximum number of elements to be selected must be between 0 and 25')
         self.disabled = disabled
 
@@ -300,7 +300,7 @@ class SelectMenu:
         if self.disabled is True:
             base['disabled'] = True
         return base
-        
+
     def update(self, **kwargs):
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
         return self
