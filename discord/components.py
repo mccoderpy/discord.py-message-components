@@ -348,11 +348,11 @@ class ActionRow:
         base = []
         base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
         objects = len([i['components'] for i in base])
-        if any([any(i['type'] == 2 for i in part) and any(i['type'] == 3 for i in part) for part in base]):
+        if any([any([part['type'] == 2]) and any([part['type'] == 3]) for part in base]):
             raise InvalidArgument('An Action Row containing a select menu cannot also contain buttons')
-        elif any([any(i['type'] == 3 for i in part) and len(part) > 1 for part in base]):
+        elif any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
             raise InvalidArgument('An Action Row can contain only one select menu')
-        if any(len(ar['components']) < 1 for ar in base) and self.force is False:
+        if any([len(ar['components']) < 1 for ar in base]) and self.force is False:
             raise EmptyActionRow()
         elif len(base) > 5 or objects > 25 :
             raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 buttons each; you have {len(base)} ActionRow's passed with {objects} objects")
