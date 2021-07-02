@@ -41,7 +41,7 @@ from .permissions import PermissionOverwrite, Permissions
 from .role import Role
 from .invite import Invite
 from .file import File
-from .components import Button, SelectionMenu, ActionRow
+from .components import Button, SelectMenu, ActionRow
 from .voice_client import VoiceClient, VoiceProtocol
 from . import utils
 
@@ -962,8 +962,10 @@ class Messageable(metaclass=abc.ABCMeta):
             Indicates if the message should be sent using text-to-speech.
         embed: :class:`~discord.Embed`
             The rich embed for the content.
-        components: List[:class:`discord.ActionRow`]
-            A list of :type:`discord.Actionrow`'s
+        embeds: List[:class:`~discord.Embed`]
+            A list containing up to ten embeds
+        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
+            A list of :type:`discord.ActionRow`'s or a list of :class:`Button`'s or :class:`SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -1032,12 +1034,12 @@ class Messageable(metaclass=abc.ABCMeta):
             for component in ([components] if not isinstance(components, list) else components):
                 if isinstance(component, Button):
                     _components.extend(ActionRow(component).sendable())
-                elif isinstance(component, SelectionMenu):
+                elif isinstance(component, SelectMenu):
                     _components.extend(ActionRow(component).sendable())
                 elif isinstance(component, ActionRow):
                     _components.extend(component.sendable())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
+                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
             components = _components
 
         if allowed_mentions is not None:

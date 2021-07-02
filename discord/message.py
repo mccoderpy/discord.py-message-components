@@ -42,7 +42,7 @@ from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum
 from .errors import InvalidArgument, ClientException, HTTPException, NotFound
 from .embeds import Embed
-from .components import Button, SelectionMenu, ActionRow
+from .components import Button, SelectMenu, ActionRow
 from .member import Member
 from .flags import MessageFlags
 from .file import File
@@ -74,6 +74,7 @@ def convert_emoji_reaction(emoji):
         return emoji.strip('<>')
 
     raise InvalidArgument('emoji argument must be str, Emoji, or Reaction not {.__class__.__name__}.'.format(emoji))
+
 
 class Attachment(Hashable):
 
@@ -268,6 +269,7 @@ class Attachment(Hashable):
 
         data = await self.read(use_cached=use_cached)
         return File(io.BytesIO(data), filename=self.filename, spoiler=spoiler)
+
 
 class DeletedReferencedMessage:
     """A special sentinel type that denotes whether the
@@ -1106,7 +1108,7 @@ class Message(Hashable):
         except KeyError:
             pass
         else:
-            if embeds is not None and not embed:
+            if embeds is not None and not hasattr(self, 'embed'):
                 fields['embeds'] = [e.to_dict() for e in embeds]
 
         try:
@@ -1119,12 +1121,12 @@ class Message(Hashable):
                 for component in ([components] if not isinstance(components, list) else components):
                     if isinstance(component, Button):
                         _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, SelectionMenu):
+                    elif isinstance(component, SelectMenu):
                         _components.extend(ActionRow(component).sendable())
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
+                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
                 components = _components
                 fields['components'] = _components
 
@@ -1170,7 +1172,7 @@ class Message(Hashable):
                 else:
                     [self.__setattr__(k, v) for k, v in fields.items()]
 
-        elif is_interaction_responce is None:
+        if is_interaction_responce is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
             self._update(payload)
         if delete_after is not None:
@@ -1642,7 +1644,7 @@ class PartialMessage(Hashable):
         except KeyError:
             pass
         else:
-            if embeds is not None and not embed:
+            if embeds is not None and not hasattr(self, 'embed'):
                 fields['embeds'] = [e.to_dict() for e in embeds]
 
         try:
@@ -1655,12 +1657,12 @@ class PartialMessage(Hashable):
                 for component in ([components] if not isinstance(components, list) else components):
                     if isinstance(component, Button):
                         _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, SelectionMenu):
+                    elif isinstance(component, SelectMenu):
                         _components.extend(ActionRow(component).sendable())
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
+                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
                 components = _components
                 fields['components'] = _components
 
@@ -1706,7 +1708,7 @@ class PartialMessage(Hashable):
                 else:
                     [self.__setattr__(k, v) for k, v in fields.items()]
 
-        elif is_interaction_responce is None:
+        if is_interaction_responce is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
             self._update(payload)
 
