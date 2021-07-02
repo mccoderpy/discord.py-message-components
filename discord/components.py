@@ -288,7 +288,7 @@ class SelectMenu:
         if min_values > 25 or min_values < 0:
             raise ValueError('The minimum number of elements to be selected must be between 0 and 25') 
         self.max_values = max_values
-        if self.max_values < 25 or self.max_values < 0:
+        if self.max_values > 25 or self.max_values < 0:
             raise ValueError('The maximum number of elements to be selected must be between 0 and 25')
         self.disabled = disabled
 
