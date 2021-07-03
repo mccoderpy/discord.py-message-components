@@ -246,7 +246,6 @@ def select_option(label: str, value: str, emoji: Union[PartialEmoji, str] = None
         emoji = PartialEmoji(name=emoji)
     else:
         emoji = None
-
     base = {'label': label,
             'value': value,
             'default': default}

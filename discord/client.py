@@ -362,30 +362,36 @@ class Client:
         if listeners:
             removed = []
             for i, (future, condition) in enumerate(listeners):
-                if future.cancelled():
-                    removed.append(i)
-                    continue
-
-                try:
-                    result = condition(*args)
-                except Exception as exc:
-                    future.set_exception(exc)
-                    removed.append(i)
-                else:
-                    if result:
-                        if len(args) == 0:
-                            future.set_result(None)
-                        elif len(args) == 1:
-                            future.set_result(args[0])
-                        else:
-                            future.set_result(args)
+                if isinstance(future, asyncio.Future):
+                    if future.cancelled():
                         removed.append(i)
+                        continue
 
-            if len(removed) == len(listeners):
-                self._listeners.pop(event)
-            else:
-                for idx in reversed(removed):
-                    del listeners[idx]
+                    try:
+                        result = condition(*args)
+                    except Exception as exc:
+                        future.set_exception(exc)
+                        removed.append(i)
+                    else:
+                        if result:
+                            if len(args) == 0:
+                                future.set_result(None)
+                            elif len(args) == 1:
+                                future.set_result(args[0])
+                            else:
+                                future.set_result(args)
+                            removed.append(i)
+
+                    if len(removed) == len(listeners):
+                        self._listeners.pop(event)
+                    else:
+                        for idx in reversed(removed):
+                            del listeners[idx]
+                else:
+                    result = condition(*args)
+                    if result:
+                        self._schedule_event(future, method, *args, **kwargs)
+
 
         try:
             coro = getattr(self, method)
@@ -1016,6 +1022,104 @@ class Client:
         setattr(self, coro.__name__, coro)
         log.debug('%s has successfully been registered as an event', coro.__name__)
         return coro
+    
+    def button_click(self, custom_id=None):
+        """A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
+
+        You can find more info about this in the `documentation <discord-api-events>`.
+
+        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
+
+        custom_id: Optional[:class:`str`]
+            The custom_id of the :class:`Button` for which the function is to be executed. Defaults to ``func.__name__``.
+        
+        Example
+        ---------
+
+        .. code-block:: python3
+
+            @client.button_click()
+            async def hello_world(interaction):
+                await interaction.respond("Hello there!")
+
+        Raises
+        --------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _name = custom_id if custom_id is not None else func.__name__
+
+            def check(i):
+                return i.component.custom_id == str(_name)
+
+            try:
+                listeners = self._listeners['raw_button_click']
+            except KeyError:
+                listeners = []
+                self._listeners['raw_button_click'] = listeners
+
+            listeners.append((func, check))
+            return func
+
+        return decorator
+    
+    def selection_select(self, custom_id=None):
+        """A decorator that registers a raw_selection_select event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called.
+
+        You can find more info about this in the `documentation <discord-api-events>`.
+
+        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
+
+        custom_id: Optional[:class:`str`]
+            The custom_id of the :class:`SelectMenu` for which the function is to be executed. Defaults to ``func.__name__``.
+        
+        Example
+        ---------
+
+        .. code-block:: python3
+
+            @client.selection_select()
+            async def choice_role(interaction):
+                await interaction.defer()
+                roles = []
+
+                for _id in interaction.component.values:
+                    roles.append(interaction.guild.get_role(int(_id)))
+                
+                await interaction.author.add_roles(*roles, reason="Self-Roles")
+
+                await interaction.respond(f"Succesfull addet you {' '.join([r.mention for r in roles])}", hidden=True)
+
+        Raises
+        --------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _name = custom_id if custom_id is not None else func.__name__
+
+            def check(i):
+                return i.component.custom_id == str(_name)
+
+            try:
+                listeners = self._listeners['raw_selection_select']
+            except KeyError:
+                listeners = []
+                self._listeners['raw_selection_select'] = listeners
+
+            listeners.append((func, check))
+            return func
+
+        return decorator
+        
+
 
     async def change_presence(self, *, activity=None, status=None, afk=False):
         """|coro|
