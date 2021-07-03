@@ -89,14 +89,21 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#select-option-label-value-emoji-description-default-dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option(label,</span> <span class="pre">value,</span> <span class="pre">emoji,</span> <span class="pre">description,</span> <span class="pre">default)</span> <span class="pre">-&gt;</span> <span class="pre">dict()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#selectmenu-custom-id-options-placeholder-min-values"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code></a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Interaction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#discord-interaction"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#attributes">Attributes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#methodes">Methodes</a><ul class="simple">
+<li class="toctree-l3"><a class="reference internal" href="#methods">Methods</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="#buttonclick"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="#selectionselect"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code></a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
@@ -169,13 +176,12 @@
             
   <div class="section" id="interaction">
 <h1>Interaction<a class="headerlink" href="#interaction" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference internal" href="#interaction-respond"><span class="std std-ref">Hallo</span></a></p>
 <div class="section" id="discord-interaction">
 <h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code><a class="headerlink" href="#discord-interaction" title="Permalink to this headline">¶</a></h2>
-<p>Represents an interaction createt in discord like click an <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> or select an option of <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.SelectionMenu</span></code></p>
+<p>Represents an interaction createt in discord like click an <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> or select an option of <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.SelectMenu</span></code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For more informations about Interactions visit the Documentation of the <a class="reference external" href="https://discord.com/developers/docs/interactions/slash-commands#interaction-object">Discord-API</a></p>
+<p>For more informations about Interactions visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/slash-commands#interaction-object">Documentation</a> of the discord-api.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -219,14 +225,14 @@ except the interaction was inside an dm-channel then this would be equal to <cod
 </dl>
 </div></blockquote>
 </div>
-<div class="section" id="methodes">
-<h3>Methodes<a class="headerlink" href="#methodes" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl id="interaction-defer">
 <dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">defer()</span></code>: None</dt><dd><p>‘Defers’ the response, showing a loading state to the use.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p>If you dont respond with an message using <code class="xref py py-meth docutils literal notranslate"><span class="pre">respond()</span></code>
+<p>If you doesn’t respond with an message using <code class="xref py py-meth docutils literal notranslate"><span class="pre">respond()</span></code>
 or edit the original message using <code class="xref py py-meth docutils literal notranslate"><span class="pre">edit()</span></code> within less than 3 seconds,
 discord will indicates that the interaction failed and the interaction-token will be invalidated.
 To provide this us this method</p>
@@ -262,9 +268,35 @@ After that time you have to edit the original message with the Methode <code cla
 </dd>
 </dl>
 </div></blockquote>
+<hr class="docutils" />
+</div>
+</div>
+</div>
+<div class="section" id="buttonclick">
+<span id="button-click"></span><h1><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code><a class="headerlink" href="#buttonclick" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><p>The object that contains a discord.Interaction.component
+if it is of type 2.</p>
+<dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: str</dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">custom_id</span></code> that was set when the button was send and therefore its identifier.</p>
+</dd>
+</dl>
+</div></blockquote>
+<hr class="docutils" />
+</div>
+<div class="section" id="selectionselect">
+<span id="selection-select"></span><h1><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code><a class="headerlink" href="#selectionselect" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><p>The object containing a discord.Interaction.component contains, if it is of type 3.</p>
+<dl class="simple">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: str</dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">custom_id</span></code> of the Select Menu.</p>
+</dd>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">values</span></code>: List[str]</dt><dd><p>A list of the options that have been selected.</p>
+</dd>
+</dl>
+</div></blockquote>
+<hr class="docutils" />
 <div class="toctree-wrapper compound">
-</div>
-</div>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>

@@ -16,24 +16,26 @@ Components
     * ``red`` = 4
     * ``grey_url`` (navigates to an URL) = 5
 
+___________________________________________
+
 .. _actionrow:
 
 :class:`discord.ActionRow(*args, **kwargs)`
 ===========================================
 
-Represents an ``ActionRow``-Part for the components of an :class:`discord.Message`
+Represents an ``ActionRow``-Part for the components of a :class:`discord.Message`
 
 .. note::
 
-    You could use an :class:`list` instead of this but you dont have the functions and oarameters of this class then.
+    You could use a :class:`list` instead of this but you dont have the functions and parameters of this class then.
 
-.. _actionrow-attributes:
+.. _actionrow-parameters:
 
-Attributes
-----------
+Parameters
+-----------
 
-    * :attr:`*args`: [Union[:class:`Button`, :class:`SelectionMenu`]]
-        An array of :class:`Button`/s and/or :class:`SelectionMenu`/s.
+    * :attr:`*args`: Union[[:class:`Button`], :class:`SelectMenu`]
+        An array of :class:`Button`/s and/or :class:`SelectnMenu`/s.
 
     .. _actionrow-force:
 
@@ -43,9 +45,9 @@ Attributes
     .. note::
         For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
 
-.. _actionrow-methodes:
+.. _actionrow-methods:
 
-Methodes
+Methods
 --------
     .. _actionrow-sendable:
 
@@ -67,27 +69,29 @@ Methodes
         **Parameters**
 
             * :attr:`check`: Union[Bool, Callable]
-                could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`
+                could be a :class:`bool` or usually any :obj:`Callable` that returns a :class:`bool`
             
             * :attr:`**kwargs`
-                :obj:`kwargs` that should passed in to the :attr:`check` if it is an :obj:`Callable`
+                :obj:`kwargs` that should passed in to the :attr:`check` if it is a :obj:`Callable`
 
         :return: :class:`ActionRow`
+
+________________________________________
 
 .. _button:
 
 :class:`discord.Button(**kwargs)`
 =================================
 
-Represents an ``Discord-Button``
+Represents a ``Discord-Button``
 
 .. note::
-    For more information Discord-Button's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_.
+    For more information Discord-Button's visit the `Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_ of the discord-api.
 
-.. _button-attributes:
+.. _button-parameters:
 
-Attributes
-----------
+Parameters
+-----------
 
     .. _button-label:
 
@@ -119,20 +123,20 @@ Attributes
         The URL the Button links too.
 
         .. note::
-            if you set this, the :attr:`style` will automaticly set to :class:`ButtonStyle.Link_Button`
+            If you set this, the :attr:`style` will automaticly set to :class:`ButtonStyle.Link_Button`
 
         .. warning::
             
-            You cant pass an :attr:`custom_id` and a :attr:`url` beacuse discord dont send anything when clicking on an ``URL-Button`` so it dont accept both; :attr:`url`/ButtonStyle.Link_Button and :attr:`custom_id`!
+            You can't pass a :attr:`custom_id` and a :attr:`url` beacuse discord dont send anything when clicking on an ``URL-Button`` so it dont accept both; :attr:`url`/ButtonStyle.Link_Button and :attr:`custom_id`!
     
     .. _button-disabled:
 
     :attr:`disabled`: :class:`Bool`
         Whether the Button is disabled; defauld False.
 
-.. _button-methodes:
+.. _button-methods:
 
-Methodes
+Methods
 --------
 
     .. _button-disable_if:
@@ -141,9 +145,9 @@ Methodes
     
     Disable the :class:`Button` if the passed :attr:`check` returns ``True``.
         * :attr:`check`: typing.Union[bool, typing.Callable]
-            Could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`
+            Could be a :class:`bool` or usually any :class:`Callable` that returns a :class:`bool`
         * :attr:`**kwargs`: Any[SupportsIndex]
-            Arguments that should passed in to the :attr:`check` if it is an :class:`Callable`
+            Arguments that should passed in to the :attr:`check` if it is a :class:`Callable`
 
         :return: :class:`discord.Button`
     
@@ -151,15 +155,84 @@ Methodes
 
     :meth:`set_color_if`
 
-    Sets the Color(Style) of an :class:`discord.Button` to the provided :attr:`color` if the passed :attr:`check` returns ``True``.
+    Sets the Color(Style) of a :class:`discord.Button` to the provided :attr:`color` if the passed :attr:`check` returns ``True``.
         
-        * :attr:`check`: could be an :class:`bool` or usaly any :obj:`Callable` that returns an :class:`bool`
+        * :attr:`check`: could be a :class:`bool` or usally any :obj:`Callable` that returns a :class:`bool`
         
         * :attr:`color`: the Color(Style) that should set if the :attr:`check` returns ``True``
     
-        * :attr:`**kwargs`: ``kwargs`` that should passed in to the :attr:`check` if it is an :class:`Callable`
+        * :attr:`**kwargs`: ``kwargs`` that should passed in to the :attr:`check` if it is a :class:`Callable`
 
         :return: :class:`discord.Button`
+
+________________________________________
+
+.. _select_option:
+
+:func:`select_option(label, value, emoji, description, default)`
+========================================================================
+
+Builds you a dict which can be used as an option for a :class:`SelectMenu`
+
+.. _select-option-parameters:
+
+Paramerts
+----------
+
+    :attr:`label`: str
+        The user-facing name of the option, max 25 characters
+    
+    :attr:`value`: str
+        The dev-define value of the option, max 100 characters
+
+    :attr:`description`: Optional[str]
+    	An additional description of the option, max 50 characters
+    
+    :attr:`emoji`: Optional[int]
+        The minimum number of items that must be chosen; default 1, min 0, max 25
+    
+    :attr:`max_values`: Optional[int]
+        The maximum number of items that can be chosen; default 1, max 25
+
+:return: :class:`dict`
+    
+________________________________________
+
+.. _select-menu:
+
+:class:`SelectMenu(custom_id, options, placeholder, min_values, ...)`
+=====================================================================
+Represents a ``Discord-Select-Menu``
+
+.. note::
+    For more information about Select-Menus wisit the `Discord-API-Documentation <https://discord.com/developers/docs/interactions/message-components#select-menus>`_.
+
+.. _select-menu-parameters:
+
+Parameters
+-----------
+
+    :attr:`custom_id`: str
+        A developer-defined identifier for the select-menu, max 100 characters
+    
+    :attr:`options`: List[Dict]
+        The choices in the select, max 25
+
+        use :func:`select_option` to create an option
+    
+    :attr:`placeholder`: Optional[str]
+        Custom placeholder text if nothing is selected, max 100 characters
+
+    :attr:`min_values`: Optional[int]
+        The minimum number of items that must be chosen; default 1, min 0, max 25.
+    
+    :attr:`max_values`: Optional[int]
+        The maximum number of items that can be chosen; default 1, max 25.
+    
+    :attr:`disabled`: Optional[Bool]
+        Whether the SelectMenu is deactivated or not. ``False`` by default.
+
+________________________________________
 
 .. toctree::   
    :maxdepth: 3

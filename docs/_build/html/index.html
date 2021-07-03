@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Welcome to discord.py-message-component’s documentation! &mdash; discord.py-message-components 1.7.5 documentation</title>
+  <title>Welcome to discord.py-message-components’ documentation! &mdash; discord.py-message-components 1.7.5 documentation</title>
   
 
   
@@ -92,7 +92,11 @@
 <li class="toctree-l1"><a class="reference internal" href="components.html#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="components.html#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="components.html#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#select-option-label-value-emoji-description-default"><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option(label,</span> <span class="pre">value,</span> <span class="pre">emoji,</span> <span class="pre">description,</span> <span class="pre">default)()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#selectmenu-custom-id-options-placeholder-min-values"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="interaction.html">Interaction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interaction.html#buttonclick"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="interaction.html#selectionselect"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code></a></li>
 </ul>
 
             
@@ -141,7 +145,7 @@
     
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Welcome to discord.py-message-component’s documentation!</li>
+      <li>Welcome to discord.py-message-components’ documentation!</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -160,8 +164,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="welcome-to-discord-py-message-component-s-documentation">
-<h1>Welcome to discord.py-message-component’s documentation!<a class="headerlink" href="#welcome-to-discord-py-message-component-s-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="welcome-to-discord-py-message-components-documentation">
+<h1>Welcome to discord.py-message-components’ documentation!<a class="headerlink" href="#welcome-to-discord-py-message-components-documentation" title="Permalink to this headline">¶</a></h1>
 <a class="reference external image-reference" href="https://pypi.org/project/discord.py-message-components"><img alt="Name of the project" src="https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png" /></a>
 <a class="reference external image-reference" href="https://discord.gg/sb69muSqsg"><img alt="Discord Server Invite" src="https://discord.com/api/guilds/852871920411475968/embed.png" /></a>
 <a class="reference external image-reference" href="https://pypi.python.org/pypi/discord.py-message-components"><img alt="PyPI version info" src="https://img.shields.io/pypi/v/discord.py-message-components.svg" /></a>
@@ -192,10 +196,11 @@ py -3 -m pip install -U discord.py-message-components
 </pre></div>
 </div>
 </div>
+<hr class="docutils" />
 <div class="section" id="quickstart">
 <h2>quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="sending-buttons">
-<h3>sending-buttons<a class="headerlink" href="#sending-buttons" title="Permalink to this headline">¶</a></h3>
+<h3>Sending-buttons<a class="headerlink" href="#sending-buttons" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
 <span class="kn">from</span> <span class="nn">discord.ext</span> <span class="kn">import</span> <span class="n">commands</span>
 <span class="kn">from</span> <span class="nn">discord.components</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">ButtonColor</span>
@@ -228,8 +233,9 @@ py -3 -m pip install -U discord.py-message-components
 </pre></div>
 </div>
 </div>
-<div class="section" id="respond-to-an-button-when-he-pressed-by-a-user">
-<h3>respond to an button when he pressed by a user<a class="headerlink" href="#respond-to-an-button-when-he-pressed-by-a-user" title="Permalink to this headline">¶</a></h3>
+<hr class="docutils" />
+<div class="section" id="interact-when-a-button-was-pressed">
+<h3>Interact when a button was pressed<a class="headerlink" href="#interact-when-a-button-was-pressed" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
 <span class="kn">from</span> <span class="nn">discord.ext</span> <span class="kn">import</span> <span class="n">commands</span>
 <span class="kn">from</span> <span class="nn">discord.components</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">ButtonColor</span>
@@ -273,19 +279,70 @@ py -3 -m pip install -U discord.py-message-components
 <p>You could set the parameter <code class="xref py py-attr docutils literal notranslate"><span class="pre">hidden</span></code> in the respond to <code class="docutils literal notranslate"><span class="pre">True</span></code> to make the message ephemeral.
 Visit <a class="reference external" href="./interaction.html#interaction-respond">discord.Interaction.respond</a> for more information about <code class="xref py py-meth docutils literal notranslate"><span class="pre">respond()</span></code>.</p>
 </div>
+</div>
+<hr class="docutils" />
+<div class="section" id="sending-selectmenu-s-and-respond-to-them">
+<h3>Sending-SelectMenu’s and respond to them<a class="headerlink" href="#sending-selectmenu-s-and-respond-to-them" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
+<span class="kn">from</span> <span class="nn">discord.ext</span> <span class="kn">import</span> <span class="n">commands</span>
+<span class="kn">from</span> <span class="nn">discord.components</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">SelectMenu</span><span class="p">,</span> <span class="n">ButtonColor</span><span class="p">,</span> <span class="n">select_option</span> <span class="k">as</span> <span class="n">so</span>
+
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">commands</span><span class="o">.</span><span class="n">Bot</span><span class="p">(</span><span class="n">command_prefix</span><span class="o">=</span><span class="n">commands</span><span class="o">.</span><span class="n">when_mentioned_or</span><span class="p">(</span><span class="s1">&#39;!&#39;</span><span class="p">))</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+   <span class="n">msg_with_buttons_and_selects</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Hey here is an nice Select-Menu&#39;</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="p">[[</span>
+      <span class="n">Button</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;◀&#39;</span><span class="p">,</span> <span class="n">custom_id</span><span class="o">=</span><span class="s2">&quot;back&quot;</span><span class="p">,</span>
+               <span class="n">style</span><span class="o">=</span><span class="n">ButtonColor</span><span class="o">.</span><span class="n">blurple</span><span class="p">),</span>
+      <span class="n">Button</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s2">&quot;▶&quot;</span><span class="p">,</span>
+               <span class="n">custom_id</span><span class="o">=</span><span class="s2">&quot;next&quot;</span><span class="p">,</span>
+               <span class="n">style</span><span class="o">=</span><span class="n">ButtonColor</span><span class="o">.</span><span class="n">blurple</span><span class="p">)],</span>
+      <span class="p">[</span>
+            <span class="n">SelectMenu</span><span class="p">(</span><span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;_select_it&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+               <span class="n">so</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;1️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 1&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The first option&#39;</span><span class="p">),</span>
+               <span class="n">so</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;2️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 2&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The second option&#39;</span><span class="p">),</span>
+               <span class="n">so</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;3️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 3&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The third option&#39;</span><span class="p">),</span>
+               <span class="n">so</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;4️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 4&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The fourth option&#39;</span><span class="p">)],</span>
+                     <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Select some Options&#39;</span><span class="p">,</span> <span class="n">max_values</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+         <span class="p">]])</span>
+
+   <span class="k">def</span> <span class="nf">check_selection</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">SelectionSelect</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">i</span><span class="o">.</span><span class="n">author</span> <span class="o">==</span> <span class="n">ctx</span><span class="o">.</span><span class="n">author</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">message</span> <span class="o">==</span> <span class="n">msg_with_buttons_and_selects</span>
+
+   <span class="n">interaction</span><span class="p">,</span> <span class="n">select</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="s1">&#39;selection_select&#39;</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="n">check_selection</span><span class="p">)</span>
+
+   <span class="n">embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;You have chosen:&#39;</span><span class="p">,</span>
+                        <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You have chosen &quot;</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Option Nr° </span><span class="si">{</span><span class="n">o</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">select</span><span class="o">.</span><span class="n">values</span><span class="p">]),</span>
+                        <span class="n">color</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Color</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+   <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">embed</span><span class="p">)</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;Your Bot-Token&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<hr class="docutils" />
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="components.html#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="components.html#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="components.html#attributes">Attributes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="components.html#methodes">Methodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html#methods">Methods</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="components.html#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="components.html#button-attributes">Attributes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="components.html#button-methodes">Methodes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="components.html#button-parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html#button-methods">Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#select-option-label-value-emoji-description-default"><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option(label,</span> <span class="pre">value,</span> <span class="pre">emoji,</span> <span class="pre">description,</span> <span class="pre">default)()</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="components.html#paramerts">Paramerts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="components.html#selectmenu-custom-id-options-placeholder-min-values"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="components.html#select-menu-parameters">Parameters</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="components.html#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
@@ -294,9 +351,13 @@ Visit <a class="reference external" href="./interaction.html#interaction-respond
 <li class="toctree-l1"><a class="reference internal" href="interaction.html">Interaction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="interaction.html#discord-interaction"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="interaction.html#attributes">Attributes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="interaction.html#methodes">Methodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="interaction.html#methods">Methods</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="interaction.html#buttonclick"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="interaction.html#selectionselect"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code></a><ul>
 <li class="toctree-l2"><a class="reference internal" href="interaction.html#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>

@@ -6,15 +6,13 @@
 Interaction
 ===========
 
-:ref:`Hallo <interaction-respond>`
-
 :class:`discord.Interaction`
 ____________________________
 
-Represents an interaction createt in discord like click an :class:`discord.Button` or select an option of :class:`discord.SelectionMenu`
+Represents an interaction createt in discord like click an :class:`discord.Button` or select an option of :class:`discord.SelectMenu`
    
 .. note::
-   For more informations about Interactions visit the Documentation of the `Discord-API <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_
+   For more informations about Interactions visit the `Documentation <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_ of the discord-api.
    
 .. warning::
    Do not initiate this Class manually
@@ -58,7 +56,7 @@ Attributes
       .. note::
          If this is passed in an ``[on_]button_click`` or ``[on_]selection_select`` Event there wuild be a second parameter that includes this attribute.
 
-Methodes
+Methods
 --------
 
    .. _interaction-defer:
@@ -67,7 +65,7 @@ Methodes
       'Defers' the response, showing a loading state to the use.
 
       .. important::
-         If you dont respond with an message using :meth:`respond` 
+         If you doesn't respond with an message using :meth:`respond` 
          or edit the original message using :meth:`edit` within less than 3 seconds,
          discord will indicates that the interaction failed and the interaction-token will be invalidated.
          To provide this us this method
@@ -94,6 +92,33 @@ Methodes
 
       Responds to an interaction by sending a message that can be made visible only to the person who invoked the interaction by setting the :attr:`hidden` to ``True``.
 
+________________________________________
+
+.. _button-click:
+
+:class:`ButtonClick`
+====================
+   The object that contains a discord.Interaction.component
+   if it is of type 2.
+
+   :attr:`custom_id`: str
+      The ``custom_id`` that was set when the button was send and therefore its identifier. 
+
+__________________________________________
+
+.. _selection-select:
+
+:class:`SelectionSelect`
+========================
+   The object containing a discord.Interaction.component contains, if it is of type 3.
+
+   :attr:`custom_id`: str
+      The ``custom_id`` of the Select Menu. 
+   
+   :attr:`values`: List[str]
+      A list of the options that have been selected.
+
+________________________________________
 
 .. toctree:: 
    :maxdepth: 3

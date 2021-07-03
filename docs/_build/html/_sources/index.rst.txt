@@ -3,12 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to discord.py-message-component's documentation!
+Welcome to discord.py-message-components' documentation!
 =========================================================
 
 .. image:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
-    :target: https://pypi.org/project/discord.py-message-components
-    :alt: Name of the project
+   :target: https://pypi.org/project/discord.py-message-components
+   :alt: Name of the project
             
 .. image:: https://discord.com/api/guilds/852871920411475968/embed.png
   :target: https://discord.gg/sb69muSqsg
@@ -59,12 +59,12 @@ then install `this Library <https://pypi.org/project/discord.py-message-componen
     # Windows
     py -3 -m pip install -U discord.py-message-components
 
-
+________________________________________
 
 quickstart
 __________
 
-sending-buttons
+Sending-buttons
 ~~~~~~~~~~~~~~~~
 
 .. code-block:: python
@@ -99,8 +99,9 @@ sending-buttons
 
    client.run('Your Bot-Token')
 
+________________________________________
 
-respond to an button when he pressed by a user
+Interact when a button was pressed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          
 .. code-block:: python
@@ -147,6 +148,51 @@ respond to an button when he pressed by a user
    You could set the parameter :attr:`hidden` in the respond to ``True`` to make the message ephemeral.
    Visit `discord.Interaction.respond <./interaction.html#interaction-respond>`_ for more information about :meth:`respond()`.
 
+________________________________________
+
+Sending-SelectMenu's and respond to them
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import discord
+   from discord.ext import commands
+   from discord.components import Button, SelectMenu, ButtonColor, select_option as so
+
+
+   client = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
+
+
+   @client.command()
+   async def select(ctx):
+      msg_with_buttons_and_selects = await ctx.send('Hey here is an nice Select-Menu', components=[[
+         Button(emoji='◀', custom_id="back",
+                  style=ButtonColor.blurple),
+         Button(emoji="▶",
+                  custom_id="next",
+                  style=ButtonColor.blurple)],
+         [
+               SelectMenu(custom_id='_select_it', options=[
+                  so(emoji='1️⃣', label='Option Nr° 1', value='1', description='The first option'),
+                  so(emoji='2️⃣', label='Option Nr° 2', value='2', description='The second option'),
+                  so(emoji='3️⃣', label='Option Nr° 3', value='3', description='The third option'),
+                  so(emoji='4️⃣', label='Option Nr° 4', value='4', description='The fourth option')],
+                        placeholder='Select some Options', max_values=3)
+            ]])
+
+      def check_selection(i: discord.Interaction, s: discord.SelectionSelect):
+         return i.author == ctx.author and i.message == msg_with_buttons_and_selects
+
+      interaction, select = await client.wait_for('selection_select', check=check_selection)
+
+      embed = discord.Embed(title='You have chosen:',
+                           description=f"You have chosen "+'\n'.join([f'\nOption Nr° {o}' for o in select.values]),
+                           color=discord.Color.random())
+      await interaction.respond(embed=embed)
+
+   client.run('Your Bot-Token')
+
+________________________________________
 
 .. toctree:: 
    :maxdepth: 3
