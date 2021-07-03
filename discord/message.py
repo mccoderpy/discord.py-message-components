@@ -1057,8 +1057,10 @@ class Message(Hashable):
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
-        components: List[:class:`discord.ActionRow`]
-            A list of :type:`discord.Actionrow`'s
+        embeds: Optional[List[:class:`Embed`]]
+            A list containing up to 10 embeds
+        components: List[Union[:class:`discord.ActionRow`, List]]
+            A list of :class:`discord.Actionrow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
@@ -1094,6 +1096,8 @@ class Message(Hashable):
         else:
             if content is not None:
                 fields['content'] = str(content)
+        
+        raw_embeds = []
 
         try:
             embed = fields.pop('embed')
@@ -1101,15 +1105,18 @@ class Message(Hashable):
             pass
         else:
             if embed is not None:
-                fields['embeds'] = [embed.to_dict()]
+                raw_embeds.append(embed.to_dict())
 
         try:
-            embeds = fields['embeds']
+            embeds = fields.pop('embeds')
         except KeyError:
             pass
         else:
-            if embeds is not None and not hasattr(self, 'embed'):
-                fields['embeds'] = [e.to_dict() for e in embeds]
+            if embeds is not None:
+                raw_embeds.extend([e.to_dict() for e in embeds])
+        
+        if raw_embeds:
+            fields['embeds'] = raw_embeds
 
         try:
             components = fields['components']
@@ -1588,8 +1595,10 @@ class PartialMessage(Hashable):
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
-        components: List[:class:`discord.ActionRow`]
-            A list of :type:`discord.Actionrow`'s
+        embeds: Optional[List[:class:`Embed`]]
+            A list containing up to 10 embeds
+        components: List[Union[:class:`discord.ActionRow`, List]]
+            A list of :class:`discord.Actionrow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
@@ -1631,22 +1640,27 @@ class PartialMessage(Hashable):
             if content is not None:
                 fields['content'] = str(content)
 
+        raw_embeds = []
+
         try:
             embed = fields.pop('embed')
         except KeyError:
             pass
         else:
             if embed is not None:
-                fields['embeds'] = [embed.to_dict()]
+                raw_embeds.append(embed.to_dict())
 
         try:
-            embeds = fields['embeds']
+            embeds = fields.pop('embeds')
         except KeyError:
             pass
         else:
-            if embeds is not None and not hasattr(self, 'embed'):
-                fields['embeds'] = [e.to_dict() for e in embeds]
-
+            if embeds is not None:
+                raw_embeds.extend([e.to_dict() for e in embeds])
+        
+        if raw_embeds:
+            fields['embeds'] = raw_embeds
+            
         try:
             components = fields['components']
         except KeyError:

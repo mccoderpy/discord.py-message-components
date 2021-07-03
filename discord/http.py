@@ -351,7 +351,7 @@ class HTTPClient:
 
         return self.request(Route('POST', '/users/@me/channels'), json=payload)
 
-    def send_message(self, channel_id, content, *, tts=False, embed=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
+    def send_message(self, channel_id, content, *, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
         r = Route('POST', '/channels/{channel_id}/messages', channel_id=channel_id)
         payload = {}
 
@@ -361,8 +361,8 @@ class HTTPClient:
         if tts:
             payload['tts'] = True
 
-        if embed:
-            payload['embed'] = embed
+        if embeds:
+            payload['embeds'] = embeds
 
         if components:
             payload['components'] = components
@@ -381,15 +381,15 @@ class HTTPClient:
     def send_typing(self, channel_id):
         return self.request(Route('POST', '/channels/{channel_id}/typing', channel_id=channel_id))
 
-    def send_files(self, channel_id, *, files, content=None, tts=False, embed=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
+    def send_files(self, channel_id, *, files, content=None, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
         r = Route('POST', '/channels/{channel_id}/messages', channel_id=channel_id)
         form = []
 
         payload = {'tts': tts}
         if content:
             payload['content'] = content
-        if embed:
-            payload['embed'] = embed
+        if embeds:
+            payload['embeds'] = embeds
         if components:
             payload['components'] = components
         if nonce:
@@ -457,19 +457,8 @@ class HTTPClient:
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original')
         return self.request(r, json=fields)
 
-    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup, **fields):
+    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup, *, content=None, tts=False, embeds=None, components=None, files=None, nonce=None, allowed_mentions=None, message_reference=None, flags=None):
         form = []
-        content = fields.pop('content', None)
-        tts = fields.pop('tts', False)
-        embeds = fields.pop('embeds', fields.pop('embed', None))
-        if not isinstance(embeds, list) and embeds is not None:
-            embeds = [embeds]
-        components = fields.pop('components', None)
-        files = fields.pop('files', None)
-        nonce = fields.pop('nonce', None)
-        allowed_mentions = fields.pop('allowed_mentions')
-        message_reference = fields.pop('message_reference', None)
-        flags = fields.pop('flags', 0)
         payload = {'tts': tts}
         if content:
             payload['content'] = content
