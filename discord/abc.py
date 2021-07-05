@@ -175,10 +175,10 @@ class _Overwrites:
         self.id = kwargs.pop('id')
         self.allow = int(kwargs.pop('allow_new', 0))
         self.deny = int(kwargs.pop('deny_new', 0))
-        _type = kwargs.pop('type')
-        if _type not in ('role', 'user', 'member'):
-            _type = {0: 'role', 1: 'user'}.get(type)
-        self.type = sys.intern(_type)
+        type = kwargs.pop('type')
+        if type not in ('role', 'user', 'member'):
+            type = {0: 'role', 1: 'member'}.get(type)
+        self.type = sys.intern(type)
 
     def _asdict(self):
         return {
