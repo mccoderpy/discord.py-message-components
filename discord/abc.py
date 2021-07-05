@@ -41,7 +41,7 @@ from .permissions import PermissionOverwrite, Permissions
 from .role import Role
 from .invite import Invite
 from .file import File
-from .components import Button, SelectionMenu, ActionRow
+from .components import Button, SelectMenu, ActionRow
 from .voice_client import VoiceClient, VoiceProtocol
 from . import utils
 
@@ -175,7 +175,10 @@ class _Overwrites:
         self.id = kwargs.pop('id')
         self.allow = int(kwargs.pop('allow_new', 0))
         self.deny = int(kwargs.pop('deny_new', 0))
-        self.type = sys.intern(kwargs.pop('type'))
+        type = kwargs.pop('type')
+        if type not in ('role', 'user', 'member'):
+            type = {0: 'role', 1: 'user'}.get(type)
+        self.type = sys.intern(type)
 
     def _asdict(self):
         return {
@@ -962,8 +965,10 @@ class Messageable(metaclass=abc.ABCMeta):
             Indicates if the message should be sent using text-to-speech.
         embed: :class:`~discord.Embed`
             The rich embed for the content.
-        components: List[:class:`discord.ActionRow`]
-            A list of :type:`discord.Actionrow`'s
+        embeds: List[:class:`~discord.Embed`]
+            A list containing up to ten embeds
+        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
+            A list of :type:`discord.ActionRow`'s or a list of :class:`Button`'s or :class:`SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -1032,12 +1037,12 @@ class Messageable(metaclass=abc.ABCMeta):
             for component in ([components] if not isinstance(components, list) else components):
                 if isinstance(component, Button):
                     _components.extend(ActionRow(component).sendable())
-                elif isinstance(component, SelectionMenu):
+                elif isinstance(component, SelectMenu):
                     _components.extend(ActionRow(component).sendable())
                 elif isinstance(component, ActionRow):
                     _components.extend(component.sendable())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectionMenu)])]).sendable())
+                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
             components = _components
 
         if allowed_mentions is not None:
@@ -1070,17 +1075,14 @@ class Messageable(metaclass=abc.ABCMeta):
         followup = kwargs.pop('followup', False)
         if is_interaction_responce is False or None:
             hidden = None
-        if hidden is not None:
-            embedlist = []
-            if embed:
-                embedlist.append(embed)
-            if embeds:
-                embedlist.extend([e.to_dict() for e in embeds])
-            embeds = embedlist
-            if len(embeds) > 10:
-                raise InvalidArgument(f'The maximum number of embeds that can be sent with a response is 10, get: {len(embeds)}')
-        elif embeds:
-            raise InvalidArgument('Normal Messages dont support multible Embeds.')
+        embedlist = []
+        if embed:
+            embedlist.append(embed)
+        if embeds:
+            embedlist.extend([e.to_dict() for e in embeds])
+        embeds = embedlist
+        if len(embeds) > 10:
+            raise InvalidArgument(f'The maximum number of embeds that can be sent with a response is 10, get: {len(embeds)}')
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')
@@ -1100,7 +1102,7 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                       followup=followup)
                 else:
                     data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
-                                                       content=content, tts=tts, embed=embed, components=components,
+                                                       content=content, tts=tts, embeds=embeds, components=components,
                                                        nonce=nonce, message_reference=reference)
             finally:
                 file.close()
@@ -1144,7 +1146,7 @@ class Messageable(metaclass=abc.ABCMeta):
                                                                   flags=64 if hidden is True else None,
                                                                   followup=followup)
             else:
-                data = await state.http.send_message(channel.id, content, tts=tts, embed=embed, components=components,
+                data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
                                                                           nonce=nonce, allowed_mentions=allowed_mentions,
                                                                           message_reference=reference)
         if not hidden is True:
