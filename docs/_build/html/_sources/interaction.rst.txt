@@ -7,7 +7,7 @@ Interaction
 ===========
 
 :class:`discord.Interaction`
-____________________________
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Represents an interaction createt in discord like click an :class:`discord.Button` or select an option of :class:`discord.SelectMenu`
    
@@ -97,7 +97,7 @@ ________________________________________
 .. _button-click:
 
 :class:`ButtonClick`
-====================
+~~~~~~~~~~~~~~~~~~~~
    The object that contains a discord.Interaction.component
    if it is of type 2.
 
@@ -109,7 +109,7 @@ __________________________________________
 .. _selection-select:
 
 :class:`SelectionSelect`
-========================
+~~~~~~~~~~~~~~~~~~~~~~~~
    The object containing a discord.Interaction.component contains, if it is of type 3.
 
    :attr:`custom_id`: str
@@ -121,11 +121,11 @@ __________________________________________
 ________________________________________
 
 .. toctree:: 
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents: 
 
 Indices and tables
-__________________
+~~~~~~~~~~~~~~~~~~
 
 * :ref:`genindex`
 * :ref:`modindex`

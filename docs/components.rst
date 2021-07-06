@@ -9,7 +9,7 @@ Components
 .. _buttoncolor:
 
 :class:`discord.ButtonColor`
-============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     * ``blurple`` = 1
     * ``grey`` = 2
     * ``green`` = 3
@@ -21,7 +21,7 @@ ___________________________________________
 .. _actionrow:
 
 :class:`discord.ActionRow(*args, **kwargs)`
-===========================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Represents an ``ActionRow``-Part for the components of a :class:`discord.Message`
 
@@ -81,7 +81,7 @@ ________________________________________
 .. _button:
 
 :class:`discord.Button(**kwargs)`
-=================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Represents a ``Discord-Button``
 
@@ -169,9 +169,8 @@ ________________________________________
 
 .. _select_option:
 
-:func:`select_option(label, value, emoji, description, default)`
-========================================================================
-
+:func:`select_option`
+~~~~~~~~~~~~~~~~~~~~~
 Builds you a dict which can be used as an option for a :class:`SelectMenu`
 
 .. _select-option-parameters:
@@ -201,7 +200,7 @@ ________________________________________
 .. _select-menu:
 
 :class:`SelectMenu(custom_id, options, placeholder, min_values, ...)`
-=====================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Represents a ``Discord-Select-Menu``
 
 .. note::
@@ -212,30 +211,43 @@ Represents a ``Discord-Select-Menu``
 Parameters
 -----------
 
-    :attr:`custom_id`: str
-        A developer-defined identifier for the select-menu, max 100 characters
-    
-    :attr:`options`: List[Dict]
-        The choices in the select, max 25
+    .. _select-menu-custom_id:
 
-        use :func:`select_option` to create an option
+    :attr:`custom_id`: str
+        A developer-defined identifier for the :class:`SelectMenu`, max. 100 characters
     
+    .. _select-menu-options:
+
+    :attr:`options`: List[Dict]
+        A :class:`list` of choices the :class:`SelectMenu` should have, max. 25
+
+        use `select_option` to create an option
+    
+    .. _select-menu-placeholder:
+
     :attr:`placeholder`: Optional[str]
-        Custom placeholder text if nothing is selected, max 100 characters
+        Custom placeholder text if nothing is selected, max. 100 characters
+
+    .. _select-menu-min_values:
 
     :attr:`min_values`: Optional[int]
-        The minimum number of items that must be chosen; default 1, min 0, max 25.
+        The minimum number of items that must be chosen; default 1, min. 0, max. 25.
     
+    .. _select-menu-max_values:
+
     :attr:`max_values`: Optional[int]
-        The maximum number of items that can be chosen; default 1, max 25.
+        The maximum number of items that can be chosen; default 1, max. 25.
     
+    .. _select-menu-disabled:
+
     :attr:`disabled`: Optional[Bool]
-        Whether the SelectMenu is deactivated or not. ``False`` by default.
+        Whether the SelectMenu is disabled or not. ``False`` by default.
+
 
 ________________________________________
 
 .. toctree::   
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents: 
 
 Indices and tables

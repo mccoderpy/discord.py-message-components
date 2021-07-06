@@ -42,7 +42,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Interaction" href="interaction.html" />
-    <link rel="prev" title="Welcome to discord.py-message-components’ documentation!" href="index.html" /> 
+    <link rel="prev" title="Additions and adjustments to discord.py buildin-functions" href="additions.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -89,32 +89,33 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Components</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#methods">Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="additions.html">Additions and adjustments to discord.py buildin-functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#methods">Methods</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#button-parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#button-methods">Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#button-parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#button-methods">Methods</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#select-option-label-value-emoji-description-default"><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option(label,</span> <span class="pre">value,</span> <span class="pre">emoji,</span> <span class="pre">description,</span> <span class="pre">default)()</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#paramerts">Paramerts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#select-option"><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option()</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#paramerts">Paramerts</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#selectmenu-custom-id-options-placeholder-min-values"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#select-menu-parameters">Parameters</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#selectmenu-custom-id-options-placeholder-min-values"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#select-menu-parameters">Parameters</a><ul class="simple">
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="interaction.html">Interaction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interaction.html#buttonclick"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="interaction.html#selectionselect"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code></a></li>
 </ul>
 
             
@@ -184,9 +185,8 @@
             
   <div class="section" id="components">
 <h1>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h1>
-</div>
 <div class="section" id="discord-buttoncolor">
-<span id="buttoncolor"></span><h1><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code><a class="headerlink" href="#discord-buttoncolor" title="Permalink to this headline">¶</a></h1>
+<span id="buttoncolor"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code><a class="headerlink" href="#discord-buttoncolor" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">blurple</span></code> = 1</p></li>
@@ -199,14 +199,14 @@
 <hr class="docutils" />
 </div>
 <div class="section" id="discord-actionrow-args-kwargs">
-<span id="actionrow"></span><h1><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#discord-actionrow-args-kwargs" title="Permalink to this headline">¶</a></h1>
+<span id="actionrow"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#discord-actionrow-args-kwargs" title="Permalink to this headline">¶</a></h2>
 <p>Represents an <code class="docutils literal notranslate"><span class="pre">ActionRow</span></code>-Part for the components of a <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>You could use a <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> instead of this but you dont have the functions and parameters of this class then.</p>
 </div>
 <div class="section" id="parameters">
-<span id="actionrow-parameters"></span><h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<span id="actionrow-parameters"></span><h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
 <li><dl class="simple">
@@ -229,7 +229,7 @@
 </div></blockquote>
 </div>
 <div class="section" id="methods">
-<span id="actionrow-methods"></span><h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h2>
+<span id="actionrow-methods"></span><h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl class="simple" id="actionrow-sendable">
 <dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">sendable()</span></code> -&gt; Dict</dt><dd><p>Makes the <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> sendable to discord.</p>
@@ -273,14 +273,14 @@
 </div>
 </div>
 <div class="section" id="discord-button-kwargs">
-<span id="button"></span><h1><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code><a class="headerlink" href="#discord-button-kwargs" title="Permalink to this headline">¶</a></h1>
+<span id="button"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code><a class="headerlink" href="#discord-button-kwargs" title="Permalink to this headline">¶</a></h2>
 <p>Represents a <code class="docutils literal notranslate"><span class="pre">Discord-Button</span></code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For more information Discord-Button’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons">Documentation</a> of the discord-api.</p>
 </div>
 <div class="section" id="button-parameters">
-<span id="id1"></span><h2>Parameters<a class="headerlink" href="#button-parameters" title="Permalink to this headline">¶</a></h2>
+<span id="id1"></span><h3>Parameters<a class="headerlink" href="#button-parameters" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl class="simple" id="button-label">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">label</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></dt><dd><p>The Text displayed in discord on the Button. Maximal lenght is 80 Chars.</p>
@@ -322,7 +322,7 @@
 </div></blockquote>
 </div>
 <div class="section" id="button-methods">
-<span id="id2"></span><h2>Methods<a class="headerlink" href="#button-methods" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h3>Methods<a class="headerlink" href="#button-methods" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><p id="button-disable-if"><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_if()</span></code></p>
 <dl>
@@ -363,11 +363,11 @@
 <hr class="docutils" />
 </div>
 </div>
-<div class="section" id="select-option-label-value-emoji-description-default">
-<span id="select-option"></span><h1><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option(label,</span> <span class="pre">value,</span> <span class="pre">emoji,</span> <span class="pre">description,</span> <span class="pre">default)()</span></code><a class="headerlink" href="#select-option-label-value-emoji-description-default" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="select-option">
+<span id="id3"></span><h2><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option()</span></code><a class="headerlink" href="#select-option" title="Permalink to this headline">¶</a></h2>
 <p>Builds you a dict which can be used as an option for a <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></p>
 <div class="section" id="paramerts">
-<span id="select-option-parameters"></span><h2>Paramerts<a class="headerlink" href="#paramerts" title="Permalink to this headline">¶</a></h2>
+<span id="select-option-parameters"></span><h3>Paramerts<a class="headerlink" href="#paramerts" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">label</span></code>: str</dt><dd><p>The user-facing name of the option, max 25 characters</p>
@@ -391,42 +391,53 @@
 </div>
 </div>
 <div class="section" id="selectmenu-custom-id-options-placeholder-min-values">
-<span id="select-menu"></span><h1><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code><a class="headerlink" href="#selectmenu-custom-id-options-placeholder-min-values" title="Permalink to this headline">¶</a></h1>
+<span id="select-menu"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code><a class="headerlink" href="#selectmenu-custom-id-options-placeholder-min-values" title="Permalink to this headline">¶</a></h2>
 <p>Represents a <code class="docutils literal notranslate"><span class="pre">Discord-Select-Menu</span></code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For more information about Select-Menus wisit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#select-menus">Discord-API-Documentation</a>.</p>
 </div>
 <div class="section" id="select-menu-parameters">
-<span id="id4"></span><h2>Parameters<a class="headerlink" href="#select-menu-parameters" title="Permalink to this headline">¶</a></h2>
+<span id="id5"></span><h3>Parameters<a class="headerlink" href="#select-menu-parameters" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><dl>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: str</dt><dd><p>A developer-defined identifier for the select-menu, max 100 characters</p>
+<div><dl class="simple" id="select-menu-custom-id">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: str</dt><dd><p>A developer-defined identifier for the <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code>, max. 100 characters</p>
 </dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">options</span></code>: List[Dict]</dt><dd><p>The choices in the select, max 25</p>
-<p>use <code class="xref py py-func docutils literal notranslate"><span class="pre">select_option()</span></code> to create an option</p>
+</dl>
+<dl id="select-menu-options">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">options</span></code>: List[Dict]</dt><dd><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of choices the <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code> should have, max. 25</p>
+<p>use <cite>select_option</cite> to create an option</p>
 </dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">placeholder</span></code>: Optional[str]</dt><dd><p>Custom placeholder text if nothing is selected, max 100 characters</p>
+</dl>
+<dl class="simple" id="select-menu-placeholder">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">placeholder</span></code>: Optional[str]</dt><dd><p>Custom placeholder text if nothing is selected, max. 100 characters</p>
 </dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">min_values</span></code>: Optional[int]</dt><dd><p>The minimum number of items that must be chosen; default 1, min 0, max 25.</p>
+</dl>
+<dl class="simple" id="select-menu-min-values">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">min_values</span></code>: Optional[int]</dt><dd><p>The minimum number of items that must be chosen; default 1, min. 0, max. 25.</p>
 </dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_values</span></code>: Optional[int]</dt><dd><p>The maximum number of items that can be chosen; default 1, max 25.</p>
+</dl>
+<dl class="simple" id="select-menu-max-values">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_values</span></code>: Optional[int]</dt><dd><p>The maximum number of items that can be chosen; default 1, max. 25.</p>
 </dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">disabled</span></code>: Optional[Bool]</dt><dd><p>Whether the SelectMenu is deactivated or not. <code class="docutils literal notranslate"><span class="pre">False</span></code> by default.</p>
+</dl>
+<dl class="simple" id="select-menu-disabled">
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">disabled</span></code>: Optional[Bool]</dt><dd><p>Whether the SelectMenu is disabled or not. <code class="docutils literal notranslate"><span class="pre">False</span></code> by default.</p>
 </dd>
 </dl>
 </div></blockquote>
 <hr class="docutils" />
 <div class="toctree-wrapper compound">
 </div>
+</div>
+</div>
 <div class="section" id="indices-and-tables">
-<h3>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h3>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
 </div>
 </div>
 
@@ -437,7 +448,7 @@
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="interaction.html" class="btn btn-neutral float-right" title="Interaction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to discord.py-message-components’ documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="additions.html" class="btn btn-neutral float-left" title="Additions and adjustments to discord.py buildin-functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
