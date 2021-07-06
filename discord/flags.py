@@ -5,6 +5,8 @@ The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
 
+Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -241,6 +243,11 @@ class MessageFlags(BaseFlags):
         An urgent message is one sent by Discord Trust and Safety.
         """
         return 16
+
+    @flag_value
+    def ephemeral(self):
+        """:class:`bool`: Returns ``True`` if the message ist ephemeral (hidden)."""
+        return 64
 
 @fill_with_flags()
 class PublicUserFlags(BaseFlags):

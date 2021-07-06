@@ -543,9 +543,9 @@ class ConnectionState:
         raw = Interaction(self, data=data)
         raw.message = self._get_message(raw.message_id) if raw.message is None else raw.message
         if raw.guild_id:
-            raw.guild: Guild = self._get_guild(raw.guild_id)
-            raw.channel: TextChannel = raw.guild.get_channel(raw.channel_id)
-            raw.member: Member = Member(guild=raw.guild, data=raw._member, state=self)
+            raw.guild = self._get_guild(raw.guild_id)
+            raw.channel = raw.guild.get_channel(raw.channel_id)
+            raw.member = Member(guild=raw.guild, data=raw._member, state=self)
         else:
             raw.channel = self._get_private_channel(raw.channel_id)
         raw.user = User(state=self, data=raw._user)

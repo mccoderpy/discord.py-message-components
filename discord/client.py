@@ -362,30 +362,36 @@ class Client:
         if listeners:
             removed = []
             for i, (future, condition) in enumerate(listeners):
-                if future.cancelled():
-                    removed.append(i)
-                    continue
-
-                try:
-                    result = condition(*args)
-                except Exception as exc:
-                    future.set_exception(exc)
-                    removed.append(i)
-                else:
-                    if result:
-                        if len(args) == 0:
-                            future.set_result(None)
-                        elif len(args) == 1:
-                            future.set_result(args[0])
-                        else:
-                            future.set_result(args)
+                if isinstance(future, asyncio.Future):
+                    if future.cancelled():
                         removed.append(i)
+                        continue
 
-            if len(removed) == len(listeners):
-                self._listeners.pop(event)
-            else:
-                for idx in reversed(removed):
-                    del listeners[idx]
+                    try:
+                        result = condition(*args)
+                    except Exception as exc:
+                        future.set_exception(exc)
+                        removed.append(i)
+                    else:
+                        if result:
+                            if len(args) == 0:
+                                future.set_result(None)
+                            elif len(args) == 1:
+                                future.set_result(args[0])
+                            else:
+                                future.set_result(args)
+                            removed.append(i)
+
+                    if len(removed) == len(listeners):
+                        self._listeners.pop(event)
+                    else:
+                        for idx in reversed(removed):
+                            del listeners[idx]
+                else:
+                    result = condition(*args)
+                    if result:
+                        self._schedule_event(future, method, *args, **kwargs)
+
 
         try:
             coro = getattr(self, method)
@@ -1016,6 +1022,115 @@ class Client:
         setattr(self, coro.__name__, coro)
         log.debug('%s has successfully been registered as an event', coro.__name__)
         return coro
+    
+    def on_click(self, custom_id=None):
+        """A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
+
+        You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
+
+        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
+
+        Example
+        -------
+
+        .. code-block:: python
+
+            # the Button
+            Button(label='Hey im a cool blue Button',
+                    custom_id='cool blue Button',
+                    style=ButtonColor.blurple)
+
+            # function thats called when the Button pressed
+            @client.on_click(custom_id='cool blue Button')
+            async def cool_blue_button(i: discord.Interaction):
+                await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
+
+        Raises
+        ------
+        :class:`TypeError`
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _name = custom_id if custom_id is not None else func.__name__
+
+            def check(i):
+                return i.component.custom_id == str(_name)
+
+            try:
+                listeners = self._listeners['raw_button_click']
+            except KeyError:
+                listeners = []
+                self._listeners['raw_button_click'] = listeners
+
+            listeners.append((func, check))
+            return func
+
+        return decorator
+    
+    def on_select(self, custom_id=None):
+        """A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
+        
+        .. note::
+            This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
+
+        .. important::
+            The Function this decorator attached to must be an corountine (means an awaitable)
+
+        Parameters
+        ----------
+        
+        :attr:`custom_id`: Optional[str]
+
+            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
+
+
+        Example
+        -------
+
+        .. code-block:: python
+
+            # the SelectMenu
+            SelectMenu(custom_id='choose_your_gender',
+                    options=[
+                            select_option(label='Female', value='Female', emoji='♀️'),
+                            select_option(label='Male', value='Male', emoji='♂️'),
+                            select_option(label='Non Binary', value='Non Binary', emoji='⚧')
+                            ], placeholder='Choose your Gender')
+
+            # function thats called when the SelectMenu is used
+            @client.on_select()
+            async def choose_your_gender(i: discord.Interaction):
+                await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
+
+        Raises
+        --------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _name = custom_id if custom_id is not None else func.__name__
+
+            def check(i):
+                return i.component.custom_id == str(_name)
+
+            try:
+                listeners = self._listeners['raw_selection_select']
+            except KeyError:
+                listeners = []
+                self._listeners['raw_selection_select'] = listeners
+
+            listeners.append((func, check))
+            return func
+
+        return decorator
+        
+
 
     async def change_presence(self, *, activity=None, status=None, afk=False):
         """|coro|

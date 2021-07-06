@@ -51,7 +51,7 @@ from .reaction import Reaction
 from . import utils, opus, abc
 from .enums import *
 from .embeds import Embed
-from .components import Button, SelectionMenu, ActionRow, ButtonColor, ButtonStyle, select_option
+from .components import Button, SelectMenu, ActionRow, ButtonColor, ButtonStyle, select_option
 from .mentions import AllowedMentions
 from .shard import AutoShardedClient, ShardInfo
 from .player import *

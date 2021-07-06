@@ -34,7 +34,7 @@ from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, InvalidData, EmptyActionRow
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 
-__all__ = ('ButtonStyle', 'ButtonColor', 'Button', 'SelectionMenu', 'ActionRow', 'select_option')
+__all__ = ('ButtonStyle', 'ButtonColor', 'Button', 'SelectMenu', 'ActionRow', 'select_option')
 
 
 class ButtonStyle:
@@ -47,9 +47,8 @@ class ButtonStyle:
         For more information about the Button-Styles visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
     
     """
-
-    def __repr__(self):
-        return f'<ButtonStyle {" ".join(k+"="+str(v) for k,v in ButtonStyle.__dict__.items())}>'
+    def __repr__(self) -> str:
+        return f'<ButtonStyle {" ".join(k+"="+str(v) for k,v in self.__dict__.items())}>'
 
     Primary = 1
     Secondary = 2
@@ -74,11 +73,12 @@ class ButtonColor:
     green = ButtonStyle.Success
     red = ButtonStyle.Danger
     grey_url = ButtonStyle.Link_Button
-
-    def __repr__():
-        return f'<ButtonColor {" ".join(k+"="+str(v) for k, v in ButtonColor.__dict__.items())}>'
+    
+    def __repr__(self) -> str:
+        return f'<ButtonColor {" ".join(k+"="+str(v) for k, v in self.__dict__.items())}>'
 
 class Button:
+
     """
     :class:`Button`
 
@@ -237,7 +237,7 @@ class Button:
         return cls(style=style, label=label, emoji=emoji, custom_id=custom_id, url=url, disabled=disabled)
 
 
-def select_option(label: str, value: str, emoji: Union[PartialEmoji, str]=None, description: str=None, default=False) -> dict:
+def select_option(label: str, value: str, emoji: Union[PartialEmoji, str] = None, description: str = None, default = False) -> dict:
     if isinstance(emoji, PartialEmoji):
         emoji = emoji
     if isinstance(emoji, Emoji):
@@ -246,40 +246,59 @@ def select_option(label: str, value: str, emoji: Union[PartialEmoji, str]=None, 
         emoji = PartialEmoji(name=emoji)
     else:
         emoji = None
-
     base = {'label': label,
             'value': value,
-            'description': description,
             'default': default}
+    if description:
+        base['description'] = str(description)
     if emoji:
         base['emoji'] = emoji.to_dict()
     return base
 
 
-class SelectionMenu:
+class SelectMenu:
 
     """
-    Represents an Discord-dropdown-Menue
-     .. note ::
-        This Feature is ``not`` released jet!
+    Represents an ``Discord-Select-Menu``
+
+    .. note::
+        For more information about Select-Menus wisit the `Discord-API-Documentation <https://discord.com/developers/docs/interactions/message-components#select-menus>`_.
+
     """
 
-    __slots__ = ('custom_id', 'options', 'placeholder', 'min_values', 'max_values')
+    __slots__ = ('custom_id', 'options', 'placeholder', 'min_values', 'max_values', 'disabled')
 
-    def __init__(self, **kwargs):
-        self.options: list = kwargs.get('options', [])
+    def __init__(self, custom_id: str, options: typing.List[typing.Dict], placeholder: str = None, min_values: int = 1, max_values: int = 1, disabled: bool = False):
+        self.options: list = options
         if not any([isinstance(obj, dict) for obj in self.options]):
-            raise InvalidData("SelectionMenu-Options have to bee an Dict like `{'label': 'that what should show up in Discord', 'value': 'that what the Discord-API sends to your Application if the option is chosen'}`, or usually an :function:`discord.components.create_option`.")
-        self.custom_id: str = kwargs.get('custom_id', 'no_custom_id_set')
-        self.placeholder: str = kwargs.get('placeholder', None)
-        self.min_values = kwargs.get('min_values', None)
-        self.max_values = kwargs.get('max_values', None)
+            raise InvalidData(
+                "Select menu options must be a list of dicts' like `{'label': 'what to display in Discord',"
+                " 'value': 'what the Discord API sends to your application when the option is selected'}`; you can easily create"
+                " it with the :function:`discord.components.create_option`.")
+        elif len(self.options) > 25:
+            raise InvalidArgument('The maximum number of options in a select menu is 25.')
+        self.custom_id: str = custom_id
+        if len(self.custom_id) > 100:
+            raise("The maximum length of a custom-id is 100 characters.")
+        self.placeholder: str = placeholder
+        if self.placeholder and len(self.placeholder) > 100:
+            raise AttributeError("The maximum length of a the placeholder is 100 characters.")
+        self.min_values = min_values
+        if min_values > 25 or min_values < 0:
+            raise ValueError('The minimum number of elements to be selected must be between 0 and 25') 
+        self.max_values = max_values
+        if self.max_values > 25 or self.max_values < 0:
+            raise ValueError('The maximum number of elements to be selected must be between 0 and 25')
+        self.disabled = disabled
 
     def __repr__(self):
-        return f'<SelectionMenu {", ".join([k + "=" + getattr(self, k, ) for k in self.__slots__])}>'
+        return f'<SelectMenu {", ".join([k + "=" + getattr(self, k, ) for k in self.__slots__])}>'
 
     def to_dict(self) -> dict:
-        return {'type': 3, 'custom_id': self.custom_id, 'options': self.options, 'placeholder': self.placeholder, 'min_values': self.min_values, 'max_values': self.max_values}
+        base = {'type': 3, 'custom_id': self.custom_id, 'options': self.options, 'placeholder': self.placeholder, 'min_values': self.min_values, 'max_values': self.max_values}
+        if self.disabled is True:
+            base['disabled'] = True
+        return base
 
     def update(self, **kwargs):
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
@@ -287,11 +306,11 @@ class SelectionMenu:
 
     @classmethod
     def from_dict(cls, data: dict):
-        custom_id = data.get('custom_id', None)
-        options = data.get('options', None)
+        custom_id = data.get('custom_id')
+        options = data.get('options', [])
         placeholder = data.get('placeholder', None)
-        min_values = data.get('min_values', None)
-        max_values = data.get('max_values', None)
+        min_values = data.get('min_values', 1)
+        max_values = data.get('max_values', 1)
         return cls(custom_id=custom_id,
                    options=options,
                    placeholder=placeholder,
@@ -314,28 +333,32 @@ class ActionRow:
         for obj in args:
             if isinstance(obj, Button):
                 self.components.append(obj)
-            elif isinstance(obj, SelectionMenu):
+            elif isinstance(obj, SelectMenu):
                 self.components.append(obj)
             elif isinstance(obj, dict):
                 if not obj.get('type', None) in [2, 3]:
-                    raise InvalidData('if you use an Dict instead of Button or SelectionMenu you have to pass an type betwean 2 or 3')
-                self.components.append({2: Button.from_dict(obj), 3: SelectionMenu.from_dict(obj)}.get(obj.get('type')))
+                    raise InvalidData('if you use an Dict instead of Button or SelectMenu you have to pass an type between 2 or 3')
+                self.components.append({2: Button.from_dict(obj), 3: SelectMenu.from_dict(obj)}.get(obj.get('type')))
     
     def __repr__(self):
         return f'<ActionRow components={self.components}>'
 
-    def sendable(self) -> Union[dict, EmptyActionRow]:
+    def sendable(self) -> Union[list, EmptyActionRow]:
         base = []
         base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
         objects = len([i['components'] for i in base])
-        if any(len(ar['components']) < 1 for ar in base) and self.force is False:
+        if any([any([part['type'] == 2]) and any([part['type'] == 3]) for part in base]):
+            raise InvalidArgument('An Action Row containing a select menu cannot also contain buttons')
+        elif any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
+            raise InvalidArgument('An Action Row can contain only one select menu')
+        if any([len(ar['components']) < 1 for ar in base]) and self.force is False:
             raise EmptyActionRow()
-        elif len(base) > 5 or objects > 5*5 :
+        elif len(base) > 5 or objects > 25 :
             raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 buttons each; you have {len(base)} ActionRow's passed with {objects} objects")
         return base
 
     def edit_obj(self, index: int, **kwargs):
-        obj: Union[Button, SelectionMenu] = self.components.pop(index)
+        obj: Union[Button, SelectMenu] = self.components.pop(index)
         self.components.insert(index, obj.update(**kwargs))
         return self
 
@@ -383,7 +406,7 @@ class DecodeMessageComponents:
         self._other_elements = []
         for obj in value:
             try:
-                self._other_elements.extend(ActionRow.from_dict(obj))
+                self._action_rows.append(ActionRow.from_dict(obj))
             except InvalidData:
                 self._other_elements.append(obj)
         if self._other_elements:
@@ -399,4 +422,4 @@ class DecodeMessageComponents:
 
 class ComponentType:
     Button = 2
-    SlectionMenu = 3
+    SelectMenu = 3

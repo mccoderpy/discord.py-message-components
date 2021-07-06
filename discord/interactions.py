@@ -8,7 +8,7 @@ from .message import Message
 import logging
 from .errors import NotFound, UnknowInteraction
 from .channel import TextChannel, DMChannel
-from .components import ActionRow, Button, SelectionMenu, ComponentType
+from .components import ActionRow, Button, SelectMenu, ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class EphemeralMessage:
 class Interaction:
 
     """
-    The Class for an discord-interaction like klick an :class:`Button` or select an option of :class:`SelectionMenu` in discord
+    The Class for an discord-interaction like klick an :class:`Button` or select an option of :class:`SelectMenu` in discord
 
     for more informations about Interactions visit the Documentation of the
     `Discord-API <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_
@@ -56,8 +56,8 @@ class Interaction:
         self.guild = None
         self.channel = None
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
-        self.member: Member = None
-        self.user: User = None
+        self.member: typing.Optional[Member] = None
+        self.user: typing.Optional[User] = None
         self._deferred = False
         self._deferred_hidden = False
         self.callback_message = None
@@ -76,9 +76,10 @@ class Interaction:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": 6}
         try:
-            await self.http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id, token=self.__token, application_id=self.__application_id)
+            await self.http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id,
+                                                  token=self.__token, application_id=self.__application_id)
         except NotFound:
-            log.warn(f'Unknow Interaction {self.__interaction_id}')
+            log.warning(f'Unknown Interaction {self.__interaction_id}')
         self._deferred = True
 
     async def edit(self, **fields) -> Message:
@@ -89,24 +90,29 @@ class Interaction:
             self.channel = self.state.add_dm_channel(data=await self.http.get_channel(self.channel_id))
         if not self.message:
             self.message: Message = await self.channel.fetch_message(self._message_id)
-        await self.message.edit(__is_interaction_responce=True, __deferred=self._deferred, __use_webhook=False, __interaction_id=self.__interaction_id, __interaction_token=self.__token, __application_id=self.__application_id, **fields)
+        await self.message.edit(__is_interaction_responce=True, __deferred=self._deferred, __use_webhook=False,
+                                __interaction_id=self.__interaction_id, __interaction_token=self.__token,
+                                __application_id=self.__application_id, **fields)
         self._deferred = True
         return self.message
 
     async def respond(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
-                                          files=None, delete_after=None, nonce=None,
-                                          allowed_mentions=None, reference=None,
-                                          mention_author=None, hidden=False) -> typing.Union[Message, EphemeralMessage]:
-        """Responds to an interaction by sending a message that can be made visible only to the person who performed the
-         interaction by setting the `hidden` parameter to :bool:`True`."""
+                      files=None, delete_after=None, nonce=None,
+                      allowed_mentions=None, reference=None,
+                      mention_author=None, hidden=False) -> typing.Union[Message, EphemeralMessage]:
+        """
+        Responds to an interaction by sending a message that can be made visible only to the person who performed the
+         interaction by setting the `hidden` parameter to :bool:`True`.
+         """
         if not self.channel:
             self.channel = self.state.add_dm_channel(data=await self.http.get_channel(self.channel_id))
         msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
-                                       files=files, delete_after=delete_after, nonce=nonce,allowed_mentions=allowed_mentions,
-                                       reference=reference, mention_author=mention_author, hidden=hidden,
-                                       __is_interaction_responce=True, __deferred=self._deferred, __use_webhook=False,
-                                       __interaction_id=self.__interaction_id, __interaction_token=self.__token,
-                                       __application_id=self.__application_id, followup=True if self.callback_message else False)
+                                      files=files, delete_after=delete_after, nonce=nonce,
+                                      allowed_mentions=allowed_mentions,reference=reference,
+                                      mention_author=mention_author, hidden=hidden, __is_interaction_responce=True,
+                                      __deferred=self._deferred, __use_webhook=False, __interaction_id=self.__interaction_id,
+                                      __interaction_token=self.__token, __application_id=self.__application_id,
+                                      followup=True if self.callback_message else False)
 
         if hidden is True:
             self._deferred_hidden = True
@@ -134,7 +140,7 @@ class Interaction:
         return self.__token
 
     @property
-    def initeraction_id(self) -> int:
+    def interaction_id(self) -> int:
         return int(self.__interaction_id)
 
     @property
@@ -157,7 +163,7 @@ class Interaction:
         return self.message_flags == 64
 
 class ButtonClick:
-    def __init__(self, data) -> object:
+    def __init__(self, data):
         self.component_type = data.get('component_type')
         self.custom_id = data.get('custom_id')
         self.__hash__ = data.get('hash', None)
@@ -170,21 +176,22 @@ class ButtonClick:
 
 
 class SelectionSelect:
-    def __init__(self, data) -> object:
+    def __init__(self, data):
         self.component_type = data.get('component_type')
         self.custom_id = data.get('custom_id')
-        self.value = data.get('value')
+        values: list = data.get('values')
+        self.values = values
 
 
     def __repr__(self):
-        return f'<SelectionSelect custom_id={self.custom_id} value={self.value}>'
+        return f'<SelectionSelect custom_id={self.custom_id} values={self.values}>'
 
 
 def _component_factory(data):
     if data['component_type'] == ComponentType.Button:
         return ButtonClick(data)
 
-    elif data['component_type'] == ComponentType.SlectionMenu:
+    elif data['component_type'] == ComponentType.SelectMenu:
         return SelectionSelect(data)
 
     else:
