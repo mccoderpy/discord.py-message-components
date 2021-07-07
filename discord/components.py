@@ -281,7 +281,7 @@ class SelectMenu:
         if len(self.custom_id) > 100:
             raise("The maximum length of a custom-id is 100 characters.")
         self.placeholder: str = placeholder
-        if len(self.placeholder) > 100:
+        if self.placeholder and len(self.placeholder) > 100:
             raise AttributeError("The maximum length of a the placeholder is 100 characters.")
         self.min_values = min_values
         if min_values > 25 or min_values < 0:

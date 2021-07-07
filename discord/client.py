@@ -1023,28 +1023,31 @@ class Client:
         log.debug('%s has successfully been registered as an event', coro.__name__)
         return coro
     
-    def button_click(self, custom_id=None):
+    def on_click(self, custom_id=None):
         """A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
 
-        You can find more info about this in the `documentation <discord-api-events>`.
+        You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
 
         The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
 
-        custom_id: Optional[:class:`str`]
-            The custom_id of the :class:`Button` for which the function is to be executed. Defaults to ``func.__name__``.
-        
         Example
-        ---------
+        -------
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            @client.button_click()
-            async def hello_world(interaction):
-                await interaction.respond("Hello there!")
+            # the Button
+            Button(label='Hey im a cool blue Button',
+                    custom_id='cool blue Button',
+                    style=ButtonColor.blurple)
+
+            # function thats called when the Button pressed
+            @client.on_click(custom_id='cool blue Button')
+            async def cool_blue_button(i: discord.Interaction):
+                await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
 
         Raises
-        --------
-        TypeError
+        ------
+        :class:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func):
@@ -1067,32 +1070,40 @@ class Client:
 
         return decorator
     
-    def selection_select(self, custom_id=None):
-        """A decorator that registers a raw_selection_select event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called.
-
-        You can find more info about this in the `documentation <discord-api-events>`.
-
-        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
-
-        custom_id: Optional[:class:`str`]
-            The custom_id of the :class:`SelectMenu` for which the function is to be executed. Defaults to ``func.__name__``.
+    def on_select(self, custom_id=None):
+        """A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
         
+        .. note::
+            This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
+
+        .. important::
+            The Function this decorator attached to must be an corountine (means an awaitable)
+
+        Parameters
+        ----------
+        
+        :attr:`custom_id`: Optional[str]
+
+            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
+
+
         Example
-        ---------
+        -------
 
-        .. code-block:: python3
+        .. code-block:: python
 
-            @client.selection_select()
-            async def choice_role(interaction):
-                await interaction.defer()
-                roles = []
+            # the SelectMenu
+            SelectMenu(custom_id='choose_your_gender',
+                    options=[
+                            select_option(label='Female', value='Female', emoji='♀️'),
+                            select_option(label='Male', value='Male', emoji='♂️'),
+                            select_option(label='Non Binary', value='Non Binary', emoji='⚧')
+                            ], placeholder='Choose your Gender')
 
-                for _id in interaction.component.values:
-                    roles.append(interaction.guild.get_role(int(_id)))
-                
-                await interaction.author.add_roles(*roles, reason="Self-Roles")
-
-                await interaction.respond(f"Succesfull addet you {' '.join([r.mention for r in roles])}", hidden=True)
+            # function thats called when the SelectMenu is used
+            @client.on_select()
+            async def choose_your_gender(i: discord.Interaction):
+                await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
 
         Raises
         --------
