@@ -8,7 +8,7 @@ from .message import Message
 import logging
 from .errors import NotFound, UnknowInteraction
 from .channel import TextChannel, DMChannel
-from .components import ActionRow, Button, SelectMenu, ComponentType
+from .components import Button, SelectMenu, ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ class Interaction:
     """
 
     def __repr__(self):
+        """Represents a :class:`discord.Interaction` object,"""
         return f'<Interaction {" ".join([f"{a}={getattr(self, a)}" for a in self.__all__])}>'
 
     # __slots__ = ('author', 'member', 'user', 'message', 'channel', 'guild', '__token', '__interaction_id', '_type', 'interaction_type', 'component_type', 'component', 'http')
@@ -103,7 +104,7 @@ class Interaction:
         """
         Responds to an interaction by sending a message that can be made visible only to the person who performed the
          interaction by setting the `hidden` parameter to :bool:`True`.
-         """
+        """
         if not self.channel:
             self.channel = self.state.add_dm_channel(data=await self.http.get_channel(self.channel_id))
         msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
@@ -163,10 +164,11 @@ class Interaction:
         return self.message_flags == 64
 
 class ButtonClick:
+    """Represents a ``button`` that was pressed (contains its custom_id and its hash)"""
     def __init__(self, data):
-        self.component_type = data.get('component_type')
-        self.custom_id = data.get('custom_id')
-        self.__hash__ = data.get('hash', None)
+        self.component_type: int = data.get('component_type')
+        self.custom_id: str = data.get('custom_id')
+        self.__hash__: str = data.get('hash', None)
 
     def __hash__(self):
         return self.__hash__
@@ -176,11 +178,11 @@ class ButtonClick:
 
 
 class SelectionSelect:
+    """Represents a `SelectMenu` from which options have been selected (contains its custom_id and the selected options)"""
     def __init__(self, data):
-        self.component_type = data.get('component_type')
-        self.custom_id = data.get('custom_id')
-        values: list = data.get('values')
-        self.values = values
+        self.component_type: int = data.get('component_type')
+        self.custom_id: str = data.get('custom_id')
+        self.values: list = data.get('values')
 
 
     def __repr__(self):

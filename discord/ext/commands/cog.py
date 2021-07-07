@@ -105,6 +105,7 @@ class CogMeta(type):
 
         commands = {}
         listeners = {}
+        cog_interaction_listeners = {}
         no_bot_cog = 'Commands or listeners must not start with cog_ or bot_ (in method {0.__name__}.{1})'
 
         new_cls = super().__new__(cls, name, bases, attrs, **kwargs)
@@ -133,6 +134,8 @@ class CogMeta(type):
                         if elem.startswith(('cog_', 'bot_')):
                             raise TypeError(no_bot_cog.format(base, elem))
                         listeners[elem] = value
+                elif elem == '__cog_interaction_listeners__':
+                    cog_interaction_listeners = value
 
         new_cls.__cog_commands__ = list(commands.values()) # this will be copied in Cog.__new__
 
@@ -144,6 +147,8 @@ class CogMeta(type):
                 listeners_as_list.append((listener_name, listener.__name__))
 
         new_cls.__cog_listeners__ = listeners_as_list
+        new_cls.__cog_interaction_listeners__ = cog_interaction_listeners
+
         return new_cls
 
     def __init__(self, *args, **kwargs):
@@ -295,6 +300,110 @@ class Cog(metaclass=CogMeta):
             # thus the assignments need to be on the actual function
             return func
         return decorator
+    
+    @classmethod
+    def on_click(self, custom_id=None):
+        """
+        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
+        You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
+        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
+
+        Example
+        -------
+
+        .. code-block:: python3
+
+            # the Button
+            Button(label='Hey im a cool blue Button',
+                   custom_id='cool blue Button',
+                   style=ButtonColor.blurple)
+
+            # function thats called when the Button pressed
+            @commands.Cog.on_click(custom_id='cool blue Button')
+            async def cool_blue_button(i: discord.Interaction):
+                await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
+
+        Raises
+        ------
+        :class:`TypeError`
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func):
+            if not inspect.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _name = custom_id if custom_id is not None else func.__name__
+
+            def check(i):
+                return i.component.custom_id == str(_name)
+
+            try:
+                self.__cog_interaction_listeners__['raw_button_click'].append((func, check))
+            except KeyError:
+                self.__cog_interaction_listeners__['raw_button_click'] = [(func, check)]
+            return func
+
+        return decorator
+
+    @classmethod
+    def on_select(self, custom_id=None):
+        """
+        A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
+        
+        .. note::
+            This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
+
+        .. important::
+            The Function this decorator attached to must be an corountine (means an awaitable)
+
+        Parameters
+        ----------
+        
+        :attr:`custom_id`: Optional[str]
+
+            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
+
+
+        Example
+        -------
+
+        .. code-block:: python
+
+            # the SelectMenu
+            SelectMenu(custom_id='choose_your_gender',
+                    options=[
+                            select_option(label='Female', value='Female', emoji='♀️'),
+                            select_option(label='Male', value='Male', emoji='♂️'),
+                            select_option(label='Non Binary', value='Non Binary', emoji='⚧')
+                            ], placeholder='Choose your Gender')
+
+            # function thats called when the SelectMenu is used
+            @commands.Cog.on_select()
+            async def choose_your_gender(i: discord.Interaction):
+                await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
+
+        Raises
+        --------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func):
+            if not inspect.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _name = custom_id if custom_id is not None else func.__name__
+
+            def check(i):
+                return i.component.custom_id == str(_name)
+
+            try:
+                self.__cog_interaction_listeners__['raw_selection_select'].append((func, check))
+            except KeyError:
+                self.__cog_interaction_listeners__['raw_selection_select'] = [(func, check)]
+            
+            return func
+
+        return decorator
 
     def has_error_handler(self):
         """:class:`bool`: Checks whether the cog has an error handler.
@@ -426,6 +535,10 @@ class Cog(metaclass=CogMeta):
         for name, method_name in self.__cog_listeners__:
             bot.add_listener(getattr(self, method_name), name)
 
+        for _type in self.__cog_interaction_listeners__.keys():
+            for (func, check) in self.__cog_interaction_listeners__[_type]:
+                bot.add_interaction_listener(_type, func, check)
+
         return self
 
     def _eject(self, bot):
@@ -438,6 +551,10 @@ class Cog(metaclass=CogMeta):
 
             for _, method_name in self.__cog_listeners__:
                 bot.remove_listener(getattr(self, method_name))
+
+            for _type in self.__cog_interaction_listeners__.keys():
+                for (func, check) in self.__cog_interaction_listeners__[_type]:
+                    bot.remove_interaction_listener(_type, func, check)
 
             if cls.bot_check is not Cog.bot_check:
                 bot.remove_check(self.bot_check)

@@ -343,6 +343,8 @@ class Client:
             await coro(*args, **kwargs)
         except asyncio.CancelledError:
             pass
+        except TypeError:
+            await coro(coro, *args, **kwargs)
         except Exception:
             try:
                 await self.on_error(event_name, *args, **kwargs)
@@ -1024,7 +1026,8 @@ class Client:
         return coro
     
     def on_click(self, custom_id=None):
-        """A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
+        """
+        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
 
         You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
 
@@ -1071,7 +1074,8 @@ class Client:
         return decorator
     
     def on_select(self, custom_id=None):
-        """A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
+        """
+        A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
         
         .. note::
             This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.

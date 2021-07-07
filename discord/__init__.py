@@ -12,10 +12,10 @@ A basic wrapper for the Discord API.
 """
 
 __title__ = 'discord'
-__author__ = 'Rapptz'
+__author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015-present Rapptz'
-__version__ = '1.7.2'
+__version__ = '1.7.5.1'
 
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
@@ -29,6 +29,7 @@ from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .activity import *
 from .channel import *
+from .components import ActionRow, ButtonColor, ButtonStyle, Button, SelectMenu, select_option
 from .guild import Guild
 from .flags import *
 from .relationship import Relationship
@@ -51,7 +52,6 @@ from .reaction import Reaction
 from . import utils, opus, abc
 from .enums import *
 from .embeds import Embed
-from .components import Button, SelectMenu, ActionRow, ButtonColor, ButtonStyle, select_option
 from .mentions import AllowedMentions
 from .shard import AutoShardedClient, ShardInfo
 from .player import *
