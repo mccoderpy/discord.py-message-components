@@ -98,6 +98,7 @@ class BotBase(GroupMixin):
         super().__init__(**options)
         self.command_prefix = command_prefix
         self.extra_events = {}
+        self.extra_interaction_events = {}
         self.__cogs = {}
         self.__extensions = {}
         self._checks = []
@@ -133,6 +134,10 @@ class BotBase(GroupMixin):
         ev = 'on_' + event_name
         for event in self.extra_events.get(ev, []):
             self._schedule_event(event, ev, *args, **kwargs)
+        for (func, check) in self.extra_interaction_events.get(event_name, []):
+            if check(*args, **kwargs):
+                self._schedule_event(func, ev, *args, **kwargs)
+
 
     async def close(self):
         for extension in tuple(self.__extensions):
@@ -423,11 +428,7 @@ class BotBase(GroupMixin):
         def decorator(func):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
-
             _name = custom_id if custom_id is not None else func.__name__
-
-            def check(i):
-                return i.component.custom_id == str(_name)
 
             try:
                 listeners = self._listeners['raw_button_click']
@@ -435,7 +436,7 @@ class BotBase(GroupMixin):
                 listeners = []
                 self._listeners['raw_button_click'] = listeners
 
-            listeners.append((func, check))
+            listeners.append((func, lambda i: i.component.custom_id == custom_id))
             return func
 
         return decorator
@@ -484,11 +485,7 @@ class BotBase(GroupMixin):
         def decorator(func):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
-
             _name = custom_id if custom_id is not None else func.__name__
-
-            def check(i):
-                return i.component.custom_id == str(_name)
 
             try:
                 listeners = self._listeners['raw_selection_select']
@@ -496,7 +493,7 @@ class BotBase(GroupMixin):
                 listeners = []
                 self._listeners['raw_selection_select'] = listeners
 
-            listeners.append((func, check))
+            listeners.append((func, lambda i: i.component.custom_id == custom_id))
             return func
 
         return decorator
@@ -504,23 +501,23 @@ class BotBase(GroupMixin):
     
     # listener registration
 
-    def add_interaction_listener(self, _type,  func, check):
+    def add_interaction_listener(self, _type,  func, custom_id):
         """
         This adds an interaction(decorator) like :meth:`on_click` or :meth:`on_select` to the client listeners.
 
         .. note::
-            This should not use manuel; only cogs use this to registrer them.
+            This should not use manuel; only cogs use this to register them.
 
         """
         try:
-            listeners = self._listeners[_type]
+            listeners = self.extra_interaction_events[_type]
         except KeyError:
             listeners = []
-            self._listeners[_type] = listeners
+            self.extra_interaction_events[_type] = listeners
         
-        listeners.append((func, check))
+        listeners.append((func, lambda i: i.component.custom_id == custom_id))
 
-    def remove_interaction_listener(self, _type,  func, check):
+    def remove_interaction_listener(self, _type,  func, custom_id):
         """
         This removes an interaction(decorator) like :meth:`on_click` or :meth:`on_select` from the client listeners.
 
@@ -529,12 +526,10 @@ class BotBase(GroupMixin):
             
         """
         try:
-            listeners = self._listeners[_type]
-        except KeyError:
+            if _type in self.extra_interaction_events:
+                self.extra_interaction_events[_type].remove((func, lambda i: i.component.custom_id == custom_id))
+        except ValueError:
             pass
-        else:
-            if (func, check) in listeners:
-                listeners.remove((func, check))
 
     def add_listener(self, func, name=None):
         """The non decorator alternative to :meth:`.listen`.

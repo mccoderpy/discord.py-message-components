@@ -129,13 +129,18 @@ class CogMeta(type):
                     try:
                         getattr(value, '__cog_listener__')
                     except AttributeError:
-                        continue
+                        try:
+                            getattr(value, '__cog_interaction_listener__')
+                        except AttributeError:
+                            continue
+                        else:
+                            if elem.startswith(('cog_', 'bot_')):
+                                raise TypeError(no_bot_cog.format(base, elem))
+                            cog_interaction_listeners[elem] = value
                     else:
                         if elem.startswith(('cog_', 'bot_')):
                             raise TypeError(no_bot_cog.format(base, elem))
                         listeners[elem] = value
-                elif elem == '__cog_interaction_listeners__':
-                    cog_interaction_listeners = value
 
         new_cls.__cog_commands__ = list(commands.values()) # this will be copied in Cog.__new__
 
@@ -146,8 +151,13 @@ class CogMeta(type):
                 # the self attribute when the time comes to add them to the bot
                 listeners_as_list.append((listener_name, listener.__name__))
 
+        interaction_listeners_as_list = []
+        for interaction_listener in cog_interaction_listeners.values():
+            for listener_name, custom_id in interaction_listener.__interaction_listener_names__:
+                interaction_listeners_as_list.append((listener_name, interaction_listener.__name__, custom_id))
+
         new_cls.__cog_listeners__ = listeners_as_list
-        new_cls.__cog_interaction_listeners__ = cog_interaction_listeners
+        new_cls.__cog_interaction_listeners__ = interaction_listeners_as_list
 
         return new_cls
 
@@ -302,7 +312,7 @@ class Cog(metaclass=CogMeta):
         return decorator
     
     @classmethod
-    def on_click(self, custom_id=None):
+    def on_click(cls, custom_id=None):
         """
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
         You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
@@ -318,7 +328,7 @@ class Cog(metaclass=CogMeta):
                    custom_id='cool blue Button',
                    style=ButtonColor.blurple)
 
-            # function thats called when the Button pressed
+            # function that's called when the Button pressed
             @commands.Cog.on_click(custom_id='cool blue Button')
             async def cool_blue_button(i: discord.Interaction):
                 await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
@@ -329,24 +339,22 @@ class Cog(metaclass=CogMeta):
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func):
-            if not inspect.iscoroutinefunction(func):
+            actual = func
+            if isinstance(actual, staticmethod):
+                actual = actual.__func__
+            if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
-
-            _name = custom_id if custom_id is not None else func.__name__
-
-            def check(i):
-                return i.component.custom_id == str(_name)
-
+            actual.__cog_interaction_listener__ = True
+            name = custom_id if custom_id else actual.__name__
             try:
-                self.__cog_interaction_listeners__['raw_button_click'].append((func, check))
-            except KeyError:
-                self.__cog_interaction_listeners__['raw_button_click'] = [(func, check)]
+                actual.__interaction_listener_names__.append(('raw_button_click', name))
+            except AttributeError:
+                actual.__interaction_listener_names__ = [('raw_button_click', name)]
             return func
-
         return decorator
 
     @classmethod
-    def on_select(self, custom_id=None):
+    def on_select(cls, custom_id=None):
         """
         A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
         
@@ -377,7 +385,7 @@ class Cog(metaclass=CogMeta):
                             select_option(label='Non Binary', value='Non Binary', emoji='⚧')
                             ], placeholder='Choose your Gender')
 
-            # function thats called when the SelectMenu is used
+            # function that's called when the SelectMenu is used
             @commands.Cog.on_select()
             async def choose_your_gender(i: discord.Interaction):
                 await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
@@ -388,21 +396,18 @@ class Cog(metaclass=CogMeta):
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func):
-            if not inspect.iscoroutinefunction(func):
+            actual = func
+            if isinstance(actual, staticmethod):
+                actual = actual.__func__
+            if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
-
-            _name = custom_id if custom_id is not None else func.__name__
-
-            def check(i):
-                return i.component.custom_id == str(_name)
-
+            actual.__cog_interaction_listener__ = True
+            name = custom_id if custom_id else actual.__name__
             try:
-                self.__cog_interaction_listeners__['raw_selection_select'].append((func, check))
-            except KeyError:
-                self.__cog_interaction_listeners__['raw_selection_select'] = [(func, check)]
-            
+                actual.__interaction_listener_names__.append(('raw_selection_select', name))
+            except AttributeError:
+                actual.__interaction_listener_names__ = [('raw_selection_select', name)]
             return func
-
         return decorator
 
     def has_error_handler(self):
@@ -535,9 +540,8 @@ class Cog(metaclass=CogMeta):
         for name, method_name in self.__cog_listeners__:
             bot.add_listener(getattr(self, method_name), name)
 
-        for _type in self.__cog_interaction_listeners__.keys():
-            for (func, check) in self.__cog_interaction_listeners__[_type]:
-                bot.add_interaction_listener(_type, func, check)
+        for (_type, method_name, custom_id) in self.__cog_interaction_listeners__:
+            bot.add_interaction_listener(_type, getattr(self, method_name), custom_id)
 
         return self
 
@@ -552,9 +556,8 @@ class Cog(metaclass=CogMeta):
             for _, method_name in self.__cog_listeners__:
                 bot.remove_listener(getattr(self, method_name))
 
-            for _type in self.__cog_interaction_listeners__.keys():
-                for (func, check) in self.__cog_interaction_listeners__[_type]:
-                    bot.remove_interaction_listener(_type, func, check)
+            for (_type, method_name, custom_id) in self.__cog_interaction_listeners__:
+                bot.remove_interaction_listener(_type, getattr(self, method_name), custom_id)
 
             if cls.bot_check is not Cog.bot_check:
                 bot.remove_check(self.bot_check)

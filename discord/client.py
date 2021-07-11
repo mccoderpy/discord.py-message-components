@@ -343,8 +343,6 @@ class Client:
             await coro(*args, **kwargs)
         except asyncio.CancelledError:
             pass
-        except TypeError:
-            await coro(coro, *args, **kwargs)
         except Exception:
             try:
                 await self.on_error(event_name, *args, **kwargs)
