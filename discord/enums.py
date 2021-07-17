@@ -30,6 +30,10 @@ from collections import namedtuple
 __all__ = (
     'Enum',
     'ChannelType',
+    'ComponentType',
+    'ButtonColor',
+    'ButtonStyle',
+    'PermissionType',
     'MessageType',
     'VoiceRegion',
     'SpeakingState',
@@ -55,14 +59,17 @@ __all__ = (
     'StickerType',
 )
 
+
 def _create_value_cls(name):
     cls = namedtuple('_EnumValue_' + name, 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
     cls.__str__ = lambda self: '%s.%s' % (name, self.name)
     return cls
 
+
 def _is_descriptor(obj):
     return hasattr(obj, '__get__') or hasattr(obj, '__set__') or hasattr(obj, '__delete__')
+
 
 class EnumMeta(type):
     def __new__(cls, name, bases, attrs):
@@ -141,6 +148,7 @@ class EnumMeta(type):
         except AttributeError:
             return False
 
+
 class Enum(metaclass=EnumMeta):
     @classmethod
     def try_value(cls, value):
@@ -151,17 +159,94 @@ class Enum(metaclass=EnumMeta):
 
 
 class ChannelType(Enum):
-    text     = 0
-    private  = 1
-    voice    = 2
-    group    = 3
-    category = 4
-    news     = 5
-    store    = 6
-    stage_voice = 13
+    text           = 0
+    private        = 1
+    voice          = 2
+    group          = 3
+    category       = 4
+    news           = 5
+    store          = 6
+    news_thread    = 10
+    public_thread  = 11
+    private_thread = 12
+    stage_voice    = 13
+
 
     def __str__(self):
         return self.name
+
+class PermissionType(Enum):
+    member = 0
+    role   = 1
+
+    # i use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+
+class ComponentType(Enum):
+    ActionRow = 1
+    Button = 2
+    SelectMenu = 3
+
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+    def __eq__(self, other):
+        return int(self) == other or str(self) == other
+
+
+class ButtonStyle(Enum):
+    """
+    :class:`ButtonStyle`
+    Represents the Style for a :class:`discord.Button`
+
+    .. note ::
+        For more information about the Button-Styles, visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
+
+    """
+
+    blurple     = 1
+    Primary     = 1
+    grey        = 2
+    gray        = 2
+    Secondary   = 2
+    green       = 3
+    Success     = 3
+    red         = 4
+    Danger      = 4
+    url         = 5
+    link        = 5
+    grey_url    = 5
+    Link_Button = 5
+
+    @classmethod
+    def from_value(cls, value):
+        return try_enum(cls, value)
+
+    # the same as in the class above.
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+
+class ButtonColor(ButtonStyle):
+    """
+    :class:`ButtonColor`
+
+    .. note ::
+        This is just an Aliase to :class:`ButtonStyle`.
+    """
+    pass
+
 
 class MessageType(Enum):
     default                                      = 0
@@ -182,6 +267,12 @@ class MessageType(Enum):
     guild_discovery_requalified                  = 15
     guild_discovery_grace_period_initial_warning = 16
     guild_discovery_grace_period_final_warning   = 17
+    thread_created                               = 18
+    reply                                        = 19
+    application_command                          = 20
+    thread_starter_message                       = 21
+    guild_invite_reminder                        = 22
+
 
 class VoiceRegion(Enum):
     us_west       = 'us-west'
@@ -463,7 +554,8 @@ def try_enum(cls, val):
     If it fails it returns the value instead.
     """
 
+    # i use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
     try:
-        return cls._enum_value_map_[val]
+        return getattr(cls, '_enum_value_map_')[val]
     except (KeyError, TypeError, AttributeError):
         return val

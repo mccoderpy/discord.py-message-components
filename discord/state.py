@@ -537,22 +537,23 @@ class ConnectionState:
 
     def parse_interaction_create(self, data):
         if data.get('type', data.get('t', 0)) < 3:
-            #to make sure that other-libraries like `discord-py-slash-command` still work
-            self.dispatch('socket_responce', data)
             return
-        raw = Interaction(self, data=data)
+        raw = Interaction(state=self, data=data)
         raw.message = self._get_message(raw.message_id) if raw.message is None else raw.message
+        raw.user = self.store_user(raw._user)
         if raw.guild_id:
             raw.guild = self._get_guild(raw.guild_id)
             raw.channel = raw.guild.get_channel(raw.channel_id)
-            raw.member = Member(guild=raw.guild, data=raw._member, state=self)
+            raw.member = raw.guild.get_member(raw.user_id)
+            if raw.member is None:
+                # This can only be the case if member-intents are not activated.
+                raw.member = Member(guild=raw.guild, data=raw._member, state=self)
         else:
             raw.channel = self._get_private_channel(raw.channel_id)
-        raw.user = User(state=self, data=raw._user)
         if raw.message is not None:
             self.dispatch('interaction_create', raw)
             self.dispatch('raw_interaction_create', raw)
-            if raw.interaction_type == InteractionType.Component:
+            if raw._interaction_type == InteractionType.Component:
                 if raw.component_type == 2:
                     if not raw.message_is_hidden:
                         self.dispatch('button_click', raw, raw.component)
@@ -566,8 +567,9 @@ class ConnectionState:
                     else:
                         self.dispatch('hidden_selection_select', raw)
         else:
+            raw.message = Message(state=self, channel=raw.channel, data=raw._message)
             self.dispatch('raw_interaction_create', raw)
-            if raw.interaction_type == InteractionType.Component:
+            if raw._interaction_type == InteractionType.Component:
                 if raw.component_type == 2:
                     self.dispatch('raw_button_click', raw)
                 elif raw.component_type == 3:

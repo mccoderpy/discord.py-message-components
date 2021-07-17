@@ -23,7 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
+import re
 from .asset import Asset
 from . import utils
 
@@ -98,6 +98,23 @@ class PartialEmoji(_EmojiTag):
         self = cls(name=name, animated=animated, id=id)
         self._state = state
         return self
+
+    @classmethod
+    def from_string(cls, string: str):
+        """Converts a custom emoji as they are in a message into a partial emoji object.
+
+        .. note::
+            To get them, type a custom emoji into the chat, put an ``\`` in front of it and send it.
+            You can then use what comes out when you add a reaction or similar.
+        """
+
+        match = re.match('^<(a?):([\-\w]+):(\d+)>$', string)
+        if match:
+            print(match.groups())
+            return cls(animated=bool(match.group(1)), name=match.group(2), id=int(match.group(3)))
+        raise ValueError('The Passed Emoji is not a discord Custom_emoji.')
+
+
 
     def __str__(self):
         if self.id is None:

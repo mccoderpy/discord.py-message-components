@@ -33,10 +33,7 @@ import io
 
 from . import utils
 from .reaction import Reaction
-try:
-    from .emoji import Emoji
-except ImportError:
-    pass
+from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum
@@ -1096,7 +1093,6 @@ class Message(Hashable):
         else:
             if content is not None:
                 fields['content'] = str(content)
-        
         raw_embeds = []
 
         try:
@@ -1133,7 +1129,9 @@ class Message(Hashable):
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
+                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button),
+                                                                                        isinstance(obj,
+                                                                                                   SelectMenu)])]).sendable())
                 components = _components
                 fields['components'] = _components
 
@@ -1676,8 +1674,7 @@ class PartialMessage(Hashable):
                     elif isinstance(component, ActionRow):
                         _components.extend(component.sendable())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
-                components = _components
+                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).sendable())
                 fields['components'] = _components
 
         try:
@@ -1703,8 +1700,8 @@ class PartialMessage(Hashable):
                     allowed_mentions = allowed_mentions.to_dict()
                 fields['allowed_mentions'] = allowed_mentions
 
-        is_interaction_responce = fields.pop('__is_interaction_responce', None)
-        if is_interaction_responce is True:
+        is_interaction_response = fields.pop('__is_interaction_response', None)
+        if is_interaction_response is True:
             deferred = fields.pop('__deferred', False)
             use_webhook = fields.pop('__use_webhook', False)
             interaction_id = fields.pop('__interaction_id', None)
@@ -1718,11 +1715,11 @@ class PartialMessage(Hashable):
                                                                             application_id=application_id,
                                                                             deferred=deferred, **fields)
                 except NotFound:
-                    is_interaction_responce = None
+                    is_interaction_response = None
                 else:
                     [self.__setattr__(k, v) for k, v in fields.items()]
 
-        if is_interaction_responce is None:
+        elif is_interaction_response is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
             self._update(payload)
 
