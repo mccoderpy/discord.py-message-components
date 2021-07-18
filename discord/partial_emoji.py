@@ -110,7 +110,6 @@ class PartialEmoji(_EmojiTag):
 
         match = re.match('^<(a?):([\-\w]+):(\d+)>$', string)
         if match:
-            print(match.groups())
             return cls(animated=bool(match.group(1)), name=match.group(2), id=int(match.group(3)))
         raise ValueError('The Passed Emoji is not a discord Custom_emoji.')
 
