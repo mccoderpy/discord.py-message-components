@@ -26,8 +26,8 @@ The Original `discord.py <https://pypi.org/project/discord.py>`_ Library made by
 
 **Documentation:** `read the docs <https://discordpy-message-components.readthedocs.io/en/latest/>`_
 
-Questions, Bugs or Ideas
-________________________
+Reporting Bugs, Making Suggestions, or Asking for Help
+______________________________________________________
 
 Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
 
@@ -51,7 +51,7 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
 
 .. code:: sh
 
-    # Linux/macOS
+    # Unix (Linux/macOS)
     python3 -m pip install -U discord.py-message-components
 
     # Windows
@@ -60,7 +60,7 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
 Examples
 --------
 
-A Command that sends a message with four button message components. Upon a button press, the bot will edit the original message with the selected button's ID:
+A command that sends a message with four button message components. Upon a button press, the bot will edit the original message with the selected button's ID:
 
 .. code-block:: python
 
@@ -112,7 +112,7 @@ A Command that sends a message with four button message components. Upon a butto
     client.run('Your Bot-Token here')
 
 
-Another (complex) example where a small Embed will be sent; you can move the small white ⬜ with the Buttons:
+Another (complex) example where an embed will be sent; you can move the small white ⬜ with the buttons:
 
 .. code-block:: python
 
