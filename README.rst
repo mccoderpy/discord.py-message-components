@@ -60,8 +60,7 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
 Examples
 --------
 
-A Command that sends a Message with four button message components, which after any of the buttons are pressed will edit the original message with the selected button's ID:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A Command that sends a message with four button message components. Upon a button press, the bot will edit the original message with the selected button's ID:
 
 .. code-block:: python
 
