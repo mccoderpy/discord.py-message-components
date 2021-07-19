@@ -37,7 +37,7 @@ __________
 
 **Python 3.5.3 or higher is required**
 
-first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_ Library:
+First, if you have installed `discord.py <https://pypi.org/project/discord.py>`_ previously, uninstall the original library:
 
 .. code:: sh
 
@@ -47,7 +47,7 @@ first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_
     # Windows
     py -3 -m pip uninstall discord.py
 
-then install `this Library <https://pypi.org/project/discord.py-message-components>`_ using:
+Then install `this library <https://pypi.org/project/discord.py-message-components>`_ using:
 
 .. code:: sh
 
@@ -60,8 +60,8 @@ then install `this Library <https://pypi.org/project/discord.py-message-componen
 Examples
 --------
 
-A Command that sends you a Message and edit it when you click a Button:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A Command that sends a Message with four button message components, which after any of the buttons are pressed will edit the original message with the selected button's ID:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -88,7 +88,7 @@ A Command that sends you a Message and edit it when you click a Button:
                                        style=ButtonColor.red,
                                        emoji='😀'),
                                 Button(url='https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                                       label="This is an Link",
+                                       label="This is a Link",
                                        emoji='🎬'))
                       ]
         an_embed = discord.Embed(title='Here are some Button\'s', description='Choose an option', color=discord.Color.random())
@@ -101,19 +101,19 @@ A Command that sends you a Message and edit it when you click a Button:
         button_id = button.custom_id
 
         # This sends the Discord-API that the interaction has been received and is being "processed"
-        await interaction.defer()  # if this is not used and you also do not edit the message within 3 seconds as described below, Discord will indicate that the interaction has failed.
+        await interaction.defer()  # if this is not used and you do not edit the message within 3 seconds, Discord will indicate that the interaction has failed.
 
-        # If you use interaction.edit instead of interaction.message.edit, you do not have to deffer the interaction if your response does not last longer than 3 seconds.
-        await interaction.edit(embed=an_embed.add_field(name='Choose', value=f'Your Choose was `{button_id}`'),
+        # If you use interaction.edit instead of interaction.message.edit, you do not have to defer the interaction if your response does not last longer than 3 seconds.
+        await interaction.edit(embed=an_embed.add_field(name='Choose', value=f'Your choice was `{button_id}`'),
                                components=[components[0].disable_all_buttons(), components[1].disable_all_buttons()])
 
         # The Discord API doesn't send an event when you press a link button so we can't "receive" that.
 
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 
-Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:
+Another (complex) Example where a small Embed will be sent; you can move a small white ⬜ with the Buttons:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
