@@ -18,12 +18,19 @@
   :target: https://pepy.tech/project/discord.py-message-components
   :alt: Total downloads for the project
 
+.. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
+  :target: https://discordpy-message-components.readthedocs.io/en/latest/
+  :alt: Documentation Status
+
 The Original `discord.py <https://pypi.org/project/discord.py>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+
+**Documentation:** `read the docs <https://discordpy-message-components.readthedocs.io/en/latest/>`_
 
 Questions, Bugs or Ideas
 ________________________
 
 Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+
 
 Installing
 __________
@@ -87,8 +94,8 @@ A Command that sends you a Message and edit it when you click a Button:
         an_embed = discord.Embed(title='Here are some Button\'s', description='Choose an option', color=discord.Color.random())
         msg = await ctx.send(embed=an_embed, components=components)
 
-        def _check(i: discord.Interaction, b: discord.ButtonClik):
-            return i.message == msg and i.author == ctx.author
+        def _check(i: discord.Interaction, b: discord.ButtonClick):
+            return i.message == msg and i.member == ctx.author
 
         interaction, button = await client.wait_for('button_click', check=_check)
         button_id = button.custom_id
@@ -195,7 +202,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
 
 
     @client.event
-    async def on_raw_button_click(interaction: discord.Interaction):
+    async def on_raw_interaction_create(interaction: discord.Interaction):
         await interaction.defer()
         pointer: Pointer = get_pointer(interaction.guild)
         if not (message := interaction.message):
