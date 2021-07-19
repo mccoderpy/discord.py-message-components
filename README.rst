@@ -112,8 +112,7 @@ A Command that sends a message with four button message components. Upon a butto
     client.run('Your Bot-Token here')
 
 
-Another (complex) Example where a small Embed will be sent; you can move a small white ⬜ with the Buttons:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Another (complex) example where a small Embed will be sent; you can move the small white ⬜ with the Buttons:
 
 .. code-block:: python
 
