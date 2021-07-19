@@ -45,7 +45,7 @@ if version.endswith(('a', 'b', 'rc')):
 
 # The text of the README file
 
-readme = Path('C:/Users/McCub/Desktop/discord.py-message-components/README.rst').read_text(encoding='utf-8')
+readme = Path('./README.rst').read_text(encoding='utf-8')
 
 #
 extras_require = {
