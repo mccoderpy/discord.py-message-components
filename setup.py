@@ -1,6 +1,5 @@
 import os
 import re
-import setuptools
 from pathlib import Path
 from setuptools import setup
 
@@ -35,7 +34,7 @@ if version.endswith(('a', 'b', 'rc')):
         if out:
             version += out.decode('utf-8').strip()
         p = subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'],
-                             stdout=subprocess.PIPE, stderr=subprocess.PIP)
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         if out:
             version += '+g' + out.decode('utf-8').strip()
@@ -65,8 +64,8 @@ setup(
     author_email="mccuber04@outlook.de",
     version=str(v if v else version),
     author="mccoder.py",
-    description="discord.py Library with implementation of the Discord-Message-Components",
-    keywords='discord.py discord.py-message-components discord-components discord-interactions',
+    description="The discord.py Library with implementation of the Discord-Message-Components",
+    keywords='discord.py discord.py-message-components discord-components discord-interactions discord message-components',
     long_description=readme,
     long_description_content_type="text/x-rst",
     extras_require=extras_require,
