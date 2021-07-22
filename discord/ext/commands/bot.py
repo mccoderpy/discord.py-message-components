@@ -415,7 +415,7 @@ class BotBase(GroupMixin):
                     custom_id='cool blue Button',
                     style=ButtonColor.blurple)
 
-            # function thats called when the Button pressed
+            # function that's called when the Button pressed
             @client.on_click(custom_id='cool blue Button')
             async def cool_blue_button(i: discord.Interaction):
                 await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
@@ -428,17 +428,9 @@ class BotBase(GroupMixin):
         def decorator(func):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
-            _name = custom_id if custom_id is not None else func.__name__
-
-            try:
-                listeners = self._listeners['raw_button_click']
-            except KeyError:
-                listeners = []
-                self._listeners['raw_button_click'] = listeners
-
-            listeners.append((func, lambda i: i.component.custom_id == custom_id))
+            _custom_id = custom_id if custom_id is not None else func.__name__
+            self.add_interaction_listener('raw_button_click', func, _custom_id)
             return func
-
         return decorator
     
     def on_select(self, custom_id=None):
@@ -472,10 +464,10 @@ class BotBase(GroupMixin):
                             select_option(label='Non Binary', value='Non Binary', emoji='⚧')
                             ], placeholder='Choose your Gender')
 
-            # function thats called when the SelectMenu is used
+            # function that's called when the SelectMenu is used
             @client.on_select()
-            async def choose_your_gender(i: discord.Interaction):
-                await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
+            async def choose_your_gender(i: discord.Interaction, select_menu):
+                await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
         Raises
         --------
@@ -485,15 +477,8 @@ class BotBase(GroupMixin):
         def decorator(func):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
-            _name = custom_id if custom_id is not None else func.__name__
-
-            try:
-                listeners = self._listeners['raw_selection_select']
-            except KeyError:
-                listeners = []
-                self._listeners['raw_selection_select'] = listeners
-
-            listeners.append((func, lambda i: i.component.custom_id == custom_id))
+            _custom_id = custom_id if custom_id is not None else func.__name__
+            self.add_interaction_listener('raw_selection_select', func, _custom_id)
             return func
 
         return decorator
@@ -515,7 +500,7 @@ class BotBase(GroupMixin):
             listeners = []
             self.extra_interaction_events[_type] = listeners
         
-        listeners.append((func, lambda i: i.component.custom_id == custom_id))
+        listeners.append((func, lambda i, c: c.custom_id == custom_id))
 
     def remove_interaction_listener(self, _type,  func, custom_id):
         """
@@ -527,7 +512,7 @@ class BotBase(GroupMixin):
         """
         try:
             if _type in self.extra_interaction_events:
-                self.extra_interaction_events[_type].remove((func, lambda i: i.component.custom_id == custom_id))
+                self.extra_interaction_events[_type].remove((func, lambda i, c: c.custom_id == custom_id))
         except ValueError:
             pass
 
