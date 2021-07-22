@@ -1182,7 +1182,7 @@ class Message(Hashable):
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
-            files = fields.pop('files', fields.pop('file'))
+            files = fields.pop('files', fields.pop('file', None))
             if files and not isinstance(files, list):
                 files = [files]
             if fields:
@@ -1729,18 +1729,23 @@ class PartialMessage(Hashable):
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
+            files = fields.pop('files', fields.pop('file', None))
+            if files and not isinstance(files, list):
+                files = [files]
             if fields:
                 try:
                     payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
                                                                                interaction_id=interaction_id,
                                                                                token=interaction_token,
                                                                                application_id=application_id,
-                                                                               deferred=deferred, **fields)
+                                                                               deferred=deferred, files=files, **fields)
                 except NotFound:
                     is_interaction_response = None
                 else:
-                    self._update(payload)
-                    # [self.__setattr__(k, v) for k, v in fields.items()]
+                    if payload:
+                        self._update(payload)
+                    else:
+                        [self.__setattr__(k, v) for k, v in fields.items()]
 
         if is_interaction_response is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
