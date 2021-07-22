@@ -997,6 +997,28 @@ class Message(Hashable):
         if self.type is MessageType.guild_discovery_grace_period_final_warning:
             return 'This server has failed Discovery activity requirements for 3 weeks in a row. If this server fails for 1 more week, it will be removed from Discovery.'
 
+    @property
+    def all_components(self):
+        """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
+        for action_row in self.components:
+            for component in action_row:
+                yield component
+
+    @property
+    def all_buttons(self):
+        """Returns all :class:`Button`'s that are contained in the message"""
+        for action_row in self.components:
+            for component in action_row:
+                yield component
+
+    @property
+    def all_select_menus(self):
+        """Returns all :class:`SelectMenu`'s that are contained in the message"""
+        for action_row in self.components:
+            for component in action_row:
+                if isinstance(component, SelectMenu):
+                    yield component
+
     async def delete(self, *, delay=None):
         """|coro|
 
@@ -1057,7 +1079,7 @@ class Message(Hashable):
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
         components: List[Union[:class:`discord.ActionRow`, List]]
-            A list of :class:`discord.Actionrow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
+            A list of :class:`discord.ActionRow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
@@ -1121,18 +1143,13 @@ class Message(Hashable):
         else:
             if components is not None:
                 _components = []
-                for component in ([components] if not isinstance(components, list) else components):
-                    if isinstance(component, Button):
-                        _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, SelectMenu):
-                        _components.extend(ActionRow(component).sendable())
+                for component in (list(components) if not isinstance(components, list) else components):
+                    if isinstance(component, (Button, SelectMenu)):
+                        _components.extend(ActionRow(component).to_dict())
                     elif isinstance(component, ActionRow):
-                        _components.extend(component.sendable())
+                        _components.extend(component.to_dict())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button),
-                                                                                        isinstance(obj,
-                                                                                                   SelectMenu)])]).sendable())
-                components = _components
+                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
                 fields['components'] = _components
 
         try:
@@ -1158,28 +1175,35 @@ class Message(Hashable):
                     allowed_mentions = allowed_mentions.to_dict()
                 fields['allowed_mentions'] = allowed_mentions
 
-        is_interaction_responce = fields.pop('__is_interaction_responce', None)
-        if is_interaction_responce is True:
+        is_interaction_response = fields.pop('__is_interaction_response', None)
+        if is_interaction_response is True:
             deferred = fields.pop('__deferred', False)
             use_webhook = fields.pop('__use_webhook', False)
             interaction_id = fields.pop('__interaction_id', None)
             interaction_token = fields.pop('__interaction_token', None)
             application_id = fields.pop('__application_id', None)
+            files = fields.pop('files', fields.pop('file'))
+            if files and not isinstance(files, list):
+                files = [files]
             if fields:
                 try:
-                    data = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
+                    payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
                                                                             interaction_id=interaction_id,
                                                                             token=interaction_token,
                                                                             application_id=application_id,
-                                                                            deferred=deferred, **fields)
+                                                                            deferred=deferred, files=files, **fields)
                 except NotFound:
-                    is_interaction_responce = None
+                    is_interaction_response = None
                 else:
-                    [self.__setattr__(k, v) for k, v in fields.items()]
+                    if payload:
+                        self._update(payload)
+                    else:
+                        [self.__setattr__(k, v) for k, v in fields.items()]
 
-        if is_interaction_responce is None:
+        if is_interaction_response is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
             self._update(payload)
+
         if delete_after is not None:
             await self.delete(delay=delete_after)
 
@@ -1596,7 +1620,7 @@ class PartialMessage(Hashable):
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
         components: List[Union[:class:`discord.ActionRow`, List]]
-            A list of :class:`discord.Actionrow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
+            A list of :class:`discord.ActionRow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
@@ -1666,15 +1690,13 @@ class PartialMessage(Hashable):
         else:
             if components is not None:
                 _components = []
-                for component in ([components] if not isinstance(components, list) else components):
-                    if isinstance(component, Button):
-                        _components.extend(ActionRow(component).sendable())
-                    elif isinstance(component, SelectMenu):
-                        _components.extend(ActionRow(component).sendable())
+                for component in (list(components) if not isinstance(components, list) else components):
+                    if isinstance(component, (Button, SelectMenu)):
+                        _components.extend(ActionRow(component).to_dict())
                     elif isinstance(component, ActionRow):
-                        _components.extend(component.sendable())
+                        _components.extend(component.to_dict())
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).sendable())
+                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
                 fields['components'] = _components
 
         try:
@@ -1709,22 +1731,22 @@ class PartialMessage(Hashable):
             application_id = fields.pop('__application_id', None)
             if fields:
                 try:
-                    data = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
-                                                                            interaction_id=interaction_id,
-                                                                            token=interaction_token,
-                                                                            application_id=application_id,
-                                                                            deferred=deferred, **fields)
+                    payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
+                                                                               interaction_id=interaction_id,
+                                                                               token=interaction_token,
+                                                                               application_id=application_id,
+                                                                               deferred=deferred, **fields)
                 except NotFound:
                     is_interaction_response = None
                 else:
-                    [self.__setattr__(k, v) for k, v in fields.items()]
+                    self._update(payload)
+                    # [self.__setattr__(k, v) for k, v in fields.items()]
 
-        elif is_interaction_response is None:
+        if is_interaction_response is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
             self._update(payload)
 
         if delete_after is not None:
             await self.delete(delay=delete_after)
 
-        if fields:
-            return self._state.create_message(channel=self.channel, data=data)
+        return self._state.create_message(channel=self.channel, data=payload)

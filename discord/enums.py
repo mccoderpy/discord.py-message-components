@@ -34,6 +34,7 @@ __all__ = (
     'ButtonColor',
     'ButtonStyle',
     'PermissionType',
+    'InteractionCallbackType',
     'MessageType',
     'VoiceRegion',
     'SpeakingState',
@@ -246,6 +247,13 @@ class ButtonColor(ButtonStyle):
         This is just an Aliase to :class:`ButtonStyle`.
     """
     pass
+
+class InteractionCallbackType(Enum):
+    pong = 1
+    msg_with_source = 4
+    deferred_msg_with_source = 5
+    deferred_update_msg = 6
+    update_msg = 7
 
 
 class MessageType(Enum):

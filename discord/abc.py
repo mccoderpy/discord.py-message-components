@@ -1038,18 +1038,16 @@ class Messageable(metaclass=abc.ABCMeta):
             embed_list.extend([e.to_dict() for e in embeds])
         embeds = embed_list
         if len(embeds) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be sent with a response is 10, get: {len(embeds)}')
+            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embeds)}')
         if components:
             _components = []
             for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, Button):
-                    _components.extend(ActionRow(component).sendable())
-                elif isinstance(component, SelectMenu):
-                    _components.extend(ActionRow(component).sendable())
+                if isinstance(component, (Button, SelectMenu)):
+                    _components.extend(ActionRow(component).to_dict())
                 elif isinstance(component, ActionRow):
-                    _components.extend(component.sendable())
+                    _components.extend(component.to_dict())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button,SelectMenu))]).sendable())
+                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
             components = _components
 
         if allowed_mentions is not None:

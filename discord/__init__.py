@@ -29,7 +29,7 @@ from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .activity import *
 from .channel import *
-from .components import ActionRow, Button, SelectMenu, SelectOption, select_option
+from .components import ActionRow, Button, SelectMenu, SelectOption
 from .guild import Guild
 from .flags import *
 from .relationship import Relationship

@@ -255,7 +255,10 @@ class EmptyActionRow(DiscordException):
 
 
 class UnknowInteraction(DiscordWarning):
-    def __init__(self, interaction_id: int):
-        msg = f'You have already respond to this interaction ({interaction_id})' \
-              f' and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
+    """
+    A warning that comes when you try to interact with an expired interacion.
+    """
+    def __init__(self, interaction_id):
+        msg = f'You have already respond to this interaction ({interaction_id}) ' \
+              f'and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
         super().__init__(msg)
