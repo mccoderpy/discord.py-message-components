@@ -1,32 +1,43 @@
-.. image:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
-    :target: https://pypi.org/project/discord.py-message-components
-    :alt: Name of the project
-            
-.. image:: https://discord.com/api/guilds/852871920411475968/embed.png
-  :target: https://discord.gg/sb69muSqsg
-  :alt: Discord Server Invite
 
-.. image:: https://img.shields.io/pypi/v/discord.py-message-components.svg
-  :target: https://pypi.python.org/pypi/discord.py-message-components
-  :alt: PyPI version info
+Welcome to discord\.py-message-components' documentation!
+=========================================================
 
-.. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
-  :target: https://pypi.python.org/pypi/discord.py-message-components
-  :alt: PyPI supported Python versions
-  
-.. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
-  :target: https://pepy.tech/project/discord.py-message-components
-  :alt: Total downloads for the project
+.. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
+   :name: discord.py-message-components
+   :align: center
+   :alt: Name of the Project (discord.py-message-components)
 
-.. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
-  :target: https://discordpy-message-components.readthedocs.io/en/latest/
-  :alt: Documentation Status
+   ..
+   .. image:: https://discord.com/api/guilds/852871920411475968/embed.png
+      :target: https://discord.gg/sb69muSqsg
+      :alt: Discord Server Invite
 
-The Original `discord.py <https://pypi.org/project/discord.py>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+   .. image:: https://img.shields.io/pypi/v/discord.py-message-components.svg
+      :target: https://pypi.python.org/pypi/discord.py-message-components
+      :alt: PyPI version info
 
-.. raw:: html
+   .. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
+      :target: https://pypi.python.org/pypi/discord.py-message-components
+      :alt: PyPI supported Python versions
 
-    <a style="align-self: center;" href="https://discordpy-message-components.readthedocs.io/en/latest/">Documentation</a>
+   .. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
+      :target: https://pepy.tech/project/discord.py-message-components
+      :alt: Total downloads for the project
+
+   .. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
+      :target: https://discordpy-message-components.readthedocs.io/en/latest/
+      :alt: Documentation Status
+
+   The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+
+.. figure:: images/rtd-logo-wordmark-light.png
+   :name: discord.py-message-components documentation
+   :alt: Link to the documentation of discord.py-message-components
+   :align: center
+   :scale: 20%
+   :target: https://discordpy-message-components.readthedocs.io/en/latest/
+
+   **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/latest/>`_
 
 You need help? Or have ideas/feedback?
 ______________________________________
