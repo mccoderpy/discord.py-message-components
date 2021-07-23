@@ -36,6 +36,8 @@ release = '1.7.5'
 # ones.
 extensions = [
         'sphinx_rtd_theme',
+        'sphinxcontrib.contentui',
+
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -30,16 +30,23 @@ Welcome to discord.py-message-components' documentation!
   :target: https://discordpy-message-components.readthedocs.io/en/latest/
   :alt: Documentation Status
 
-The Original `discord.py <https://pypi.org/project/discord.py>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
 
-- `read the docs <https://discordpy-message-components.readthedocs.io/en/latest/>`_
+`read the docs <https://discordpy-message-components.readthedocs.io/en/latest/>`_
+
+You need help? Or have ideas/feedback?
+______________________________________
+
+Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+
 
 Installing:
 ___________
 
 **Python 3.5.3 or higher is required**
 
-first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_ Library:
+This Library overwrite the original discord.py Library so to be sure all will work fine
+first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_ Library if it is installed:
 
 .. code:: sh
 
@@ -49,7 +56,7 @@ first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_
     # Windows
     py -3 -m pip uninstall discord.py
 
-then install `this Library <https://pypi.org/project/discord.py-message-components>`_ using:
+Then install `this Library <https://pypi.org/project/discord.py-message-components>`_ using:
 
 .. code:: sh
 
@@ -71,7 +78,7 @@ Sending-buttons
 
    import discord
    from discord.ext import commands
-   from discord.components import Button, ButtonColor
+   from discord import Button, ButtonStyle
 
 
    client = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
@@ -82,19 +89,19 @@ Sending-buttons
       await ctx.send('Hey here are some Buttons', components=[[
          Button(label="Hey i\'m a red Button",
                   custom_id="this is an custom_id",
-                  style=ButtonColor.red),
+                  style=ButtonStyle.red),
          Button(label="Hey i\'m a green Button",
                   custom_id="this is an custom_id",
-                  style=ButtonColor.green),
+                  style=ButtonStyle.green),
          Button(label="Hey i\'m a blue Button",
                   custom_id="this is an custom_id",
-                  style=ButtonColor.blurple),
+                  style=ButtonStyle.blurple),
          Button(label="Hey i\'m a grey Button",
                   custom_id="this is an custom_id",
-                  style=ButtonColor.grey),
+                  style=ButtonStyle.grey),
          Button(label="Hey i\'m a URL Button",
                   url="https://pypi.org/project/discord.py-message-components",
-                  style=ButtonColor.grey_url)
+                  style=ButtonStyle.url)
       ]])
 
    client.run('Your Bot-Token')
@@ -102,13 +109,13 @@ Sending-buttons
 ________________________________________
 
 Interact when a button was pressed
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          
 .. code-block:: python
 
    import discord
    from discord.ext import commands
-   from discord.components import Button, ButtonColor
+   from discord import Button, ButtonStyle
 
 
    client = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
@@ -119,19 +126,19 @@ Interact when a button was pressed
       msg_with_buttons = await ctx.send('Hey here are some Buttons', components=[[
           Button(label="Hey i\'m a red Button",
                  custom_id="red",
-                 style=ButtonColor.red),
+                 style=ButtonStyle.red),
           Button(label="Hey i\'m a green Button",
                  custom_id="green",
-                 style=ButtonColor.green),
+                 style=ButtonStyle.green),
           Button(label="Hey i\'m a blue Button",
                  custom_id="blue",
-                 style=ButtonColor.blurple),
+                 style=ButtonStyle.blurple),
           Button(label="Hey i\'m a grey Button",
                  custom_id="grey",
-                 style=ButtonColor.grey)
+                 style=ButtonStyle.grey)
       ]])
       
-      def check_button(i: discord.Interaction, b: discord.ButtonClick):
+      def check_button(i: discord.Interaction, button):
           return i.author == ctx.author and i.message == msg_with_buttons
       
       interaction, button = await client.wait_for('button_click', check=check_button)
@@ -145,8 +152,8 @@ Interact when a button was pressed
 
 .. note:: 
 
-   You could set the parameter :attr:`hidden` in the respond to ``True`` to make the message ephemeral.
-   Visit `discord.Interaction.respond <./interaction.html#interaction-respond>`_ for more information about :meth:`respond()`.
+   You could set the parameter :attr:`hidden` in the response to ``True`` to make the message ephemeral.
+   See `discord.Interaction.respond <./interaction.html#interaction-respond>`_ for more information about :meth:`respond()`.
 
 ________________________________________
 
@@ -157,7 +164,7 @@ Sending-SelectMenu's and respond to them
 
    import discord
    from discord.ext import commands
-   from discord.components import Button, SelectMenu, ButtonColor, select_option as so
+   from discord import Button, SelectMenu, SelectOption
 
 
    client = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
@@ -165,28 +172,23 @@ Sending-SelectMenu's and respond to them
 
    @client.command()
    async def select(ctx):
-      msg_with_buttons_and_selects = await ctx.send('Hey here is an nice Select-Menu', components=[[
-         Button(emoji='◀', custom_id="back",
-                  style=ButtonColor.blurple),
-         Button(emoji="▶",
-                  custom_id="next",
-                  style=ButtonColor.blurple)],
+      msg_with_selects = await ctx.send('Hey here is an nice Select-Menu', components=[
          [
                SelectMenu(custom_id='_select_it', options=[
-                  so(emoji='1️⃣', label='Option Nr° 1', value='1', description='The first option'),
-                  so(emoji='2️⃣', label='Option Nr° 2', value='2', description='The second option'),
-                  so(emoji='3️⃣', label='Option Nr° 3', value='3', description='The third option'),
-                  so(emoji='4️⃣', label='Option Nr° 4', value='4', description='The fourth option')],
+                  SelectOption(emoji='1️⃣', label='Option Nr° 1', value='1', description='The first option'),
+                  SelectOption(emoji='2️⃣', label='Option Nr° 2', value='2', description='The second option'),
+                  SelectOption(emoji='3️⃣', label='Option Nr° 3', value='3', description='The third option'),
+                  SelectOption(emoji='4️⃣', label='Option Nr° 4', value='4', description='The fourth option')],
                         placeholder='Select some Options', max_values=3)
             ]])
 
-      def check_selection(i: discord.Interaction, s: discord.SelectionSelect):
-         return i.author == ctx.author and i.message == msg_with_buttons_and_selects
+      def check_selection(i: discord.Interaction, select_menu):
+         return i.author == ctx.author and i.message == msg_with_selects
 
-      interaction, select = await client.wait_for('selection_select', check=check_selection)
+      interaction, select_menu = await client.wait_for('selection_select', check=check_selection)
 
       embed = discord.Embed(title='You have chosen:',
-                           description=f"You have chosen "+'\n'.join([f'\nOption Nr° {o}' for o in select.values]),
+                           description=f"You have chosen "+'\n'.join([f'\nOption Nr° {o}' for o in select_menu.values]),
                            color=discord.Color.random())
       await interaction.respond(embed=embed)
 
@@ -194,8 +196,15 @@ Sending-SelectMenu's and respond to them
 
 ________________________________________
 
+coro
+~~~~
+
+A coro (coroutine) is a method that needs to be awaited means ``await method``.
+
+See the official `Python-Docs <https://docs.python.org/3/c-api/coro.html>`_.
+
 .. toctree:: 
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents: 
 
    additions.rst

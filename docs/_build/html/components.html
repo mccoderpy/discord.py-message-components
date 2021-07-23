@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/contentui.css" type="text/css" />
 
   
   
@@ -35,6 +36,7 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/contentui.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -42,7 +44,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Interaction" href="interaction.html" />
-    <link rel="prev" title="Additions and adjustments to discord.py buildin-functions" href="additions.html" /> 
+    <link rel="prev" title="Additions and adjustments to discord.py builtin-functions" href="additions.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -87,31 +89,10 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="additions.html">Additions and adjustments to discord.py buildin-functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="additions.html">Additions and adjustments to discord.py builtin-functions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Components</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#discord-buttoncolor"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#discord-actionrow-args-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#methods">Methods</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#discord-button-kwargs"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#button-parameters">Parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#button-methods">Methods</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#select-option"><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option()</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#paramerts">Paramerts</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#selectmenu-custom-id-options-placeholder-min-values"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#select-menu-parameters">Parameters</a><ul class="simple">
-</ul>
-</li>
-</ul>
-</li>
 <li class="toctree-l2"><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 </li>
@@ -185,251 +166,461 @@
             
   <div class="section" id="components">
 <h1>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="discord-buttoncolor">
-<span id="buttoncolor"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ButtonColor</span></code><a class="headerlink" href="#discord-buttoncolor" title="Permalink to this headline">¶</a></h2>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">blurple</span></code> = 1</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">grey</span></code> = 2</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">green</span></code> = 3</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">red</span></code> = 4</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">grey_url</span></code> (navigates to an URL) = 5</p></li>
-</ul>
-</div></blockquote>
+<span class="target" id="buttoncolor"></span><dl class="py class">
+<dt class="sig sig-object py" id="ButtonStyle">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ButtonStyle</span></span><a class="headerlink" href="#ButtonStyle" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is located in discord.enums but i place it here.</p>
+<p>The possible styles for a <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 9%" />
+<col style="width: 20%" />
+<col style="width: 41%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>NAME</p></th>
+<th class="head"><p>VALUE</p></th>
+<th class="head"><p>ALIASES</p></th>
+<th class="head"><p>EXAMPLE</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><dl class="py attribute">
+<dt class="sig sig-object py" id="ButtonStyle.blurple">
+<span class="sig-name descname"><span class="pre">blurple</span></span><a class="headerlink" href="#ButtonStyle.blurple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Primary</span></code></p></td>
+<td><img alt="Blue Button Picture" src="_images/ict5example.gif" />
+</td>
+</tr>
+<tr class="row-odd"><td><dl class="py attribute">
+<dt class="sig sig-object py" id="ButtonStyle.grey">
+<span class="sig-name descname"><span class="pre">grey</span></span><a class="headerlink" href="#ButtonStyle.grey" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gray</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Secondary</span></code></p></td>
+<td><img alt="Grey Button Picture" src="_images/ict5example.gif" />
+</td>
+</tr>
+<tr class="row-even"><td><dl class="py attribute">
+<dt class="sig sig-object py" id="ButtonStyle.green">
+<span class="sig-name descname"><span class="pre">green</span></span><a class="headerlink" href="#ButtonStyle.green" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</td>
+<td><p>3</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Success</span></code></p></td>
+<td><img alt="Green Button Picture" src="_images/ict5example.gif" />
+</td>
+</tr>
+<tr class="row-odd"><td><dl class="py attribute">
+<dt class="sig sig-object py" id="ButtonStyle.red">
+<span class="sig-name descname"><span class="pre">red</span></span><a class="headerlink" href="#ButtonStyle.red" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</td>
+<td><p>4</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Danger</span></code></p></td>
+<td><img alt="Red Button Picture" src="_images/ict5example.gif" />
+</td>
+</tr>
+<tr class="row-even"><td><dl class="py attribute">
+<dt class="sig sig-object py" id="ButtonStyle.url">
+<span class="sig-name descname"><span class="pre">url</span></span><a class="headerlink" href="#ButtonStyle.url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</td>
+<td><p>5</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">link</span></code>,
+<code class="docutils literal notranslate"><span class="pre">grey_url</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Link_Button</span></code></p></td>
+<td><img alt="URL Button Picture" src="_images/ict5example.gif" />
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <hr class="docutils" />
-</div>
-<div class="section" id="discord-actionrow-args-kwargs">
-<span id="actionrow"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow(*args,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#discord-actionrow-args-kwargs" title="Permalink to this headline">¶</a></h2>
-<p>Represents an <code class="docutils literal notranslate"><span class="pre">ActionRow</span></code>-Part for the components of a <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ActionRow">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ActionRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">components</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents an <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>-Part for the components of a <a class="reference internal" href="additions.html#discord.Message" title="discord.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You could use a <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> instead of this but you dont have the functions and parameters of this class then.</p>
+<p>For general information about ActionRow’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#actionrow">Discord-API Documentation</a>.</p>
 </div>
-<div class="section" id="parameters">
-<span id="actionrow-parameters"></span><h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><ul class="simple">
-<li><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">*args</span></code>: Union[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code>]</dt><dd><p>An array of <code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code>/s and/or <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectnMenu</span></code>/s.</p>
-</dd>
-</dl>
-</li>
-</ul>
-<ul class="simple" id="actionrow-force">
-<li><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">force</span></code>: Optional[Bool]</dt><dd><p>When set to <code class="docutils literal notranslate"><span class="pre">True</span></code> an Empty <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> will be ignored</p>
-</dd>
-</dl>
-</li>
-</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For more information about ActionRow’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#actionrow">Discord-API Documentation</a>.</p>
+<p>You could use a <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> instead of this but you don’t have the functions and parameters of this class then.</p>
 </div>
-</div></blockquote>
-</div>
-<div class="section" id="methods">
-<span id="actionrow-methods"></span><h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><dl class="simple" id="actionrow-sendable">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">sendable()</span></code> -&gt; Dict</dt><dd><p>Makes the <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> sendable to discord.</p>
+<dl class="field-list simple" id="actionrow-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>components</strong> – Union[<a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>]
+The components the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a> should have. It could contain at least 5 <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> or 1 <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>.</p>
 </dd>
 </dl>
-<dl class="simple" id="actionrow-disable-all-buttons">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_all_buttons()</span></code></dt><dd><p>Disable all objects’s of type <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> in this <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.from_dict">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a dict (e.g. created with <a class="reference internal" href="#ActionRow.to_dict" title="ActionRow.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a>) into an ActionRow, provided it is in the format Discord expects.</p>
+<p>You can read about this format in the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#action-rows">official Discord documentation</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">return</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ActionRow</span></code></p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dict</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>
+The dictionary to convert into an ActionRow.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
 </dd>
 </dl>
-</dd>
-</dl>
-<dl id="actionrow-disable-all-buttons-if">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_all_buttons_if(check:</span> <span class="pre">Union[Bool,</span> <span class="pre">Callable],</span> <span class="pre">**kwargs)()</span></code></dt><dd><p>Disable all <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> in this <code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
-<p><strong>Parameters</strong></p>
-<blockquote>
-<div><ul class="simple">
-<li><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code>: Union[Bool, Callable]</dt><dd><p>could be a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">**kwargs</span></code></dt><dd><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">kwargs</span></code> that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code></p>
-</dd>
-</dl>
-</li>
-</ul>
-</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert this <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a> in to a dict.</p>
 <dl class="field-list simple">
-<dt class="field-odd">return</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></p>
-</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
-<hr class="docutils" />
-</div>
-</div>
-<div class="section" id="discord-button-kwargs">
-<span id="button"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button(**kwargs)</span></code><a class="headerlink" href="#discord-button-kwargs" title="Permalink to this headline">¶</a></h2>
-<p>Represents a <code class="docutils literal notranslate"><span class="pre">Discord-Button</span></code></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For more information Discord-Button’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons">Documentation</a> of the discord-api.</p>
-</div>
-<div class="section" id="button-parameters">
-<span id="id1"></span><h3>Parameters<a class="headerlink" href="#button-parameters" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><dl class="simple" id="button-label">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">label</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></dt><dd><p>The Text displayed in discord on the Button. Maximal lenght is 80 Chars.</p>
-</dd>
-</dl>
-<dl class="simple" id="button-custom-id">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</dt><dd><p>The custom_id discord send us when a User press the Button. The max. lenght of this is 100.</p>
-</dd>
-</dl>
-<dl id="button-style">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">style</span></code>: Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonColor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle</span></code>, Any[1, 2, 3, 4, 5]]</dt><dd><p>The Style of the Button.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>To get more infos about the styles wisit
-<a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons-button-styles">the Discord-API Documentation</a>.</p>
-</div>
-</dd>
-</dl>
-<dl class="simple" id="button-emoji">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">emoji</span></code>: Optional[Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.PartialEmoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Emoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</dt><dd><p>The Emoji that will be displayed on the left side of the Button.</p>
-</dd>
-</dl>
-<dl id="button-url">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code>: Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</dt><dd><p>The URL the Button links too.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you set this, the <code class="xref py py-attr docutils literal notranslate"><span class="pre">style</span></code> will automaticly set to <code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle.Link_Button</span></code></p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>You can’t pass a <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> and a <code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code> beacuse discord dont send anything when clicking on an <code class="docutils literal notranslate"><span class="pre">URL-Button</span></code> so it dont accept both; <code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code>/ButtonStyle.Link_Button and <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>!</p>
-</div>
-</dd>
-</dl>
-<dl class="simple" id="button-disabled">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">disabled</span></code>: <code class="xref py py-class docutils literal notranslate"><span class="pre">Bool</span></code></dt><dd><p>Whether the Button is disabled; defauld False.</p>
-</dd>
-</dl>
-</div></blockquote>
-</div>
-<div class="section" id="button-methods">
-<span id="id2"></span><h3>Methods<a class="headerlink" href="#button-methods" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><p id="button-disable-if"><code class="xref py py-meth docutils literal notranslate"><span class="pre">disable_if()</span></code></p>
-<dl>
-<dt>Disable the <code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</dt><dd><ul class="simple">
-<li><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code>: typing.Union[bool, typing.Callable]</dt><dd><p>Could be a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">**kwargs</span></code>: Any[SupportsIndex]</dt><dd><p>Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></p>
-</dd>
-</dl>
-</li>
-</ul>
-<dl class="field-list simple">
-<dt class="field-odd">return</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code></p>
-</dd>
-</dl>
-</dd>
-</dl>
-<p id="button-set-color-if"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_color_if()</span></code></p>
-<p>Sets the Color(Style) of a <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code> to the provided <code class="xref py py-attr docutils literal notranslate"><span class="pre">color</span></code> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code>: could be a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usally any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">color</span></code>: the Color(Style) that should set if the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">**kwargs</span></code>: <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></p></li>
-</ul>
-<dl class="field-list simple">
-<dt class="field-odd">return</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Button</span></code></p>
-</dd>
-</dl>
-</div></blockquote>
-</div></blockquote>
-<hr class="docutils" />
-</div>
-</div>
-<div class="section" id="select-option">
-<span id="id3"></span><h2><code class="xref py py-func docutils literal notranslate"><span class="pre">select_option()</span></code><a class="headerlink" href="#select-option" title="Permalink to this headline">¶</a></h2>
-<p>Builds you a dict which can be used as an option for a <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></p>
-<div class="section" id="paramerts">
-<span id="select-option-parameters"></span><h3>Paramerts<a class="headerlink" href="#paramerts" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><dl class="simple">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">label</span></code>: str</dt><dd><p>The user-facing name of the option, max 25 characters</p>
-</dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">value</span></code>: str</dt><dd><p>The dev-define value of the option, max 100 characters</p>
-</dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">description</span></code>: Optional[str]</dt><dd><p>An additional description of the option, max 50 characters</p>
-</dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">emoji</span></code>: Optional[int]</dt><dd><p>The minimum number of items that must be chosen; default 1, min 0, max 25</p>
-</dd>
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_values</span></code>: Optional[int]</dt><dd><p>The maximum number of items that can be chosen; default 1, max 25</p>
-</dd>
-</dl>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">return</dt>
+<dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.disable_all_buttons">
+<span class="sig-name descname"><span class="pre">disable_all_buttons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.disable_all_buttons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable all object’s of type <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> in this <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.disable_all_buttons_if">
+<span class="sig-name descname"><span class="pre">disable_all_buttons_if</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.disable_all_buttons_if" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable all <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> (s) in this <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>check</strong> – Union[Bool, Callable]
+Could be a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p></li>
+<li><p><strong>*args</strong> – Any
+Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.disable_all_select_menus_if">
+<span class="sig-name descname"><span class="pre">disable_all_select_menus_if</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.disable_all_select_menus_if" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disables all <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a> (s) in this <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>check</strong> – Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, Callable]
+Could be a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>.</p></li>
+<li><p><strong>*args</strong> – Any
+Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.add_component">
+<span class="sig-name descname"><span class="pre">add_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.add_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a component to the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p>
+<p>This function returns the class instance to allow for fluent-style
+chaining.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>component</strong> – Union[<a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]
+The component to add to the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.add_components">
+<span class="sig-name descname"><span class="pre">add_components</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">components</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.add_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add multiple components to the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p>
+<p>This function returns the class instance to allow for fluent-style
+chaining.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*components</strong> – *Union[<a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]
+The components to add to the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.insert_component_at">
+<span class="sig-name descname"><span class="pre">insert_component_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.insert_component_at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inserts a component before a specified index to the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>
+The index of where to insert the component.</p></li>
+<li><p><strong>component</strong> – Union[<a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]
+The component to insert at the specified index of the <a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ActionRow.set_component_at">
+<span class="sig-name descname"><span class="pre">set_component_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ActionRow.set_component_at" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies a component to the ActionRow object.</p>
+<p>The index <strong>must</strong> point to a valid pre-existing component.</p>
+<p>This function returns the class instance to allow for fluent-style
+chaining.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>
+The index of the component to modify.</p></li>
+<li><p><strong>component</strong> – Union[<a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]
+The component to replace the old one with.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>IndexError</strong> – An invalid index was provided.</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <hr class="docutils" />
-</div>
-</div>
-<div class="section" id="selectmenu-custom-id-options-placeholder-min-values">
-<span id="select-menu"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu(custom_id,</span> <span class="pre">options,</span> <span class="pre">placeholder,</span> <span class="pre">min_values,</span> <span class="pre">...)</span></code><a class="headerlink" href="#selectmenu-custom-id-options-placeholder-min-values" title="Permalink to this headline">¶</a></h2>
-<p>Represents a <code class="docutils literal notranslate"><span class="pre">Discord-Select-Menu</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="Button">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Button</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emoji</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a <code class="docutils literal notranslate"><span class="pre">Discord-Button</span></code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For more information about Select-Menus wisit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#select-menus">Discord-API-Documentation</a>.</p>
+<p>For general information about Discord-Button’s visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons">Documentation</a> of the discord-api.</p>
 </div>
-<div class="section" id="select-menu-parameters">
-<span id="id5"></span><h3>Parameters<a class="headerlink" href="#select-menu-parameters" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div><dl class="simple" id="select-menu-custom-id">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: str</dt><dd><p>A developer-defined identifier for the <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code>, max. 100 characters</p>
+<dl class="field-list simple" id="button-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>
+The Text displayed in discord on the Button. Maximal length is 80 Chars.</p></li>
+<li><p><strong>custom_id</strong> – Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]
+The custom_id discord send us when a User press the Button. The max. length of this is 100.</p></li>
+<li><p><strong>style</strong> – <p><a class="reference internal" href="#ButtonStyle" title="ButtonStyle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle</span></code></a>
+The Style the Button should have.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To get more infos about the styles visit
+<a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#buttons-button-styles">the Discord-API Documentation</a>.</p>
+</div>
+</p></li>
+<li><p><strong>emoji</strong> – Optional[Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.PartialEmoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Emoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]
+The Emoji that will be displayed on the left side of the Button.</p></li>
+<li><p><strong>url</strong> – <p>Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]
+The URL the Button links too.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you set this, the <code class="xref py py-attr docutils literal notranslate"><span class="pre">style</span></code> will automatic set to <a class="reference internal" href="#ButtonStyle.url" title="ButtonStyle.url"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle.url</span></code></a></p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>You can’t pass a <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> and a <code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code> because discord don’t send anything when clicking on an <code class="docutils literal notranslate"><span class="pre">URL-Button</span></code> so it don’t accept both; <code class="xref py py-attr docutils literal notranslate"><span class="pre">url</span></code>/<a class="reference internal" href="#ButtonStyle.url" title="ButtonStyle.url"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonStyle.url</span></code></a> and <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>!</p>
+</div>
+</p></li>
+<li><p><strong>disabled</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>
+Whether the Button is disabled; default False.</p></li>
+</ul>
 </dd>
 </dl>
-<dl id="select-menu-options">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">options</span></code>: List[Dict]</dt><dd><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of choices the <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code> should have, max. 25</p>
-<p>use <cite>select_option</cite> to create an option</p>
+<span class="target" id="button-methods"></span><dl class="py method">
+<dt class="sig sig-object py" id="Button.disable_if">
+<span class="sig-name descname"><span class="pre">disable_if</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Button.disable_if" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable the <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>check</strong> – typing.Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, Callable]
+Could be a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>.</p></li>
+<li><p><strong>*args</strong> – Any
+Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a></p>
 </dd>
 </dl>
-<dl class="simple" id="select-menu-placeholder">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">placeholder</span></code>: Optional[str]</dt><dd><p>Custom placeholder text if nothing is selected, max. 100 characters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Button.set_style_if">
+<span class="sig-name descname"><span class="pre">set_style_if</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Button.set_style_if" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the style of the <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> to the specified one if the specified check returns True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>check</strong> – Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">typing.Callable</span></code>]
+The check could be an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p></li>
+<li><p><strong>style</strong> – discord.ButtonStyle
+The style the <a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> should have when the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns True</p></li>
+<li><p><strong>*args</strong> – Any
+Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is an <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a></p>
 </dd>
 </dl>
-<dl class="simple" id="select-menu-min-values">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">min_values</span></code>: Optional[int]</dt><dd><p>The minimum number of items that must be chosen; default 1, min. 0, max. 25.</p>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="SelectOption">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SelectOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emoji</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SelectOption" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds you a dict which can be used as an option for a <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a></p>
+<dl class="field-list simple" id="select-option-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>
+The user-facing name of the option, max 25 characters.</p></li>
+<li><p><strong>value</strong> – <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>
+The dev-define value of the option, max 100 characters.</p></li>
+<li><p><strong>description</strong> – Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]
+An additional description of the option, max 50 characters.</p></li>
+<li><p><strong>emoji</strong> – Optional[Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">PartialEmoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Emoji</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]
+An Emoji that will be displayed on the left side of the option.</p></li>
+<li><p><strong>default</strong> – Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]
+Whether this option is selected by default.</p></li>
+</ul>
 </dd>
 </dl>
-<dl class="simple" id="select-menu-max-values">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_values</span></code>: Optional[int]</dt><dd><p>The maximum number of items that can be chosen; default 1, max. 25.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="SelectMenu">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SelectMenu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SelectMenu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a <code class="docutils literal notranslate"><span class="pre">Discord-Select-Menu</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For general information about Select-Menus visit the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components#select-menus">Discord-API-Documentation</a>.</p>
+</div>
+<dl class="field-list simple" id="select-menu-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>custom_id</strong> – Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]
+A developer-defined identifier for the <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, max. 100 characters.</p></li>
+<li><p><strong>options</strong> – <p>List[<a class="reference internal" href="#SelectOption" title="SelectOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectOption</span></code></a>]
+A <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code> of choices(<a class="reference internal" href="#SelectOption" title="SelectOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectOption</span></code></a>) the <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a> should have, max. 25.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use <a class="reference internal" href="#SelectOption" title="SelectOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectOption</span></code></a> to create an option.</p>
+</div>
+</p></li>
+<li><p><strong>placeholder</strong> – Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]
+Custom placeholder text if nothing is selected, max. 100 characters.</p></li>
+<li><p><strong>min_values</strong> – Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]
+The minimum number of items that must be chosen; default 1, min. 0, max. 25.</p></li>
+<li><p><strong>max_values</strong> – Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]
+The maximum number of items that can be chosen; default 1, max. 25.</p></li>
+<li><p><strong>disabled</strong> – Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]
+Whether the SelectMenu is disabled or not. <code class="docutils literal notranslate"><span class="pre">False</span></code> by default.</p></li>
+</ul>
 </dd>
 </dl>
-<dl class="simple" id="select-menu-disabled">
-<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">disabled</span></code>: Optional[Bool]</dt><dd><p>Whether the SelectMenu is disabled or not. <code class="docutils literal notranslate"><span class="pre">False</span></code> by default.</p>
+<dl>
+<dt><code class="xref py py-attr docutils literal notranslate"><span class="pre">all_option_values</span></code>: Generator[Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</dt><dd><p>Returns a generator with all <cite>values</cite> of the <cite>options</cite> of the <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>.</p>
+<p>If the value is a number it is returned as an integer, otherwise a string</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is equal to</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">select</span><span class="o">.</span><span class="n">options</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">option</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+        <span class="k">yield</span> <span class="nb">int</span><span class="p">(</span><span class="n">option</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">option</span><span class="o">.</span><span class="n">value</span>
+</pre></div>
+</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">yield</dt>
+<dd class="field-odd"><p>Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
 </dd>
 </dl>
-</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="SelectMenu.disable_if">
+<span class="sig-name descname"><span class="pre">disable_if</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SelectMenu.disable_if" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disables the <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a> if the passed <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>check</strong> – Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, Callable]
+The check could be an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or usually any <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code> that returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>.</p></li>
+<li><p><strong>*args</strong> – Any
+Arguments that should passed in to the <code class="xref py py-attr docutils literal notranslate"><span class="pre">check</span></code> if it is an <code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SelectMenu.set_custom_id">
+<span class="sig-name descname"><span class="pre">set_custom_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SelectMenu.set_custom_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the custom_id of the <a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>custom_id</strong> – Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]
+The custom_id to replace the old one with</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <hr class="docutils" />
 <div class="toctree-wrapper compound">
-</div>
-</div>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
@@ -448,7 +639,7 @@
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="interaction.html" class="btn btn-neutral float-right" title="Interaction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="additions.html" class="btn btn-neutral float-left" title="Additions and adjustments to discord.py buildin-functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="additions.html" class="btn btn-neutral float-left" title="Additions and adjustments to discord.py builtin-functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

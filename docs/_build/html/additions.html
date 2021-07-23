@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Additions and adjustments to discord.py buildin-functions &mdash; discord.py-message-components 1.7.5 documentation</title>
+  <title>Additions and adjustments to discord.py builtin-functions &mdash; discord.py-message-components 1.7.5 documentation</title>
   
 
   
@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/contentui.css" type="text/css" />
 
   
   
@@ -35,6 +36,7 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/contentui.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -87,58 +89,10 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Additions and adjustments to discord.py buildin-functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#discord-client"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#on-click"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_click()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#raises">Raises</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#on-select"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_select()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#on-select-parameters">Parameters</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#on-select-example">Example</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id5">Raises</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#events">Events</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#on-button-click"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_button_click()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#on-button-click-example">Example</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#on-raw-button-click"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_raw_button_click()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#on-raw-button-click-example">Example</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#on-selection-select"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_selection_select()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#on-selection-select-example">Example</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#on-raw-selection-select"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_raw_selection_select()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#on-raw-selection-select-example">Example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#abc-messageable"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.Messageable</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#methods">Methods</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#send"><code class="xref py py-meth docutils literal notranslate"><span class="pre">send()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#abc-messageable-send-parameters">Parameters</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#discord-message"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#attributes">Attributes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id21">Methods</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#edit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit()</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#discord-message-edit-parameters">Parameters</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Additions and adjustments to discord.py builtin-functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#events">Events</a><ul class="simple">
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
@@ -194,7 +148,7 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Additions and adjustments to discord.py buildin-functions</li>
+      <li>Additions and adjustments to discord.py builtin-functions</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -213,257 +167,337 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="additions-and-adjustments-to-discord-py-buildin-functions">
-<h1>Additions and adjustments to discord.py buildin-functions<a class="headerlink" href="#additions-and-adjustments-to-discord-py-buildin-functions" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="discord-client">
-<span id="id1"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client</span></code><a class="headerlink" href="#discord-client" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="on-click">
-<span id="on-click-decorator"></span><h3><code class="xref py py-func docutils literal notranslate"><span class="pre">on_click()</span></code><a class="headerlink" href="#on-click" title="Permalink to this headline">¶</a></h3>
-<p>A decorator with which you can assign a function to a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code> (or its custom_id).</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This will always give exactly one Parameter of type <a class="reference external" href="./interaction.html#discord-interaction">discord.Interaction</a> like an <a class="reference external" href="#on-raw-button-click">raw_button_click-Event</a>.</p>
-</div>
+  <div class="section" id="additions-and-adjustments-to-discord-py-builtin-functions">
+<h1>Additions and adjustments to discord.py builtin-functions<a class="headerlink" href="#additions-and-adjustments-to-discord-py-builtin-functions" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="discord-client"></span><dl class="py class">
+<dt class="sig sig-object py" id="discord.Client">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">discord.</span></span><span class="sig-name descname"><span class="pre">Client</span></span><a class="headerlink" href="#discord.Client" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py function">
+<dt class="sig sig-object py" id="discord.Client.on_click">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">on_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discord.Client.on_click" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator with which you can assign a function to a specific <a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a> (or its custom_id).</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p>The Function this decorator attached to must be an corountine (means an awaitable)</p>
+<p>The Function this decorator attached to must be an coroutine (means an awaitable) and take the same parameters as a <a class="reference internal" href="#on_raw_button_click" title="on_raw_button_click"><code class="xref py py-class docutils literal notranslate"><span class="pre">on_raw_button_click</span></code></a></p>
 </div>
-<div class="section" id="parameters">
-<span id="button-click-parameters"></span><h4>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h4>
-<blockquote id="on-click-custom-id">
-<div><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: Optional[str]</p>
-<blockquote>
-<div><p>If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> of the Button could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.</p>
-</div></blockquote>
-</div></blockquote>
-</div>
-<div class="section" id="example">
-<span id="button-click-example"></span><h4>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h4>
+<dl class="field-list simple" id="button-click-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>custom_id</strong> (Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> of the Button could not use as an function name or you want to give the function a different name then the custom_id use this one to set the custom_id.</p>
+</dd>
+</dl>
+<p id="button-click-example"><strong>Example</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the Button</span>
 <span class="n">Button</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Hey im a cool blue Button&#39;</span><span class="p">,</span>
         <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;cool blue Button&#39;</span><span class="p">,</span>
         <span class="n">style</span><span class="o">=</span><span class="n">ButtonColor</span><span class="o">.</span><span class="n">blurple</span><span class="p">)</span>
 
-<span class="c1"># function thats called when the Button pressed</span>
+<span class="c1"># function that&#39;s called when the Button pressed</span>
 <span class="nd">@client</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;cool blue Button&#39;</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">cool_blue_button</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">cool_blue_button</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
     <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;Hey you pressed a `cool blue Button`!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="raises">
-<h4>Raises<a class="headerlink" href="#raises" title="Permalink to this headline">¶</a></h4>
-<dl class="simple">
-<dt><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></dt><dd><p>The coroutine passed is not actually a coroutine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>TypeError</strong> – The coroutine passed is not actually a coroutine.</p>
 </dd>
 </dl>
-<hr class="docutils" />
-</div>
-</div>
-<div class="section" id="on-select">
-<span id="on-select-decorator"></span><h3><code class="xref py py-func docutils literal notranslate"><span class="pre">on_select()</span></code><a class="headerlink" href="#on-select" title="Permalink to this headline">¶</a></h3>
-<p>A decorator with which you can assign a function to a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code> (or its custom_id).</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This will always give exactly one Parameter of type <a class="reference external" href="./interaction.html#discord-interaction">discord.Interaction</a> like an <a class="reference external" href="#on-raw-button-click">raw_selection_select-Event</a>.</p>
-</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discord.Client.on_select">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">on_select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discord.Client.on_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator with which you can assign a function to a specific <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a> (or its custom_id).</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p>The Function this decorator attached to must be an corountine (means an awaitable)</p>
+<p>The Function this decorator attached to must be an coroutine(means an awaitable) and take the same parameters as a <a class="reference internal" href="#on_raw_selection_select" title="on_raw_selection_select"><code class="xref py py-class docutils literal notranslate"><span class="pre">on_raw_selection_select</span></code></a>!</p>
 </div>
-<div class="section" id="on-select-parameters">
-<span id="id3"></span><h4>Parameters<a class="headerlink" href="#on-select-parameters" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><p id="on-select-custom-id"><code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code>: Optional[str]</p>
-<blockquote>
-<div><p>If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.</p>
-</div></blockquote>
-</div></blockquote>
-</div>
-<div class="section" id="on-select-example">
-<span id="id4"></span><h4>Example<a class="headerlink" href="#on-select-example" title="Permalink to this headline">¶</a></h4>
+<dl class="field-list simple" id="on-select-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>custom_id</strong> (Optional[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">custom_id</span></code> of the <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a> could not use as an function name or you want to give the function a different name then the custom_id use this one to set the custom_id.</p>
+</dd>
+</dl>
+<p id="on-select-example"><strong>Example</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the SelectMenu</span>
 <span class="n">SelectMenu</span><span class="p">(</span><span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;choose_your_gender&#39;</span><span class="p">,</span>
            <span class="n">options</span><span class="o">=</span><span class="p">[</span>
                 <span class="n">select_option</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Female&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;Female&#39;</span><span class="p">,</span> <span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;♀️&#39;</span><span class="p">),</span>
                 <span class="n">select_option</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Male&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;Male&#39;</span><span class="p">,</span> <span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;♂️&#39;</span><span class="p">),</span>
-                <span class="n">select_option</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Non Binary&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;Non Binary&#39;</span><span class="p">,</span> <span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;⚧&#39;</span><span class="p">)</span>
+                <span class="n">select_option</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Trans/Non Binary&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;Trans/Non Binary&#39;</span><span class="p">,</span> <span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;⚧&#39;</span><span class="p">)</span>
                 <span class="p">],</span> <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Choose your Gender&#39;</span><span class="p">)</span>
 
-<span class="c1"># function thats called when the SelectMenu is used</span>
+<span class="c1"># function that&#39;s called when the SelectMenu is used</span>
 <span class="nd">@client</span><span class="o">.</span><span class="n">on_select</span><span class="p">()</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">choose_your_gender</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">):</span>
-    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;You selected `</span><span class="si">{</span><span class="n">i</span><span class="o">.</span><span class="n">component</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">`!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">choose_your_gender</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select_menu</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;You selected `</span><span class="si">{</span><span class="n">select_menu</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">`!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="id5">
-<h4>Raises<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
-<dl class="simple">
-<dt><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></dt><dd><p>The coroutine passed is not actually a coroutine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>TypeError</strong> – The coroutine passed is not actually a coroutine.</p>
 </dd>
 </dl>
-<hr class="docutils" />
-</div>
-</div>
-</div>
+</dd></dl>
+
+</dd></dl>
+
 <div class="section" id="events">
-<span id="id6"></span><h2>Events<a class="headerlink" href="#events" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="on-button-click">
-<span id="id7"></span><h3><code class="xref py py-func docutils literal notranslate"><span class="pre">on_button_click()</span></code><a class="headerlink" href="#on-button-click" title="Permalink to this headline">¶</a></h3>
-<p>This Event will be triggered if a Button, that is attached to a Message wich is in the internal Chage, is pressed.
-It will returns two Parameters:</p>
-<blockquote>
-<div><p>The <a class="reference external" href="./interaction.html#interaction">Interaction</a> and the <a class="reference external" href="./interaction.html#buttonclick">ButtonClick</a> (this is also in the first parameter under <code class="docutils literal notranslate"><span class="pre">component</span></code>).</p>
-</div></blockquote>
-<div class="section" id="on-button-click-example">
-<span id="id8"></span><h4>Example<a class="headerlink" href="#on-button-click-example" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">on_button_click</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ButtonClick</span><span class="p">):</span>
+<span id="id1"></span><h2>Events<a class="headerlink" href="#events" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="on_button_click">
+<span class="sig-name descname"><span class="pre">on_button_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">button</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#on_button_click" title="Permalink to this definition">¶</a></dt>
+<dd><p>This Event will be triggered if a Button, that is attached to a Message wich is in the internal Cache, is pressed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interaction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code>) – The <a class="reference external" href="./interaction.html#interaction">Interaction</a>-object with all his attributes and methods to respond to the interaction</p></li>
+<li><p><strong>button</strong> (Union[<a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="interaction.html#ButtonClick" title="ButtonClick"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code></a>]) – The <a class="reference external" href="./interaction.html#ButtonClick">ButtonClick</a> if the message is ephemeral else <a class="reference external" href="./components.html#Button">Button</a>. (this is also in the first parameter under <code class="docutils literal notranslate"><span class="pre">component</span></code>).</p></li>
+</ul>
+</dd>
+</dl>
+<p id="on-button-click-example"><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">on_button_click</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
     <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;Hey you pressed an Button!&#39;</span><span class="p">,</span> <span class="n">delete_after</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-</div></blockquote>
+</dd></dl>
+
 <hr class="docutils" />
-</div>
-</div>
-<div class="section" id="on-raw-button-click">
-<span id="id9"></span><h3><code class="xref py py-func docutils literal notranslate"><span class="pre">on_raw_button_click()</span></code><a class="headerlink" href="#on-raw-button-click" title="Permalink to this headline">¶</a></h3>
-<p>This Event will be triggered if a Button, that is attached to a Message of this Bot is pressed.
-It will returns one Parameter:</p>
-<blockquote>
-<div><p>The <a class="reference external" href="./interaction.html#interaction">Interaction</a>.</p>
-</div></blockquote>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If the <code class="docutils literal notranslate"><span class="pre">message</span></code> is not in the internal Chage this parameter would be <code class="docutils literal notranslate"><span class="pre">None</span></code> until you set it manualy by fetching the message or using aiter <code class="xref py py-meth docutils literal notranslate"><span class="pre">Interaction.respond()</span></code> or <code class="xref py py-meth docutils literal notranslate"><span class="pre">Interaction.edit()</span></code>.</p>
-</div>
-<div class="section" id="on-raw-button-click-example">
-<span id="id11"></span><h4>Example<a class="headerlink" href="#on-raw-button-click-example" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">on_raw_button_click</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">):</span>
-    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">defer</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">interaction</span><span class="o">.</span><span class="n">message</span><span class="p">:</span>
-        <span class="n">interaction</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">fetch_message</span><span class="p">(</span><span class="n">interaction</span><span class="o">.</span><span class="n">message_id</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+<dl class="py function">
+<dt class="sig sig-object py" id="on_raw_button_click">
+<span class="sig-name descname"><span class="pre">on_raw_button_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">button</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#on_raw_button_click" title="Permalink to this definition">¶</a></dt>
+<dd><p>This Event will be triggered if a Button, that is attached to <strong>any</strong> Message of this Bot is pressed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interaction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code>) – The <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code> that contains all information about the Interaction.</p></li>
+<li><p><strong>button</strong> (Union[<a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="interaction.html#ButtonClick" title="ButtonClick"><code class="xref py py-class docutils literal notranslate"><span class="pre">ButtonClick</span></code></a>]) – <p>The <a class="reference external" href="./interaction.html#ButtonClick">ButtonClick</a> if the message is ephemeral else <a class="reference external" href="./components.html#Button">Button</a>. (this is also in the first parameter under <code class="docutils literal notranslate"><span class="pre">component</span></code>).</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p id="on-raw-button-click-example"><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">on_raw_button_click</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
     <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;Hey you pressed an Button!&#39;</span><span class="p">,</span> <span class="n">delete_after</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-</div></blockquote>
+</dd></dl>
+
 <hr class="docutils" />
-</div>
-</div>
-<div class="section" id="on-selection-select">
-<span id="id12"></span><h3><code class="xref py py-func docutils literal notranslate"><span class="pre">on_selection_select()</span></code><a class="headerlink" href="#on-selection-select" title="Permalink to this headline">¶</a></h3>
-<p>This Event will be triggered if a <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code>, that is attached to a Message of this Bot wich is in the internal Chage, is used.
-It will returns two Parameters:</p>
-<blockquote>
-<div><p>The <a class="reference external" href="./interaction.html#interaction">Interaction</a> and the <a class="reference external" href="./interaction.html#selectionselect">SelectionSelect</a> (this is also in the first parameter under <code class="docutils literal notranslate"><span class="pre">component</span></code>).</p>
-</div></blockquote>
-<div class="section" id="on-selection-select-example">
-<span id="id14"></span><h4>Example<a class="headerlink" href="#on-selection-select-example" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">on_selection_select</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">SelectionSelect</span><span class="p">):</span>
-    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Hey </span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1"> you select </span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<dl class="py function">
+<dt class="sig sig-object py" id="on_selection_select">
+<span class="sig-name descname"><span class="pre">on_selection_select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">select_menu</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#on_selection_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>This Event will be triggered if a <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, that is attached to a Message of this Bot wich is in the internal Cache, is used.</p>
+<p id="on-selection-select-example"><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">on_selection_select</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select_menu</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Hey </span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1"> you select </span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">select_menu</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-</div></blockquote>
+</dd></dl>
+
 <hr class="docutils" />
+<dl class="py function">
+<dt class="sig sig-object py" id="on_raw_selection_select">
+<span class="sig-name descname"><span class="pre">on_raw_selection_select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interaction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">select_menu</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#on_raw_selection_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>This Event will be triggered if a <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, that is attached to <strong>any</strong> Message of this Bot is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interaction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code>) – <p>The <a class="reference external" href="./interaction.html#Interaction">Interaction</a> that contains all information about the Interaction.</p>
+</p></li>
+<li><p><strong>select</strong> (Union[<a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>, <a class="reference internal" href="interaction.html#SelectionSelect" title="SelectionSelect"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code></a>]) – The <a class="reference external" href="./interaction.html#SelectionSelect">SelectionSelect</a> if the message is ephemeral else <a class="reference external" href="./components.html#SelectMenu">SelectMenu</a>  but with the <code class="xref py py-attr docutils literal notranslate"><span class="pre">values</span></code> wich contains a list of the selected options. (this is also in the first parameter under <code class="docutils literal notranslate"><span class="pre">component</span></code>).</p></li>
+</ul>
+</dd>
+</dl>
+<p id="on-raw-selection-select-example"><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">on_raw_selection_select</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select_menu</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Hey </span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1"> you select </span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">select_menu</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
 </div>
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="abc-messageable"></span><dl class="py class">
+<dt class="sig sig-object py" id="abc.Messageable">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">abc.</span></span><span class="sig-name descname"><span class="pre">Messageable</span></span><a class="headerlink" href="#abc.Messageable" title="Permalink to this definition">¶</a></dt>
+<dd><p>This has the same methods as a normal message as well except for a change to the <a class="reference internal" href="#abc.Messageable.send" title="abc.Messageable.send"><code class="xref py py-meth docutils literal notranslate"><span class="pre">send()</span></code></a> method.</p>
+<span class="target" id="abc-messageable-send"></span><dl class="py method">
+<dt class="sig sig-object py" id="abc.Messageable.send">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#abc.Messageable.send" title="Permalink to this definition">¶</a></dt>
+<dd><p id="abc-messageable-send-parameters">These are the parameters that have been added by this, the others are still present and can be seen in the docs of discord.py</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>components</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>Union</em><em>[</em><em>List</em><em>[</em><a class="reference internal" href="components.html#Button" title="Button"><em>Button</em></a><em>, </em><a class="reference internal" href="interaction.html#SelectionSelect" title="SelectionSelect"><em>SelectionSelect</em></a><em>]</em><em>, </em><a class="reference internal" href="components.html#ActionRow" title="ActionRow"><em>ActionRow</em></a><em>[</em><a class="reference internal" href="components.html#Button" title="Button"><em>Button</em></a><em>, </em><a class="reference internal" href="interaction.html#SelectionSelect" title="SelectionSelect"><em>SelectionSelect</em></a><em>]</em><em>]</em><em>]</em><em>]</em>) – A List of components that should send with the Message these can be either in <a class="reference external" href="./components.html#actionrow">ActionRow</a>’s or in <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>’s.</p></li>
+<li><p><strong>embeds</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>discord.Embed</em><em>]</em><em>]</em>) – A List of up to 10 <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Embed</span></code>’s that should send with the Message.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="ext.commands.Cog">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ext.commands.</span></span><span class="sig-name descname"><span class="pre">Cog</span></span><a class="headerlink" href="#ext.commands.Cog" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class has also the decorators for custom_id’s as the normal <a class="reference internal" href="#discord.Client" title="discord.Client"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client</span></code></a> Class.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ext.commands.Cog.commands.Cog.on_click">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-prename descclassname"><span class="pre">commands.Cog.</span></span><span class="sig-name descname"><span class="pre">on_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ext.commands.Cog.commands.Cog.on_click" title="Permalink to this definition">¶</a></dt>
+<dd><p>This works like the <a class="reference internal" href="#discord.Client.on_click" title="discord.Client.on_click"><code class="xref py py-meth docutils literal notranslate"><span class="pre">discord.Client.on_click()</span></code></a> decorator of the <a class="reference internal" href="#discord.Client" title="discord.Client"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client</span></code></a> but it give <code class="docutils literal notranslate"><span class="pre">self</span></code> (The Cog-Class) as the 1. Parameter.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The Button</span>
+<span class="n">Button</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Hello&#39;</span><span class="p">,</span> <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;my_button&#39;</span><span class="p">)</span>
+
+<span class="c1">#The decorator</span>
+<span class="nd">@commands</span><span class="o">.</span><span class="n">Cog</span><span class="o">.</span><span class="n">on_click</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">my_button</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;Hey you pressed a Button!&#39;</span><span class="p">)</span>
+</pre></div>
 </div>
-<div class="section" id="on-raw-selection-select">
-<span id="id15"></span><h3><code class="xref py py-func docutils literal notranslate"><span class="pre">on_raw_selection_select()</span></code><a class="headerlink" href="#on-raw-selection-select" title="Permalink to this headline">¶</a></h3>
-<p>This Event will be triggered if a <code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionSelect</span></code>, that is attached to a Message of this Bot is used.
-It will returns one Parameter:</p>
-<blockquote>
-<div><p>The <a class="reference external" href="./interaction.html#interaction">Interaction</a>.</p>
-</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ext.commands.Cog.commands.Cog.on_select">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-prename descclassname"><span class="pre">commands.Cog.</span></span><span class="sig-name descname"><span class="pre">on_select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ext.commands.Cog.commands.Cog.on_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>This works like the <a class="reference internal" href="#discord.Client.on_select" title="discord.Client.on_select"><code class="xref py py-meth docutils literal notranslate"><span class="pre">discord.Client.on_select()</span></code></a> decorator of the <a class="reference internal" href="#discord.Client" title="discord.Client"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client</span></code></a> but it give <code class="docutils literal notranslate"><span class="pre">self</span></code> (The Cog-Class) as the 1. Parameter.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The SelectMenu</span>
+<span class="n">SelectMenu</span><span class="p">(</span><span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;select_decorator_example&#39;</span><span class="p">,</span>
+           <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+               <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;The 1. Option&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;The first option you have&#39;</span><span class="p">,</span> <span class="s1">&#39;1️⃣&#39;</span><span class="p">),</span>
+               <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;The 2. Option&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="s1">&#39;The second option you have&#39;</span><span class="p">,</span> <span class="s1">&#39;2️⃣&#39;</span><span class="p">)</span>
+           <span class="p">],</span> <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Select a Option&#39;</span><span class="p">)</span>
+
+<span class="c1">#The decorator</span>
+<span class="nd">@commands</span><span class="o">.</span><span class="n">Cog</span><span class="o">.</span><span class="n">on_select</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">select_decorator_example</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select_menu</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;You choice was the </span><span class="si">{</span><span class="n">select_menu</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">. Option. 😀&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="discord-message"></span><dl class="py class">
+<dt class="sig sig-object py" id="discord.Message">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">discord.</span></span><span class="sig-name descname"><span class="pre">Message</span></span><a class="headerlink" href="#discord.Message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>and</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="discord.PartialMessage">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">discord.</span></span><span class="sig-name descname"><span class="pre">PartialMessage</span></span><a class="headerlink" href="#discord.PartialMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p id="discord-message-attributes">This has the same attributes as a normal message but one is added in addition</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="discord.PartialMessage.components">
+<span class="sig-name descname"><span class="pre">components</span></span><a class="headerlink" href="#discord.PartialMessage.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Optional[List[<a class="reference internal" href="components.html#ActionRow" title="ActionRow"><code class="xref py py-class docutils literal notranslate"><span class="pre">ActionRow</span></code></a>]] containing the components of the message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="discord.PartialMessage.all_components">
+<span class="sig-name descname"><span class="pre">all_components</span></span><a class="headerlink" href="#discord.PartialMessage.all_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all <a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>’s and <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>’s that are contained in the message</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If the <code class="docutils literal notranslate"><span class="pre">message</span></code> is not in the internal Chage the <code class="docutils literal notranslate"><span class="pre">message</span></code> parameter of <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Interaction</span></code> would be <code class="docutils literal notranslate"><span class="pre">None</span></code> until you set it manualy by fetching the message or using aiter <code class="xref py py-meth docutils literal notranslate"><span class="pre">Interaction.respond()</span></code> or <code class="xref py py-meth docutils literal notranslate"><span class="pre">Interaction.edit()</span></code>.</p>
-</div>
-<div class="section" id="on-raw-selection-select-example">
-<span id="id17"></span><h4>Example<a class="headerlink" href="#on-raw-selection-select-example" title="Permalink to this headline">¶</a></h4>
+<p>This is equal to:
+.. code-block:: python</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">on_raw_selection_select</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">SelectionSelect</span><span class="p">):</span>
-    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">defer</span><span class="p">()</span> <span class="c1">#It is better to defer here because the fetching of the message (if necessary) can take longer than 3 seconds.</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">interaction</span><span class="o">.</span><span class="n">message</span><span class="p">:</span>
-        <span class="n">interaction</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">fetch_message</span><span class="p">(</span><span class="n">interaction</span><span class="o">.</span><span class="n">message_id</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Hey </span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1"> you select </span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</div></blockquote>
-<hr class="docutils" />
-</div>
-</div>
-</div>
-<div class="section" id="abc-messageable">
-<span id="id18"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.Messageable</span></code><a class="headerlink" href="#abc-messageable" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="methods">
-<span id="abc-messageable-methods"></span><h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
-<p>This has the same methods as a normal message as well except for a change to the <code class="xref py py-meth docutils literal notranslate"><span class="pre">send()</span></code> method.</p>
-</div>
-<div class="section" id="send">
-<span id="abc-messageable-send"></span><h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">send()</span></code><a class="headerlink" href="#send" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="abc-messageable-send-parameters">
-<span id="id19"></span><h4>Parameters<a class="headerlink" href="#abc-messageable-send-parameters" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><p>These are the parameters that have been added by this, the others are still present and can be seen in the docs of discord.py</p>
-<p id="abc-messageable-send-components"><code class="xref py py-attr docutils literal notranslate"><span class="pre">components</span></code>: Optional[List[Union[List[Buttton, SelectionSelect], ActionRow[Button, SelectionSelect]]]]</p>
-<blockquote>
-<div><p>A List of components that should send with the Message these can be either in <a class="reference external" href="./components.html#actionrow">ActionRow</a>’s or in <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>’s.</p>
-</div></blockquote>
-<p id="abc-messageable-send-embeds"><code class="xref py py-attr docutils literal notranslate"><span class="pre">embeds</span></code>: Optional[List[discord.Embed]]</p>
-<blockquote>
-<div><p>A List of up to 10 <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Embed</span></code>’s that should send with the Message.</p>
-</div></blockquote>
-</div></blockquote>
-<hr class="docutils" />
-</div>
-</div>
-</div>
-<div class="section" id="discord-message">
-<span id="id20"></span><h2><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Message</span></code><a class="headerlink" href="#discord-message" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="attributes">
-<span id="discord-message-attributes"></span><h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
-<p>This has the same attributes as a normal message but one is added in addition</p>
-<blockquote>
-<div><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">components</span></code>: Optional[List[ActionRow[Union[Button, SelectMenu]]]]</p>
-<blockquote>
-<div><p>A list containing the components of the message</p>
-</div></blockquote>
+<div><dl class="simple">
+<dt>for action_row in self.components:</dt><dd><dl class="simple">
+<dt>for component in action_row:</dt><dd><p>yield component</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </div></blockquote>
 </div>
-<div class="section" id="id21">
-<h3>Methods<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
-<p>This has the same methods as a normal message but one is added in addition
-.. _discord-message-edit:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="discord.PartialMessage.all_buttons">
+<span class="sig-name descname"><span class="pre">all_buttons</span></span><a class="headerlink" href="#discord.PartialMessage.all_buttons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all <a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>’s that are contained in the message</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is equal to:
+.. code-block:: python</p>
+<blockquote>
+<div><dl class="simple">
+<dt>for action_row in self.components:</dt><dd><dl class="simple">
+<dt>for component in action_row:</dt><dd><p>yield component</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
 </div>
-<div class="section" id="edit">
-<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit()</span></code><a class="headerlink" href="#edit" title="Permalink to this headline">¶</a></h3>
+<dl class="field-list simple">
+<dt class="field-odd">Yields</dt>
+<dd class="field-odd"><p><a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="discord.PartialMessage.all_select_menus">
+<span class="sig-name descname"><span class="pre">all_select_menus</span></span><a class="headerlink" href="#discord.PartialMessage.all_select_menus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>’s that are contained in the message</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is equal to:
+.. code-block:: python</p>
 <blockquote>
-<div><p>This takes the same parameters as the normal edit function except for two added parameters.</p>
+<div><dl class="simple">
+<dt>for action_row in self.components:</dt><dd><dl class="simple">
+<dt>for component in action_row:</dt><dd><dl class="simple">
+<dt>if isinstance(component, SelectMenu):</dt><dd><p>yield component</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
 </div></blockquote>
-<div class="section" id="discord-message-edit-parameters">
-<span id="id22"></span><h4>Parameters<a class="headerlink" href="#discord-message-edit-parameters" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><p>These are the parameters that have been added by this, the others are still present and can be seen in the docs of discord.py</p>
-<p id="discord-message-edit-components"><code class="xref py py-attr docutils literal notranslate"><span class="pre">components</span></code>: Optional[List[Union[List[Buttton, SelectionSelect], ActionRow[Button, SelectionSelect]]]]</p>
-<blockquote>
-<div><p>A List of components that should replace the previous ones these can be either in <a class="reference external" href="./components.html#actionrow">ActionRow</a>’s or in <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>’s.</p>
-</div></blockquote>
-<p id="discord-message-edit-embeds"><code class="xref py py-attr docutils literal notranslate"><span class="pre">embeds</span></code>: Optional[List[discord.Embed]]</p>
-<blockquote>
-<div><p>A list of up to 10 <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Embeds</span></code> to replace the previous ones</p>
-</div></blockquote>
-</div></blockquote>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Yields</dt>
+<dd class="field-odd"><p><a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>This has the same methods as a normal message but one is added in addition.</p>
+<span class="target" id="discord-message-edit"></span><dl class="py method">
+<dt class="sig sig-object py" id="discord.PartialMessage.edit">
+<span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discord.PartialMessage.edit" title="Permalink to this definition">¶</a></dt>
+<dd><p>This takes the same parameters as the normal <a class="reference internal" href="#discord.PartialMessage.edit" title="discord.PartialMessage.edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit()</span></code></a> function except for two added parameters.</p>
+<dl class="field-list simple" id="discord-message-edit-parameters">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>components</strong> (Optional[List[Union[List[<a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>], ActionRow[<a class="reference internal" href="components.html#Button" title="Button"><code class="xref py py-class docutils literal notranslate"><span class="pre">Button</span></code></a>, <a class="reference internal" href="components.html#SelectMenu" title="SelectMenu"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectMenu</span></code></a>]]]]) – <p>A List of components that should replace the previous ones these can be either in <a class="reference external" href="./components.html#actionrow">ActionRow</a>’s or in <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>’s.</p>
+</p></li>
+<li><p><strong>embeds</strong> (Optional[List[<code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Embed</span></code>]]) – A list of up to 10 <code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Embed</span></code>’s to replace the previous ones(This is also usable for normal Messages).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <div class="toctree-wrapper compound">
-</div>
-</div>
 </div>
 </div>
 <div class="section" id="indices-and-tables">

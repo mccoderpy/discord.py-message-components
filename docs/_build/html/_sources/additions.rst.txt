@@ -1,299 +1,312 @@
-Additions and adjustments to discord.py buildin-functions
+Additions and adjustments to discord.py builtin-functions
 =========================================================
 
 .. _discord-Client:
 
-:class:`discord.Client`
-~~~~~~~~~~~~~~~~~~~~~~~
+.. class:: discord.Client
 
-.. _on_click_decorator:
 
-:func:`on_click`
-________________
-    
-A decorator with which you can assign a function to a specific :class:`Button` (or its custom_id).
+    .. decorator:: on_click(custom_id=None)
 
-.. note::
-    This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_button_click-Event <#on-raw-button-click>`_.
+        A decorator with which you can assign a function to a specific :class:`Button` (or its custom_id).
 
-.. important::
-    The Function this decorator attached to must be an corountine (means an awaitable)
+        .. important::
+            The Function this decorator attached to must be an coroutine (means an awaitable) and take the same parameters as a :class:`on_raw_button_click`
 
-.. _button_click-parameters:
+        .. _button_click-parameters:
 
-Parameters
------------
+        :param custom_id: If the :attr:`custom_id` of the Button could not use as an function name or you want to give the function a different name then the custom_id use this one to set the custom_id.
+        :type custom_id: Optional[:class:`str`]
 
-.. _on_click-custom_id:
+        .. _button_click-example:
 
-    :attr:`custom_id`: Optional[str]
+        **Example**
 
-        If the :attr:`custom_id` of the Button could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
+        .. code-block:: python
 
-.. _button_click-example:
+            # the Button
+            Button(label='Hey im a cool blue Button',
+                    custom_id='cool blue Button',
+                    style=ButtonColor.blurple)
 
-Example
--------
+            # function that's called when the Button pressed
+            @client.on_click(custom_id='cool blue Button')
+            async def cool_blue_button(i: discord.Interaction, button):
+                await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
 
-.. code-block:: python
 
-    # the Button
-    Button(label='Hey im a cool blue Button',
-            custom_id='cool blue Button',
-            style=ButtonColor.blurple)
+        :raise TypeError: The coroutine passed is not actually a coroutine.
 
-    # function thats called when the Button pressed
-    @client.on_click(custom_id='cool blue Button')
-    async def cool_blue_button(i: discord.Interaction):
-        await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
 
-Raises
-------
-:class:`TypeError`
-    The coroutine passed is not actually a coroutine.
+    .. decorator:: on_select(custom_id=None)
 
-________________________________________
+        A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
 
-.. _on_select_decorator:
+        .. important::
+            The Function this decorator attached to must be an coroutine(means an awaitable) and take the same parameters as a :class:`on_raw_selection_select`!
 
-:func:`on_select`
-_________________
-A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
+        .. _on_select-parameters:
 
-.. note::
-    This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
+        :param custom_id: If the :attr:`custom_id` of the :class:`SelectMenu` could not use as an function name or you want to give the function a different name then the custom_id use this one to set the custom_id.
+        :type custom_id: Optional[:class:`str`]
 
-.. important::
-    The Function this decorator attached to must be an corountine (means an awaitable)
+        .. _on_select-example:
 
-.. _on_select-parameters:
+        **Example**
 
-Parameters
-----------
+        .. code-block:: python
 
-    .. _on_select-custom_id:
+            # the SelectMenu
+            SelectMenu(custom_id='choose_your_gender',
+                       options=[
+                            select_option(label='Female', value='Female', emoji='♀️'),
+                            select_option(label='Male', value='Male', emoji='♂️'),
+                            select_option(label='Trans/Non Binary', value='Trans/Non Binary', emoji='⚧')
+                            ], placeholder='Choose your Gender')
 
-    :attr:`custom_id`: Optional[str]
+            # function that's called when the SelectMenu is used
+            @client.on_select()
+            async def choose_your_gender(i: discord.Interaction, select_menu):
+                await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
-        If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
 
-.. _on_select-example:
+        :raise TypeError: The coroutine passed is not actually a coroutine.
 
-Example
--------
-
-.. code-block:: python
-
-    # the SelectMenu
-    SelectMenu(custom_id='choose_your_gender',
-               options=[
-                    select_option(label='Female', value='Female', emoji='♀️'),
-                    select_option(label='Male', value='Male', emoji='♂️'),
-                    select_option(label='Non Binary', value='Non Binary', emoji='⚧')
-                    ], placeholder='Choose your Gender')
-
-    # function thats called when the SelectMenu is used
-    @client.on_select()
-    async def choose_your_gender(i: discord.Interaction):
-        await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
-
-Raises
-------
-:class:`TypeError`
-    The coroutine passed is not actually a coroutine.
-
-________________________________________________
 
 .. _events:
 
 Events
 ~~~~~~
 
-.. _on_button_click:
 
-:func:`on_button_click`
-_______________________
+.. function:: on_button_click(interaction, button)
 
-This Event will be triggered if a Button, that is attached to a Message wich is in the internal Chage, is pressed.
-It will returns two Parameters:
+    This Event will be triggered if a Button, that is attached to a Message wich is in the internal Cache, is pressed.
 
-    The `Interaction <./interaction.html#interaction>`_ and the `ButtonClick <./interaction.html#buttonclick>`_ (this is also in the first parameter under ``component``). 
+    :param interaction: The `Interaction <./interaction.html#interaction>`_-object with all his attributes and methods to respond to the interaction
+    :type interaction: :class:`discord.Interaction`
+    :param button: The `ButtonClick <./interaction.html#ButtonClick>`_ if the message is ephemeral else `Button <./components.html#Button>`_. (this is also in the first parameter under ``component``).
+    :type button: Union[:class:`Button`, :class:`ButtonClick`]
 
-.. _on_button_click-example:
+    .. _on_button_click-example:
 
-Example
---------
+    **Example**
 
     .. code-block:: python
 
         @client.event
-        async def on_button_click(interaction: discord.Interaction, button: discord.ButtonClick):
+        async def on_button_click(interaction: discord.Interaction, button):
             await interaction.respond('Hey you pressed an Button!', delete_after=10)
 
+
 ________________________________________________
 
-.. _on_raw_button_click:
 
-:func:`on_raw_button_click`
-___________________________
+.. function:: on_raw_button_click(interaction, button)
 
-This Event will be triggered if a Button, that is attached to a Message of this Bot is pressed.
-It will returns one Parameter:
-    
-    The `Interaction <./interaction.html#interaction>`_.
+    This Event will be triggered if a Button, that is attached to **any** Message of this Bot is pressed.
 
-.. note::
-    If the ``message`` is not in the internal Chage this parameter would be ``None`` until you set it manualy by fetching the message or using aiter :meth:`Interaction.respond` or :meth:`Interaction.edit`.
+    :param interaction: The :class:`discord.Interaction` that contains all information about the Interaction.
+    :type interaction: :class:`discord.Interaction`
+    :param button: The `ButtonClick <./interaction.html#ButtonClick>`_ if the message is ephemeral else `Button <./components.html#Button>`_. (this is also in the first parameter under ``component``).
+    :type button: Union[:class:`Button`, :class:`ButtonClick`]
 
-.. _on_raw_button_click-example:
+    .. _on_raw_button_click-example:
 
-Example
---------
+    **Example**
 
     .. code-block:: python
 
         @client.event
-        async def on_raw_button_click(interaction: discord.Interaction):
-            await interaction.defer()
-            if not interaction.message:
-                interaction.message = await interaction.channel.fetch_message(interaction.message_id)
-            await interaction.message.delete()
+        async def on_raw_button_click(interaction: discord.Interaction, button):
             await interaction.respond('Hey you pressed an Button!', delete_after=10)
 
-________________________________________________
 
-.. _on_selection_select:
 
-:func:`on_selection_select`
-___________________________
+--------------------------------------------------
 
-This Event will be triggered if a :class:`SelectionSelect`, that is attached to a Message of this Bot wich is in the internal Chage, is used.
-It will returns two Parameters:
-    
-    The `Interaction <./interaction.html#interaction>`_ and the `SelectionSelect <./interaction.html#selectionselect>`_ (this is also in the first parameter under ``component``). 
+.. function:: on_selection_select(interaction, select_menu)
 
-.. _on_selection_select-example:
+    This Event will be triggered if a :class:`SelectMenu`, that is attached to a Message of this Bot wich is in the internal Cache, is used.
 
-Example
---------
+
+    .. _on_selection_select-example:
+
+    **Example**
 
     .. code-block:: python
 
         @client.event
-        async def on_selection_select(interaction: discord.Interaction, select: discord.SelectionSelect):
-            await interaction.respond(f'Hey {interaction.author.mention} you select {", ".join(select.values)}!', hidden=True)
+        async def on_selection_select(interaction: discord.Interaction, select_menu):
+            await interaction.respond(f'Hey {interaction.author.mention} you select {", ".join(select_menu.values)}!', hidden=True)
+
+
 
 ________________________________________________
 
-.. _on_raw_selection_select:
 
-:func:`on_raw_selection_select`
-_______________________________
+.. function:: on_raw_selection_select(interaction, select_menu)
 
-This Event will be triggered if a :class:`SelectionSelect`, that is attached to a Message of this Bot is used.
-It will returns one Parameter:
+    This Event will be triggered if a :class:`SelectMenu`, that is attached to **any** Message of this Bot is used.
     
-    The `Interaction <./interaction.html#interaction>`_.
+    :param interaction: The `Interaction <./interaction.html#Interaction>`_ that contains all information about the Interaction.
+    :type interaction: :class:`discord.Interaction`
+    :param select: The `SelectionSelect <./interaction.html#SelectionSelect>`_ if the message is ephemeral else `SelectMenu <./components.html#SelectMenu>`_  but with the :attr:`values` wich contains a list of the selected options. (this is also in the first parameter under ``component``).
+    :type select: Union[:class:`SelectMenu`, :class:`SelectionSelect`]
 
-.. note::
-    If the ``message`` is not in the internal Chage the ``message`` parameter of :class:`discord.Interaction` would be ``None`` until you set it manualy by fetching the message or using aiter :meth:`Interaction.respond` or :meth:`Interaction.edit`.
+    .. _on_raw_selection_select-example:
 
-.. _on_raw_selection_select-example:
-
-Example
---------
+    **Example**
 
     .. code-block:: python
 
         @client.event
-        async def on_raw_selection_select(interaction: discord.Interaction, select: discord.SelectionSelect):
-            await interaction.defer() #It is better to defer here because the fetching of the message (if necessary) can take longer than 3 seconds.
-            if not interaction.message:
-                interaction.message = await interaction.channel.fetch_message(interaction.message_id)
-            await interaction.edit(f'Hey {interaction.author.mention} you select {", ".join(select.values)}!', hidden=True)
+        async def on_raw_selection_select(interaction: discord.Interaction, select_menu):
+            await interaction.edit(f'Hey {interaction.author.mention} you select {", ".join(select_menu.values)}!', hidden=True)
 
-__________________________________________________________________________________
+
+_______________________________________
 
 .. _abc-messageable:
 
-:class:`abc.Messageable`
-~~~~~~~~~~~~~~~~~~~~~~~~
+.. class:: abc.Messageable
 
-.. _abc-messageable-methods:
+    This has the same methods as a normal message as well except for a change to the :meth:`send` method.
 
-Methods
-_______
-This has the same methods as a normal message as well except for a change to the :meth:`send` method.
+    .. _abc-messageable-send:
 
-.. _abc-messageable-send:
+    .. classmethod:: send(**kwargs)
 
-:meth:`send`
-____________
+        .. _abc-messageable-send-parameters:
 
-.. _abc-messageable-send-parameters:
+        These are the parameters that have been added by this, the others are still present and can be seen in the docs of discord.py
 
-Parameters
------------
-    These are the parameters that have been added by this, the others are still present and can be seen in the docs of discord.py
-    
-    .. _abc-messageable-send-components:
-
-    :attr:`components`: Optional[List[Union[List[Buttton, SelectionSelect], ActionRow[Button, SelectionSelect]]]]
-
-        A List of components that should send with the Message these can be either in `ActionRow <./components.html#actionrow>`_'s or in :class:`list`'s.
-    
-    .. _abc-messageable-send-embeds:
-
-    :attr:`embeds`: Optional[List[discord.Embed]]
-    
-        A List of up to 10 :class:`discord.Embed`'s that should send with the Message.
+        :param components: A List of components that should send with the Message these can be either in `ActionRow <./components.html#actionrow>`_'s or in :class:`list`'s.
+        :type components: Optional[List[Union[List[Button, SelectionSelect], ActionRow[Button, SelectionSelect]]]]
+        :param embeds: A List of up to 10 :class:`discord.Embed`'s that should send with the Message.
+        :type embeds:  Optional[List[discord.Embed]]
 
 _____________________________
 
+.. class:: ext.commands.Cog
+
+    This class has also the decorators for custom_id's as the normal :class:`discord.Client` Class.
+
+    .. decorator:: commands.Cog.on_click(custom_id=None)
+
+        This works like the :meth:`discord.Client.on_click` decorator of the :class:`discord.Client` but it give ``self`` (The Cog-Class) as the 1. Parameter.
+
+        **Example**
+
+        .. code-block:: python
+
+            # The Button
+            Button(label='Hello', custom_id='my_button')
+
+            #The decorator
+            @commands.Cog.on_click()
+            async def my_button(i: discord.Interaction, button):
+                await i.respond('Hey you pressed a Button!')
+
+    .. decorator:: commands.Cog.on_select(custom_id=None)
+
+        This works like the :meth:`discord.Client.on_select` decorator of the :class:`discord.Client` but it give ``self`` (The Cog-Class) as the 1. Parameter.
+
+        **Example**
+
+        .. code-block:: python
+
+            # The SelectMenu
+            SelectMenu(custom_id='select_decorator_example',
+                       options=[
+                           SelectOption('The 1. Option', '1', 'The first option you have', '1️⃣'),
+                           SelectOption('The 2. Option', '2', 'The second option you have', '2️⃣')
+                       ], placeholder='Select a Option')
+
+            #The decorator
+            @commands.Cog.on_select()
+            async def select_decorator_example(i: discord.Interaction, select_menu):
+                await i.edit(content=f'You choice was the {select_menu.values[0]}. Option. 😀')
+
+----------------------------------
+
 .. _discord-message:
 
-:class:`discord.Message`
-~~~~~~~~~~~~~~~~~~~~~~~~
+.. class:: discord.Message
 
-.. _discord-message-attributes:
+and
 
-Attributes
-__________
-This has the same attributes as a normal message but one is added in addition
+.. class:: discord.PartialMessage
 
-    :attr:`components`: Optional[List[ActionRow[Union[Button, SelectMenu]]]]
+    .. _discord-message-attributes:
 
-        A list containing the components of the message
 
-Methods
-_______
-This has the same methods as a normal message but one is added in addition
-.. _discord-message-edit:
+    This has the same attributes as a normal message but one is added in addition
 
-:meth:`edit`
-____________
-    This takes the same parameters as the normal edit function except for two added parameters.
+    .. attribute:: components
 
-.. _discord-message-edit-parameters:
+        A Optional[List[:class:`ActionRow`]] containing the components of the message.
 
-Parameters
------------
-    These are the parameters that have been added by this, the others are still present and can be seen in the docs of discord.py
-    
-    .. _discord-message-edit-components:
+    .. attribute:: all_components
 
-    :attr:`components`: Optional[List[Union[List[Buttton, SelectionSelect], ActionRow[Button, SelectionSelect]]]]
+        Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message
 
-        A List of components that should replace the previous ones these can be either in `ActionRow <./components.html#actionrow>`_'s or in :class:`list`'s.
-    
-    .. _discord-message-edit-embeds:
+        .. note::
+            This is equal to:
+            .. code-block:: python
 
-    :attr:`embeds`: Optional[List[discord.Embed]]
-    
-        A list of up to 10 :class:`discord.Embeds` to replace the previous ones
+                for action_row in self.components:
+                    for component in action_row:
+                        yield component
+
+        :yields: Union[:class:`Button`, :class:`SelectMenu`]
+
+    .. attribute:: all_buttons
+
+        Returns all :class:`Button`'s that are contained in the message
+
+        .. note::
+            This is equal to:
+            .. code-block:: python
+
+                for action_row in self.components:
+                    for component in action_row:
+                        yield component
+
+        :yields: :class:`Button`
+
+    .. attribute:: all_select_menus
+
+        Returns all :class:`SelectMenu`'s that are contained in the message
+
+        .. note::
+            This is equal to:
+            .. code-block:: python
+
+                for action_row in self.components:
+                    for component in action_row:
+                        if isinstance(component, SelectMenu):
+                            yield component
+
+        :yields: :class:`SelectMenu`
+
+    This has the same methods as a normal message but one is added in addition.
+
+    .. _discord-message-edit:
+
+    .. method:: edit(**kwargs)
+
+        This takes the same parameters as the normal :func:`edit` function except for two added parameters.
+
+        .. _discord-message-edit-parameters:
+
+        :param components: A List of components that should replace the previous ones these can be either in `ActionRow <./components.html#actionrow>`_'s or in :class:`list`'s.
+        :type components: Optional[List[Union[List[:class:`Button`, :class:`SelectMenu`], ActionRow[:class:`Button`, :class:`SelectMenu`]]]]
+        :param embeds: A list of up to 10 :class:`discord.Embed`'s to replace the previous ones(This is also usable for normal Messages).
+        :type embeds: Optional[List[:class:`discord.Embed`]]
 
 .. toctree:: 
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents: 
 
 
