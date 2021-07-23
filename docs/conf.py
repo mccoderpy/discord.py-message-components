@@ -37,7 +37,6 @@ release = '1.7.5.1'
 extensions = [
         'sphinx_rtd_theme',
         'sphinxcontrib.contentui',
-        'sphinxcontrib-contentui'
 
 ]
 
