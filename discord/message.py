@@ -1599,6 +1599,28 @@ class PartialMessage(Hashable):
         data = await self._state.http.get_message(self.channel.id, self.id)
         return self._state.create_message(channel=self.channel, data=data)
 
+    @property
+    def all_components(self):
+        """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
+        for action_row in self.components:
+            for component in action_row:
+                yield component
+
+    @property
+    def all_buttons(self):
+        """Returns all :class:`Button`'s that are contained in the message"""
+        for action_row in self.components:
+            for component in action_row:
+                yield component
+
+    @property
+    def all_select_menus(self):
+        """Returns all :class:`SelectMenu`'s that are contained in the message"""
+        for action_row in self.components:
+            for component in action_row:
+                if isinstance(component, SelectMenu):
+                    yield component
+
     async def edit(self, **fields):
         """|coro|
 

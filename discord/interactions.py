@@ -98,10 +98,17 @@ class Interaction:
         """Represents a :class:`discord.Interaction`-object."""
         return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
 
-    async def defer(self, response_type: any([InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg]) = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
+    async def defer(self, response_type: any([InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg, int]) = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
-        'Defers' the response, showing a loading state to the user
+        'Defers' the response.
+         If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
+
         """
+
+        if isinstance(response_type, int):
+            response_type = InteractionCallbackType.from_value(response_type)
+        if not isinstance(response_type, (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
+            raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg, not %s.__class__.__name__' % response_type)
         if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": response_type.value, "data": {'flags': 64 if hidden else None}}
