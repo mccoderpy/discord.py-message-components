@@ -26,7 +26,7 @@ copyright = '2021, Mathieu Corsham aka. mccoder.py'
 author = 'Mathieu Corsham aka. mccoder.py'
 
 # The full version, including alpha/beta/rc tags
-release = '1.7.5'
+release = '1.7.5.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -37,6 +37,7 @@ release = '1.7.5'
 extensions = [
         'sphinx_rtd_theme',
         'sphinxcontrib.contentui',
+        'sphinxcontrib-contentui'
 
 ]
 
