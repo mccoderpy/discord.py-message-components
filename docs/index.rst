@@ -34,14 +34,13 @@ Welcome to discord\.py-message-components' documentation!
 
    The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
 
-.. figure:: https://cdn.discordapp.com/emojis/854380926548967444.png?v=1
-   :name: discord.py-message-components documentation
-   :alt: Link to the documentation of discord.py-message-components
-   :align: center
+.. |PyPI| image:: https://cdn.discordapp.com/emojis/854380926548967444.png?v=1
+   :alt: PyPI Logo
    :width: 30px
    :target: https://discordpy-message-components.readthedocs.io/en/latest/
 
-   **Visit on PyPI** `here <https://discordpy-message-components.readthedocs.io/en/latest/>`_
+.. centered::
+   **Visit on** |PyPI| **PyPI** `here <https://pypi.org/project/discord.py-message-components>`_
 
 You need help? Or have ideas/feedback?
 ______________________________________

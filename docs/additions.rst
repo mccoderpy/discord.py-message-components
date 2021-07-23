@@ -1,8 +1,6 @@
 Additions and adjustments to discord.py builtin-functions
 =========================================================
 
-.. _discord-Client:
-
 .. class:: discord.Client
 
 

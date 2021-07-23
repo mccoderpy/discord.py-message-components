@@ -6,8 +6,6 @@
 Components
 ==========
 
-.. _buttoncolor:
-
 .. class:: ButtonStyle
 
    This is located in discord.enums but i place it here.
@@ -17,23 +15,23 @@ Components
    +------------------------+-------+----------------+--------------------------------+
    | NAME                   | VALUE | ALIASES        | EXAMPLE                        |
    +========================+=======+================+================================+
-   | .. attribute:: blurple |   1   |                | .. image:: imgs/ict5example.gif|
-   |                        |       | ``Primary``    |    :alt: Blue Button Picture   |
+   | .. attribute:: blurple |   1   |                | .. image:: imgs/blurple.png    |
+   |                        |       | ``Primary``    |    :alt: Blurple Button Picture|
    |                        |       |                |                                |
    +------------------------+-------+----------------+--------------------------------+
-   | .. attribute:: grey    |   2   | ``gray``,      | .. image:: imgs/ict5example.gif|
+   | .. attribute:: grey    |   2   | ``gray``,      | .. image:: imgs/grey.png       |
    |                        |       | ``Secondary``  |    :alt: Grey Button Picture   |
    |                        |       |                |                                |
    +------------------------+-------+----------------+--------------------------------+
-   | .. attribute:: green   |   3   | ``Success``    | .. image:: imgs/ict5example.gif|
+   | .. attribute:: green   |   3   | ``Success``    | .. image:: imgs/green.png      |
    |                        |       |                |    :alt: Green Button Picture  |
    |                        |       |                |                                |
    +------------------------+-------+----------------+--------------------------------+
-   | .. attribute:: red     |   4   | ``Danger``     | .. image:: imgs/ict5example.gif|
+   | .. attribute:: red     |   4   | ``Danger``     | .. image:: imgs/red.png        |
    |                        |       |                |    :alt: Red Button Picture    |
    |                        |       |                |                                |
    +------------------------+-------+----------------+--------------------------------+
-   | .. attribute:: url     |   5   | ``link``,      | .. image:: imgs/ict5example.gif|
+   | .. attribute:: url     |   5   | ``link``,      | .. image:: imgs/url.png        |
    |                        |       | ``grey_url``,  |    :alt: URL Button Picture    |
    |                        |       | ``Link_Button``|                                |
    +------------------------+-------+----------------+--------------------------------+
