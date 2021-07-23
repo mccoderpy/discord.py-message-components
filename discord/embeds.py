@@ -29,6 +29,7 @@ import datetime
 from . import utils
 from .colour import Colour
 
+
 class _EmptyEmbed:
     def __bool__(self):
         return False
@@ -39,7 +40,9 @@ class _EmptyEmbed:
     def __len__(self):
         return 0
 
+
 EmptyEmbed = _EmptyEmbed()
+
 
 class EmbedProxy:
     def __init__(self, layer):
@@ -53,6 +56,7 @@ class EmbedProxy:
 
     def __getattr__(self, attr):
         return EmptyEmbed
+
 
 class Embed:
     """Represents a Discord embed.

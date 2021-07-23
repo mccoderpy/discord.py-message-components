@@ -34,7 +34,7 @@ import asyncio
 
 from .iterators import HistoryIterator
 from .context_managers import Typing
-from .enums import ChannelType
+from .enums import try_enum, ChannelType, PermissionType
 from .errors import InvalidArgument, ClientException
 from .mentions import AllowedMentions
 from .permissions import PermissionOverwrite, Permissions
@@ -175,10 +175,7 @@ class _Overwrites:
         self.id = kwargs.pop('id')
         self.allow = int(kwargs.pop('allow_new', 0))
         self.deny = int(kwargs.pop('deny_new', 0))
-        _type = kwargs.pop('type')
-        if _type not in ('role', 'user', 'member'):
-            _type = {0: 'role', 1: 'member'}.get(_type)
-        self.type = sys.intern(_type)
+        self.type = sys.intern(kwargs.pop('type'))
 
     def _asdict(self):
         return {
@@ -331,10 +328,13 @@ class GuildChannel:
         everyone_id = self.guild.id
 
         for index, overridden in enumerate(data.get('permission_overwrites', [])):
+            overridden_type = try_enum(PermissionType, overridden.pop('type'))
+            if not overridden_type:
+                raise AttributeError('Type type should be 0 - member, or 1 - role not %s' % overridden_type)
             overridden_id = int(overridden.pop('id'))
-            self._overwrites.append(_Overwrites(id=overridden_id, **overridden))
+            self._overwrites.append(_Overwrites(id=overridden_id, type=overridden_type.name, **overridden))
 
-            if overridden['type'] == 'member':
+            if overridden_type.name == 'member':
                 continue
 
             if overridden_id == everyone_id:
@@ -1031,18 +1031,23 @@ class Messageable(metaclass=abc.ABCMeta):
 
         if embed is not None:
             embed = embed.to_dict()
-
+        embed_list = []
+        if embed:
+            embed_list.append(embed)
+        if embeds:
+            embed_list.extend([e.to_dict() for e in embeds])
+        embeds = embed_list
+        if len(embeds) > 10:
+            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embeds)}')
         if components:
             _components = []
             for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, Button):
-                    _components.extend(ActionRow(component).sendable())
-                elif isinstance(component, SelectMenu):
-                    _components.extend(ActionRow(component).sendable())
+                if isinstance(component, (Button, SelectMenu)):
+                    _components.extend(ActionRow(component).to_dict())
                 elif isinstance(component, ActionRow):
-                    _components.extend(component.sendable())
+                    _components.extend(component.to_dict())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if any([isinstance(obj, Button), isinstance(obj, SelectMenu)])]).sendable())
+                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
             components = _components
 
         if allowed_mentions is not None:
@@ -1066,23 +1071,17 @@ class Messageable(metaclass=abc.ABCMeta):
         if file is not None and files is not None:
             raise InvalidArgument('cannot pass both file and files parameter to send()')
 
-        is_interaction_responce = kwargs.pop('__is_interaction_responce', None)
+        is_interaction_response = kwargs.pop('__is_interaction_response', None)
         deferred = kwargs.pop('__deferred', False)
         use_webhook = kwargs.pop('__use_webhook', False)
         interaction_id = kwargs.pop('__interaction_id', None)
         interaction_token = kwargs.pop('__interaction_token', None)
         application_id = kwargs.pop('__application_id', None)
         followup = kwargs.pop('followup', False)
-        if is_interaction_responce is False or None:
+        if is_interaction_response is False or None:
             hidden = None
-        embedlist = []
-        if embed:
-            embedlist.append(embed)
-        if embeds:
-            embedlist.extend([e.to_dict() for e in embeds])
-        embeds = embedlist
-        if len(embeds) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be sent with a response is 10, get: {len(embeds)}')
+        if hidden is True and file or files:
+            raise AttributeError('An ephemeral(hidden) Message could not contain file(s)')
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')

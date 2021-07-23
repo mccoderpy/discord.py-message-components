@@ -1,16 +1,21 @@
-import sys
 import typing
-import warnings
+import logging
+from . import utils
 from .user import User
 from .member import Member
 from .http import HTTPClient
 from .message import Message
-import logging
-from .errors import NotFound, UnknowInteraction
-from .channel import TextChannel, DMChannel
-from .components import ActionRow, Button, SelectMenu, ComponentType
+from .errors import NotFound
+from .channel import DMChannel
+from .components import Button, SelectMenu
+from .enums import ComponentType, InteractionCallbackType
 
 log = logging.getLogger(__name__)
+
+__all__ = ('EphemeralMessage',
+           'Interaction',
+           'ButtonClick',
+           'SelectionSelect')
 
 
 class EphemeralMessage:
@@ -21,189 +26,185 @@ class EphemeralMessage:
     """
 
 
+class ButtonClick:
+    """Represents a :class:`discord.Button` that was pressed in an ephemeral Message(contains its custom_id and its hash)."""
+    def __init__(self, data):
+        self.component_type: int = data.get('component_type')
+        custom_id = data.get('custom_id')
+        self.custom_id: typing.Union[str, int] = int(custom_id) if custom_id.isdigit() else custom_id
+        self.__hash__: str = data.get('hash', None)
+
+    def __hash__(self):
+        return self.__hash__
+
+    def __repr__(self):
+        return f"<ButtonClick custom_id={self.custom_id}{', hash='+self.__hash__ if self.__hash__ else ''}>"
+
+
+class SelectionSelect:
+    """Represents a :class:`discord.SelectMenu` in an ephemeral Message from which options have been selected (contains its custom_id and the selected options)."""
+    def __init__(self, data):
+        self.component_type: int = data.get('component_type')
+        custom_id = data.get('custom_id')
+        self.custom_id: typing.Union[str, int] = int(custom_id) if custom_id.isdigit() else custom_id
+        self.values: typing.List[typing.Union[str, int]] = [int(value) if value.isdigit() else value for value in data.get('values', [])]
+
+    def __repr__(self):
+        return f'<SelectionSelect custom_id={self.custom_id}, values={self.values}>'
+
+
 class Interaction:
 
     """
     The Class for an discord-interaction like klick an :class:`Button` or select an option of :class:`SelectMenu` in discord
 
-    for more informations about Interactions visit the Documentation of the
+    For more general information's about Interactions visit the Documentation of the
     `Discord-API <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_
     """
 
-    def __repr__(self):
-        return f'<Interaction {" ".join([f"{a}={getattr(self, a)}" for a in self.__all__])}>'
-
-    # __slots__ = ('author', 'member', 'user', 'message', 'channel', 'guild', '__token', '__interaction_id', '_type', 'interaction_type', 'component_type', 'component', 'http')
-
-    __all__ = ('author', 'member', 'user', 'guild', 'channel', 'message', '_deferred', 'component')
-
     def __init__(self, state, data):
-        self.state = state
-        self.http: HTTPClient = state.http
-        self.interaction_type = data.get('type', None)
+        self._state = state
+        self._http: HTTPClient = state.http
+        self._interaction_type = data.get('type', None)
         self.__token = data.get('token', None)
-        self._raw = data
         self._message = data.get('message')
-        self._message_id = int(self._message.get('id'))
+        self.message_id = int(self._message.get('id'))
         self.message_flags = self._message.get('flags', 0)
         self._data = data.get('data', None)
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
-        self.__interaction_id = int(data.get('id', 0))
-        self._guild_id = int(data.get('guild_id', 0))
-        self._channel_id = int(data.get('channel_id', 0))
+        self.user_id = int(self._user['id'])
+        self.__interaction_id = int(data.get('id'))
+        self.guild_id = int(data.get('guild_id', None))
+        self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
-        self.guild = None
-        self.channel = None
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
-        self.member: typing.Optional[Member] = None
-        self.user: typing.Optional[User] = None
-        self._deferred = False
-        self._deferred_hidden = False
+        self.member: typing.Optional[Member]
+        self.user: typing.Optional[User]
+        self.deferred = False
+        self.deferred_hidden = False
         self.callback_message = None
-        self.component: typing.Union[ButtonClick, SelectionSelect] = _component_factory(self._data)
-        self.component_type = None
-        if self.component:
-            self.component_type = self.component.component_type
-        # maybe ``later`` this library will alsow supports Slash-Commands
+        self._component = None
+        self.component_type = self._data.get('component_type', None)
+        # maybe ``later`` this library will also supports Slash-Commands
         # self.command = None
 
-    async def defer(self) -> None:
+    __slots__ = ('_state', '_http', '_data', 'member', '_member', '_user', 'user_id', 'guild_id', 'channel_id', 'message_id',
+                 'message_flags', '__application_id', '__token', 'user', 'guild', 'channel', 'message', '_message',
+                 'deferred', 'deferred_hidden', 'callback_message', '_component', 'component_type', '__application_id',
+                 '__interaction_id', '_interaction_type')
+
+    def __repr__(self):
+        """Represents a :class:`discord.Interaction`-object."""
+        return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
+
+    async def defer(self, response_type: any([InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg, int]) = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
-        'Defers' the response, showing a loading state to the user
+        'Defers' the response.
+         If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
+
         """
-        if self._deferred:
+
+        if isinstance(response_type, int):
+            response_type = InteractionCallbackType.from_value(response_type)
+        if not isinstance(response_type, (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
+            raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg, not %s.__class__.__name__' % response_type)
+        if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
-        base = {"type": 6}
+        base = {"type": response_type.value, "data": {'flags': 64 if hidden else None}}
         try:
-            await self.http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id,
-                                                  token=self.__token, application_id=self.__application_id)
+            data = await self._http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id,
+                                                          token=self.__token, application_id=self.__application_id)
         except NotFound:
             log.warning(f'Unknown Interaction {self.__interaction_id}')
-        self._deferred = True
+        else:
+            self.deferred = True
+            return data
 
     async def edit(self, **fields) -> Message:
-        """
+        """|coro|
+
         'Defers' if it isn't yet and edit the message
         """
         if not self.channel:
-            self.channel = self.state.add_dm_channel(data=await self.http.get_channel(self.channel_id))
-        if not self.message:
-            self.message: Message = await self.channel.fetch_message(self._message_id)
-        await self.message.edit(__is_interaction_responce=True, __deferred=self._deferred, __use_webhook=False,
+            setattr(self, 'channel', self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id)))
+        await self.message.edit(__is_interaction_response=True, __deferred=False if (not self.deferred or self.callback_message) else True, __use_webhook=False,
                                 __interaction_id=self.__interaction_id, __interaction_token=self.__token,
                                 __application_id=self.__application_id, **fields)
-        self._deferred = True
+        self.deferred = True
         return self.message
 
     async def respond(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
                       files=None, delete_after=None, nonce=None,
                       allowed_mentions=None, reference=None,
                       mention_author=None, hidden=False) -> typing.Union[Message, EphemeralMessage]:
-        """
+        """|coro|
+
         Responds to an interaction by sending a message that can be made visible only to the person who performed the
          interaction by setting the `hidden` parameter to :bool:`True`.
-         """
+        """
         if not self.channel:
-            self.channel = self.state.add_dm_channel(data=await self.http.get_channel(self.channel_id))
+            setattr(self, 'channel', self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id)))
         msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
                                       files=files, delete_after=delete_after, nonce=nonce,
-                                      allowed_mentions=allowed_mentions,reference=reference,
-                                      mention_author=mention_author, hidden=hidden, __is_interaction_responce=True,
-                                      __deferred=self._deferred, __use_webhook=False, __interaction_id=self.__interaction_id,
+                                      allowed_mentions=allowed_mentions, reference=reference,
+                                      mention_author=mention_author, hidden=hidden, __is_interaction_response=True,
+                                      __deferred=self.deferred, __use_webhook=False, __interaction_id=self.__interaction_id,
                                       __interaction_token=self.__token, __application_id=self.__application_id,
                                       followup=True if self.callback_message else False)
 
         if hidden is True:
-            self._deferred_hidden = True
-        self._deffered = True
-        if not self.callback_message:
+            self.deferred_hidden = True
+        if not self.callback_message and not self.deferred:
             self.callback_message = msg if msg else EphemeralMessage()
+        self.deferred = True
         return msg
+
+    async def get_original_callback(self):
+        """|coro|
+
+        Fetch the Original Callback-Message of the Interaction
+
+        .. warning::
+            This is a API-Call and should use carefully"""
+        return await self._state.http.get_original_interaction_response(self.__token, self.__application_id)
 
     @property
     def author(self) -> typing.Union[Member, User]:
-        return self.member if self.member else self.user
+        return self.member if self.member is not None else self.user
     
-
     @property
     def message_is_dm(self) -> bool:
         if self.message:
             return isinstance(self.channel, DMChannel)
 
     @property
-    def deferred(self) -> bool:
-        return self._deferred
-
-    @property
-    def token(self) -> str:
-        return self.__token
-
-    @property
-    def interaction_id(self) -> int:
-        return int(self.__interaction_id)
-
-    @property
-    def guild_id(self) -> int:
-        if self._guild_id:
-            return int(self._guild_id)
-
-    @property
-    def channel_id(self) -> int:
-        return int(self._channel_id)
-
-    @property
-    def message_id(self) -> int:
-        if self._message_id:
-            return int(self._message_id)
-
-
-    @property
     def message_is_hidden(self) -> bool:
         return self.message_flags == 64
 
-class ButtonClick:
-    def __init__(self, data):
-        self.component_type = data.get('component_type')
-        self.custom_id = data.get('custom_id')
-        self.__hash__ = data.get('hash', None)
+    @property
+    def component(self) -> typing.Union[Button, SelectMenu, ButtonClick, SelectionSelect]:
+        if self._component is None:
+            custom_id = self._data['custom_id']
+            if custom_id.isdigit():
+                custom_id = int(custom_id)
+            if isinstance(self.message, Message):
+                if self._data['component_type'] == ComponentType.Button:
+                    self._component = utils.get(self.message.all_buttons, custom_id=custom_id)
+                elif self._data['component_type'] == ComponentType.SelectMenu:
+                    select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
+                    setattr(select_menu, '_values', self._data['values'])
+                    self._component = select_menu
 
-    def __hash__(self):
-        return self.__hash__
-
-    def __repr__(self):
-        return f"<ButtonClick custom_id={self.custom_id} {'hash='+self.__hash__ if self.__hash__ else ''}>"
-
-
-class SelectionSelect:
-    def __init__(self, data):
-        self.component_type = data.get('component_type')
-        self.custom_id = data.get('custom_id')
-        values: list = data.get('values')
-        self.values = values
-
-
-    def __repr__(self):
-        return f'<SelectionSelect custom_id={self.custom_id} values={self.values}>'
-
-
-def _component_factory(data):
-    if data['component_type'] == ComponentType.Button:
-        return ButtonClick(data)
-
-    elif data['component_type'] == ComponentType.SelectMenu:
-        return SelectionSelect(data)
-
-    else:
-        return None
+            else:
+                if self._data['component_type'] == ComponentType.Button:
+                    self._component = ButtonClick(self._data)
+                elif self._data['component_type'] == ComponentType.SelectMenu:
+                    self._component = SelectionSelect(self._data)
+        return self._component
 
 
 class InteractionType:
     PingAck = 1
     SlashCommand = 2
     Component = 3
-    ChannelMessageWithSource = 4
-    DeferredChannelMessageWithSource = 5
-    DeferredUpdateMessage = 6
-    UpdateMessage = 7
-

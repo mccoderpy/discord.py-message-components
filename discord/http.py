@@ -41,6 +41,7 @@ from . import __version__, utils
 
 log = logging.getLogger(__name__)
 
+
 async def json_or_text(response):
     text = await response.text(encoding='utf-8')
     try:
@@ -51,6 +52,7 @@ async def json_or_text(response):
         pass
 
     return text
+
 
 class Route:
     BASE = 'https://discord.com/api/v9'
@@ -73,6 +75,7 @@ class Route:
         # the bucket is just method + path w/ major parameters
         return '{0.channel_id}:{0.guild_id}:{0.path}'.format(self)
 
+
 class MaybeUnlock:
     def __init__(self, lock):
         self.lock = lock
@@ -90,7 +93,10 @@ class MaybeUnlock:
 
 # For some reason, the Discord voice websocket expects this header to be
 # completely lowercase while aiohttp respects spec and does it as case-insensitive
+
+
 aiohttp.hdrs.WEBSOCKET = 'websocket'
+
 
 class HTTPClient:
     """Represents an HTTP client sending HTTP requests to the Discord API."""
@@ -101,7 +107,7 @@ class HTTPClient:
     def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True):
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.connector = connector
-        self.__session = None # filled in static_login
+        self.__session = None  # filled in static_login
         self._locks = weakref.WeakValueDictionary()
         self._global_over = asyncio.Event()
         self._global_over.set()
@@ -436,7 +442,6 @@ class HTTPClient:
         payload = {
             'messages': message_ids
         }
-
         return self.request(r, json=payload, reason=reason)
 
     def edit_message(self, channel_id, message_id, **fields):
@@ -448,16 +453,39 @@ class HTTPClient:
         r = Route("POST", r_url)
         return self.request(r, json=_resp)
 
-    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, **fields):
+    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, files=None, **fields):
         if not deferred:
-            fields = {'data': fields}
-            fields['type'] = 7
+            fields = {'data': fields, 'type': 7}
             r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original')
-        return self.request(r, json=fields)
+        form = []
+        if files is not None:
+            form.append({'name': 'payload_json', 'value': utils.to_json(fields)})
+            if len(files) == 1:
+                file = files[0]
+                form.append({
+                    'name': 'file',
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream'
+                })
+            else:
+                for index, file in enumerate(files):
+                    form.append({
+                        'name': 'file%s' % index,
+                        'value': file.fp,
+                        'filename': file.filename,
+                        'content_type': 'application/octet-stream'
+                    })
 
-    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup, *, content=None, tts=False, embeds=None, components=None, files=None, nonce=None, allowed_mentions=None, message_reference=None, flags=None):
+            return self.request(r, form=form, files=files)
+        else:
+            return self.request(r, json=fields)
+
+    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup,
+                                  *, content=None, tts=False, embeds=None, components=None, files=None, nonce=None,
+                                  allowed_mentions=None, message_reference=None, flags=None):
         form = []
         payload = {'tts': tts}
         if content:
@@ -475,8 +503,7 @@ class HTTPClient:
         if flags:
             payload['flags'] = flags
         if not deferred and not followup:
-            payload = {'data': payload}
-            payload['type'] = 4
+            payload = {'type': 4, 'data': payload}
             r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
             r = Route('POST', f'/webhooks/{application_id}/{token}')
@@ -539,7 +566,7 @@ class HTTPClient:
 
     def clear_single_reaction(self, channel_id, message_id, emoji):
         r = Route('DELETE', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}',
-                   channel_id=channel_id, message_id=message_id, emoji=emoji)
+                  channel_id=channel_id, message_id=message_id, emoji=emoji)
         return self.request(r)
 
     def get_message(self, channel_id, message_id):
@@ -1037,7 +1064,7 @@ class HTTPClient:
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
 
-    async def get_gateway(self, *, encoding='json', v=6, zlib=True):
+    async def get_gateway(self, *, encoding='json', v=9, zlib=True):
         try:
             data = await self.request(Route('GET', '/gateway'))
         except HTTPException as exc:
@@ -1048,7 +1075,7 @@ class HTTPClient:
             value = '{0}?encoding={1}&v={2}'
         return value.format(data['url'], encoding, v)
 
-    async def get_bot_gateway(self, *, encoding='json', v=6, zlib=True):
+    async def get_bot_gateway(self, *, encoding='json', v=9, zlib=True):
         try:
             data = await self.request(Route('GET', '/gateway/bot'))
         except HTTPException as exc:

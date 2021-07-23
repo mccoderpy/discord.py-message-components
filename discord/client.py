@@ -1024,11 +1024,20 @@ class Client:
         return coro
     
     def on_click(self, custom_id=None):
-        """A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
+        """
+        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
 
-        You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
+        The function this is attached to must take the same parameters as a
+        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_button_click>`_.
 
-        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
+        .. important::
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+
+        Parameters
+        ----------
+        custom_id: Optional[str]
+            If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
+            or you want to give the function a different name then the custom_id use this one to set the custom_id.
 
         Example
         -------
@@ -1038,16 +1047,16 @@ class Client:
             # the Button
             Button(label='Hey im a cool blue Button',
                     custom_id='cool blue Button',
-                    style=ButtonColor.blurple)
+                    style=ButtonStyle.blurple)
 
-            # function thats called when the Button pressed
+            # function that's called when the Button pressed
             @client.on_click(custom_id='cool blue Button')
-            async def cool_blue_button(i: discord.Interaction):
-                await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
+            async def cool_blue_button(i: discord.Interaction, button):
+                await i.respond(f'Hey you pressed a {button.custom_id}!', hidden=True)
 
         Raises
         ------
-        :class:`TypeError`
+        TypeError
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func):
@@ -1056,35 +1065,32 @@ class Client:
 
             _name = custom_id if custom_id is not None else func.__name__
 
-            def check(i):
-                return i.component.custom_id == str(_name)
-
             try:
                 listeners = self._listeners['raw_button_click']
             except KeyError:
                 listeners = []
                 self._listeners['raw_button_click'] = listeners
 
-            listeners.append((func, check))
+            listeners.append((func, lambda i, c: str(c.custom_id) == str(custom_id)))
             return func
 
         return decorator
     
     def on_select(self, custom_id=None):
-        """A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
+        """
+        A decorator with which you can assign a function to a specific :class:`discord.SelectMenu` (or its custom_id).
         
-        .. note::
-            This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
+        The function this is attached to must take the same parameters as a
+        `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_selection_select>`_.
 
         .. important::
-            The Function this decorator attached to must be an corountine (means an awaitable)
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
-        ----------
-        
-        :attr:`custom_id`: Optional[str]
-
-            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
+        -----------
+        custom_id: Optional[str]
+            If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as an function name
+            or you want to give the function a different name then the custom_id use this one to set the custom_id.
 
 
         Example
@@ -1094,16 +1100,16 @@ class Client:
 
             # the SelectMenu
             SelectMenu(custom_id='choose_your_gender',
-                    options=[
-                            select_option(label='Female', value='Female', emoji='♀️'),
-                            select_option(label='Male', value='Male', emoji='♂️'),
-                            select_option(label='Non Binary', value='Non Binary', emoji='⚧')
-                            ], placeholder='Choose your Gender')
+                       options=[
+                           SelectOption(label='Female', value='Female', emoji='♀️'),
+                           SelectOption(label='Male', value='Male', emoji='♂️'),
+                           SelectOption(label='Trans/Non Binary', value='Trans/Non Binary', emoji='⚧')
+                       ], placeholder='Choose your Gender')
 
-            # function thats called when the SelectMenu is used
+            # function that's called when the SelectMenu is used
             @client.on_select()
-            async def choose_your_gender(i: discord.Interaction):
-                await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
+            async def choose_your_gender(i: discord.Interaction, select_menu):
+                await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
         Raises
         --------
@@ -1114,10 +1120,7 @@ class Client:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
 
-            _name = custom_id if custom_id is not None else func.__name__
-
-            def check(i):
-                return i.component.custom_id == str(_name)
+            _custom_id = custom_id if custom_id is not None else func.__name__
 
             try:
                 listeners = self._listeners['raw_selection_select']
@@ -1125,7 +1128,7 @@ class Client:
                 listeners = []
                 self._listeners['raw_selection_select'] = listeners
 
-            listeners.append((func, check))
+            listeners.append((func, lambda i, c: str(c.custom_id) == str(_custom_id)))
             return func
 
         return decorator

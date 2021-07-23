@@ -23,7 +23,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-import sys
 
 
 class DiscordException(Exception):
@@ -33,12 +32,14 @@ class DiscordException(Exception):
     """
     pass
 
+
 class DiscordWarning(Warning):
     """Base warning class for discord.py
 
     Ideally speaking, this could be caught to handle any warnings thrown from this library.
     """
     pass
+
 
 class ClientException(DiscordException):
     """Exception that's thrown when an operation in the :class:`Client` fails.
@@ -47,10 +48,12 @@ class ClientException(DiscordException):
     """
     pass
 
+
 class NoMoreItems(DiscordException):
     """Exception that is thrown when an async iteration operation has no more
     items."""
     pass
+
 
 class GatewayNotFound(DiscordException):
     """An exception that is usually thrown when the gateway hub
@@ -58,6 +61,7 @@ class GatewayNotFound(DiscordException):
     def __init__(self):
         message = 'The gateway to connect to discord was not found.'
         super(GatewayNotFound, self).__init__(message)
+
 
 def flatten_error_dict(d, key=''):
     items = []
@@ -75,6 +79,7 @@ def flatten_error_dict(d, key=''):
             items.append((new_key, v))
 
     return dict(items)
+
 
 class HTTPException(DiscordException):
     """Exception that's thrown when an HTTP request operation fails.
@@ -117,6 +122,7 @@ class HTTPException(DiscordException):
 
         super().__init__(fmt.format(self.response, self.code, self.text))
 
+
 class Forbidden(HTTPException):
     """Exception that's thrown for when status code 403 occurs.
 
@@ -124,12 +130,14 @@ class Forbidden(HTTPException):
     """
     pass
 
+
 class NotFound(HTTPException):
     """Exception that's thrown for when status code 404 occurs.
 
     Subclass of :exc:`HTTPException`
     """
     pass
+
 
 class DiscordServerError(HTTPException):
     """Exception that's thrown for when a 500 range status code occurs.
@@ -140,11 +148,13 @@ class DiscordServerError(HTTPException):
     """
     pass
 
+
 class InvalidData(ClientException):
     """Exception that's raised when the library encounters unknown
     or invalid data from Discord.
     """
     pass
+
 
 class InvalidArgument(ClientException):
     """Exception that's thrown when an argument to a function
@@ -156,12 +166,14 @@ class InvalidArgument(ClientException):
     """
     pass
 
+
 class LoginFailure(ClientException):
     """Exception that's thrown when the :meth:`Client.login` function
     fails to log you in from improper credentials or some other misc.
     failure.
     """
     pass
+
 
 class ConnectionClosed(ClientException):
     """Exception that's thrown when the gateway connection is
@@ -184,6 +196,7 @@ class ConnectionClosed(ClientException):
         self.reason = ''
         self.shard_id = shard_id
         super().__init__('Shard ID %s WebSocket closed with %s' % (self.shard_id, self.code))
+
 
 class PrivilegedIntentsRequired(ClientException):
     """Exception that's thrown when the gateway is requesting privileged intents
@@ -210,7 +223,6 @@ class PrivilegedIntentsRequired(ClientException):
         super().__init__(msg % shard_id)
 
 
-
 class InvalidButtonUrl(DiscordException):
     """Exception that's thrown when the URL passed in an :class:`discord.Button` do not match the Format ``http``
     or ``https``
@@ -220,32 +232,33 @@ class InvalidButtonUrl(DiscordException):
         msg = "The specified URL %s does not match the format `http` or `https`."
         super().__init__(msg % self._inavlid_url)
 
+
 class URLAndCustomIDNotAlowed(DiscordException):
     """Exception that's thrown when there is an ``url`` and an ``custom_id`` passed in an :class:`discord.Button`,
-    wath is not supportet by the Discord-API.
+    what is not supportet by the Discord-API.
 
     .. note ::
-         :class:`discord.Button` with the style :class:`discord.ButtonStyle.Link_Button` don't send any Interaction to Discord when they are clicket.
+         :class:`discord.Button` with the style :class:`discord.ButtonStyle.Link_Button` don't send any Interaction to Discord when they are clicked.
     """
     def __init__(self, custom_id):
-        msg = f"custom_id's ({[custom_id]}) are not alowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.Link_Button` beacuse Discord don't send any Interaction when clicking on an Link-Button. For More Informations visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
+        msg = f"custom_id's ({custom_id}) are not alowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.Link_Button` because Discord don't send any Interaction when clicking on an Link-Button. For More Information visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
         super().__init__(msg)
+
 
 class EmptyActionRow(DiscordException):
     """
-    Exception that's thrown when there is an empty :class:`discord.ActionRow` in your message
-
-    .. note ::
-        You could supress this Error by setting :attr:`force` in the __init__ of the :class:`discord.ActionRow`  to :bool:`True`
+    Exception that's thrown when there is an empty :class:`discord.ActionRow` in your message.
     """
     def __init__(self):
-        msg = 'The Discord-API alows you to send an empty ActionRow but wy should you do that?' \
-              'You will not see anything apearing in Discord.\n' \
-              'Note: this Error could be supressed by adding `force=True` to the Innit of the ActionRow'
+        msg = 'The Discord-API does not allows you to send an empty ActionRow, you have to parse at least one component'
         super().__init__(msg)
 
+
 class UnknowInteraction(DiscordWarning):
-    def __init__(self, interaction_id: int):
-        msg = f'You have already replied to this interaction ({interaction_id})' \
-              f' and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
+    """
+    A warning that comes when you try to interact with an expired interacion.
+    """
+    def __init__(self, interaction_id):
+        msg = f'You have already respond to this interaction ({interaction_id}) ' \
+              f'and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
         super().__init__(msg)

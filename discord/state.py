@@ -57,7 +57,8 @@ from . import utils
 from .flags import Intents, MemberCacheFlags
 from .object import Object
 from .invite import Invite
-from .interactions import Interaction, ComponentType, InteractionType
+from .interactions import Interaction, InteractionType
+
 
 class ChunkRequest:
     def __init__(self, guild_id, loop, resolver, *, cache=True):
@@ -99,13 +100,16 @@ class ChunkRequest:
             if not future.done():
                 future.set_result(self.buffer)
 
+
 log = logging.getLogger(__name__)
+
 
 async def logging_coroutine(coroutine, *, info):
     try:
         await coroutine
     except Exception:
         log.exception('Exception occurred during %s', info)
+
 
 class ConnectionState:
     def __init__(self, *, dispatch, handlers, hooks, syncer, http, loop, **options):
@@ -537,41 +541,37 @@ class ConnectionState:
 
     def parse_interaction_create(self, data):
         if data.get('type', data.get('t', 0)) < 3:
-            #to make sure that other-libraries like `discord-py-slash-command` still work
-            self.dispatch('socket_responce', data)
             return
-        raw = Interaction(self, data=data)
-        raw.message = self._get_message(raw.message_id) if raw.message is None else raw.message
-        if raw.guild_id:
-            raw.guild = self._get_guild(raw.guild_id)
-            raw.channel = raw.guild.get_channel(raw.channel_id)
-            raw.member = Member(guild=raw.guild, data=raw._member, state=self)
+        interaction = Interaction(state=self, data=data)
+        interaction.message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
+        interaction.user = self.store_user(interaction._user)
+        if interaction.guild_id:
+            interaction.guild = self._get_guild(interaction.guild_id)
+            interaction.channel = interaction.guild.get_channel(interaction.channel_id)
+            interaction.member = interaction.guild.get_member(interaction.user_id)
+            if interaction.member is None:
+                # This can only be the case if member-intents are not activated.
+                interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
         else:
-            raw.channel = self._get_private_channel(raw.channel_id)
-        raw.user = User(state=self, data=raw._user)
-        if raw.message is not None:
-            self.dispatch('interaction_create', raw)
-            self.dispatch('raw_interaction_create', raw)
-            if raw.interaction_type == InteractionType.Component:
-                if raw.component_type == 2:
-                    if not raw.message_is_hidden:
-                        self.dispatch('button_click', raw, raw.component)
-                        self.dispatch('raw_button_click', raw)
-                    else:
-                        self.dispatch('hidden_button_click', raw)
-                elif raw.component_type == 3:
-                    if not raw.message_is_hidden:
-                        self.dispatch('selection_select', raw, raw.component)
-                        self.dispatch('raw_selection_select', raw)
-                    else:
-                        self.dispatch('hidden_selection_select', raw)
+            interaction.channel = self._get_private_channel(interaction.channel_id)
+        if interaction.message is not None:
+            self.dispatch('interaction_create', interaction)
+            self.dispatch('raw_interaction_create', interaction)
+            if interaction._interaction_type == InteractionType.Component:
+                if interaction.component_type == 2:
+                    self.dispatch('button_click', interaction, interaction.component)
+                    self.dispatch('raw_button_click', interaction, interaction.component)
+                elif interaction.component_type == 3:
+                    self.dispatch('selection_select', interaction, interaction.component)
+                    self.dispatch('raw_selection_select', interaction, interaction.component)
         else:
-            self.dispatch('raw_interaction_create', raw)
-            if raw.interaction_type == InteractionType.Component:
-                if raw.component_type == 2:
-                    self.dispatch('raw_button_click', raw)
-                elif raw.component_type == 3:
-                    self.dispatch('raw_selection_select', raw)
+            interaction.message = Message(state=self, channel=interaction.channel, data=interaction._message)
+            self.dispatch('raw_interaction_create', interaction)
+            if interaction._interaction_type == InteractionType.Component:
+                if interaction.component_type == 2:
+                    self.dispatch('raw_button_click', interaction, interaction.component)
+                elif interaction.component_type == 3:
+                    self.dispatch('raw_selection_select', interaction, interaction.component)
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']

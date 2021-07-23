@@ -82,7 +82,7 @@ def _transform_overwrites(entry, data):
             target = Object(id=ow_id)
 
         overwrites.append((target, ow))
-
+    print(overwrites)
     return overwrites
 
 class AuditLogDiff:

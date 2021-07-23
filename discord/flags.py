@@ -245,9 +245,28 @@ class MessageFlags(BaseFlags):
         return 16
 
     @flag_value
+    def has_thread(self):
+        """:class:`bool`: Returns ``True`` if the source message is associated with an thread.
+
+        This message has an associated thread, with the same id as the message.
+        """
+        return 32
+
+    @flag_value
     def ephemeral(self):
-        """:class:`bool`: Returns ``True`` if the message ist ephemeral (hidden)."""
+        """:class:`bool`: Returns ``True`` if the message ist ephemeral (hidden).
+
+        This message is only visible to the user who invoked the Interaction.
+        """
         return 64
+
+    @flag_value
+    def loading(self):
+        """:class:`bool`: Returns ``True`` if the message is an Interaction Response and the bot is "thinking".
+
+        This message is an Interaction Response and the bot is "thinking"
+        """
+        return 128
 
 @fill_with_flags()
 class PublicUserFlags(BaseFlags):
