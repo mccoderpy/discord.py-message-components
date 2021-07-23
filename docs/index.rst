@@ -3,36 +3,45 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to discord.py-message-components' documentation!
+Welcome to discord\.py-message-components' documentation!
 =========================================================
 
-.. image:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
-   :target: https://pypi.org/project/discord.py-message-components
-   :alt: Name of the project
-            
-.. image:: https://discord.com/api/guilds/852871920411475968/embed.png
-  :target: https://discord.gg/sb69muSqsg
-  :alt: Discord Server Invite
+.. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
+   :name: discord.py-message-components
+   :align: center
+   :alt: Name of the Project (discord.py-message-components)
 
-.. image:: https://img.shields.io/pypi/v/discord.py-message-components.svg
-  :target: https://pypi.python.org/pypi/discord.py-message-components
-  :alt: PyPI version info
+   ..
+   .. image:: https://discord.com/api/guilds/852871920411475968/embed.png
+      :target: https://discord.gg/sb69muSqsg
+      :alt: Discord Server Invite
 
-.. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
-  :target: https://pypi.python.org/pypi/discord.py-message-components
-  :alt: PyPI supported Python versions
-  
-.. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
-  :target: https://pepy.tech/project/discord.py-message-components
-  :alt: Total downloads for the project
+   .. image:: https://img.shields.io/pypi/v/discord.py-message-components.svg
+      :target: https://pypi.python.org/pypi/discord.py-message-components
+      :alt: PyPI version info
 
-.. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
-  :target: https://discordpy-message-components.readthedocs.io/en/latest/
-  :alt: Documentation Status
+   .. image:: https://img.shields.io/pypi/pyversions/discord.py-message-components.svg
+      :target: https://pypi.python.org/pypi/discord.py-message-components
+      :alt: PyPI supported Python versions
 
-The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+   .. image:: https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads
+      :target: https://pepy.tech/project/discord.py-message-components
+      :alt: Total downloads for the project
 
-`read the docs <https://discordpy-message-components.readthedocs.io/en/latest/>`_
+   .. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
+      :target: https://discordpy-message-components.readthedocs.io/en/latest/
+      :alt: Documentation Status
+
+   The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+
+.. figure:: https://cdn.discordapp.com/emojis/854380926548967444.png?v=1
+   :name: discord.py-message-components documentation
+   :alt: Link to the documentation of discord.py-message-components
+   :align: center
+   :width: 30px
+   :target: https://discordpy-message-components.readthedocs.io/en/latest/
+
+   **Visit on PyPI** `here <https://discordpy-message-components.readthedocs.io/en/latest/>`_
 
 You need help? Or have ideas/feedback?
 ______________________________________
