@@ -79,8 +79,8 @@ class Interaction:
         self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
-        self.member: typing.Optional[Member]
-        self.user: typing.Optional[User]
+        self.member: typing.Optional[Member] = None
+        self.user: typing.Optional[User] = None
         self.deferred = False
         self.deferred_hidden = False
         self.callback_message = None
