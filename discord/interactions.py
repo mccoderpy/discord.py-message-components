@@ -107,7 +107,7 @@ class Interaction:
 
         if isinstance(response_type, int):
             response_type = InteractionCallbackType.from_value(response_type)
-        if not isinstance(response_type, (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
+        if not isinstance(response_type, any(InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
             raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg, not %s.__class__.__name__' % response_type)
         if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
