@@ -269,8 +269,8 @@ class InteractionCallbackType(Enum):
 
 
 class TimestampStyle(Enum):
-
-    """The Style to use in :meth:`discord.utils.styled_timestamp`
+    """
+    The Style to use in :meth:`discord.utils.styled_timestamp`
 
     See Also:  `The Discord-API-Documentation <https://discord.com/developers/docs/reference#message-formating-timestamp-styles>`_
     """
@@ -284,6 +284,7 @@ class TimestampStyle(Enum):
     relative    = 'R'
 
     def __repr__(self):
+        """Represents the :class:`TimestampStyle`"""
         return getattr(self, 'name')
 
     def __str__(self):
