@@ -553,7 +553,6 @@ class GuildChannel:
         if not base.read_messages:
             denied = Permissions.all_channel()
             base.value &= ~denied.value
-
         return base
 
     async def delete(self, *, reason=None):

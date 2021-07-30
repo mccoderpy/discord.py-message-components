@@ -35,6 +35,7 @@ __all__ = (
     'ButtonStyle',
     'PermissionType',
     'InteractionCallbackType',
+    'TimestampStyle',
     'MessageType',
     'VoiceRegion',
     'SpeakingState',
@@ -254,6 +255,45 @@ class InteractionCallbackType(Enum):
     deferred_msg_with_source = 5
     deferred_update_msg = 6
     update_msg = 7
+
+    @classmethod
+    def from_value(cls, value):
+        return try_enum(cls, value)
+
+    # the same as in the class above.
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+
+class TimestampStyle(Enum):
+    """
+    The Style to use in :meth:`discord.utils.styled_timestamp`.
+
+    See Also:  `The Discord-API-Documentation <https://discord.com/developers/docs/reference#message-formating-timestamp-styles>`_
+    """
+
+    short_time  = 't'
+    long_time   = 'T'
+    short_date  = 'd'
+    long_date   = 'D'
+    short       = 'f'
+    long        = 'F'
+    relative    = 'R'
+
+    def __repr__(self):
+        """Represents the :class:`TimestampStyle`."""
+        return getattr(self, 'name')
+
+    def __str__(self):
+        return getattr(self, 'value')
+
+
+    @classmethod
+    def from_value(cls, value):
+        return try_enum(cls, value)
 
 
 class MessageType(Enum):
