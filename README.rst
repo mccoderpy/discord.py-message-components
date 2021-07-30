@@ -1,5 +1,4 @@
-
-Welcome to discord\.py-message-components' documentation!
+Welcome to discord.py-message-components' documentation!
 =========================================================
 
 .. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
@@ -30,7 +29,7 @@ Welcome to discord\.py-message-components' documentation!
 
    The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
 
-.. figure:: images/rtd-logo-wordmark-light.png
+.. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
    :alt: Link to the documentation of discord.py-message-components
    :align: center
@@ -50,7 +49,7 @@ __________
 **Python 3.5.3 or higher is required**
 
 This Library overwrite the original discord.py Library so to be sure all will work fine
-first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_ Library if it is installed:
+first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library if it is installed:
 
 .. code:: sh
 
