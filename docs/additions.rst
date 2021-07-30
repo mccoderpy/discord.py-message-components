@@ -81,7 +81,7 @@ Events
 
     This Event will be triggered if a Button, that is attached to a Message wich is in the internal Cache, is pressed.
 
-    :param interaction: The `Interaction <./interaction.html#interaction>`_-object with all his attributes and methods to respond to the interaction
+    :param interaction: The `Interaction <./interaction.html#Interaction>`_-object with all his attributes and methods to respond to the interaction
     :type interaction: :class:`discord.Interaction`
     :param button: The `ButtonClick <./interaction.html#ButtonClick>`_ if the message is ephemeral else `Button <./components.html#Button>`_. (this is also in the first parameter under ``component``).
     :type button: Union[:class:`Button`, :class:`ButtonClick`]
@@ -303,7 +303,59 @@ and
         :param embeds: A list of up to 10 :class:`discord.Embed`'s to replace the previous ones(This is also usable for normal Messages).
         :type embeds: Optional[List[:class:`discord.Embed`]]
 
-.. toctree:: 
+utils
+~~~~~
+
+.. function:: styled_timestamp(timestamp, style)
+
+    A small function that returns a styled timestamp for discord, this will be displayed accordingly in the Discord client depending on the :attr:`style` specified.
+
+    Timestamps will display the given timestamp in the user's timezone and locale.
+
+    :param timestamp: Union[`datetime.datetime <https://docs.python.org/3/library/datetime.html>`_, :class:`int`]
+        The timestamp; A :class:`datetime.datetime` object or an already completed timestamp.
+
+    :param style: Optional[Union[:class:`TimestampStyle`, :class:`str`]]
+        How the timestamp should be displayed in Discord; this can either be a :class:`TimestampStyle` or directly the associated value.
+
+        :default: :class:`TimestampStyle.short`
+
+    **Example**
+
+    .. code-block:: python
+
+        @client.command()
+        async def time(ctx):
+            await ctx.send(discord.utils.styled_timestamp(datetime.now(), discord.TimestampStyle.long))
+
+.. class:: TimestampStyle
+
+    .. note::
+        This is located in discord.enums but i place it here
+
+    The Styles you could use for the :attr:`style` of a :class:`styled_timestamp`
+
+    See also in the `Discord-Documentation <https://discord.com/developers/docs/reference#message-formatting-timestamp-styles>`_
+
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | NAME                             | VALUE | DESCRIPTION     | EXAMPLE                        |
+    +==================================+=======+=================+================================+
+    | .. attribute:: short_time        |  't'  | Short Time      | .. image:: imgs/short_time.png |
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | .. attribute:: long_time         |  'T'  | Long Time       | .. image:: imgs/long_time.png  |
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | .. attribute:: short_date        |  'd'  | Short Date      | .. image:: imgs/short_date.png |
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | .. attribute:: long_date         |  'D'  | Long Date       | .. image:: imgs/long_date.png  |
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | .. attribute:: short             |  'f'  | Short Date/Time | .. image:: imgs/short.png      |
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | .. attribute:: long              |  'F'  | Long Date/Time  | .. image:: imgs/long.png       |
+    +----------------------------------+-------+-----------------+--------------------------------+
+    | .. attribute:: relative          |  'R'  | Relative Time   | .. image:: imgs/relative.png   |
+    +----------------------------------+-------+-----------------+--------------------------------+
+
+.. toctree::
    :maxdepth: 3
    :caption: Contents: 
 
