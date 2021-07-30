@@ -75,7 +75,7 @@ class Interaction:
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
         self.__interaction_id = int(data.get('id'))
-        self.guild_id = int(data.get('guild_id', None))
+        self.guild_id = int(data.get('guild_id', 0))
         self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
