@@ -54,7 +54,7 @@ ___________
 **Python 3.5.3 or higher is required**
 
 This Library overwrite the original discord.py Library so to be sure all will work fine
-first uninstall the original `discord.py <https://pypi.org/project/discord.py>`_ Library if it is installed:
+first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library if it is installed:
 
 .. code:: sh
 
