@@ -29,7 +29,7 @@ Welcome to discord.py-message-components' documentation!
 
    The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
 
-.. figure:: images/rtd-logo-wordmark-light.png
+.. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
    :alt: Link to the documentation of discord.py-message-components
    :align: center
