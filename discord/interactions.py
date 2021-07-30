@@ -79,7 +79,7 @@ class Interaction:
         self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
-        self.member: typing.Optional[Member]  = None
+        self.member: typing.Optional[Member] = None
         self.user: typing.Optional[User] = None
         self.deferred = False
         self.deferred_hidden = False
@@ -98,7 +98,7 @@ class Interaction:
         """Represents a :class:`discord.Interaction`-object."""
         return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
 
-    async def defer(self, response_type: any([InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg, int]) = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
+    async def defer(self, response_type: typing.Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
         'Defers' the response.
          If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
@@ -107,7 +107,7 @@ class Interaction:
 
         if isinstance(response_type, int):
             response_type = InteractionCallbackType.from_value(response_type)
-        if not isinstance(response_type, (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
+        if response_type not in (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg):
             raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg (e.g. 5 or 6), not %s.__class__.__name__' % response_type)
         if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
@@ -119,6 +119,8 @@ class Interaction:
             log.warning(f'Unknown Interaction {self.__interaction_id}')
         else:
             self.deferred = True
+            if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
+                self.deferred_hidden = True
             return data
 
     async def edit(self, **fields) -> Message:
