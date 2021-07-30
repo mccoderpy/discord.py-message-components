@@ -75,11 +75,11 @@ class Interaction:
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
         self.__interaction_id = int(data.get('id'))
-        self.guild_id = int(data.get('guild_id', None))
+        self.guild_id = int(data.get('guild_id', 0))
         self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
-        self.member: typing.Optional[Member] = None
+        self.member: typing.Optional[Member]  = None
         self.user: typing.Optional[User] = None
         self.deferred = False
         self.deferred_hidden = False
@@ -107,8 +107,8 @@ class Interaction:
 
         if isinstance(response_type, int):
             response_type = InteractionCallbackType.from_value(response_type)
-        if not isinstance(response_type, any(InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
-            raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg, not %s.__class__.__name__' % response_type)
+        if not isinstance(response_type, (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg)):
+            raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg (e.g. 5 or 6), not %s.__class__.__name__' % response_type)
         if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": response_type.value, "data": {'flags': 64 if hidden else None}}

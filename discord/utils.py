@@ -31,6 +31,8 @@ import unicodedata
 from base64 import b64encode
 from bisect import bisect_left
 import datetime
+import typing
+from .enums import TimestampStyle
 import functools
 from inspect import isawaitable as _isawaitable, signature as _signature
 from operator import attrgetter
@@ -42,6 +44,7 @@ from .errors import InvalidArgument
 
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
+
 
 class cached_property:
     def __init__(self, function):
@@ -56,6 +59,7 @@ class cached_property:
         setattr(instance, self.function.__name__, value)
 
         return value
+
 
 class CachedSlotProperty:
     def __init__(self, name, function):
@@ -74,10 +78,13 @@ class CachedSlotProperty:
             setattr(instance, self.name, value)
             return value
 
+
 def cached_slot_property(name):
     def decorator(func):
         return CachedSlotProperty(name, func)
+
     return decorator
+
 
 class SequenceProxy(collections.abc.Sequence):
     """Read-only proxy of a Sequence."""
@@ -105,10 +112,13 @@ class SequenceProxy(collections.abc.Sequence):
     def count(self, value):
         return self.__proxied.count(value)
 
+
 def parse_time(timestamp):
     if timestamp:
+
         return datetime.datetime(*map(int, re.split(r'[^\d]', timestamp.replace('+00:00', ''))))
     return None
+
 
 def copy_doc(original):
     def decorator(overriden):
@@ -117,21 +127,23 @@ def copy_doc(original):
         return overriden
     return decorator
 
+
 def deprecated(instead=None):
     def actual_decorator(func):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
-            warnings.simplefilter('always', DeprecationWarning) # turn off filter
+            warnings.simplefilter('always', DeprecationWarning)  # turn off filter
             if instead:
                 fmt = "{0.__name__} is deprecated, use {1} instead."
             else:
                 fmt = '{0.__name__} is deprecated.'
 
             warnings.warn(fmt.format(func, instead), stacklevel=3, category=DeprecationWarning)
-            warnings.simplefilter('default', DeprecationWarning) # reset filter
+            warnings.simplefilter('default', DeprecationWarning)  # reset filter
             return func(*args, **kwargs)
         return decorated
     return actual_decorator
+
 
 def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None, scopes=None):
     """A helper function that returns the OAuth2 URL for inviting the bot
@@ -183,6 +195,7 @@ def snowflake_time(id):
         The creation date in UTC of a Discord snowflake ID."""
     return datetime.datetime.utcfromtimestamp(((id >> 22) + DISCORD_EPOCH) / 1000)
 
+
 def time_snowflake(datetime_obj, high=False):
     """Returns a numeric snowflake pretending to be created at the given date.
 
@@ -200,6 +213,7 @@ def time_snowflake(datetime_obj, high=False):
     discord_millis = int(unix_seconds * 1000 - DISCORD_EPOCH)
 
     return (discord_millis << 22) + (2**22-1 if high else 0)
+
 
 def find(predicate, seq):
     """A helper to return the first element found in the sequence
@@ -225,6 +239,7 @@ def find(predicate, seq):
         if predicate(element):
             return element
     return None
+
 
 def get(iterable, **attrs):
     r"""A helper that returns the first element in the iterable that meets
@@ -291,12 +306,23 @@ def get(iterable, **attrs):
     for elem in iterable:
         if _all(pred(elem) == value for pred, value in converted):
             return elem
+
     return None
+
+
+def styled_timestamp(timestamp: typing.Union[datetime.datetime, int], style: typing.Union[TimestampStyle, str] = TimestampStyle.short):
+    unix_timestamp = int(timestamp.timestamp()) if isinstance(timestamp, datetime.datetime) else timestamp
+    style = TimestampStyle.from_value(style) if isinstance(style, str) else style
+    if not isinstance(style, TimestampStyle):
+        raise AttributeError('style has to be a discord.TimestampStyle')
+    return f'<t:{unix_timestamp}:{str(style)}>'
+
 
 def _unique(iterable):
     seen = set()
     adder = seen.add
     return [x for x in iterable if not (x in seen or adder(x))]
+
 
 def _get_as_snowflake(data, key):
     try:
@@ -305,6 +331,7 @@ def _get_as_snowflake(data, key):
         return None
     else:
         return value and int(value)
+
 
 def _get_mime_type_for_image(data):
     if data.startswith(b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'):
@@ -318,14 +345,17 @@ def _get_mime_type_for_image(data):
     else:
         raise InvalidArgument('Unsupported image type given')
 
+
 def _bytes_to_base64_data(data):
     fmt = 'data:{mime};base64,{data}'
     mime = _get_mime_type_for_image(data)
     b64 = b64encode(data).decode('ascii')
     return fmt.format(mime=mime, data=b64)
 
+
 def to_json(obj):
     return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
+
 
 def _parse_ratelimit_header(request, *, use_clock=False):
     reset_after = request.headers.get('X-Ratelimit-Reset-After')
@@ -337,12 +367,14 @@ def _parse_ratelimit_header(request, *, use_clock=False):
     else:
         return float(reset_after)
 
+
 async def maybe_coroutine(f, *args, **kwargs):
     value = f(*args, **kwargs)
     if _isawaitable(value):
         return await value
     else:
         return value
+
 
 async def async_all(gen, *, check=_isawaitable):
     for elem in gen:
@@ -389,9 +421,11 @@ async def sleep_until(when, result=None):
         delta -= MAX_ASYNCIO_SECONDS
     return await asyncio.sleep(max(delta, 0), result)
 
+
 def valid_icon_size(size):
     """Icons must be power of 2 within [16, 4096]."""
     return not size & (size - 1) and size in range(16, 4097)
+
 
 class SnowflakeList(array.array):
     """Internal data storage class to efficiently store a list of snowflakes.
@@ -422,7 +456,9 @@ class SnowflakeList(array.array):
         i = bisect_left(self, element)
         return i != len(self) and self[i] == element
 
+
 _IS_ASCII = re.compile(r'^[\x00-\x7f]+$')
+
 
 def _string_width(string, *, _IS_ASCII=_IS_ASCII):
     """Returns string's width."""
@@ -433,6 +469,7 @@ def _string_width(string, *, _IS_ASCII=_IS_ASCII):
     UNICODE_WIDE_CHAR_TYPE = 'WFA'
     func = unicodedata.east_asian_width
     return sum(2 if func(char) in UNICODE_WIDE_CHAR_TYPE else 1 for char in string)
+
 
 def resolve_invite(invite):
     """
@@ -458,6 +495,7 @@ def resolve_invite(invite):
             return m.group(1)
     return invite
 
+
 def resolve_template(code):
     """
     Resolves a template code from a :class:`~discord.Template`, URL or code.
@@ -474,7 +512,7 @@ def resolve_template(code):
     :class:`str`
         The template code.
     """
-    from .template import Template # circular import
+    from .template import Template  # circular import
     if isinstance(code, Template):
         return code.code
     else:
@@ -483,6 +521,7 @@ def resolve_template(code):
         if m:
             return m.group(1)
     return code
+
 
 _MARKDOWN_ESCAPE_SUBREGEX = '|'.join(r'\{0}(?=([\s\S]*((?<!\{0})\{0})))'.format(c)
                                      for c in ('*', '`', '_', '~', '|'))
@@ -494,6 +533,7 @@ _MARKDOWN_ESCAPE_REGEX = re.compile(r'(?P<markdown>%s|%s)' % (_MARKDOWN_ESCAPE_S
 _URL_REGEX = r'(?P<url><[^: >]+:\/[^ >]+>|(?:https?|steam):\/\/[^\s<]+[^<.,:;\"\'\]\s])'
 
 _MARKDOWN_STOCK_REGEX = r'(?P<markdown>[_\\~|\*`]|%s)' % _MARKDOWN_ESCAPE_COMMON
+
 
 def remove_markdown(text, *, ignore_links=True):
     """A helper function that removes markdown characters.
@@ -527,6 +567,7 @@ def remove_markdown(text, *, ignore_links=True):
     if ignore_links:
         regex = '(?:%s|%s)' % (_URL_REGEX, regex)
     return re.sub(regex, replacement, text, 0, re.MULTILINE)
+
 
 def escape_markdown(text, *, as_needed=False, ignore_links=True):
     r"""A helper function that escapes Discord's markdown.
@@ -568,6 +609,7 @@ def escape_markdown(text, *, as_needed=False, ignore_links=True):
     else:
         text = re.sub(r'\\', r'\\\\', text)
         return _MARKDOWN_ESCAPE_REGEX.sub(r'\\\1', text)
+
 
 def escape_mentions(text):
     """A helper function that escapes everyone, here, role, and user mentions.
