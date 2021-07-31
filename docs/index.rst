@@ -207,9 +207,12 @@ ________________________________________
 coro
 ~~~~
 
-A coro (coroutine) is a method that needs to be awaited means ``await method``.
+A `coroutine <https://docs.python.org/3/library/asyncio-task.html#coroutine>`_ is a function that must be invoked with ``await`` or ``yield from``.
+When Python encounters an ``await`` it stops the function’s execution at that point and works on other things until it comes back to that point and finishes off its work.
+This allows for your program to be doing multiple things at the same time without using threads or complicated multiprocessing.
 
-See the official `Python-Docs <https://docs.python.org/3/c-api/coro.html>`_.
+**If you forget to await a coroutine then the coroutine will not run. Never forget to await a coroutine.**
+
 
 .. toctree:: 
    :maxdepth: 3

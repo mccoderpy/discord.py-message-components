@@ -312,7 +312,7 @@ utils
 
     Timestamps will display the given timestamp in the user's timezone and locale.
 
-    :param timestamp: Union[`datetime.datetime <https://docs.python.org/3/library/datetime.html>`_, :class:`int`]
+    :param timestamp: Union[`datetime.datetime <https://docs.python.org/3/library/datetime.html#datetime.datetime>`_, :class:`int`]
         The timestamp; A :class:`datetime.datetime` object or an already completed timestamp.
 
     :param style: Optional[Union[:class:`TimestampStyle`, :class:`str`]]

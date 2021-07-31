@@ -60,11 +60,11 @@ Interaction
    .. attribute:: message
 
          The message the component was attached to.
-         This will be equal to ``None`` if the :attr:`component_type` is ``None`` or the message the component is attached to is ``ephemeral``.
+         This will be :class:`EphemeralMessage` if the :attr:`component_type` is not ``None`` or the message the component is attached to is ``ephemeral``.
 
          .. note::
             In this version, this parameter should always be an object of type :class:`discord.Message`
-            (or ``None`` if the message is ephemeral) because it only gets initiated when the interaction_type is higher than 2.
+            (or :class:`EphemeralMessage` if the message is ephemeral) because it only gets initiated when the interaction_type is higher than 2.
 
    .. attribute:: channel
 
@@ -85,18 +85,25 @@ Interaction
       .. note::
          If this is passed in an ``[on_][raw_]button_click`` or ``[on_][raw_]selection_select`` Event there would be a second parameter that includes this attribute.
 
-   .. method:: defer(response_type: any([InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg, int]) = InteractionCallbackType.deferred_update_msg, hidden=False)
+   .. attribute:: created_at
+
+         Returns the Interaction’s creation time in UTC.
+
+         **Type**
+            `datetime.datetime <https://docs.python.org/3/library/datetime.html#datetime.datetime>`_
+
+   .. method:: defer(response_type: typing.Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False)
 
       `|coro| <./index.html#coro>`_
 
       'Defers' the response.
 
-      If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
+      If :attr:`response_type` is :class:`InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
 
-      :param response_type: any([InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg, int])
+      :param response_type: Optional[typing.Literal[5, 6]]
          The type to response with, aiter :class:`InteractionCallbackType.deferred_msg_with_source` or :class:`InteractionCallbackType.deferred_update_msg` (e.g. 5 or 6)
 
-      :param hidden: Optional[bool] = False
+      :param hidden: Optional[bool]
           Whether to defer ephemerally(only the :attr:`author` of the interaction can see the message)
 
           .. note::
@@ -110,8 +117,8 @@ Interaction
 
       .. note::
          A Token will be Valid for 15 Minutes so you could edit the original :attr:`message` with :meth:`edit`, :meth:`respond` or doing anything other with this interaction for 15 minutes.
-         after that time you have to edit the original message with the Methode :meth:`edit` of the :attr:`message` and sending new messages with the :meth:`send` Methode of :attr:`channel`
-         (you could not do this hidden as it isn't an respond anymore)
+         after that time you have to edit the original message with the Methode ``edit`` of the :attr:`message` and sending new messages with the ``send`` Methode of :attr:`channel`
+         (you could not do this hidden as it isn't an interaction-response anymore)
 
    .. method:: edit(**fields)
 
@@ -120,7 +127,7 @@ Interaction
       Edit the :class:`Message` the component is attached to, if the interaction is not deferred it will defer automatic.
 
       .. note::
-         If you have not yet defered or defered with type :class:`InteractionCallbackType.deferred_update_msg`, edit the message to which the component is attached, otherwise edit the callback message.
+         If you have not yet deferred or deferred with type :class:`InteractionCallbackType.deferred_update_msg`, edit the message to which the component is attached, otherwise edit the callback message.
 
       :param \**fields: The fields of the original message to replace. You could pass the same Parameters as using :meth:`discord.Message.edit`
 
@@ -139,7 +146,7 @@ Interaction
             If you send an ``hidden`` (ephemeral)-respond, discord don't returns any data like an message you could edit,
             **but** you could receive Interactions when the Author interact with an component in the message.
 
-      :return:  Union[:class:`discord.Message`, :class:`discord.EphemeralMessage`]
+      :return:  Union[:class:`discord.Message`, :class:`EphemeralMessage`]
 
 ________________________________________
 
