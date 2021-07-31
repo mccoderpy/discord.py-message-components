@@ -76,6 +76,8 @@ class Interaction:
         self.user_id = int(self._user['id'])
         self.__interaction_id = int(data.get('id'))
         self.guild_id = int(data.get('guild_id', 0))
+        self._guild = None
+        self._channel = None
         self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
         self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
@@ -89,20 +91,37 @@ class Interaction:
         # maybe ``later`` this library will also supports Slash-Commands
         # self.command = None
 
-    __slots__ = ('_state', '_http', '_data', 'member', '_member', '_user', 'user_id', 'guild_id', 'channel_id', 'message_id',
-                 'message_flags', '__application_id', '__token', 'user', 'guild', 'channel', 'message', '_message',
-                 'deferred', 'deferred_hidden', 'callback_message', '_component', 'component_type', '__application_id',
-                 '__interaction_id', '_interaction_type')
-
     def __repr__(self):
         """Represents a :class:`discord.Interaction`-object."""
         return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
 
     async def defer(self, response_type: typing.Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
-        'Defers' the response.
-         If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
+        |coro|
 
+        'Defers' the response.
+
+        If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
+
+        :param response_type: Optional[typing.Literal[5, 6]]
+            The type to response with, aiter :class:`InteractionCallbackType.deferred_msg_with_source` or :class:`InteractionCallbackType.deferred_update_msg` (e.g. 5 or 6)
+
+        :param hidden: Optional[bool]
+            Whether to defer ephemerally(only the :attr:`author` of the interaction can see the message)
+
+            .. note::
+                Only for :class:`InteractionCallbackType.deferred_msg_with_source`.
+
+        .. important::
+            If you doesn't respond with an message using :meth:`respond`
+            or edit the original message using :meth:`edit` within less than 3 seconds,
+            discord will indicates that the interaction failed and the interaction-token will be invalidated.
+            To provide this us this method
+
+        .. note::
+            A Token will be Valid for 15 Minutes so you could edit the original :attr:`message` with :meth:`edit`, :meth:`respond` or doing anything other with this interaction for 15 minutes.
+            after that time you have to edit the original message with the Methode :meth:`edit` of the :attr:`message` and sending new messages with the :meth:`send` Methode of :attr:`channel`
+            (you could not do this hidden as it isn't an respond anymore).
         """
 
         if isinstance(response_type, int):
@@ -129,7 +148,7 @@ class Interaction:
         'Defers' if it isn't yet and edit the message
         """
         if not self.channel:
-            setattr(self, 'channel', self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id)))
+            self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
         await self.message.edit(__is_interaction_response=True, __deferred=False if (not self.deferred or self.callback_message) else True, __use_webhook=False,
                                 __interaction_id=self.__interaction_id, __interaction_token=self.__token,
                                 __application_id=self.__application_id, **fields)
@@ -146,7 +165,7 @@ class Interaction:
          interaction by setting the `hidden` parameter to :bool:`True`.
         """
         if not self.channel:
-            setattr(self, 'channel', self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id)))
+            self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
         msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
                                       files=files, delete_after=delete_after, nonce=nonce,
                                       allowed_mentions=allowed_mentions, reference=reference,
@@ -172,13 +191,29 @@ class Interaction:
         return await self._state.http.get_original_interaction_response(self.__token, self.__application_id)
 
     @property
+    def created_at(self):
+        """
+        Returns the Interaction’s creation time in UTC.
+
+        :return: datetime.datetime
+        """
+        return utils.snowflake_time(self.__interaction_id)
+
+    @property
     def author(self) -> typing.Union[Member, User]:
         return self.member if self.member is not None else self.user
-    
+
+    @property
+    def channel(self):
+        return self._channel if self._channel else self.message.channel
+
+    @property
+    def guild(self):
+        return self._guild
+
     @property
     def message_is_dm(self) -> bool:
-        if self.message:
-            return isinstance(self.channel, DMChannel)
+        return not self.guild_id
 
     @property
     def message_is_hidden(self) -> bool:

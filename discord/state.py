@@ -540,23 +540,22 @@ class ConnectionState:
             self.dispatch('raw_message_edit', raw)
 
     def parse_interaction_create(self, data):
+        self.dispatch('interaction_create', data)
         if data.get('type', data.get('t', 0)) < 3:
             return
         interaction = Interaction(state=self, data=data)
         interaction.message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
-            interaction.guild = self._get_guild(interaction.guild_id)
-            interaction.channel = interaction.guild.get_channel(interaction.channel_id)
+            interaction._guild = self._get_guild(interaction.guild_id)
+            interaction._channel = interaction.guild.get_channel(interaction.channel_id)
             interaction.member = interaction.guild.get_member(interaction.user_id)
             if interaction.member is None:
-                # This can only be the case if member-intents are not activated.
+                # This can only be the case if member-intents are not activated. or the member is not in the guild-cache right now
                 interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
         else:
-            interaction.channel = self._get_private_channel(interaction.channel_id)
+            interaction._channel = self._get_private_channel(interaction.channel_id)
         if interaction.message is not None:
-            self.dispatch('interaction_create', interaction)
-            self.dispatch('raw_interaction_create', interaction)
             if interaction._interaction_type == InteractionType.Component:
                 if interaction.component_type == 2:
                     self.dispatch('button_click', interaction, interaction.component)
@@ -566,7 +565,6 @@ class ConnectionState:
                     self.dispatch('raw_selection_select', interaction, interaction.component)
         else:
             interaction.message = Message(state=self, channel=interaction.channel, data=interaction._message)
-            self.dispatch('raw_interaction_create', interaction)
             if interaction._interaction_type == InteractionType.Component:
                 if interaction.component_type == 2:
                     self.dispatch('raw_button_click', interaction, interaction.component)
