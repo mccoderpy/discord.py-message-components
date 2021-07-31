@@ -126,8 +126,8 @@ class Interaction:
 
         'Defers' if it isn't yet and edit the message
         """
-        if not self.channel:
-            setattr(self, 'channel', self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id)))
+        if not self.message.channel:
+            setattr(self.message, 'channel', self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id)))
         await self.message.edit(__is_interaction_response=True, __deferred=False if (not self.deferred or self.callback_message) else True, __use_webhook=False,
                                 __interaction_id=self.__interaction_id, __interaction_token=self.__token,
                                 __application_id=self.__application_id, **fields)
