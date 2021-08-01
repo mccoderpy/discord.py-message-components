@@ -85,7 +85,7 @@ class Button:
             self.custom_id = int(custom_id)
         else:
             self.custom_id = custom_id
-        if self.custom_id and self.url:
+        if self.custom_id is not None and self.url:
             raise URLAndCustomIDNotAlowed(self.custom_id)
         if label and len(label) > 80:
             raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
@@ -212,7 +212,7 @@ class Button:
 
     def to_dict(self):
         base = {'type': 2, 'label': self.label, 'style': int(self.style), 'disabled': self.disabled}
-        if self.custom_id:
+        if self.custom_id is not None:
             base['custom_id'] = str(self.custom_id)
         elif self.url:
             base['url'] = self.url
@@ -317,7 +317,7 @@ class SelectMenu:
 
     Parameters
     ----------
-    custom_id: Union[:class:`str`, :class:`int`]
+    custom_id: str or int
         A developer-defined identifier for the :class:`SelectMenu`, max. 100 characters.
     options: List[:class:`SelectOption`]
         A :class:`list` of choices(:class:`SelectOption`) the :class:`SelectMenu` should have, max. 25.
@@ -390,7 +390,7 @@ class SelectMenu:
     def to_dict(self) -> dict:
         base = {
             'type': 3,
-            'custom_id': self.custom_id,
+            'custom_id': str(self.custom_id),
             'options': [o.to_dict() for o in self.options if isinstance(o, SelectOption)],
             'placeholder': self.placeholder,
             'min_values': self.min_values,
