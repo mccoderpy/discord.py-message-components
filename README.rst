@@ -233,7 +233,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
     async def down(i: discord.Interaction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_y(-1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await i.edit(embed=discord.Embed(title="Little Game",
                                               description=display(x=pointer.possition_x, y=pointer.possition_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
@@ -245,7 +245,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
     async def right(i: discord.Interaction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await i.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left'),
@@ -257,7 +257,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
     async def left(i: discord.Interaction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(-1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await i.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
