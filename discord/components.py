@@ -272,7 +272,7 @@ class SelectOption:
         self.description = description
         if isinstance(emoji, PartialEmoji):
             self.emoji = emoji
-        if isinstance(emoji, Emoji):
+        elif isinstance(emoji, Emoji):
             self.emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
         elif isinstance(emoji, str):
             if emoji[0] == '<':
@@ -299,7 +299,7 @@ class SelectOption:
     @classmethod
     def from_dict(cls, data):
         emoji = data.pop('emoji', None)
-        if emoji is not None:
+        if emoji:
             emoji = PartialEmoji.from_dict(emoji)
         return cls(label=data.pop('label'),
                    value=data.pop('value'),
