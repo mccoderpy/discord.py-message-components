@@ -286,6 +286,10 @@ class SelectOption:
     def __repr__(self):
         return f'<SelectOption {", ".join(["%s=%s" % (k, v) for (k, v) in self.__dict__.items()])}>'
 
+    def set_default(self, value: bool):
+        self.default = value
+        return self
+
     def to_dict(self):
         base = {'label': str(self.label),
                 'value': str(self.value),

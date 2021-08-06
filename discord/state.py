@@ -544,7 +544,7 @@ class ConnectionState:
         if data.get('type', data.get('t', 0)) < 3:
             return
         interaction = Interaction(state=self, data=data)
-        interaction.message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
+        interaction._message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
             interaction._guild = self._get_guild(interaction.guild_id)
@@ -556,7 +556,7 @@ class ConnectionState:
         else:
             interaction._channel = self._get_private_channel(interaction.channel_id)
         if interaction.message is not None:
-            if interaction._interaction_type == InteractionType.Component:
+            if interaction.interaction_type == InteractionType.Component:
                 if interaction.component_type == 2:
                     self.dispatch('button_click', interaction, interaction.component)
                     self.dispatch('raw_button_click', interaction, interaction.component)
@@ -564,8 +564,8 @@ class ConnectionState:
                     self.dispatch('selection_select', interaction, interaction.component)
                     self.dispatch('raw_selection_select', interaction, interaction.component)
         else:
-            interaction.message = Message(state=self, channel=interaction.channel, data=interaction._message)
-            if interaction._interaction_type == InteractionType.Component:
+            interaction._message = Message(state=self, channel=interaction.channel, data=interaction._message_data)
+            if interaction.interaction_type == InteractionType.Component:
                 if interaction.component_type == 2:
                     self.dispatch('raw_button_click', interaction, interaction.component)
                 elif interaction.component_type == 3:

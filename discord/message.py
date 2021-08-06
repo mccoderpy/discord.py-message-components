@@ -1141,17 +1141,18 @@ class Message(Hashable):
         except KeyError:
             pass
         else:
+            _components = []
+            if components is not None and not isinstance(components, list):
+                components = [components]
             if components is not None:
-                _components = []
-                for component in (list(components) if not isinstance(components, list) else components):
-                    if isinstance(component, (Button, SelectMenu)):
-                        _components.extend(ActionRow(component).to_dict())
-                    elif isinstance(component, ActionRow):
-                        _components.extend(component.to_dict())
+                for index, component in enumerate(components):
+                    if isinstance(component, (SelectMenu, Button)):
+                        components[index] = ActionRow(component)
                     elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
+                        components[index] = ActionRow(*component)
+                [_components.extend(*[c.to_dict()]) for c in components]
                 fields['components'] = _components
-
+            print(_components)
         try:
             suppress = fields.pop('suppress')
         except KeyError:
@@ -1188,17 +1189,18 @@ class Message(Hashable):
             if fields:
                 try:
                     payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
-                                                                            interaction_id=interaction_id,
-                                                                            token=interaction_token,
-                                                                            application_id=application_id,
-                                                                            deferred=deferred, files=files, **fields)
+                                                                               interaction_id=interaction_id,
+                                                                               token=interaction_token,
+                                                                               application_id=application_id,
+                                                                               deferred=deferred, files=files, **fields)
                 except NotFound:
                     is_interaction_response = None
                 else:
+                    print(payload)
                     if payload:
                         self._update(payload)
                     else:
-                        [self.__setattr__(k, v) for k, v in fields.items()]
+                        self._update(fields)
 
         if is_interaction_response is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
@@ -1767,7 +1769,7 @@ class PartialMessage(Hashable):
                     if payload:
                         self._update(payload)
                     else:
-                        [self.__setattr__(k, v) for k, v in fields.items()]
+                        self._update(fields)
 
         if is_interaction_response is None:
             payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
@@ -1776,4 +1778,5 @@ class PartialMessage(Hashable):
         if delete_after is not None:
             await self.delete(delay=delete_after)
 
-        return self._state.create_message(channel=self.channel, data=payload)
+        if payload is not None:
+            return self._state.create_message(channel=self.channel, data=payload)

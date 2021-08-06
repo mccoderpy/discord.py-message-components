@@ -453,12 +453,12 @@ class HTTPClient:
         r = Route("POST", r_url)
         return self.request(r, json=_resp)
 
-    def edit_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, files=None, **fields):
+    def edit_interaction_response(self, interaction_id, token, application_id, deferred, use_webhook=True, files=None, **fields):
         if not deferred:
             fields = {'data': fields, 'type': 7}
-            r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
+            r = Route('POST', f'/interactions/{interaction_id}/{token}/callback')
         else:
-            r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original')
+            r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original' if use_webhook is True else f'/interactions/{interaction_id}/{token}/messages/@original')
         form = []
         if files is not None:
             form.append({'name': 'payload_json', 'value': utils.to_json(fields)})
@@ -504,7 +504,7 @@ class HTTPClient:
             payload['flags'] = flags
         if not deferred and not followup:
             payload = {'type': 4, 'data': payload}
-            r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
+            r = Route('POST', f'/webhooks/{application_id}/{token}' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
             r = Route('POST', f'/webhooks/{application_id}/{token}')
         if files is not None:

@@ -1073,9 +1073,9 @@ class Messageable(metaclass=abc.ABCMeta):
         is_interaction_response = kwargs.pop('__is_interaction_response', None)
         deferred = kwargs.pop('__deferred', False)
         use_webhook = kwargs.pop('__use_webhook', False)
-        interaction_id = kwargs.pop('__interaction_id', None)
+        interaction_id = kwargs.pop('id', None)
         interaction_token = kwargs.pop('__interaction_token', None)
-        application_id = kwargs.pop('__application_id', None)
+        application_id = kwargs.pop('_application_id', None)
         followup = kwargs.pop('followup', False)
         if is_interaction_response is False or None:
             hidden = None

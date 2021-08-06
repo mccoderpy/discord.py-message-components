@@ -5,9 +5,10 @@ from .user import User
 from .member import Member
 from .http import HTTPClient
 from .message import Message
-from .errors import NotFound
+from .errors import NotFound, UnknowInteraction
 from .channel import DMChannel
-from .components import Button, SelectMenu
+from .embeds import Embed
+from .components import Button, SelectMenu, ActionRow
 from .enums import ComponentType, InteractionCallbackType
 
 log = logging.getLogger(__name__)
@@ -24,6 +25,46 @@ class EphemeralMessage:
     Since Discord doesn't return anything when we send a ephemeral message,
     this class has no attributes and you can't do anything with it.
     """
+
+    def __init__(self, interaction):
+        self._state = interaction._state
+        self._interaction = interaction
+        self.application_id = interaction._application_id
+        self.interaction_id = interaction.id
+        self.token = interaction._token
+
+
+    async def edit(self, **fields):
+        content: str = fields.pop('content', None)
+        if content:
+            fields['content'] = str(content)
+        embeds: typing.Optional[typing.Union[typing.List[Embed], Embed]] = fields.pop('embed', fields.pop('embeds', None))
+        if embeds is not None and not isinstance(embeds, list):
+            embeds = [embeds]
+        if embeds is not None:
+            fields['embeds'] = [e.to_dict() for e in embeds]
+        components: typing.Optional[typing.List[typing.Union[typing.List[Button, SelectMenu], ActionRow, Button, SelectMenu]]] = fields.pop('components', None)
+        _components = []
+        if components is not None and not isinstance(components, list):
+            components = [components]
+        if components is not None:
+            for index, component in enumerate(components):
+                if isinstance(component, (SelectMenu, Button)):
+                    components[index] = ActionRow(component)
+                elif isinstance(component, list):
+                    components[index] = ActionRow(*component)
+            [_components.extend(*[c.to_dict()]) for c in components]
+            fields['components'] = _components
+        try:
+            await self._state.http.edit_interaction_response(interaction_id=self.interaction_id, token=self.token, application_id=self.application_id, deferred=self._interaction.deferred, use_webhook=True, files=None, **fields)
+        except NotFound as exc:
+            log.warning('Unknown Interaction')
+        else:
+            if not self._interaction.callback_message:
+                self._interaction.callback_message = self
+        return self
+
+
 
 
 class ButtonClick:
@@ -65,22 +106,22 @@ class Interaction:
     def __init__(self, state, data):
         self._state = state
         self._http: HTTPClient = state.http
-        self._interaction_type = data.get('type', None)
-        self.__token = data.get('token', None)
-        self._message = data.get('message')
-        self.message_id = int(self._message.get('id'))
-        self.message_flags = self._message.get('flags', 0)
+        self._application_id = int(data.get('application_id'))
+        self.id = int(data.get('id'))
+        self._token = data.get('token', None)
+        self.interaction_type = data.get('type', None)
+        self._message_data = data.get('message')
+        self.message_id = int(self._message_data.get('id'))
+        self.message_flags = self._message_data.get('flags', 0)
         self._data = data.get('data', None)
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
-        self.__interaction_id = int(data.get('id'))
         self.guild_id = int(data.get('guild_id', 0))
         self._guild = None
         self._channel = None
         self.channel_id = int(data.get('channel_id', 0))
-        self.__application_id = int(data.get('application_id'))
-        self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
+        self._message: typing.Union[Message, EphemeralMessage] = None
         self.member: typing.Optional[Member] = None
         self.user: typing.Optional[User] = None
         self.deferred = False
@@ -93,7 +134,7 @@ class Interaction:
 
     def __repr__(self):
         """Represents a :class:`discord.Interaction`-object."""
-        return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
+        return f'<Interaction {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
 
     async def defer(self, response_type: typing.Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
@@ -132,26 +173,28 @@ class Interaction:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": response_type.value, "data": {'flags': 64 if hidden else None}}
         try:
-            data = await self._http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.__interaction_id,
-                                                          token=self.__token, application_id=self.__application_id)
+            data = await self._http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.id,
+                                                          token=self._token, application_id=self._application_id)
         except NotFound:
-            log.warning(f'Unknown Interaction {self.__interaction_id}')
+            log.warning(f'Unknown Interaction {self.id}')
         else:
             self.deferred = True
             if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
                 self.deferred_hidden = True
             return data
 
-    async def edit(self, **fields) -> Message:
+    async def edit(self, **fields) -> typing.Union[Message, EphemeralMessage, None]:
         """|coro|
 
         'Defers' if it isn't yet and edit the message
         """
+        if self.message_is_hidden:
+            return await self.message.edit(**fields)
         if not self.channel:
             self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
         await self.message.edit(__is_interaction_response=True, __deferred=False if (not self.deferred or self.callback_message) else True, __use_webhook=False,
-                                __interaction_id=self.__interaction_id, __interaction_token=self.__token,
-                                __application_id=self.__application_id, **fields)
+                                __interaction_id=self.id, __interaction_token=self._token,
+                                __application_id=self._application_id, **fields)
         self.deferred = True
         return self.message
 
@@ -170,14 +213,14 @@ class Interaction:
                                       files=files, delete_after=delete_after, nonce=nonce,
                                       allowed_mentions=allowed_mentions, reference=reference,
                                       mention_author=mention_author, hidden=hidden, __is_interaction_response=True,
-                                      __deferred=self.deferred, __use_webhook=False, __interaction_id=self.__interaction_id,
-                                      __interaction_token=self.__token, __application_id=self.__application_id,
+                                      __deferred=self.deferred, __use_webhook=False, __interaction_id=self.id,
+                                      __interaction_token=self._token, __application_id=self._application_id,
                                       followup=True if self.callback_message else False)
 
         if hidden is True:
             self.deferred_hidden = True
         if not self.callback_message and not self.deferred:
-            self.callback_message = msg if msg else EphemeralMessage()
+            self.callback_message = msg if msg else EphemeralMessage(self)
         self.deferred = True
         return msg
 
@@ -188,7 +231,7 @@ class Interaction:
 
         .. warning::
             This is a API-Call and should use carefully"""
-        return await self._state.http.get_original_interaction_response(self.__token, self.__application_id)
+        return await self._state.http.get_original_interaction_response(self._token, self._application_id)
 
     @property
     def created_at(self):
@@ -197,7 +240,7 @@ class Interaction:
 
         :return: datetime.datetime
         """
-        return utils.snowflake_time(self.__interaction_id)
+        return utils.snowflake_time(self.id)
 
     @property
     def author(self) -> typing.Union[Member, User]:
@@ -210,6 +253,13 @@ class Interaction:
     @property
     def guild(self):
         return self._guild
+
+    @property
+    def message(self) -> typing.Union[Message, EphemeralMessage]:
+        if not self._message:
+            if self.message_is_hidden:
+                self._message = EphemeralMessage(self)
+        return self._message
 
     @property
     def message_is_dm(self) -> bool:
@@ -230,7 +280,8 @@ class Interaction:
                     self._component = utils.get(self.message.all_buttons, custom_id=custom_id)
                 elif self._data['component_type'] == ComponentType.SelectMenu:
                     select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
-                    setattr(select_menu, '_values', self._data['values'])
+                    if select_menu:
+                        setattr(select_menu, '_values', self._data['values'])
                     self._component = select_menu
 
             else:
