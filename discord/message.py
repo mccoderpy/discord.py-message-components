@@ -1152,7 +1152,6 @@ class Message(Hashable):
                         components[index] = ActionRow(*component)
                 [_components.extend(*[c.to_dict()]) for c in components]
                 fields['components'] = _components
-            print(_components)
         try:
             suppress = fields.pop('suppress')
         except KeyError:
@@ -1196,7 +1195,6 @@ class Message(Hashable):
                 except NotFound:
                     is_interaction_response = None
                 else:
-                    print(payload)
                     if payload:
                         self._update(payload)
                     else:
