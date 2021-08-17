@@ -274,7 +274,15 @@ ________________________________________
 
    :param disabled: Optional[:class:`bool`]
         Whether the SelectMenu is disabled or not. ``False`` by default.
+   
+   :attr:`values`: Optional[List[Union[:class:`str`, :class:`int`]]]
+      The options that have been selected in the SelectMenu
+     
+      If the option is a number it will be returned as :class:`int` otherwise as :class:`str`.
 
+      .. note::
+         This is only included if the SelectMenu is passed in an event (i.e. :class:`on_select`, :class:`on_raw_selection_select` & :class:`on_selection_select`). 
+         
    :attr:`all_option_values`: Generator[Union[:class:`str`, :class:`int`]]
       Returns a generator with all `values` of the `options` of the :class:`SelectMenu`.
 
