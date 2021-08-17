@@ -251,6 +251,7 @@ and
 
         .. note::
             This is equal to:
+            
             .. code-block:: python
 
                 for action_row in self.components:
@@ -265,6 +266,7 @@ and
 
         .. note::
             This is equal to:
+            
             .. code-block:: python
 
                 for action_row in self.components:
@@ -279,6 +281,7 @@ and
 
         .. note::
             This is equal to:
+            
             .. code-block:: python
 
                 for action_row in self.components:
