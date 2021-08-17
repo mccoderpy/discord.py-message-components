@@ -161,7 +161,7 @@ Interact when a button was pressed
 .. note:: 
 
    You could set the parameter :attr:`hidden` in the response to ``True`` to make the message ephemeral.
-   See `discord.Interaction.respond <./interaction.html#interaction-respond>`_ for more information about :meth:`respond()`.
+   See `discord.Interaction.respond <./interaction.html#Interaction.respond`_ for more information about :meth:`respond()`.
 
 ________________________________________
 
