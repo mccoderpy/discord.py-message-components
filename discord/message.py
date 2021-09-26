@@ -1009,7 +1009,8 @@ class Message(Hashable):
         """Returns all :class:`Button`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                yield component
+                if isinstance(component, Button):
+                    yield component
 
     @property
     def all_select_menus(self):
@@ -1611,7 +1612,8 @@ class PartialMessage(Hashable):
         """Returns all :class:`Button`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                yield component
+                if isinstance(component, Button):
+                    yield component
 
     @property
     def all_select_menus(self):

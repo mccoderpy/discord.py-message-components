@@ -3,9 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
-
-Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+Copyright (c) 2015-present mccuber04#2960
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -37,7 +35,6 @@ __all__ = ('Button', 'SelectMenu', 'ActionRow', 'SelectOption')
 
 
 class Button:
-
     """
     Represents an `Discord-Button <https://discord.com/developers/docs/interactions/message-components#button-object>`_
 
@@ -72,7 +69,8 @@ class Button:
         if isinstance(style, int):
             style = ButtonStyle.from_value(style)
         if not isinstance(style, ButtonStyle):
-            raise InvalidArgument("The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
+            raise InvalidArgument(
+                "The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
         self.style = style
         if self.style == ButtonStyle.url and not self.url:
             raise InvalidArgument('You must also pass a URL if the ButtonStyle is a link.')
@@ -80,7 +78,8 @@ class Button:
             self.style = ButtonStyle.Link_Button
         if custom_id and len(custom_id) > 100:
             raise InvalidArgument(
-                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
+                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (
+                len(custom_id), len(custom_id) - 100))
         if isinstance(custom_id, str) and custom_id.isdigit():
             self.custom_id = int(custom_id)
         else:
@@ -88,7 +87,9 @@ class Button:
         if self.custom_id is not None and self.url:
             raise URLAndCustomIDNotAlowed(self.custom_id)
         if label and len(label) > 80:
-            raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
+            raise InvalidArgument(
+                'The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (
+                len(label), len(label) - 80))
         self.label = label
         if isinstance(emoji, Emoji):
             self.emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
@@ -121,7 +122,9 @@ class Button:
         :return: discord.Button
         """
         if len(label) > 80:
-            raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
+            raise InvalidArgument(
+                'The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (
+                len(label), len(label) - 80))
         self.label = label
         return self
 
@@ -158,7 +161,8 @@ class Button:
             raise URLAndCustomIDNotAlowed(custom_id)
         if len(custom_id) > 100:
             raise InvalidArgument(
-                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
+                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (
+                len(custom_id), len(custom_id) - 100))
         if isinstance(custom_id, str) and custom_id.isdigit():
             self.custom_id = int(custom_id)
         else:
@@ -235,7 +239,6 @@ class Button:
 
 
 class SelectOption:
-
     """
     A class that creates an option for a :class:`SelectMenu`
     and represents it in a :class:`SelectMenu` in the components of a :class:`discord.Message`.
@@ -256,19 +259,20 @@ class SelectOption:
         will render this option as selected by default
 
     """
+
     def __init__(self, label: str,
                  value: str,
                  description: str = None,
                  emoji: Union[PartialEmoji, Emoji, str] = None,
                  default: bool = False):
-        if len(label) > 25:
-            raise AttributeError('The maximum length of the label is 25 characters.')
+        if len(label) > 100:
+            raise AttributeError('The maximum length of the label is 100 characters.')
         self.label = label
         if len(value) > 100:
             raise AttributeError('The maximum length of the value is 100 characters.')
         self.value = value
-        if description and len(description) > 50:
-            raise AttributeError('The maximum length of the description is 50 characters.')
+        if description and len(description) > 100:
+            raise AttributeError('The maximum length of the description is 100 characters.')
         self.description = description
         if isinstance(emoji, PartialEmoji):
             self.emoji = emoji
@@ -285,6 +289,10 @@ class SelectOption:
 
     def __repr__(self):
         return f'<SelectOption {", ".join(["%s=%s" % (k, v) for (k, v) in self.__dict__.items()])}>'
+
+    def set_default(self, value: bool):
+        self.default = value
+        return self
 
     def to_dict(self):
         base = {'label': str(self.label),
@@ -309,7 +317,6 @@ class SelectOption:
 
 
 class SelectMenu:
-
     """
     Represents a `Select-Menu <https://discord.com/developers/docs/interactions/message-components#select-menus>`_
 
@@ -343,18 +350,22 @@ class SelectMenu:
             raise InvalidArgument('The maximum number of options in a SelectMenu is 25.')
         self.options = options
         if len(custom_id) > 100:
-            raise ValueError('The maximum length of a custom_id is 100 characters; your one is %s long (%s to long).' % (len(custom_id), len(custom_id) - 100))
+            raise ValueError(
+                'The maximum length of a custom_id is 100 characters; your one is %s long (%s to long).' % (
+                len(custom_id), len(custom_id) - 100))
         if isinstance(custom_id, str) and custom_id.isdigit():
             self.custom_id = int(custom_id)
         else:
             self.custom_id = custom_id
         if placeholder and len(placeholder) > 100:
-            raise AttributeError('The maximum length of a the placeholder is 100 characters; your one is %s long (%s to long).' % (len(placeholder), len(placeholder) - 100))
+            raise AttributeError(
+                'The maximum length of a the placeholder is 100 characters; your one is %s long (%s to long).' % (
+                len(placeholder), len(placeholder) - 100))
         self.placeholder = placeholder
-        if min_values > 25 or min_values < 0:
-            raise ValueError('The minimum number of elements to be selected must be between 0 and 25.')
+        if 25 < min_values < 0:
+            raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
         self.min_values = min_values
-        if max_values > 25 or max_values <= 0:
+        if 25 < max_values <= 0:
             raise ValueError('The maximum number of elements to be selected must be between 0 and 25.')
         self.max_values = max_values
         self.disabled = disabled
@@ -368,7 +379,7 @@ class SelectMenu:
         """
         All values of the :attr:`options`
 
-        If the value is a number it is returned as an integer, otherwise a string
+        If the value is a number it is returned as an integer, otherwise as string
 
         .. note::
             This is equal to
@@ -408,7 +419,7 @@ class SelectMenu:
         .. note::
             This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
 
-        If the value is a number it is returned as an integer, otherwise a string
+        If the value is a number it is returned as an integer, otherwise as string
 
         :return: List[Union[int, str]]
         """
@@ -420,6 +431,25 @@ class SelectMenu:
             else:
                 values.append(value)
         return values
+
+    @property
+    def not_selected(self):
+        """
+        The options that were **not** selected
+
+        .. note::
+            This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
+
+        If the value is a number it is returned as an integer, otherwise as string
+
+        :return: List[Union[int, str]]
+        """
+        _not_selected = []
+        values = self.values
+        for value in self.all_option_values:
+            if value not in values:
+                _not_selected.append(value)
+        return _not_selected
 
     def update(self, **kwargs):
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
@@ -436,7 +466,8 @@ class SelectMenu:
         """
         if len(custom_id) > 100:
             raise InvalidArgument(
-                'The maximum length of SelectMenu-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
+                'The maximum length of SelectMenu-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (
+                len(custom_id), len(custom_id) - 100))
         if isinstance(custom_id, str) and custom_id.isdigit():
             self.custom_id = int(custom_id)
         else:
@@ -474,7 +505,6 @@ class SelectMenu:
 
 
 class ActionRow:
-
     """
     Represents an ActionRow-Part for the components of an :class:`discord.Message`.
 
@@ -486,7 +516,7 @@ class ActionRow:
         The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`or 1 :class:`SelectMenu`.
 
     .. note ::
-        For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+        For more information about ActionRow's visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
     """
 
     def __init__(self, *components):
@@ -496,9 +526,11 @@ class ActionRow:
                 self.components.append(component)
             elif isinstance(component, dict):
                 if not component.get('type', None) in [2, 3]:
-                    raise InvalidArgument('If you use an Dict instead of Button or SelectMenu you have to pass an type between 2 or 3')
-                self.components.append({2: Button.from_dict(component), 3: SelectMenu.from_dict(component)}.get(component.get('type')))
-    
+                    raise InvalidArgument(
+                        'If you use an Dict instead of Button or SelectMenu you have to pass an type between 2 or 3')
+                self.components.append(
+                    {2: Button.from_dict(component), 3: SelectMenu.from_dict(component)}.get(component.get('type')))
+
     def __repr__(self):
         return f'<ActionRow components={self.components}>'
 
@@ -508,7 +540,8 @@ class ActionRow:
 
     def to_dict(self) -> Union[list, EmptyActionRow]:
         base = []
-        base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
+        base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in
+                     range(0, len(self.components), 5)])
         objects = len([i['components'] for i in base])
         if any([any([part['type'] == 2]) and any([part['type'] == 3]) for part in base]):
             raise InvalidArgument('An ActionRow containing a select menu cannot also contain buttons')
@@ -517,7 +550,8 @@ class ActionRow:
         if any([len(ar['components']) < 1 for ar in base]):
             raise EmptyActionRow from base
         elif len(base) > 5 or objects > 25:
-            raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 Buttons or 1 Select-Menu each; you have {len(base)} ActionRow's passed with {objects} objects")
+            raise InvalidArgument(
+                f"The maximum number of ActionRow's per message is 5 and they can only contain 5 Buttons or 1 Select-Menu each; you have {len(base)} ActionRow's passed with {objects} objects")
         return base
 
     def __len__(self):
@@ -527,10 +561,13 @@ class ActionRow:
         return self.components
 
     def __getitem__(self, item) -> Union[Button, SelectMenu, None]:
-        return self.components[item]
+        return self.components.get(item, None)
 
     def __setitem__(self, index, component):
         return self.set_component_at(index, component)
+
+    def __reversed__(self):
+        return reversed(self.components)
 
     def add_component(self, component: Union[Button, SelectMenu]):
         """
@@ -626,6 +663,39 @@ class ActionRow:
         self.components.extend(*components)
         return self
 
+    def disable_all_components(self):
+        """
+        Disables all component's in this :class:`ActionRow`.
+
+        :return: discord.ActionRow
+        """
+        [obj.__setattr__('disabled', True) for obj in self.components]
+        return self
+
+    def disable_all_components_if(self, check: Union[bool, typing.Callable], *args: typing.Any):
+        """
+        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
+
+        Parameters
+        -----------
+        check: Union[:class:`bool`, :type:`typing.Callable`]
+            Could be an bool or usually any Callable that returns a bool.
+        *args: Any
+            Arguments that should passed in to the check if it is a Callable.
+
+        :return: discord.ActionRow
+        """
+        if not isinstance(check, (bool, typing.Callable)):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
+        try:
+            check = check(*args)
+        except TypeError:
+            pass
+        if check is True:
+            [obj.__setattr__('disabled', True) for obj in self.components]
+        return self
+
     def disable_all_buttons(self):
         """
         Disables all ::class:`discord.Button`'s in this :class:`ActionRow`.
@@ -638,7 +708,7 @@ class ActionRow:
     def disable_all_buttons_if(self, check: Union[bool, typing.Callable], *args: typing.Any):
         """
         Disables all :class:`discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
-    
+
         Parameters
         -----------
         check: Union[:class:`bool`, :type:`typing.Callable`]
@@ -649,7 +719,8 @@ class ActionRow:
         :return: discord.ActionRow
         """
         if not isinstance(check, (bool, typing.Callable)):
-            raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
         try:
             check = check(*args)
         except TypeError:
@@ -681,7 +752,8 @@ class ActionRow:
         :return: discord.ActionRow
         """
         if not isinstance(check, (bool, typing.Callable)):
-            raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
         try:
             check = check(*args)
         except TypeError:

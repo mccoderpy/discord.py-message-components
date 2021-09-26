@@ -383,12 +383,12 @@ class ConnectionState:
         try:
             guild = self._get_guild(int(data['guild_id']))
         except KeyError:
-            channel = self.get_channel(channel_id)
+            channel = DMChannel._from_message(self, channel_id)
             guild = None
         else:
             channel = guild and guild.get_channel(channel_id)
 
-        return channel or Object(id=channel_id), guild
+        return channel or PartialMessageable(state=self, id=channel_id), guild
 
     async def chunker(self, guild_id, query='', limit=0, presences=False, *, nonce=None):
         ws = self._get_websocket(guild_id) # This is ignored upstream
@@ -544,7 +544,7 @@ class ConnectionState:
         if data.get('type', data.get('t', 0)) < 3:
             return
         interaction = Interaction(state=self, data=data)
-        interaction.message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
+
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
             interaction._guild = self._get_guild(interaction.guild_id)
@@ -555,7 +555,8 @@ class ConnectionState:
                 interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
         else:
             interaction._channel = self._get_private_channel(interaction.channel_id)
-        if interaction.message is not None:
+        interaction.message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
+        if self._get_message(interaction.message_id) is not None:
             if interaction._interaction_type == InteractionType.Component:
                 if interaction.component_type == 2:
                     self.dispatch('button_click', interaction, interaction.component)

@@ -7,6 +7,8 @@ from .http import HTTPClient
 from .message import Message
 from .errors import NotFound
 from .channel import DMChannel
+from typing_extensions import Literal
+from typing import Union, List, Optional
 from .components import Button, SelectMenu
 from .enums import ComponentType, InteractionCallbackType
 
@@ -80,14 +82,14 @@ class Interaction:
         self._channel = None
         self.channel_id = int(data.get('channel_id', 0))
         self.__application_id = int(data.get('application_id'))
-        self.message: typing.Union[Message, EphemeralMessage] = EphemeralMessage() if self.message_is_hidden else None
         self.member: typing.Optional[Member] = None
         self.user: typing.Optional[User] = None
         self.deferred = False
         self.deferred_hidden = False
         self.callback_message = None
         self._component = None
-        self.component_type = self._data.get('component_type', None)
+        self.component_type: typing.Optional[int] = self._data.get('component_type', None)
+        self.message = EphemeralMessage() if self.message_is_hidden else None #Message(state=self._state, channel=self.channel, data=self._message)
         # maybe ``later`` this library will also supports Slash-Commands
         # self.command = None
 
@@ -95,7 +97,7 @@ class Interaction:
         """Represents a :class:`discord.Interaction`-object."""
         return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
 
-    async def defer(self, response_type: typing.Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
+    async def defer(self, response_type: Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
         |coro|
 
@@ -103,7 +105,7 @@ class Interaction:
 
         If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
 
-        :param response_type: Optional[typing.Literal[5, 6]]
+        :param response_type: Optional[Literal[5, 6]]
             The type to response with, aiter :class:`InteractionCallbackType.deferred_msg_with_source` or :class:`InteractionCallbackType.deferred_update_msg` (e.g. 5 or 6)
 
         :param hidden: Optional[bool]
@@ -215,29 +217,31 @@ class Interaction:
     def message_is_dm(self) -> bool:
         return not self.guild_id
 
+    #@property
+    #def message(self) -> typing.Union[Message, EphemeralMessage]:
+    #    message = self._state._get_message(self.message_id)
+    #    if not message:
+    #        message = EphemeralMessage() if self.message_is_hidden else Message(state=self._state, channel=self.channel, data=self._message)
+    #    return message
+
     @property
     def message_is_hidden(self) -> bool:
         return self.message_flags == 64
 
     @property
-    def component(self) -> typing.Union[Button, SelectMenu, ButtonClick, SelectionSelect]:
+    def component(self) -> Union[Button, SelectMenu, ButtonClick, SelectionSelect, None]:
         if self._component is None:
-            custom_id = self._data['custom_id']
-            if custom_id.isdigit():
-                custom_id = int(custom_id)
-            if isinstance(self.message, Message):
-                if self._data['component_type'] == ComponentType.Button:
+            custom_id = self._data.get('custom_id')
+            if custom_id is not None:
+                if custom_id.isdigit():
+                    custom_id = int(custom_id)
+                if self._data.get('component_type') == 2:
                     self._component = utils.get(self.message.all_buttons, custom_id=custom_id)
-                elif self._data['component_type'] == ComponentType.SelectMenu:
+                elif self._data.get('component_type') == 3:
                     select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
-                    setattr(select_menu, '_values', self._data['values'])
+                    if select_menu is not None:
+                        setattr(select_menu, '_values', self._data['values'])
                     self._component = select_menu
-
-            else:
-                if self._data['component_type'] == ComponentType.Button:
-                    self._component = ButtonClick(self._data)
-                elif self._data['component_type'] == ComponentType.SelectMenu:
-                    self._component = SelectionSelect(self._data)
         return self._component
 
 

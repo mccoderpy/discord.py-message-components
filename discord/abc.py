@@ -1070,17 +1070,16 @@ class Messageable(metaclass=abc.ABCMeta):
         if file is not None and files is not None:
             raise InvalidArgument('cannot pass both file and files parameter to send()')
 
-        is_interaction_response = kwargs.pop('__is_interaction_response', None)
+        is_interaction_response = kwargs.pop('__is_interaction_response', False)
         deferred = kwargs.pop('__deferred', False)
         use_webhook = kwargs.pop('__use_webhook', False)
         interaction_id = kwargs.pop('__interaction_id', None)
         interaction_token = kwargs.pop('__interaction_token', None)
         application_id = kwargs.pop('__application_id', None)
         followup = kwargs.pop('followup', False)
-        if is_interaction_response is False or None:
-            hidden = None
-        if hidden is True and file or files:
-            raise AttributeError('An ephemeral(hidden) Message could not contain file(s)')
+        if is_interaction_response:
+            if hidden and file or files:
+                raise AttributeError('An ephemeral(hidden) Message could not contain file(s)')
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')

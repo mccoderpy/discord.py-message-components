@@ -953,14 +953,14 @@ class HTTPClient:
     def create_invite(self, channel_id, *, reason=None, **options):
         r = Route('POST', '/channels/{channel_id}/invites', channel_id=channel_id)
         payload = {
-            'max_age': options.get('max_age', 0),
+            'max_age': options.get('max_age', 84000),
             'max_uses': options.get('max_uses', 0),
             'temporary': options.get('temporary', False),
-            'unique': options.get('unique', True),
+            'unique': options.get('unique', False),
             'target_type': options.get('target_type', None),
             'target_user_id': options.get('target_user_id', None),
             'target_application_id': options.get('target_application_id', None),
-            'validate': options.get('validate', 84000)
+            'validate': options.get('validate', )
         }
 
         return self.request(r, reason=reason, json=payload)

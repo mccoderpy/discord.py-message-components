@@ -26,14 +26,34 @@ DEALINGS IN THE SOFTWARE.
 
 import time
 import asyncio
-
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 import discord.abc
 from .permissions import Permissions
 from .enums import ChannelType, try_enum, VoiceRegion
 from .mixins import Hashable
 from . import utils
+from .object import Object
 from .asset import Asset
 from .errors import ClientException, NoMoreItems, InvalidArgument
+
+if TYPE_CHECKING:
+    from .state import ConnectionState
+    from .message import Message, PartialMessage
+
 
 __all__ = (
     'TextChannel',
@@ -1224,6 +1244,16 @@ class DMChannel(discord.abc.Messageable, Hashable):
     def __repr__(self):
         return '<DMChannel id={0.id} recipient={0.recipient!r}>'.format(self)
 
+    @classmethod
+    def _from_message(cls, state, channel_id: int):
+        self = cls.__new__(cls)
+        self._state = state
+        self.id = channel_id
+        self.recipient = None
+        # state.user won't be None here
+        self.me = state.user  # type: ignore
+        return self
+
     @property
     def type(self):
         """:class:`ChannelType`: The channel's Discord type."""
@@ -1544,6 +1574,57 @@ class GroupChannel(discord.abc.Messageable, Hashable):
         """
 
         await self._state.http.leave_group(self.id)
+
+
+class PartialMessageable(discord.abc.Messageable, Hashable):
+    """Represents a partial messageable to aid with working messageable channels when
+    only a channel ID are present.
+    The only way to construct this class is through :meth:`Client.get_partial_messageable`.
+    Note that this class is trimmed down and has no rich attributes.
+    .. versionadded:: 2.0
+    .. container:: operations
+        .. describe:: x == y
+            Checks if two partial messageables are equal.
+        .. describe:: x != y
+            Checks if two partial messageables are not equal.
+        .. describe:: hash(x)
+            Returns the partial messageable's hash.
+    Attributes
+    -----------
+    id: :class:`int`
+        The channel ID associated with this partial messageable.
+    type: Optional[:class:`ChannelType`]
+        The channel type associated with this partial messageable, if given.
+    """
+
+    def __init__(self, state: 'ConnectionState', id: int, type: Optional[ChannelType] = None):
+        self._state: ConnectionState = state
+        self._channel: Object = Object(id=id)
+        self.id: int = id
+        self.type: Optional[ChannelType] = type
+
+    async def _get_channel(self) -> Object:
+        return self._channel
+
+    def get_partial_message(self, message_id: int, /):
+        """Creates a :class:`PartialMessage` from the message ID.
+        This is useful if you want to work with a message and only have its ID without
+        doing an unnecessary API call.
+        Parameters
+        ------------
+        message_id: :class:`int`
+            The message ID to create a partial message for.
+        Returns
+        ---------
+        :class:`PartialMessage`
+            The partial message.
+        """
+
+        from .message import PartialMessage
+
+        return PartialMessage(channel=self, id=message_id)
+
+
 
 def _channel_factory(channel_type):
     value = try_enum(ChannelType, channel_type)
