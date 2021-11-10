@@ -44,7 +44,7 @@ ___________________________________________
    Represents an :class:`ActionRow`-Part for the components of a :class:`discord.Message`.
 
    .. note::
-      For general information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+      For general information about ActionRow's visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
 
    .. note::
        You could use a :class:`list` instead of this but you don't have the functions and parameters of this class then.
@@ -177,7 +177,7 @@ ________________________________________
 
         .. note::
             To get more infos about the styles visit
-            `the Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
+            `the Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
 
    :param emoji: Optional[Union[:class:`discord.PartialEmoji`, :class:`discord.Emoji`, :class:`str`]]
         The Emoji that will be displayed on the left side of the Button.
@@ -223,7 +223,7 @@ ________________________________________
 
 .. class:: SelectOption(label, value, description, emoji, default)
 
-   Builds you a dict which can be used as an option for a :class:`SelectMenu`
+   Represents a option for a :class:`SelectMenu`.
 
    .. _select-option-parameters:
 
@@ -250,7 +250,7 @@ ________________________________________
    Represents a ``Discord-Select-Menu``
 
    .. note::
-       For general information about Select-Menus visit the `Discord-API-Documentation <https://discord.com/developers/docs/interactions/message-components#select-menus>`_.
+       For general information about Select-Menus visit the `Discord-APIMethodes-Documentation <https://discord.com/developers/docs/interactions/message-components#select-menus>`_.
 
    .. _select-menu-parameters:
 
@@ -260,13 +260,10 @@ ________________________________________
    :param options: List[:class:`SelectOption`]
       A :class:`list` of choices(:class:`SelectOption`) the :class:`SelectMenu` should have, max. 25.
 
-      .. tip::
-         Use :class:`SelectOption` to create an option.
-
    :param placeholder: Optional[:class:`str`]
         Custom placeholder text if nothing is selected, max. 100 characters.
 
-   :param min_values: Optional[:class:`int`]
+   :param min_values: Optional[::class:`int`]
         The minimum number of items that must be chosen; default 1, min. 0, max. 25.
 
    :param max_values: Optional[:class:`int`]
@@ -274,15 +271,7 @@ ________________________________________
 
    :param disabled: Optional[:class:`bool`]
         Whether the SelectMenu is disabled or not. ``False`` by default.
-   
-   :attr:`values`: Optional[List[Union[:class:`str`, :class:`int`]]]
-      The options that have been selected in the SelectMenu
-     
-      If the option is a number it will be returned as :class:`int` otherwise as :class:`str`.
 
-      .. note::
-         This is only included if the SelectMenu is passed in an event (i.e. :class:`on_select`, :class:`on_raw_selection_select` & :class:`on_selection_select`). 
-         
    :attr:`all_option_values`: Generator[Union[:class:`str`, :class:`int`]]
       Returns a generator with all `values` of the `options` of the :class:`SelectMenu`.
 
