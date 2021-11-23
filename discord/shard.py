@@ -476,7 +476,7 @@ class AutoShardedClient(Client):
 
         Example: ::
 
-            game = discord.Game("with the API")
+            game = discord.Game("with the APIMethodes")
             await client.change_presence(status=discord.Status.idle, activity=game)
 
         Parameters

@@ -42,6 +42,9 @@ import warnings
 
 from .errors import InvalidArgument
 
+if typing.TYPE_CHECKING:
+    from .channel import VoiceChannel
+
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
 
@@ -317,6 +320,9 @@ def styled_timestamp(timestamp: typing.Union[datetime.datetime, int], style: typ
         raise AttributeError('style has to be a discord.TimestampStyle')
     return f'<t:{unix_timestamp}:{str(style)}>'
 
+
+async def create_voice_activity(channel: 'VoiceChannel', target_application_id: int, **kwargs):
+    return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
 
 def _unique(iterable):
     seen = set()

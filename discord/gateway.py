@@ -226,7 +226,7 @@ class DiscordWebSocket:
         When received tells Discord to keep the connection alive.
         When sent asks if your connection is currently alive.
     IDENTIFY
-        Send only. Starts a new session.
+        Send only. Starts a new _session.
     PRESENCE
         Send only. Updates your presence.
     VOICE_STATE
@@ -240,7 +240,7 @@ class DiscordWebSocket:
     REQUEST_MEMBERS
         Send only. Asks for the full member list of a guild.
     INVALIDATE_SESSION
-        Receive only. Tells the client to optionally invalidate the session
+        Receive only. Tells the client to optionally invalidate the _session
         and IDENTIFY again.
     HELLO
         Receive only. Tells the client the heartbeat interval.
@@ -476,7 +476,7 @@ class DiscordWebSocket:
 
                 self.sequence = None
                 self.session_id = None
-                log.info('Shard ID %s session has been invalidated.', self.shard_id)
+                log.info('Shard ID %s _session has been invalidated.', self.shard_id)
                 await self.close(code=1000)
                 raise ReconnectWebSocket(self.shard_id, resume=False)
 
@@ -498,7 +498,7 @@ class DiscordWebSocket:
             self._trace = trace = data.get('_trace', [])
             # pass back the shard ID to the resumed handler
             data['__shard_id__'] = self.shard_id
-            log.info('Shard ID %s has successfully RESUMED session %s under trace %s.',
+            log.info('Shard ID %s has successfully RESUMED _session %s under trace %s.',
                      self.shard_id, self.session_id, ', '.join(trace))
 
         try:
@@ -681,7 +681,7 @@ class DiscordVoiceWebSocket:
     Attributes
     -----------
     IDENTIFY
-        Send only. Starts a new voice session.
+        Send only. Starts a new voice _session.
     SELECT_PROTOCOL
         Send only. Tells discord what encryption mode and how to connect for voice.
     READY
@@ -695,7 +695,7 @@ class DiscordVoiceWebSocket:
     HEARTBEAT_ACK
         Receive only. Tells you your heartbeat has been acknowledged.
     RESUME
-        Sent only. Tells the client to resume its session.
+        Sent only. Tells the client to resume its _session.
     HELLO
         Receive only. Tells you that your websocket connection was acknowledged.
     RESUMED

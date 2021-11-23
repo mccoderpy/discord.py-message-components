@@ -177,12 +177,12 @@ class AsyncWebhookAdapter(WebhookAdapter):
 
     .. note::
 
-        You are responsible for cleaning up the client session.
+        You are responsible for cleaning up the client _session.
 
     Parameters
     -----------
     session: :class:`aiohttp.ClientSession`
-        The session to use to send requests.
+        The _session to use to send requests.
     """
 
     def __init__(self, session):
@@ -280,10 +280,10 @@ class RequestsWebhookAdapter(WebhookAdapter):
     Parameters
     -----------
     session: Optional[`requests.Session <http://docs.python-requests.org/en/latest/api/#requests.Session>`_]
-        The requests session to use for sending requests. If not given then
-        each request will create a new session. Note if a session is given,
+        The requests _session to use for sending requests. If not given then
+        each request will create a new _session. Note if a _session is given,
         the webhook adapter **will not** clean it up for you. You must close
-        the session yourself.
+        the _session yourself.
     sleep: :class:`bool`
         Whether to sleep the thread when encountering a 429 or pre-emptive
         rate limit or a 5xx status code. Defaults to ``True``. If set to
@@ -525,7 +525,7 @@ class Webhook(Hashable):
     There are two main ways to use Webhooks. The first is through the ones
     received by the library such as :meth:`.Guild.webhooks` and
     :meth:`.TextChannel.webhooks`. The ones received by the library will
-    automatically have an adapter bound using the library's HTTP session.
+    automatically have an adapter bound using the library's HTTP _session.
     Those webhooks will have :meth:`~.Webhook.send`, :meth:`~.Webhook.delete` and
     :meth:`~.Webhook.edit` as coroutines.
 
@@ -543,8 +543,8 @@ class Webhook(Hashable):
         import aiohttp
 
         async def foo():
-            async with aiohttp.ClientSession() as session:
-                webhook = Webhook.from_url('url-here', adapter=AsyncWebhookAdapter(session))
+            async with aiohttp.ClientSession() as _session:
+                webhook = Webhook.from_url('url-here', adapter=AsyncWebhookAdapter(_session))
                 await webhook.send('Hello World', username='Foo')
 
     Or creating a webhook from an ID and token and using :doc:`req:index`:

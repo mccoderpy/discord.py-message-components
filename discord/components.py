@@ -261,14 +261,14 @@ class SelectOption:
                  description: str = None,
                  emoji: Union[PartialEmoji, Emoji, str] = None,
                  default: bool = False):
-        if len(label) > 25:
-            raise AttributeError('The maximum length of the label is 25 characters.')
+        if len(label) > 100:
+            raise AttributeError('The maximum length of the label is 100 characters.')
         self.label = label
         if len(value) > 100:
             raise AttributeError('The maximum length of the value is 100 characters.')
         self.value = value
-        if description and len(description) > 50:
-            raise AttributeError('The maximum length of the description is 50 characters.')
+        if description and len(description) > 100:
+            raise AttributeError('The maximum length of the description is 100 characters.')
         self.description = description
         if isinstance(emoji, PartialEmoji):
             self.emoji = emoji
@@ -355,10 +355,10 @@ class SelectMenu:
         if placeholder and len(placeholder) > 100:
             raise AttributeError('The maximum length of a the placeholder is 100 characters; your one is %s long (%s to long).' % (len(placeholder), len(placeholder) - 100))
         self.placeholder = placeholder
-        if min_values > 25 or min_values < 0:
-            raise ValueError('The minimum number of elements to be selected must be between 0 and 25.')
+        if 25 < min_values < 0:
+            raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
         self.min_values = min_values
-        if max_values > 25 or max_values <= 0:
+        if 25 < max_values <= 0:
             raise ValueError('The maximum number of elements to be selected must be between 0 and 25.')
         self.max_values = max_values
         self.disabled = disabled
@@ -372,7 +372,7 @@ class SelectMenu:
         """
         All values of the :attr:`options`
 
-        If the value is a number it is returned as an integer, otherwise a string
+        If the value is a number it is returned as an integer, otherwise as string
 
         .. note::
             This is equal to
@@ -412,7 +412,7 @@ class SelectMenu:
         .. note::
             This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
 
-        If the value is a number it is returned as an integer, otherwise a string
+        If the value is a number it is returned as an integer, otherwise as string
 
         :return: List[Union[int, str]]
         """
@@ -424,6 +424,25 @@ class SelectMenu:
             else:
                 values.append(value)
         return values
+
+    @property
+    def not_selected(self):
+        """
+        The options that were **not** selected
+
+        .. note::
+            This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
+
+        If the value is a number it is returned as an integer, otherwise as string
+
+        :return: List[Union[int, str]]
+        """
+        _not_selected = []
+        values = self.values
+        for value in self.all_option_values:
+            if value not in values:
+                _not_selected.append(value)
+        return _not_selected
 
     def update(self, **kwargs):
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
@@ -490,7 +509,7 @@ class ActionRow:
         The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`or 1 :class:`SelectMenu`.
 
     .. note ::
-        For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+        For more information about ActionRow's visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
     """
 
     def __init__(self, *components):
@@ -628,6 +647,39 @@ class ActionRow:
         :return: discord.ActionRow
         """
         self.components.extend(*components)
+        return self
+
+    def disable_all_components(self):
+        """
+        Disables all component's in this :class:`ActionRow`.
+
+        :return: discord.ActionRow
+        """
+        [obj.__setattr__('disabled', True) for obj in self.components]
+        return self
+
+    def disable_all_components_if(self, check: Union[bool, typing.Callable], *args: typing.Any):
+        """
+        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
+
+        Parameters
+        -----------
+        check: Union[:class:`bool`, :type:`typing.Callable`]
+            Could be an bool or usually any Callable that returns a bool.
+        *args: Any
+            Arguments that should passed in to the check if it is a Callable.
+
+        :return: discord.ActionRow
+        """
+        if not isinstance(check, (bool, typing.Callable)):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
+        try:
+            check = check(*args)
+        except TypeError:
+            pass
+        if check is True:
+            [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
     def disable_all_buttons(self):

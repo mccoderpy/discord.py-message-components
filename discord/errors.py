@@ -234,14 +234,15 @@ class InvalidButtonUrl(DiscordException):
 
 
 class URLAndCustomIDNotAlowed(DiscordException):
-    """Exception that's thrown when there is an ``url`` and an ``custom_id`` passed in an :class:`discord.Button`,
-    what is not supportet by the Discord-API.
+    """Exception that's thrown when there is an ``url`` and an ``custom_id`` passed in a :class:`discord.Button`,
+    what is not supportet by the Discord-APIMethodes.
 
     .. note ::
-         :class:`discord.Button` with the style :class:`discord.ButtonStyle.Link_Button` don't send any Interaction to Discord when they are clicked.
+         :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` don't send any Interaction to Discord when they are clicked.
     """
     def __init__(self, custom_id):
-        msg = f"custom_id's ({custom_id}) are not alowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.Link_Button` because Discord don't send any Interaction when clicking on an Link-Button. For More Information visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
+        msg = f"custom_id's ({custom_id}) are not alowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` because Discord don't send any Interaction when clicking on a Link-Button." \
+              f"For More Information visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
         super().__init__(msg)
 
 
@@ -250,15 +251,31 @@ class EmptyActionRow(DiscordException):
     Exception that's thrown when there is an empty :class:`discord.ActionRow` in your message.
     """
     def __init__(self):
-        msg = 'The Discord-API does not allows you to send an empty ActionRow, you have to parse at least one component'
+        msg = 'The Discord-APIMethodes does not allows you to send an empty ActionRow, you have to parse at least one component'
         super().__init__(msg)
 
 
 class UnknowInteraction(DiscordWarning):
     """
-    A warning that comes when you try to interact with an expired interacion.
+    A warning that comes when you try to interact with an expired Interaction.
     """
     def __init__(self, interaction_id):
         msg = f'You have already respond to this interaction ({interaction_id}) ' \
               f'and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
         super().__init__(msg)
+
+class ThreadIsArchived(DiscordException):
+    """
+    Exception that's thrown when trying to use a method on a ThreadChannel that is Archived and need's to be unarchived  first.
+    """
+    def __init__(self, method):
+        msg = f'You can\'t use %s when the Thread is archived. Un-archive it first.'
+        super().__init__(msg % method)
+
+class MissingPermissionsToCreateThread(DiscordException):
+    """
+    Exception that's thrown when trying to create a Thread of a type you don't have the permission for to create.
+    """
+    def __init__(self, *permissions, type):
+        msg = f'You\'r missing (any of) %s permission(s) to create a thread of type %s.'
+        super().__init__(msg % (', '.join([str(p) for p in permissions]), type))

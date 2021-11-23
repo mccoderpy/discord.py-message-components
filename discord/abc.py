@@ -529,6 +529,7 @@ class GuildChannel:
 
         # Apply channel specific role permission overwrites
         for overwrite in remaining_overwrites:
+            print(type(overwrite.type))
             if overwrite.type == 'role' and roles.has(overwrite.id):
                 denies |= overwrite.deny
                 allows |= overwrite.allow
@@ -537,6 +538,7 @@ class GuildChannel:
 
         # Apply member specific permission overwrites
         for overwrite in remaining_overwrites:
+            print(type(overwrite.type))
             if overwrite.type == 'member' and overwrite.id == member.id:
                 base.handle_overwrite(allow=overwrite.allow, deny=overwrite.deny)
                 break
@@ -548,6 +550,7 @@ class GuildChannel:
             base.mention_everyone = False
             base.embed_links = False
             base.attach_files = False
+            base.use_public_threads = False
 
         # if you can't read a channel then you have no permissions there
         if not base.read_messages:
@@ -927,7 +930,7 @@ class Messageable(metaclass=abc.ABCMeta):
     - :class:`~discord.GroupChannel`
     - :class:`~discord.User`
     - :class:`~discord.Member`
-    - :class:`~discord.ext.commands.Context`
+    - :class:`~discord.ext.sub_commands.Context`
     """
 
     __slots__ = ()
@@ -939,7 +942,7 @@ class Messageable(metaclass=abc.ABCMeta):
     async def send(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
                                           files=None, delete_after=None, nonce=None,
                                           allowed_mentions=None, reference=None,
-                                          mention_author=None, hidden=None, **kwargs):
+                                          mention_author=None, stickers=None, hidden=None, **kwargs):
         """|coro|
 
         Sends a message to the destination with the content given.
@@ -1004,7 +1007,7 @@ class Messageable(metaclass=abc.ABCMeta):
 
         hidden: Optional[:class:`bool`]
             If :bool:`True` the message will be only bee visible for the performer of the interaction.
-            If this isnt called within an :class:`RawInteractionCreateEvent` it will be ignored
+            If this isn't called within an :class:`Interaction` it will be ignored
 
         Raises
         --------
@@ -1028,16 +1031,19 @@ class Messageable(metaclass=abc.ABCMeta):
         state = self._state
         content = str(content) if content is not None else None
 
-        if embed is not None:
-            embed = embed.to_dict()
         embed_list = []
-        if embed:
-            embed_list.append(embed)
+
+        if embed is not None:
+            embed_list.append(embed.to_dict())
+
         if embeds:
             embed_list.extend([e.to_dict() for e in embeds])
+
         embeds = embed_list
+
         if len(embeds) > 10:
             raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embeds)}')
+
         if components:
             _components = []
             for component in ([components] if not isinstance(components, list) else components):
@@ -1048,6 +1054,9 @@ class Messageable(metaclass=abc.ABCMeta):
                 elif isinstance(component, list):
                     _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
             components = _components
+
+        if stickers is not None:
+            stickers = [str(sticker.id) for sticker in stickers]
 
         if allowed_mentions is not None:
             if state.allowed_mentions is not None:
@@ -1070,17 +1079,16 @@ class Messageable(metaclass=abc.ABCMeta):
         if file is not None and files is not None:
             raise InvalidArgument('cannot pass both file and files parameter to send()')
 
-        is_interaction_response = kwargs.pop('__is_interaction_response', None)
+        is_interaction_response = kwargs.pop('__is_interaction_response', False)
         deferred = kwargs.pop('__deferred', False)
         use_webhook = kwargs.pop('__use_webhook', False)
-        interaction_id = kwargs.pop('id', None)
+        interaction_id = kwargs.pop('__interaction_id', None)
         interaction_token = kwargs.pop('__interaction_token', None)
-        application_id = kwargs.pop('_application_id', None)
+        application_id = kwargs.pop('__application_id', None)
         followup = kwargs.pop('followup', False)
-        if is_interaction_response is False or None:
-            hidden = None
-        if hidden is True and file or files:
-            raise AttributeError('An ephemeral(hidden) Message could not contain file(s)')
+        if is_interaction_response:
+            if hidden and file or files:
+                raise AttributeError('An ephemeral(hidden) Message could not contain file(s)')
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')
@@ -1101,7 +1109,7 @@ class Messageable(metaclass=abc.ABCMeta):
                 else:
                     data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
                                                        content=content, tts=tts, embeds=embeds, components=components,
-                                                       nonce=nonce, message_reference=reference)
+                                                       nonce=nonce, message_reference=reference, stickers=stickers)
             finally:
                 file.close()
 
@@ -1127,7 +1135,7 @@ class Messageable(metaclass=abc.ABCMeta):
                 else:
                     data = await state.http.send_files(channel.id, files=files, content=content, tts=tts,
                                                        embeds=embeds, components=components, nonce=nonce,
-                                                       allowed_mentions=allowed_mentions, message_reference=reference)
+                                                       allowed_mentions=allowed_mentions, message_reference=reference, stickers=stickers)
             finally:
                 for f in files:
                     f.close()
@@ -1146,10 +1154,10 @@ class Messageable(metaclass=abc.ABCMeta):
             else:
                 data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
                                                                           nonce=nonce, allowed_mentions=allowed_mentions,
-                                                                          message_reference=reference)
+                                                                          message_reference=reference, stickers=stickers)
         if not hidden is True:
             if not isinstance(data, dict) and not hidden is None:
-                """Thanks Discord that they dont return the message when we send the interaction callback"""
+                # Thanks Discord that they don't return the message when we send the interaction callback
                 data = await state.http.get_original_interaction_response(application_id=application_id, interaction_token=interaction_token)
             ret = state.create_message(channel=channel, data=data)
             if (delete_after is not None) and (not hidden is True):
@@ -1224,7 +1232,7 @@ class Messageable(metaclass=abc.ABCMeta):
 
         .. note::
 
-            Due to a limitation with the Discord API, the :class:`.Message`
+            Due to a limitation with the Discord APIMethodes, the :class:`.Message`
             objects returned by this method do not contain complete
             :attr:`.Message.reactions` data.
 

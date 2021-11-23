@@ -25,7 +25,10 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import os.path
+from os import PathLike
 import io
+from typing import Union
+
 
 class File:
     r"""A parameter object used for :meth:`abc.Messageable.send`
@@ -58,14 +61,19 @@ class File:
         Whether the attachment is a spoiler.
     """
 
-    __slots__ = ('fp', 'filename', 'spoiler', '_original_pos', '_owner', '_closer')
+    __slots__ = ('fp', 'filename', 'description', 'spoiler', '_original_pos', '_owner', '_closer')
 
-    def __init__(self, fp, filename=None, *, spoiler=False):
+    def __init__(self,
+                 fp: Union[io.IOBase, str, bytes, PathLike[str], PathLike[bytes], int],
+                 filename: str = None,
+                 description: str = None,
+                 *,
+                 spoiler: bool = False):
         self.fp = fp
 
         if isinstance(fp, io.IOBase):
             if not (fp.seekable() and fp.readable()):
-                raise ValueError('File buffer {!r} must be seekable and readable'.format(fp))
+                raise ValueError('{!r.__class__.__name__} buffer {!r} must be seekable and readable'.format(self, fp))
             self.fp = fp
             self._original_pos = fp.tell()
             self._owner = False
@@ -89,6 +97,9 @@ class File:
         else:
             self.filename = filename
 
+        if description:
+            self.description = description
+
         if spoiler and self.filename is not None and not self.filename.startswith('SPOILER_'):
             self.filename = 'SPOILER_' + self.filename
 
@@ -110,3 +121,24 @@ class File:
         self.fp.close = self._closer
         if self._owner:
             self._closer()
+
+
+class UploadFile(File):
+    """An Object used for Upload files like Stickers.
+
+    Parameters
+    ----------
+    fp: Union[:class:`io.IOBase`, :class:`PathLike[str]`, :class:`PathLike[bytes]`]
+        A file-like object opened in binary mode and read mode
+        or a filename representing a file in the hard drive to
+        open.
+
+        .. note::
+
+            If the file-like object passed is opened via ``open`` then the
+            modes 'rb' should be used.
+
+            To pass binary data, consider usage of ``io.BytesIO``.
+    """
+    def __init__(self, fp: Union[io.IOBase, str, bytes, PathLike[str], PathLike[bytes], int]):
+        super().__init__(fp)

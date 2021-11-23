@@ -23,12 +23,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from typing import Optional, Union
+from typing_extensions import Literal, Annotated
 
+from .asset import Asset
 from .permissions import Permissions
 from .errors import InvalidArgument
 from .colour import Colour
 from .mixins import Hashable
-from .utils import snowflake_time, _get_as_snowflake
+from .utils import snowflake_time, _get_as_snowflake, _bytes_to_base64_data
 
 class RoleTags:
     """Represents tags on a role.
@@ -54,7 +57,7 @@ class RoleTags:
     def __init__(self, data):
         self.bot_id = _get_as_snowflake(data, 'bot_id')
         self.integration_id = _get_as_snowflake(data, 'integration_id')
-        # NOTE: The API returns "null" for this if it's valid, which corresponds to None.
+        # NOTE: The APIMethodes returns "null" for this if it's valid, which corresponds to None.
         # This is different from other fields where "null" means "not there".
         # So in this case, a value of None is the same as True.
         # Which means we would need a different sentinel. For this purpose I used ellipsis.
@@ -122,7 +125,11 @@ class Role(Hashable):
     guild: :class:`Guild`
         The guild the role belongs to.
     hoist: :class:`bool`
-         Indicates if the role will be displayed separately from other members.
+        Indicates if the role will be displayed separately from other members.
+    icon: Optional[:class:`str`]
+        The role-icon hash
+    unicode_emoji: Optional[:class:`str`]
+        The unicode emoji of the role (shows as role-icon)
     position: :class:`int`
         The position of the role. This number is usually positive. The bottom
         role has a position of 0.
@@ -135,8 +142,8 @@ class Role(Hashable):
         The role tags associated with this role.
     """
 
-    __slots__ = ('id', 'name', '_permissions', '_colour', 'position',
-                 'managed', 'mentionable', 'hoist', 'guild', 'tags', '_state')
+    __slots__ = ('id', 'name', '_permissions', '_colour', 'position', 'managed',
+                 'mentionable', 'hoist', 'guild', 'tags', '_state', 'icon', 'unicode_emoji')
 
     def __init__(self, *, guild, state, data):
         self.guild = guild
@@ -187,14 +194,15 @@ class Role(Hashable):
         return not r
 
     def _update(self, data):
-        self.name = data['name']
-        self._permissions = int(data.get('permissions', 0))
-        self.position = data.get('position', 0)
-        self._colour = data.get('color', 0)
-        self.hoist = data.get('hoist', False)
-        self.managed = data.get('managed', False)
-        self.mentionable = data.get('mentionable', False)
-
+        self.name: str = data['name']
+        self._permissions: int = int(data.get('permissions', 0))
+        self.position: int = data.get('position', 0)
+        self._colour: int = data.get('color', 0)
+        self.hoist: bool = data.get('hoist', False)
+        self.managed: bool = data.get('managed', False)
+        self.mentionable: bool = data.get('mentionable', False)
+        self.icon: Optional[str] = data.get('icon', None)
+        self.unicode_emoji: Optional[str] = data.get('unicode_emoji', None)
         try:
             self.tags = RoleTags(data['tags'])
         except KeyError:
@@ -260,6 +268,36 @@ class Role(Hashable):
         role_id = self.id
         return [member for member in all_members if member._roles.has(role_id)]
 
+    @property
+    def icon_url(self):
+        """:class:`Asset`: Returns the role icon asset."""
+        return self.icon_url_as()
+
+    def icon_url_as(self, *, format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp', size = 1024):
+        """Returns an :class:`Asset` for the role icon.
+
+        The format must be one of 'webp', 'jpeg', or 'png'. The
+        size must be a power of 2 between 16 and 4096.
+
+        Parameters
+        -----------
+        format: :class:`str`
+            The format to attempt to convert the icon to.
+        size: :class:`int`
+            The size of the image to display.
+
+        Raises
+        ------
+        InvalidArgument
+            Bad image format passed to ``format`` or invalid ``size``.
+
+        Returns
+        --------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
+        return Asset._from_icon(self._state, self, 'role', format=format, size=size)
+
     async def _move(self, position, reason):
         if position <= 0:
             raise InvalidArgument("Cannot move role to position 0 or below")
@@ -283,7 +321,7 @@ class Role(Hashable):
         payload = [{"id": z[0], "position": z[1]} for z in zip(roles, change_range)]
         await http.move_role_position(self.guild.id, payload, reason=reason)
 
-    async def edit(self, *, reason=None, **fields):
+    async def edit(self, *, reason: Optional[str] = None, **fields):
         """|coro|
 
         Edits the role.
@@ -311,6 +349,13 @@ class Role(Hashable):
         position: :class:`int`
             The new role's position. This must be below your top role's
             position or it will fail.
+        unicode_emoji: :class:`str`
+            The new role-icon as a unicode-emoji
+            This is only available for guilds that contain ``ROLE_ICON`` in :attr:`Guild.features`.
+        icon: :class:`bytes`
+            A :term:`py:bytes-like object` representing the new role-icon. Only PNG/JPEG is supported.
+            This is only available for guilds that contain ``ROLE_ICON`` in :attr:`Guild.features`.
+            Could be ``None`` to denote removal of the icon.
         reason: Optional[:class:`str`]
             The reason for editing this role. Shows up on the audit log.
 
@@ -338,13 +383,36 @@ class Role(Hashable):
         if isinstance(colour, int):
             colour = Colour(value=colour)
 
+        try:
+            icon_bytes: Optional[bytes] = fields['icon']
+        except KeyError:
+            icon = self.icon
+        else:
+            if icon_bytes is not None:
+                icon = _bytes_to_base64_data(icon_bytes)
+            else:
+                icon = None
+
+        try:
+            unicode_emoji: Optional[str] = fields['unicode_emoji']
+        except KeyError:
+            unicode_emoji = self.unicode_emoji
+        else:
+            if unicode_emoji is not None:
+                unicode_emoji = str(unicode_emoji)
+            else:
+                unicode_emoji = None
+
         payload = {
             'name': fields.get('name', self.name),
             'permissions': str(fields.get('permissions', self.permissions).value),
             'color': colour.value,
             'hoist': fields.get('hoist', self.hoist),
-            'mentionable': fields.get('mentionable', self.mentionable)
+            'icon': icon,
+            'unicode_emoji': unicode_emoji,
+            'mentionable': fields.get('mentionable', self.mentionable),
         }
+
 
         data = await self._state.http.edit_role(self.guild.id, self.id, reason=reason, **payload)
         self._update(data)

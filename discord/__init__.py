@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Discord API Wrapper
+Discord APIMethodes Wrapper
 ~~~~~~~~~~~~~~~~~~~
 
-A basic wrapper for the Discord API.
+A basic wrapper for the Discord APIMethodes.
 
 :copyright: (c) 2015-present Rapptz
 :license: MIT, see LICENSE for more details.
@@ -40,10 +40,11 @@ from .errors import *
 from .calls import CallMessage, GroupCall
 from .permissions import Permissions, PermissionOverwrite
 from .role import Role, RoleTags
-from .file import File
+from .file import File, UploadFile
 from .colour import Color, Colour
 from .integrations import Integration, IntegrationAccount, BotIntegration, IntegrationApplication, StreamIntegration
-from .interactions import Interaction, ButtonClick, SelectionSelect
+from .application_commands import SlashCommandOption, SlashCommandOptionChoice, OptionType as SlashCommandOptionType
+from .interactions import BaseInteraction, ApplicationCommandInteraction, ComponentInteraction, AutocompleteInteraction, option_str as a_str, option_int as a_int, option_float as a_float
 from .invite import Invite, PartialInviteChannel, PartialInviteGuild
 from .template import Template
 from .widget import Widget, WidgetMember, WidgetChannel
@@ -56,6 +57,7 @@ from .mentions import AllowedMentions
 from .shard import AutoShardedClient, ShardInfo
 from .player import *
 from .webhook import *
+from .welcome_screen import *
 from .voice_client import VoiceClient, VoiceProtocol
 from .audit_logs import AuditLogChanges, AuditLogEntry, AuditLogDiff
 from .raw_models import *

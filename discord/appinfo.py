@@ -28,7 +28,7 @@ from . import utils
 from .user import User
 from .asset import Asset
 from .team import Team
-
+from .flags import ApplicationFlags
 
 class AppInfo:
     """Represents the application info for the bot provided by Discord.
@@ -95,15 +95,28 @@ class AppInfo:
         this field will be the hash of the image on store embeds
 
         .. versionadded:: 1.3
+
+    custom_install_url: Optional[:class.`str`]
+        The default invite-url for the bot if its set.
+
+    privacy_policy_url: Optional[:class:`str`]
+        The link to this application's Privacy Policy if set.
+
+    terms_of_service_url: Optional[:class:`str`]
+        The link to this application's Terms of Service if set.
+
+    interactions_endpoint_url: Optional[:class:`str`]
+        The endpoint that will receive interactions with this app if its set.
     """
+
     __slots__ = ('_state', 'description', 'id', 'name', 'rpc_origins',
                  'bot_public', 'bot_require_code_grant', 'owner', 'icon',
                  'summary', 'verify_key', 'team', 'guild_id', 'primary_sku_id',
-                  'slug', 'cover_image')
+                 'slug', 'custom_install_url', 'tags', '_flags', 'cover_image',
+                 'privacy_policy_url', 'terms_of_service_url', 'interactions_endpoint_url')
 
     def __init__(self, state, data):
         self._state = state
-
         self.id = int(data['id'])
         self.name = data['name']
         self.description = data['description']
@@ -111,6 +124,9 @@ class AppInfo:
         self.rpc_origins = data['rpc_origins']
         self.bot_public = data['bot_public']
         self.bot_require_code_grant = data['bot_require_code_grant']
+        self.custom_install_url = data.get('custom_install_url', None)
+        self.tags = data.get('tags', [])
+        self._flags = data.get('flags', 0)
         self.owner = User(state=self._state, data=data['owner'])
 
         team = data.get('team')
@@ -124,6 +140,9 @@ class AppInfo:
         self.primary_sku_id = utils._get_as_snowflake(data, 'primary_sku_id')
         self.slug = data.get('slug')
         self.cover_image = data.get('cover_image')
+        self.privacy_policy_url = data.get('privacy_policy_url', None)
+        self.terms_of_service_url = data.get('terms_of_service_url', None)
+        self.interactions_endpoint_url = data.get('interactions_endpoint_url', None)
 
     def __repr__(self):
         return '<{0.__class__.__name__} id={0.id} name={0.name!r} description={0.description!r} public={0.bot_public} ' \
@@ -215,3 +234,7 @@ class AppInfo:
         .. versionadded:: 1.3
         """
         return self._state._get_guild(int(self.guild_id))
+
+    @property
+    def flags(self):
+        return ApplicationFlags._from_value(self._flags)

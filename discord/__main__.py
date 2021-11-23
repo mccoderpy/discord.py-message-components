@@ -59,13 +59,13 @@ def core(parser, args):
 bot_template = """#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from discord.ext import commands
+from discord.ext import sub_commands
 import discord
 import config
 
-class Bot(commands.{base}):
+class Bot(sub_commands.{base}):
     def __init__(self, **kwargs):
-        super().__init__(command_prefix=commands.when_mentioned_or('{prefix}'), **kwargs)
+        super().__init__(command_prefix=sub_commands.when_mentioned_or('{prefix}'), **kwargs)
         for cog in config.cogs:
             try:
                 self.load_extension(cog)
@@ -78,7 +78,7 @@ class Bot(commands.{base}):
 
 bot = Bot()
 
-# write general commands here
+# write general sub_commands here
 
 bot.run(config.token)
 """
@@ -115,10 +115,10 @@ config.py
 
 cog_template = '''# -*- coding: utf-8 -*-
 
-from discord.ext import commands
+from discord.ext import sub_commands
 import discord
 
-class {name}(commands.Cog{attrs}):
+class {name}(sub_commands.Cog{attrs}):
     """The description for {name} goes here."""
 
     def __init__(self, bot):
@@ -292,7 +292,7 @@ def add_newcog_args(subparser):
     parser.add_argument('directory', help='the directory to place it in (default: cogs)', nargs='?', default=Path('cogs'))
     parser.add_argument('--class-name', help='the class name of the cog (default: <name>)', dest='class_name')
     parser.add_argument('--display-name', help='the cog name (default: <name>)')
-    parser.add_argument('--hide-commands', help='whether to hide all commands in the cog', action='store_true')
+    parser.add_argument('--hide-sub_commands', help='whether to hide all sub_commands in the cog', action='store_true')
     parser.add_argument('--full', help='add all special methods as well', action='store_true')
 
 

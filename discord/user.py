@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 from collections import namedtuple
+from typing import Literal
 
 import discord.abc
 from .flags import PublicUserFlags
@@ -84,7 +85,7 @@ class Profile(namedtuple('Profile', 'flags user mutual_guilds connected_accounts
 _BaseUser = discord.abc.User
 
 class BaseUser(_BaseUser):
-    __slots__ = ('name', 'id', 'discriminator', 'avatar', 'bot', 'system', '_public_flags', '_state')
+    __slots__ = ('name', 'id', 'discriminator', 'avatar', 'banner', 'banner_color', 'bot', 'system', '_public_flags', '_state')
 
     def __init__(self, *, state, data):
         self._state = state
@@ -107,6 +108,12 @@ class BaseUser(_BaseUser):
         self.id = int(data['id'])
         self.discriminator = data['discriminator']
         self.avatar = data['avatar']
+        self.banner = data.get('banner', None)
+        banner_color = data.get('accent_color', None)
+        if banner_color:
+            self.banner_color = Colour(banner_color)
+        else:
+            self.banner_color = None
         self._public_flags = data.get('public_flags', 0)
         self.bot = data.get('bot', False)
         self.system = data.get('system', False)
@@ -119,6 +126,8 @@ class BaseUser(_BaseUser):
         self.id = user.id
         self.discriminator = user.discriminator
         self.avatar = user.avatar
+        self.banner = user.banner
+        self.banner_color = user.banner_color
         self.bot = user.bot
         self._state = user._state
         self._public_flags = user._public_flags
@@ -130,6 +139,8 @@ class BaseUser(_BaseUser):
             'username': self.name,
             'id': self.id,
             'avatar': self.avatar,
+            'banner': self.banner,
+            'accent_color': self.banner_color,
             'discriminator': self.discriminator,
             'bot': self.bot,
         }
@@ -200,6 +211,47 @@ class BaseUser(_BaseUser):
     def default_avatar_url(self):
         """:class:`Asset`: Returns a URL for a user's default avatar."""
         return Asset(self._state, '/embed/avatars/{}.png'.format(self.default_avatar.value))
+
+    @property
+    def banner_url(self):
+        return self.banner_url_as()
+
+    def is_banner_animated(self):
+        """:class:`bool`: Indicates if the user has an animated banner."""
+        return bool(self.banner and self.banner.startswith('a_'))
+
+    def banner_url_as(self, *, format: str = None, static_format: Literal['png', 'jpeg', 'webp', 'gif'] = 'webp', size: int = 1024):
+        """Returns an :class:`Asset` for the banner the user has. Could be ``None``.
+
+        The format must be one of 'webp', 'jpeg', 'jpg', 'png' or 'gif', and
+        'gif' is only valid for animated banners. The size must be a power of 2
+        between 16 and 4096.
+
+        Parameters
+        -----------
+        format: Optional[:class:`str`]
+            The format to attempt to convert the banner to.
+            If the format is ``None``, then it is automatically
+            detected into either 'gif' or static_format depending on the
+            banner being animated or not.
+        static_format: Optional[:class:`str`]
+            Format to attempt to convert only non-animated banner to.
+            Defaults to 'webp'
+        size: :class:`int`
+            The size of the image to display.
+
+        Raises
+        ------
+        InvalidArgument
+            Bad image format passed to ``format`` or ``static_format``, or
+            invalid ``size``.
+
+        Returns
+        --------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
+        return Asset._from_banner(self._state, self, format=format, static_format=static_format, size=size)
 
     @property
     def colour(self):

@@ -34,10 +34,12 @@ __all__ = (
     'PublicUserFlags',
     'Intents',
     'MemberCacheFlags',
+    'ApplicationFlags'
 )
 
 class flag_value:
     def __init__(self, func):
+        self.name = func.__name__
         self.flag = func(None)
         self.__doc__ = func.__doc__
 
@@ -51,6 +53,9 @@ class flag_value:
 
     def __repr__(self):
         return '<flag_value flag={.flag!r}>'.format(self)
+
+    def __str__(self):
+        return self.name
 
 class alias_flag_value(flag_value):
     pass
@@ -158,7 +163,7 @@ class SystemChannelFlags(BaseFlags):
 
     # For some reason the flags for system channels are "inverted"
     # ergo, if they're set then it means "suppress" (off in the GUI toggle)
-    # Since this is counter-intuitive from an API perspective and annoying
+    # Since this is counter-intuitive from an APIMethodes perspective and annoying
     # these will be inverted automatically
 
     def _has_flag(self, o):
@@ -373,6 +378,16 @@ class PublicUserFlags(BaseFlags):
         .. versionadded:: 1.5
         """
         return UserFlags.verified_bot_developer.value
+
+    @flag_value
+    def certified_moderator(self):
+        """:class:`bool`: Returns ``True`` if the user is an Discord Certified Moderator."""
+        return UserFlags.certified_moderator.value
+
+    @flag_value
+    def bot_http_interactions(self):
+        """:class:`bool`: Returns ``True`` if a bot-user uses only HTTP interactions and is shown in the online member list"""
+        return UserFlags.bot_http_interactions.value
 
     def all(self):
         """List[:class:`UserFlags`]: Returns all public flags the user has."""
@@ -964,3 +979,83 @@ class MemberCacheFlags(BaseFlags):
     @property
     def _online_only(self):
         return self.value == 1
+
+@fill_with_flags()
+class ApplicationFlags(BaseFlags):
+    r"""Wraps up the flags of a application.
+
+        .. container:: operations
+
+            .. describe:: x == y
+
+                Checks if two ApplicationFlags are equal.
+            .. describe:: x != y
+
+                Checks if two ApplicationFlags are not equal.
+            .. describe:: hash(x)
+
+                Return the flag's hash.
+            .. describe:: iter(x)
+
+                Returns an iterator of ``(name, value)`` pairs. This allows it
+                to be, for example, constructed as a dict or a list of pairs.
+                Note that aliases are not shown.
+
+
+        Attributes
+        -----------
+        value: :class:`int`
+            The raw value. This value is a bit array field of a 53-bit integer
+            representing the currently available flags. You should query
+            flags via the properties rather than using this raw value.
+    """
+
+    @flag_value
+    def gateway_presence(self):
+        """:class:`bool`: Returns ``True`` if the application is approved for the privileged gateway presence-intent."""
+
+        return 1 << 12
+
+    @flag_value
+    def gateway_presence_limited(self):
+        """:class:`bool`: Returns ``True`` if the privileged gateway presence-intent
+        is enabled in the application in the developer-portal."""
+
+        return 1 << 13
+
+    @flag_value
+    def gateway_guild_members(self):
+        """:class:`bool`: Returns ``True`` if the application is approved
+        for the privileged gateway guild-members-intent."""
+
+        return 1 << 14
+
+    @flag_value
+    def gateway_guild_members_limited(self):
+        """:class:`bool`: Returns ``True`` if the privileged gateway guild-members-intent
+        is enabled in the application in the developer-portal."""
+
+        return 1 << 15
+
+    @flag_value
+    def verification_pending_guild_limit(self):
+        """:class:`bool: Returns ``True`` if this application has reached the required number of guilds
+        to apply for verification. (76+ Guilds)"""
+        return 1 << 16
+
+    @flag_value
+    def embedded(self):
+        """:class:`bool`: Returns ``True`` if this application could have embedded invites.(usually  voice-activity's)"""
+        return 1 << 17
+
+    @flag_value
+    def gateway_message_content(self):
+        """:class:`bool`: Returns ``True`` if the application is approved
+        for the privileged gateway message-content-intent."""
+        return 1 << 18
+
+    @flag_value
+    def gateway_message_content_limited(self):
+        """:class:`bool`: Returns ``True`` if the privileged gateway message-content-intent
+        is enabled in the application in the developer-portal."""
+        return 1 << 19

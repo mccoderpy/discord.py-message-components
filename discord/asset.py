@@ -25,12 +25,14 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import io
+
 from .errors import DiscordException
 from .errors import InvalidArgument
 from . import utils
 
 VALID_STATIC_FORMATS = frozenset({"jpeg", "jpg", "webp", "png"})
 VALID_AVATAR_FORMATS = VALID_STATIC_FORMATS | {"gif"}
+
 
 class Asset:
     """Represents a CDN asset on Discord.
@@ -87,6 +89,43 @@ class Asset:
             format = 'gif' if user.is_avatar_animated() else static_format
 
         return cls(state, '/avatars/{0.id}/{0.avatar}.{1}?size={2}'.format(user, format, size))
+
+    @classmethod
+    def _from_guild_avatar(cls, state, member, *, format=None, static_format='webp', size=1024):
+        if not utils.valid_icon_size(size):
+            raise InvalidArgument("size must be a power of 2 between 16 and 4096")
+        if format is not None and format not in VALID_AVATAR_FORMATS:
+            raise InvalidArgument("format must be None or one of {}".format(VALID_AVATAR_FORMATS))
+        if format == "gif" and not member.is_guild_avatar_animated():
+            raise InvalidArgument("non animated avatars do not support gif format")
+        if static_format not in VALID_STATIC_FORMATS:
+            raise InvalidArgument("static_format must be one of {}".format(VALID_STATIC_FORMATS))
+
+        if member.guild_avatar is None:
+            return member.avatar_url
+
+        if format is None:
+            format = 'gif' if member.is_guild_avatar_animated() else static_format
+
+        return cls(state, '/guilds/{0.guild.id}/users/{0.id}/avatars/{0.guild_avatar}.{1}?size={2}'.format(member, format, size))
+
+    @classmethod
+    def _from_banner(cls, state, user, *, format=None, static_format='webp', size=1024):
+        if not user.banner:
+            return None
+        if not utils.valid_icon_size(size):
+            raise InvalidArgument("size must be a power of 2 between 16 and 4096")
+        if format is not None and format not in VALID_AVATAR_FORMATS:
+            raise InvalidArgument("format must be None or one of {}".format(VALID_AVATAR_FORMATS))
+        if format == "gif" and not user.is_banner_animated():
+            raise InvalidArgument("non animated avatars do not support gif format")
+        if static_format not in VALID_STATIC_FORMATS:
+            raise InvalidArgument("static_format must be one of {}".format(VALID_STATIC_FORMATS))
+
+        if format is None:
+            format = 'gif' if user.is_banner_animated() else static_format
+
+        return cls(state, f'/banners/{user.id}/{user.banner}.{format}?size={size}')
 
     @classmethod
     def _from_icon(cls, state, object, path, *, format='webp', size=1024):
@@ -147,12 +186,17 @@ class Asset:
         return cls(state, '/icons/{0.id}/{0.icon}.{1}?size={2}'.format(guild, format, size))
 
     @classmethod
-    def _from_sticker_url(cls, state, sticker, *, size=1024):
+    def _from_sticker(cls, state, sticker, *, format=None):
+        return cls(state, f'/stickers/{sticker.id}.{format}')
+
+    @classmethod
+    def _from_sticker_pack(cls, state, sticker_pack, format='png', size=1024):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
-
-        return cls(state, '/stickers/{0.id}/{0.image}.png?size={2}'.format(sticker, format, size))
-
+        if format is not None and format not in VALID_STATIC_FORMATS:
+            raise InvalidArgument("format must be None or one of {}".format(VALID_AVATAR_FORMATS))
+        return cls(state, f'/app-assets/710982414301790216/store/{sticker_pack.banner_asset_id}.{format}?size={size}')
+        
     @classmethod
     def _from_emoji(cls, state, emoji, *, format=None, static_format='png'):
         if format is not None and format not in VALID_AVATAR_FORMATS:

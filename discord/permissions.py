@@ -142,7 +142,7 @@ class Permissions(BaseFlags):
         """A factory method that creates a :class:`Permissions` with all
         permissions set to ``True``.
         """
-        return cls(0b111111111111111111111111111111111)
+        return cls(0b11110111111111111111111111111111111111)
 
     @classmethod
     def all_channel(cls):
@@ -454,15 +454,30 @@ class Permissions(BaseFlags):
 
     @flag_value
     def manage_emojis(self):
-        """:class:`bool`: Returns ``True`` if a user can create, edit, or delete emojis."""
+        """:class:`bool`: Returns ``True`` if a user can create, edit, or delete emojis and stickers."""
+        return 1 << 30
+
+    @make_permission_alias('manage_emojis')
+    def manage_emojis_and_stickers(self):
+        """:class:`bool`: An aliase for :attr:`manage_emojis`"""
+        return 1 << 30
+
+    @make_permission_alias('manage_emojis')
+    def manage_stickers(self):
+        """:class:`bool`: An aliase for :attr:`manage_emojis`"""
         return 1 << 30
 
     @flag_value
     def use_slash_commands(self):
-        """:class:`bool`: Returns ``True`` if a user can use slash commands.
+        """:class:`bool`: Returns ``True`` if a user can use slash sub_commands and context-menu sub_commands.
 
         .. versionadded:: 1.7
         """
+        return 1 << 31
+
+    @make_permission_alias('use_slash_commands')
+    def use_application_commands(self):
+        """:class:`bool`: An aliase for :attr:`use_slash_commands`"""
         return 1 << 31
 
     @flag_value
@@ -472,6 +487,41 @@ class Permissions(BaseFlags):
         .. versionadded:: 1.7
         """
         return 1 << 32
+
+    @flag_value
+    def manage_events(self):
+        """:class:`bool`: Returns ``True` if a user can manage Guild_Scheduled-Events."""
+        return 1 << 33
+
+    @flag_value
+    def manage_threads(self):
+        """:class:`bool`: Returns ``True` if a user can delete and archive threads and viewing all private threads"""
+        return 1 << 34
+
+    @flag_value
+    def create_public_threads(self):
+        """:class:`bool`: Returns ``True`` if a user can create and participate in threads."""
+        return 1 << 35
+
+    @flag_value
+    def create_private_threads(self):
+        """:class:`bool`: Returns ``True` if a user can create and participate in private threads."""
+        return 1 << 36
+
+    @flag_value
+    def use_external_stickers(self):
+        """:class:`bool`: Returns ``True` if a user can use custom stickers from other servers."""
+        return 1 << 37
+
+    @flag_value
+    def send_messages_in_threads(self):
+        """:class:`bool`: Returns ``True` if a user can send messages in threads."""
+        return  1 << 38
+
+    @make_permission_alias('send_messages_in_threads')
+    def send_thread_messages(self):
+        """:class:`bool`: An alias for :attr:`send_messages_in_threads`."""
+        return 1 << 38
 
 def augment_from_permissions(cls):
     cls.VALID_NAMES = set(Permissions.VALID_FLAGS)

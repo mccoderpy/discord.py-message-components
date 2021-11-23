@@ -27,6 +27,11 @@ DEALINGS IN THE SOFTWARE.
 import asyncio
 import datetime
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .scheduled_event import GuildScheduledEvent
+
 from .errors import NoMoreItems
 from .utils import time_snowflake, maybe_coroutine
 from .object import Object
@@ -653,3 +658,104 @@ class MemberIterator(_AsyncIterator):
     def create_member(self, data):
         from .member import Member
         return Member(data=data, guild=self.guild, state=self.state)
+
+
+class EventUsersIterator(_AsyncIterator):
+    def __init__(self, event: 'GuildScheduledEvent', limit=100, before=None, after=None, with_member=False):
+        self.guild = event.guild
+        self.guild_id = event.guild_id
+        self.state = event._state
+        self.event = event
+        self.limit = limit
+        self.before = before
+        self.after = after
+        self.with_member = with_member
+        self.users = asyncio.Queue()
+        self.getter = event._state.http.get_guild_event_users
+
+        self._filter = None
+
+        if self.before and self.after:
+            self._retrieve_users = self._retrieve_users_before_strategy
+            self._filter = lambda m: int(m['user']['id']) > self.after.id
+        elif self.before:
+            self._retrieve_users = self._retrieve_users_before_strategy
+        else:
+            self._retrieve_users = self._retrieve_users_after_strategy
+
+    async def next(self):
+        if self.users.empty():
+            await self.fill_users()
+
+        try:
+            return self.users.get_nowait()
+        except asyncio.QueueEmpty:
+            raise NoMoreItems()
+
+    def _get_retrieve(self):
+        l = self.limit
+        if l is None or l > 100:
+            r = 100
+        else:
+            r = l
+        self.retrieve = r
+        return r > 0
+
+    async def fill_users(self):
+        # this is a hack because >circular imports<
+        from .user import User
+        from .member import Member
+
+        guild = self.guild
+        state = self.state
+        cache_joined = state.member_cache_flags.joined
+        cache_online = state.member_cache_flags.online
+
+        if self._get_retrieve():
+
+            data = await self._retrieve_users(self.retrieve)
+            if self.limit is None or len(data) < 100:
+                self.limit = 0
+
+            if self._filter:
+                data = filter(self._filter, data)
+
+            if guild is None or isinstance(guild, Object):
+                for element in data:
+                    await self.users.put(User(state=state, data=element['user']))
+            else:
+                for element in data:
+                    member_id = int(element['user']['id'])
+                    member = self.guild.get_member(member_id)
+                    if member is not None:
+                        await self.users.put(member)
+                    else:
+                        if self.with_member:
+                            element['member']['user'] = element['user']
+                            member = Member(data=element['member'], guild=guild, state=state)
+                            if cache_joined or (cache_online and 'online' in member.raw_status):
+                                self.guild._add_member(member)
+                            await self.users.put(member)
+                        else:
+                            await self.users.put(User(state=self.state, data=element))
+
+    async def _retrieve_users_before_strategy(self, retrieve):
+        """Retrieve users using before parameter."""
+        before = self.before.id if self.before else None
+        data = await self.getter(self.guild_id, self.event.id, limit=retrieve, before=before, with_member=self.with_member)
+        if len(data):
+            if self.limit is not None:
+                self.limit -= retrieve
+            self.before = Object(id=int(data[-1]['user']['id']))
+        return data
+
+    async def _retrieve_users_after_strategy(self, retrieve):
+        """Retrieve users using after parameter."""
+        after = self.after.id if self.after else None
+        data = await self.getter(self.guild_id, self.event.id, limit=retrieve, after=after, with_member=self.with_member)
+        if len(data):
+            if self.limit is not None:
+                self.limit -= retrieve
+            self.after = Object(id=int(data[0]['user']['id']))
+            data = reversed(data)
+        return data

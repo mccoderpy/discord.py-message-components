@@ -27,6 +27,8 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
+import copy
+import io
 import json
 import logging
 import sys
@@ -35,7 +37,8 @@ import weakref
 
 import aiohttp
 
-from .errors import HTTPException, Forbidden, NotFound, LoginFailure, DiscordServerError, GatewayNotFound
+from .errors import HTTPException, Forbidden, NotFound, LoginFailure, DiscordServerError, GatewayNotFound, \
+    InvalidArgument
 from .gateway import DiscordClientWebSocketResponse
 from . import __version__, utils
 
@@ -99,7 +102,7 @@ aiohttp.hdrs.WEBSOCKET = 'websocket'
 
 
 class HTTPClient:
-    """Represents an HTTP client sending HTTP requests to the Discord API."""
+    """Represents an HTTP client sending HTTP requests to the Discord APIMethodes."""
 
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
@@ -117,7 +120,7 @@ class HTTPClient:
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
 
-        user_agent = 'DiscordBot (https://github.com/Rapptz/discord.py {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
+        user_agent = 'DiscordBot (https://github.com/mccoder.py/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
         self.user_agent = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
 
     def recreate(self):
@@ -136,7 +139,6 @@ class HTTPClient:
             },
             'compress': compress
         }
-
         return await self.__session.ws_connect(url, **kwargs)
 
     async def request(self, route, *, files=None, form=None, **kwargs):
@@ -162,6 +164,9 @@ class HTTPClient:
         if 'json' in kwargs:
             headers['Content-Type'] = 'application/json'
             kwargs['data'] = utils.to_json(kwargs.pop('json'))
+
+        if 'content_type' in kwargs:
+            headers['Content-Type'] = kwargs.pop('content_type')
 
         try:
             reason = kwargs.pop('reason')
@@ -191,10 +196,11 @@ class HTTPClient:
                         f.reset(seek=tries)
 
                 if form:
-                    form_data = aiohttp.FormData()
+                    form_data = aiohttp.FormData(quote_fields=False)
                     for params in form:
                         form_data.add_field(**params)
                     kwargs['data'] = form_data
+
 
                 try:
                     async with self.__session.request(method, url, **kwargs) as r:
@@ -299,7 +305,7 @@ class HTTPClient:
     # login management
 
     async def static_login(self, token, *, bot):
-        # Necessary to get aiohttp to stop complaining about session creation
+        # Necessary to get aiohttp to stop complaining about _session creation
         self.__session = aiohttp.ClientSession(connector=self.connector, ws_response_class=DiscordClientWebSocketResponse)
         old_token, old_bot = self.token, self.bot_token
         self._token(token, bot=bot)
@@ -357,37 +363,33 @@ class HTTPClient:
 
         return self.request(Route('POST', '/users/@me/channels'), json=payload)
 
-    def send_message(self, channel_id, content, *, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
+    def send_message(self, channel_id, content, *, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None, stickers=None):
         r = Route('POST', '/channels/{channel_id}/messages', channel_id=channel_id)
         payload = {}
 
         if content:
             payload['content'] = content
-
         if tts:
             payload['tts'] = True
-
         if embeds:
             payload['embeds'] = embeds
-
         if components:
             payload['components'] = components
-
         if nonce:
             payload['nonce'] = nonce
-
         if allowed_mentions:
             payload['allowed_mentions'] = allowed_mentions
-
         if message_reference:
             payload['message_reference'] = message_reference
+        if stickers:
+            payload['sticker_ids'] = stickers
 
         return self.request(r, json=payload)
 
     def send_typing(self, channel_id):
         return self.request(Route('POST', '/channels/{channel_id}/typing', channel_id=channel_id))
 
-    def send_files(self, channel_id, *, files, content=None, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
+    def send_files(self, channel_id, *, files, content=None, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None, stickers=None):
         r = Route('POST', '/channels/{channel_id}/messages', channel_id=channel_id)
         form = []
 
@@ -404,24 +406,23 @@ class HTTPClient:
             payload['allowed_mentions'] = allowed_mentions
         if message_reference:
             payload['message_reference'] = message_reference
+        if stickers:
+            payload['sticker_ids'] = stickers
 
+        if files and len(files):
+            payload['attachments'] = [
+                {'id': index, 'description': file.description, 'filename': file.filename}
+                for index, file in enumerate(files)
+            ]
         form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
-        if len(files) == 1:
-            file = files[0]
+
+        for index, file in enumerate(files):
             form.append({
-                'name': 'file',
+                'name': 'files[%s]' % index,
                 'value': file.fp,
                 'filename': file.filename,
                 'content_type': 'application/octet-stream'
             })
-        else:
-            for index, file in enumerate(files):
-                form.append({
-                    'name': 'file%s' % index,
-                    'value': file.fp,
-                    'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                })
 
         return self.request(r, form=form, files=files)
 
@@ -448,83 +449,105 @@ class HTTPClient:
         r = Route('PATCH', '/channels/{channel_id}/messages/{message_id}', channel_id=channel_id, message_id=message_id)
         return self.request(r, json=fields)
 
+    def get_application_commands(self, application_id, command_id=None, guild_id=None):
+        return self.request(Route('GET', f'/applications/{application_id}{f"/guilds/{guild_id}" if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}'))
+
+    def create_application_command(self, application_id, data, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
+        else:
+            url = f'/applications/{application_id}/commands'
+        return self.request(Route('POST', url), json=data)
+
+    def edit_application_command(self, application_id, command_id, data, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
+        else:
+            url = f'/applications/{application_id}/commands/{command_id}'
+        return self.request(Route('PATCH', url), json=data)
+
+    def delete_application_command(self, application_id, command_id, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
+        else:
+            url = f'/applications/{application_id}/commands/{command_id}'
+        return self.request(Route('DELETE', url))
+
+    def bulk_overwrite_application_commands(self, application_id, data, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
+        else:
+            url = f'/applications/{application_id}/commands'
+        return self.request(Route('PUT', url), json=data)
+
+    def get_guild_application_command_permissions(self, application_id, guild_id, command_id=None):
+        if command_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'
+        else:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'
+        return self.request(Route('GET', url))
+
+    def edit_application_command_permissions(self, application_id, guild_id, command_id, data):
+        return self.request(Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'), json=data)
+
+    def batch_edit_application_command_permissions(self, application_id, guild_id, data):
+        return self.request(Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'), json=data)
+
     def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
         r_url = f"/webhooks/{application_id}/{token}/callback" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
         r = Route("POST", r_url)
         return self.request(r, json=_resp)
 
-    def edit_interaction_response(self, interaction_id, token, application_id, deferred, use_webhook=True, files=None, **fields):
+    def edit_interaction_response(self, interaction_id: int, token: str, application_id: int, deferred: bool, use_webhook: bool = True, data: dict = None, files: list = None):
+        if files and len(files):
+            data['attachments'] = [
+                {'id': index,
+                 'description': file.description,
+                 'filename': file.filename
+                 } for index, file in enumerate(files)]
         if not deferred:
-            fields = {'data': fields, 'type': 7}
+            data = {'data': data, 'type': 7}
             r = Route('POST', f'/interactions/{interaction_id}/{token}/callback')
         else:
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original' if use_webhook is True else f'/interactions/{interaction_id}/{token}/messages/@original')
         form = []
         if files is not None:
-            form.append({'name': 'payload_json', 'value': utils.to_json(fields)})
-            if len(files) == 1:
-                file = files[0]
+            form.append({'name': 'payload_json', 'value': utils.to_json(data)})
+            for index, file in enumerate(files):
                 form.append({
-                    'name': 'file',
+                    'name': 'files[%s]' % index,
                     'value': file.fp,
                     'filename': file.filename,
                     'content_type': 'application/octet-stream'
                 })
-            else:
-                for index, file in enumerate(files):
-                    form.append({
-                        'name': 'file%s' % index,
-                        'value': file.fp,
-                        'filename': file.filename,
-                        'content_type': 'application/octet-stream'
-                    })
 
             return self.request(r, form=form, files=files)
         else:
-            return self.request(r, json=fields)
+            return self.request(r, json=data)
 
-    def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup,
-                                  *, content=None, tts=False, embeds=None, components=None, files=None, nonce=None,
-                                  allowed_mentions=None, message_reference=None, flags=None):
+    def send_interaction_response(self, use_webhook: bool, interaction_id: int, token: str, application_id: int, deferred: bool,
+                                  followup: bool, data: dict = None, files: list = None, type: int = 4):
         form = []
-        payload = {'tts': tts}
-        if content:
-            payload['content'] = content
-        if embeds:
-            payload['embeds'] = embeds
-        if components:
-            payload['components'] = components
-        if nonce:
-            payload['nonce'] = nonce
-        if allowed_mentions:
-            payload['allowed_mentions'] = allowed_mentions
-        if message_reference:
-            payload['message_reference'] = message_reference
-        if flags:
-            payload['flags'] = flags
+        if files and len(files):
+            data['attachments'] = [{'id': index,
+                                    'description': file.description,
+                                    'filename': file.filename
+                                    } for index, file in enumerate(files)]
         if not deferred and not followup:
-            payload = {'type': 4, 'data': payload}
+            payload = {'data': data, 'type': int(type)}
             r = Route('POST', f'/webhooks/{application_id}/{token}' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
+            payload = data
             r = Route('POST', f'/webhooks/{application_id}/{token}')
         if files is not None:
             form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
-            if len(files) == 1:
-                file = files[0]
+            for index, file in enumerate(files):
                 form.append({
-                    'name': 'file',
+                    'name': 'files[%s]' % index,
                     'value': file.fp,
                     'filename': file.filename,
                     'content_type': 'application/octet-stream'
                 })
-            else:
-                for index, file in enumerate(files):
-                    form.append({
-                        'name': 'file%s' % index,
-                        'value': file.fp,
-                        'filename': file.filename,
-                        'content_type': 'application/octet-stream'
-                    })
 
             return self.request(r, form=form, files=files)
         else:
@@ -533,7 +556,55 @@ class HTTPClient:
     def get_original_interaction_response(self, interaction_token, application_id):
         r = Route('GET', f'/webhooks/{application_id}/{interaction_token}/messages/@original')
         return self.request(r)
-        
+
+    def send_autocomplete_callback(self, interaction_token, interaction_id, choices):
+        r = Route('POST', f'/interactions/{interaction_id}/{interaction_token}/callback')
+        choices = {'data': {'choices': [choice.to_dict() for choice in choices]}, 'type': 8}
+        return self.request(r, json=choices)
+
+    def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, reason=None):
+        r = Route('POST', f'/channels/{channel_id}{f"/messages/{message_id}" if message_id else ""}/threads')
+        params = {
+            'type': int(type),
+            'name': str(name),
+            'auto_archive_duration': int(auto_archive_duration)
+        }
+        return self.request(r, json=params, reason=reason)
+
+    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, reason=None):
+        r = Route('PATCH', f'/channels/{channel_id}')
+        params = {}
+        if name:
+            params['name'] = str(name)
+        if auto_archive_duration:
+            params['auto_archive_duration'] = int(auto_archive_duration)
+        if archived:
+            params['archived'] = bool(archived)
+        if locked:
+            params['locked'] = bool(locked)
+        return self.request(r, json=params, reason=reason)
+
+    def add_thread_member(self, channeL_id, member_id='@me'):
+        r = Route('PUT', f'/channels/{channeL_id}/thread-members/{member_id}')
+        return self.request(r)
+
+    def remove_thread_member(self, channel_id, member_id='@me'):
+        r = Route('DELETE', f'/channels/{channel_id}/thread-members/{member_id}')
+        return self.request(r)
+
+    def list_thread_members(self, channel_id):
+        return self.request(Route('GET', f'/channels/{channel_id}/thread-members'))
+
+    def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
+        if type not in('public', 'privat'):
+            raise ValueError('type must be public or privat, not %s' % type)
+        r = Route('GET', f'/channels/{channel_id}{"/users/@me" if joined_privat else ""}/threads/archived/{type}')
+        params = {
+            'before': before,
+            'limit': int(limit)
+        }
+        return self.request(r, json=params)
+
     def add_reaction(self, channel_id, message_id, emoji):
         r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
                   channel_id=channel_id, message_id=message_id, emoji=emoji)
@@ -790,6 +861,13 @@ class HTTPClient:
 
         return self.request(Route('PATCH', '/guilds/{guild_id}', guild_id=guild_id), json=payload, reason=reason)
 
+    def get_welcome_screen(self, guild_id):
+        return self.request(Route('GET', f'/guilds/{guild_id}/welcome-screen'))
+
+    def edit_welcome_screen(self, guild_id, reason, **fields):
+        r = Route('PATCH', f'/guilds/{guild_id}/welcome-screen')
+        return self.request(r, json=fields, reason=reason)
+
     def get_template(self, code):
         return self.request(Route('GET', '/guilds/templates/{code}', code=code))
 
@@ -899,6 +977,45 @@ class HTTPClient:
         r = Route('PATCH', '/guilds/{guild_id}/emojis/{emoji_id}', guild_id=guild_id, emoji_id=emoji_id)
         return self.request(r, json=payload, reason=reason)
 
+    def create_guild_sticker(self, guild_id, file, reason=None, **fields):
+        r = Route('POST', f'/guilds/{guild_id}/stickers')
+        initial_bytes = file.fp.read(16)
+
+        try:
+            mime_type = utils._get_mime_type_for_image(initial_bytes)
+        except InvalidArgument:
+            if initial_bytes.startswith(b'{'):
+                mime_type = 'application/json'
+            else:
+                mime_type = 'application/octet-stream'
+        finally:
+            file.reset()
+
+        form = [
+            {
+            'name': 'file',
+            'value': file.fp,
+            'filename': file.filename,
+            'content_type': mime_type
+            }
+        ]
+        for k, v in fields.items():
+            if v is not None:
+                form.append(
+                    {
+                        'name': k,
+                        'value': str(v)
+                     }
+                )
+
+        return self.request(r, form=form, files=[file], reason=reason)
+
+    def edit_guild_sticker(self, guild_id, sticker_id, data, reason=None):
+        return self.request(Route('PATCH', f'/guilds/{guild_id}/stickers/{sticker_id}'), json=data, reason=reason)
+
+    def delete_guild_sticker(self, guild_id, sticker_id, reason=None):
+        return self.request(Route('DELETE', f'/guilds/{guild_id}/stickers/{sticker_id}'), reason=reason)
+
     def get_all_integrations(self, guild_id):
         r = Route('GET', '/guilds/{guild_id}/integrations', guild_id=guild_id)
 
@@ -953,22 +1070,24 @@ class HTTPClient:
     def create_invite(self, channel_id, *, reason=None, **options):
         r = Route('POST', '/channels/{channel_id}/invites', channel_id=channel_id)
         payload = {
-            'max_age': options.get('max_age', 0),
+            'max_age': options.get('max_age', 86400),
             'max_uses': options.get('max_uses', 0),
             'temporary': options.get('temporary', False),
-            'unique': options.get('unique', True),
+            'unique': options.get('unique', False),
             'target_type': options.get('target_type', None),
             'target_user_id': options.get('target_user_id', None),
-            'target_application_id': options.get('target_application_id', None),
-            'validate': options.get('validate', 84000)
+            'target_application_id': options.get('target_application_id', None)
         }
 
         return self.request(r, reason=reason, json=payload)
 
-    def get_invite(self, invite_id, *, with_counts=True):
+    def get_invite(self, invite_id, *, with_counts=True, with_expiration=True, event_id=None):
         params = {
-            'with_counts': int(with_counts)
+            'with_counts': int(with_counts),
+            'with_expiration': int(with_expiration),
         }
+        if event_id:
+            params['guild_scheduled_event_id'] = str(event_id)
         return self.request(Route('GET', '/invites/{invite_id}', invite_id=invite_id), params=params)
 
     def invites_from(self, guild_id):
@@ -979,6 +1098,40 @@ class HTTPClient:
 
     def delete_invite(self, invite_id, *, reason=None):
         return self.request(Route('DELETE', '/invites/{invite_id}', invite_id=invite_id), reason=reason)
+
+    # Event management
+
+    def get_guild_event(self, guild_id, event_id, with_user_count=True):
+        r = Route('GET', f'/guilds/{guild_id}/scheduled-events/{event_id}?with_user_count={str(with_user_count).lower()}')
+        return self.request(r)
+
+    def get_guild_events(self, guild_id, with_user_count=True):
+        r = Route('GET', f'/guilds/{guild_id}/scheduled-events?with_user_count={str(with_user_count).lower()}')
+        return self.request(r)
+
+    def get_guild_event_users(self, guild_id, event_id, limit=100, before=None, after=None, with_member=False):
+        url = f'/guilds/{guild_id}/scheduled-events/{event_id}/users?limit={limit}'
+        if before:
+            url += f'&before={before}'
+        elif after:
+            url += f'&after={after}'
+        if with_member:
+            url += '&with_member=true'
+        return self.request(Route('GET', url))
+
+    def create_guild_event(self, guild_id, fields, *, reason=None):
+        return self.request(Route('POST', f'/guilds/{guild_id}/scheduled-events'), json=fields, reason=reason)
+
+    def edit_guild_event(self, guild_id, event_id, *, reason=None, **fields):
+        valid_keys = ('name', 'description', 'entity_type', 'privacy_level', 'entity_metadata',
+                      'channel_id', 'scheduled_start_time', 'scheduled_end_time', 'status')
+        payload = {
+            k: v for k, v in fields.items() if k in valid_keys
+        }
+        return self.request(Route('PATCH', f'/guilds/{guild_id}/scheduled-events/{event_id}'), json=payload, reason=reason)
+
+    def delete_guild_event(self, guild_id, event_id, *, reason=None):
+        return self.request(Route('DELETE', f'/guilds/{guild_id}/scheduled-events/{event_id}'), reason=reason)
 
     # Role management
 
@@ -1105,3 +1258,6 @@ class HTTPClient:
 
     def edit_settings(self, **payload):
         return self.request(Route('PATCH', '/users/@me/settings'), json=payload)
+
+    def get_all_nitro_stickers(self):
+        return self.request(Route('GET', '/sticker-packs'))

@@ -32,12 +32,13 @@ import re
 import io
 
 from . import utils
+from .channel import ThreadChannel
 from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .calls import CallMessage
-from .enums import MessageType, ChannelType, try_enum
-from .errors import InvalidArgument, ClientException, HTTPException, NotFound
+from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
+from .errors import InvalidArgument, ClientException, HTTPException, NotFound, MissingPermissionsToCreateThread
 from .embeds import Embed
 from .components import Button, SelectMenu, ActionRow
 from .member import Member
@@ -119,17 +120,23 @@ class Attachment(Hashable):
         minutes or not valid at all.
     content_type: Optional[:class:`str`]
         The attachment's `media type <https://en.wikipedia.org/wiki/Media_type>`_
-
+    ephemeral: :class:`bool`
+        Whether the attachment is part of a ephemral message.
+    description: Optional[:class:`str`]
+        The description for the file.
         .. versionadded:: 1.7
     """
 
-    __slots__ = ('id', 'size', 'height', 'width', 'filename', 'url', 'proxy_url', '_http', 'content_type')
+    __slots__ = ('id', 'size', 'height', 'width', 'ephemeral', 'description',
+                 'filename', 'url', 'proxy_url', '_http', 'content_type')
 
     def __init__(self, *, data, state):
         self.id = int(data['id'])
         self.size = data['size']
         self.height = data.get('height')
         self.width = data.get('width')
+        self.ephemeral = data.get('ephemeral', False)
+        self.description = data.get('description', None)
         self.filename = data['filename']
         self.url = data.get('url')
         self.proxy_url = data.get('proxy_url')
@@ -324,7 +331,7 @@ class MessageReference:
 
     resolved: Optional[Union[:class:`Message`, :class:`DeletedReferencedMessage`]]
         The message that this reference resolved to. If this is ``None``
-        then the original message was not fetched either due to the Discord API
+        then the original message was not fetched either due to the Discord APIMethodes
         not attempting to resolve it or it not being available at the time of creation.
         If the message was resolved at a prior point but has since been deleted then
         this will be of type :class:`DeletedReferencedMessage`.
@@ -549,7 +556,7 @@ class Message(Hashable):
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
                  'role_mentions', '_cs_raw_role_mentions', 'type', 'call', 'flags',
                  '_cs_system_content', '_cs_guild', '_state', 'reactions', 'reference',
-                 'application', 'activity', 'stickers')
+                 'application', 'activity', 'stickers', '_thread')
 
     def __init__(self, *, state, channel, data):
         self._state = state
@@ -565,13 +572,14 @@ class Message(Hashable):
         self.call = None
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
         self.type = try_enum(MessageType, data['type'])
+        self._thread = data.get('thread', None)
         self.pinned = data['pinned']
         self.flags = MessageFlags._from_value(data.get('flags', 0))
         self.mention_everyone = data['mention_everyone']
         self.tts = data['tts']
         self.content = data['content']
         self.nonce = data.get('nonce')
-        self.stickers = [Sticker(data=data, state=state) for data in data.get('stickers', [])]
+        self.stickers = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
 
         try:
             ref = data['message_reference']
@@ -595,7 +603,7 @@ class Message(Hashable):
 
                     ref.resolved = self.__class__(channel=chan, data=resolved, state=state)
 
-        for handler in ('author', 'member', 'mentions', 'mention_roles', 'call', 'flags'):
+        for handler in ('author', 'member', 'mentions', 'mention_roles', 'call', 'flags', 'interaction', 'thread'):
             try:
                 getattr(self, '_handle_%s' % handler)(data[handler])
             except KeyError:
@@ -679,6 +687,7 @@ class Message(Hashable):
                 delattr(self, attr)
             except AttributeError:
                 pass
+        return self
 
     def _handle_edited_timestamp(self, value):
         self._edited_timestamp = utils.parse_time(value)
@@ -712,6 +721,17 @@ class Message(Hashable):
 
     def _handle_embeds(self, value):
         self.embeds = [Embed.from_dict(data) for data in value]
+
+    def _handle_interaction(self, value):
+        pass
+
+    def _handle_thread(self, value):
+        thread = self.channel.get_thread(self.id)
+        if thread:
+            thread._update(value)
+        else:
+            thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
+            self.channel.guild._add_thread(thread)
 
     def _handle_components(self, value):
         self.components = [ActionRow.from_dict(data) for data in value]
@@ -1452,6 +1472,29 @@ class Message(Hashable):
 
         return await self.channel.send(content, reference=self, **kwargs)
 
+    async def create_thread(self, *, name, auto_archive_duration: AutoArchiveDuration = None, private=False, reason: str = None):
+        """|coro|
+
+        Creates a new thread in the channel of the message with this Message as the Starter-Message.
+        """
+        if self.channel.type not in (ChannelType.text, ChannelType.news):
+            raise Exception('You could not create a thread inside a %s.' % self.channel.__class__.__name__)
+        if private is True and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).use_private_threads:
+            raise MissingPermissionsToCreateThread('use_private_threads', 'send_messages', type=ChannelType.private_thread)
+        elif private is False and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).use_public_threads:
+            raise MissingPermissionsToCreateThread('use_public_threads', 'send_messages', type=ChannelType.public_thread)
+        if len(name) > 100 or len(name) < 1:
+            raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
+        aad = (self.channel.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration))
+        _type = ChannelType.private_thread if private is True else ChannelType.public_thread
+        data = await self._state.http.create_thread(self.channel.id, message_id=self.id, name=name, auto_archive_duration=aad, type=_type, reason=reason)
+        thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
+
+        self.channel._threads[thread.id] = thread
+        return thread
+
+
+
     def to_reference(self, *, fail_if_not_exists=True):
         """Creates a :class:`~discord.MessageReference` from the current message.
 
@@ -1547,8 +1590,8 @@ class PartialMessage(Hashable):
     )
 
     def __init__(self, *, channel, id):
-        if channel.type not in (ChannelType.text, ChannelType.news, ChannelType.private):
-            raise TypeError('Expected TextChannel or DMChannel not %r' % type(channel))
+        if channel.type not in (ChannelType.text, ChannelType.news, ChannelType.private, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread):
+            raise TypeError('Expected TextChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
         self.channel = channel
         self._state = channel._state
@@ -1640,9 +1683,9 @@ class PartialMessage(Hashable):
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds
+            A list containing up to 10 embeds.
         components: List[Union[:class:`discord.ActionRow`, List]]
-            A list of :class:`discord.ActionRow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
+            A list of :class:`discord.ActionRow`'s or a List with :class:`Button`'s or :class:`SelectMenu`.
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``

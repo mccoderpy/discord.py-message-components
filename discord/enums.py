@@ -30,10 +30,15 @@ from collections import namedtuple
 __all__ = (
     'Enum',
     'ChannelType',
+    'PrivacyLevel',
+    'EventEntityType',
+    'EventStatus',
+    'ApplicationCommandType',
     'ComponentType',
     'ButtonColor',
     'ButtonStyle',
     'PermissionType',
+    'InteractionType',
     'InteractionCallbackType',
     'TimestampStyle',
     'MessageType',
@@ -61,9 +66,11 @@ __all__ = (
     'StickerType',
 )
 
+from typing import Union, Any
+
 
 def _create_value_cls(name):
-    cls = namedtuple('_EnumValue_' + name, 'name value')
+    cls = namedtuple(f'_EnumValue_' + name, 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
     cls.__str__ = lambda self: '%s.%s' % (name, self.name)
     return cls
@@ -104,11 +111,15 @@ class EnumMeta(type):
             member_mapping[key] = new_value
             attrs[key] = new_value
 
+
         attrs['_enum_value_map_'] = value_mapping
         attrs['_enum_member_map_'] = member_mapping
         attrs['_enum_member_names_'] = member_names
         actual_cls = super().__new__(cls, name, bases, attrs)
         value_cls._actual_enum_cls_ = actual_cls
+        value_cls.__getattribute__: lambda s, n: Union[Any, bool] = lambda self, name:\
+            super(value_cls, self).__getattribute__(name) if name in dir(value_cls) else \
+                (self.name == name if name in self._actual_enum_cls_.__members__ else AttributeError(f'{self.__class__} has no attribute {name}.'))
         return actual_cls
 
     def __iter__(cls):
@@ -159,6 +170,17 @@ class Enum(metaclass=EnumMeta):
         except (KeyError, TypeError):
             return value
 
+    @property
+    def name(self):
+        return getattr(self, 'name')
+
+    @property
+    def value(self):
+        return getattr(self, 'value')
+
+    # def __getattribute__(self, item):
+    #     return self._enum_member_map_[item]
+
 
 class ChannelType(Enum):
     text           = 0
@@ -175,7 +197,19 @@ class ChannelType(Enum):
 
 
     def __str__(self):
-        return self.name
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+    @classmethod
+    def from_type(cls, obj):
+        if isinstance(obj, int):
+            return cls.try_value(obj)
+        if hasattr(obj, 'channel_type'):
+            return obj.channel_type()
+        return obj
+
 
 class PermissionType(Enum):
     member = 0
@@ -189,9 +223,60 @@ class PermissionType(Enum):
         return getattr(self, 'value')
 
 
+class PrivacyLevel(Enum):
+    public     = 1
+    guild_only = 2
+
+
+class EventEntityType(Enum):
+    stage    = 1
+    voice    = 2
+    external = 3
+
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+EntityType = EventEntityType
+
+class EventStatus(Enum):
+    scheduled = 1
+    active    = 2
+    completed = 3
+    canceled  = 4
+
+
+class InteractionType(Enum):
+    PingAck                        = 1
+    ApplicationCommand             = 2
+    Component                      = 3
+    ApplicationCommandAutocomplete = 4
+
+
+class ApplicationCommandType(Enum):
+    chat_input = 1
+    user       = 2
+    message    = 3
+
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+    def __eq__(self, other):
+        return self is other or int(self) == other or str(self) == other
+
+    @classmethod
+    def from_value(cls, value):
+        return try_enum(cls, value)
+
+
 class ComponentType(Enum):
-    ActionRow = 1
-    Button = 2
+    ActionRow  = 1
+    Button     = 2
     SelectMenu = 3
 
     def __str__(self):
@@ -201,7 +286,7 @@ class ComponentType(Enum):
         return getattr(self, 'value')
 
     def __eq__(self, other):
-        return int(self) == other or str(self) == other
+        return self is other or int(self) == other or str(self) == other
 
 
 class ButtonStyle(Enum):
@@ -210,7 +295,7 @@ class ButtonStyle(Enum):
     Represents the Style for a :class:`discord.Button`
 
     .. note ::
-        For more information about the Button-Styles, visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
+        For more information about the Button-Styles, visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
 
     """
 
@@ -255,6 +340,8 @@ class InteractionCallbackType(Enum):
     deferred_msg_with_source = 5
     deferred_update_msg = 6
     update_msg = 7
+    autocomplete_callback = 8
+    something = 9
 
     @classmethod
     def from_value(cls, value):
@@ -272,7 +359,7 @@ class TimestampStyle(Enum):
     """
     The Style to use in :meth:`discord.utils.styled_timestamp`.
 
-    See Also:  `The Discord-API-Documentation <https://discord.com/developers/docs/reference#message-formating-timestamp-styles>`_
+    See Also:  `The Discord-APIMethodes-Documentation <https://discord.com/developers/docs/reference#message-formating-timestamp-styles>`_
     """
 
     short_time  = 't'
@@ -294,6 +381,20 @@ class TimestampStyle(Enum):
     @classmethod
     def from_value(cls, value):
         return try_enum(cls, value)
+
+
+class AutoArchiveDuration(Enum):
+    one_hour    = 60
+    one_day     = 1440
+    three_days  = 4320
+    seven_days  = 10080
+    one_week    = 10080
+
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
 
 
 class MessageType(Enum):
@@ -555,6 +656,8 @@ class UserFlags(Enum):
     bug_hunter_level_2 = 16384
     verified_bot = 65536
     verified_bot_developer = 131072
+    certified_moderator = 262144
+    bot_http_interactions = 524288
 
 class ActivityType(Enum):
     unknown = -1
@@ -595,6 +698,9 @@ class StickerType(Enum):
     png = 1
     apng = 2
     lottie = 3
+
+    def __str__(self):
+        return getattr(self, 'name', None)
 
 def try_enum(cls, val):
     """A function that tries to turn the value into enum ``cls``.

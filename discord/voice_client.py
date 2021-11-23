@@ -184,7 +184,7 @@ class VoiceClient(VoiceProtocol):
     Attributes
     -----------
     session_id: :class:`str`
-        The voice connection session ID.
+        The voice connection _session ID.
     token: :class:`str`
         The voice connection token.
     endpoint: :class:`str`

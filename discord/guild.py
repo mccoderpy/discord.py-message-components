@@ -25,9 +25,16 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import copy
+import types
 from collections import namedtuple
+from datetime import datetime
+from os import PathLike
+from typing import Union, Optional, List, Tuple, Dict, Any
 
 from . import utils
+from .abc import GuildChannel
+from .file import UploadFile
+from .partial_emoji import PartialEmoji
 from .role import Role
 from .member import Member, VoiceState
 from .emoji import Emoji
@@ -36,19 +43,21 @@ from .permissions import PermissionOverwrite
 from .colour import Colour
 from .errors import InvalidArgument, ClientException
 from .channel import *
-from .enums import VoiceRegion, ChannelType, try_enum, VerificationLevel, ContentFilter, NotificationLevel
+from .enums import VoiceRegion, ChannelType, try_enum, VerificationLevel, ContentFilter, NotificationLevel, EventEntityType
 from .mixins import Hashable
+from .scheduled_event import GuildScheduledEvent
 from .user import User
 from .invite import Invite
 from .iterators import AuditLogIterator, MemberIterator
+from .welcome_screen import *
 from .widget import Widget
 from .asset import Asset
 from .flags import SystemChannelFlags
-from .integrations import BotIntegration, StreamIntegration, _integration_factory
-
+from .integrations import _integration_factory
+from .sticker import GuildSticker
 
 BanEntry = namedtuple('BanEntry', 'reason user')
-_GuildLimit = namedtuple('_GuildLimit', 'emoji bitrate filesize')
+_GuildLimit = namedtuple('_GuildLimit', 'emoji sticker bitrate filesize')
 
 
 class Guild(Hashable):
@@ -159,34 +168,37 @@ class Guild(Hashable):
         results to a specific language.
     discovery_splash: :class:`str`
         The guild's discovery splash.
-
+    welcome_screen: Optional[:class:`WelcomeScreen`]
+        The welcome screen of a Community guild, shown to new members if enabled.
         .. versionadded:: 1.3
     """
 
     __slots__ = ('afk_timeout', 'afk_channel', '_members', '_channels', 'icon',
                  'name', 'id', 'unavailable', 'banner', 'region', '_state',
-                 '_roles', '_member_count', '_large',
+                 '_application_commands', '_roles', '_events', '_member_count', '_large',
                  'owner_id', 'mfa_level', 'emojis', 'features',
                  'verification_level', 'explicit_content_filter', 'splash',
                  '_voice_states', '_system_channel_id', 'default_notifications',
                  'description', 'max_presences', 'max_members', 'max_video_channel_users',
                  'premium_tier', 'premium_subscription_count', '_system_channel_flags',
                  'preferred_locale', 'discovery_splash', '_rules_channel_id',
-                 '_public_updates_channel_id')
+                 '_public_updates_channel_id', '_welcome_screen', 'stickers')
 
     _PREMIUM_GUILD_LIMITS = {
-        None: _GuildLimit(emoji=50, bitrate=96e3, filesize=8388608),
-        0: _GuildLimit(emoji=50, bitrate=96e3, filesize=8388608),
-        1: _GuildLimit(emoji=100, bitrate=128e3, filesize=8388608),
-        2: _GuildLimit(emoji=150, bitrate=256e3, filesize=52428800),
-        3: _GuildLimit(emoji=250, bitrate=384e3, filesize=104857600),
+        None: _GuildLimit(emoji=50, sticker=0, bitrate=96e3, filesize=8388608),
+        0: _GuildLimit(emoji=50, sticker=0, bitrate=96e3, filesize=8388608),
+        1: _GuildLimit(emoji=100, sticker=15, bitrate=128e3, filesize=8388608),
+        2: _GuildLimit(emoji=150, sticker=30, bitrate=256e3, filesize=52428800),
+        3: _GuildLimit(emoji=250, sticker=60, bitrate=384e3, filesize=104857600),
     }
 
     def __init__(self, *, data, state):
         self._channels = {}
         self._members = {}
+        self._events = {}
         self._voice_states = {}
         self._state = state
+        self._application_commands = {}
         self._from_data(data)
 
     def _add_channel(self, channel):
@@ -194,6 +206,20 @@ class Guild(Hashable):
 
     def _remove_channel(self, channel):
         self._channels.pop(channel.id, None)
+
+    def _add_thread(self, thread):
+        self._channels[thread.id] = thread
+        thread.parent_channel._add_thread(thread)
+
+    def _remove_thread(self, thread):
+        self._channels.pop(thread.id, None)
+        thread.parent_channel._remove_thread(thread)
+
+    def _add_event(self, event):
+        self._events[event.id] = event
+
+    def _remove_event(self, event):
+        self._events.pop(event.id, None)
 
     def _voice_state_for(self, user_id):
         return self._voice_states.get(user_id)
@@ -287,7 +313,8 @@ class Guild(Hashable):
         for r in guild.get('roles', []):
             role = Role(guild=self, data=r, state=state)
             self._roles[role.id] = role
-
+        for e in guild.get('scheduled_events', []):
+            event = state.store_event(guild=self, data=e)
         self.mfa_level = guild.get('mfa_level')
         self.emojis = tuple(map(lambda d: state.store_emoji(self, d), guild.get('emojis', [])))
         self.features = guild.get('features', [])
@@ -304,7 +331,6 @@ class Guild(Hashable):
         self.discovery_splash = guild.get('discovery_splash')
         self._rules_channel_id = utils._get_as_snowflake(guild, 'rules_channel_id')
         self._public_updates_channel_id = utils._get_as_snowflake(guild, 'public_updates_channel_id')
-
         cache_online_members = self._state.member_cache_flags.online
         cache_joined = self._state.member_cache_flags.joined
         self_id = self._state.self_id
@@ -318,7 +344,12 @@ class Guild(Hashable):
 
         self.owner_id = utils._get_as_snowflake(guild, 'owner_id')
         self.afk_channel = self.get_channel(utils._get_as_snowflake(guild, 'afk_channel_id'))
-
+        welcome_screen = guild.get('welcome_screen', None)
+        if welcome_screen:
+            self._welcome_screen = WelcomeScreen(guild=self, state=self._state, data=welcome_screen)
+        else:
+            self._welcome_screen = None
+        self.stickers: Tuple['GuildSticker'] = tuple(map(lambda d: state.store_sticker(d), guild.get('stickers', [])))
         for obj in guild.get('voice_states', []):
             self._update_voice_state(obj, int(obj['channel_id']))
 
@@ -342,10 +373,49 @@ class Guild(Hashable):
                 if factory:
                     self._add_channel(factory(guild=self, data=c, state=self._state))
 
+        if 'threads' in data:
+            threads = data['threads']
+            for t in threads:
+                factory, ch_type = _channel_factory(t['type'])
+                if factory:
+                    parent_channel = self.get_channel(int(t['parent_id']))
+                    thread = factory(guild=self, data=t, state=self._state)
+                    self._add_channel(thread)
+                    parent_channel._add_thread(thread)
+
+    @property
+    def application_commands(self):
+        """List[:class:`application_commands.ApplicationCommand`]:
+        A list of application-commands from this application that are registered in this guild.
+        """
+        return list(self._application_commands.values())
+
     @property
     def channels(self):
         """List[:class:`abc.GuildChannel`]: A list of channels that belongs to this guild."""
         return list(self._channels.values())
+
+    @property
+    def events(self):
+        """List[:class:`GuildScheduledEvent`]: A list of events that belong to this guild."""
+        return list(self._events.values())
+
+    def get_event(self, id: int) -> Optional[GuildScheduledEvent]:
+        """
+        Returns an scheduled event with the given ID.
+
+        Parameters
+        ----------
+        id: :class:`int`
+            The ID of the event to get.
+
+        Returns
+        -------
+        Optional[:class:`GuildScheduledEvent`]
+            The scheduled event or ``None`` if not found-
+        """
+        return self._events.get(id)
+
 
     @property
     def large(self):
@@ -407,6 +477,17 @@ class Guild(Hashable):
         return r
 
     @property
+    def thread_channels(self):
+        """List[:class:`ThreadChannel`]: A list of thread channels the guild has.
+
+        This is sorted by the id of the thread.
+        """
+        r = list()
+        [r.extend(ch.threads)  for ch in self._channels.values() if isinstance(ch, TextChannel)]
+        r.sort(key=lambda t: t.id)
+        return r
+
+    @property
     def categories(self):
         """List[:class:`CategoryChannel`]: A list of categories that belongs to this guild.
 
@@ -434,7 +515,8 @@ class Guild(Hashable):
             if isinstance(channel, CategoryChannel):
                 grouped.setdefault(channel.id, [])
                 continue
-
+            if isinstance(channel, ThreadChannel):
+                continue
             try:
                 grouped[channel.category_id].append(channel)
             except KeyError:
@@ -480,6 +562,12 @@ class Guild(Hashable):
         """:class:`SystemChannelFlags`: Returns the guild's system channel settings."""
         return SystemChannelFlags._from_value(self._system_channel_flags)
 
+    async def welcome_screen(self):
+        data = await self._state.http.get_welcome_screen(guild_id=self.id)
+        if data:
+            self._welcome_screen = WelcomeScreen(state=self._state, guild=self, data=data)
+        return self._welcome_screen
+
     @property
     def rules_channel(self):
         """Optional[:class:`TextChannel`]: Return's the guild's channel used for the rules.
@@ -510,6 +598,12 @@ class Guild(Hashable):
         """:class:`int`: The maximum number of emoji slots this guild has."""
         more_emoji = 200 if 'MORE_EMOJI' in self.features else 50
         return max(more_emoji, self._PREMIUM_GUILD_LIMITS[self.premium_tier].emoji)
+
+    @property
+    def sticker_limit(self):
+        """:class:`int`: The maximum number of sticker slots this guild has."""
+        more_sticker = 60 if 'MORE_STICKER' in self.features else 0
+        return max(more_sticker, self._PREMIUM_GUILD_LIMITS[self.premium_tier].sticker)
 
     @property
     def bitrate_limit(self):
@@ -1901,7 +1995,7 @@ class Guild(Hashable):
 
         data = await self._state.http.create_role(self.id, reason=reason, **fields)
         role = Role(guild=self, data=data, state=self._state)
-
+        self._add_role(role)
         # TODO: add to cache
         return role
 
@@ -2312,3 +2406,241 @@ class Guild(Hashable):
         ws = self._state._get_websocket(self.id)
         channel_id = channel.id if channel else None
         await ws.voice_state(self.id, channel_id, self_mute, self_deaf)
+
+    async def create_sticker(self, name: str,
+                             file: Union[UploadFile, PathLike[str], PathLike[bytes]],
+                             tags: Union[str, List[str]],
+                             description: str = None,
+                             *,
+                             reason: str = None) -> Optional[GuildSticker]:
+        """|coro|
+
+        Create a new sticker for the guild.
+
+        Requires the ``MANAGE_EMOJIS_AND_STICKERS`` permission.
+
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the sticker (2-30 characters).
+        tags: Union[:class:`str`, List[:class:`str`]]
+            Autocomplete/suggestion tags for the sticker separated by ``,`` or in a list. (max 200 characters).
+        description: Optional[:class:`str`]
+            The description of the sticker (None or 2-100 characters).
+        file: Union[:class:`UploadFile`, :class:`str`]
+            The sticker file to upload or the path to it, must be a PNG, APNG, or Lottie JSON file, max 500 KB
+        reason: Optional[:class:`str`]
+            The reason for creating the sticker., shows up in the audit-log.
+
+        Raises
+        ------
+        discord.Forbidden:
+            You don't have the permissions to upload stickers in this guild.
+        discord.HTTPException:
+            Creating the stickers failed.
+        ValueError
+            Any of name, description or tags is to short/long.
+
+        Return
+        ------
+        :class:`GuildSticker`
+            The new GuildSticker object on success.
+        """
+        if 2 > len(name) > 30:
+            raise ValueError(f'The name must be between 2 and 30 characters in length; got {len(name)}.')
+        if not isinstance(file, UploadFile):
+            file = UploadFile(file)
+        if description is not None and 2 > len(description) > 100:
+            raise ValueError(f'The description must be between 2 and 100 characters in length; got {len(description)}.')
+        if isinstance(tags, list):
+            tags = ','.join(tags)
+        if len(tags) > 200:
+            raise ValueError(f'The tags could be max. 200 characters in length; {len(tags)}.')
+        try:
+            data = await self._state.http.create_guild_sticker(guild_id=self.id, name=name, description=description,
+                                                               tags=tags, file=file, reason=reason)
+        finally:
+            file.close()
+        return self._state.store_sticker(data)
+
+
+    async def fetch_events(self, with_user_count: bool = True) -> Optional[List[GuildScheduledEvent]]:
+        """|coro|
+
+        Retrieves a :class:`list` of scheduled events the guild has.
+
+        .. note::
+
+            This method is an API call.
+            For general usage, consider iterating over :attr:`events` instead.
+
+        Parameters
+        ----------
+        with_user_count: :class:`bool`
+            Whether to include the number of interested users the event has, default ``True``.
+
+        Returns
+        -------
+        Optional[List[:class:`GuildScheduledEvent`]]
+            A list of scheduled events the guild has.
+        """
+        data = self._state.http.get_guild_events(guild_id=self.id, with_user_count=with_user_count)
+        [self._add_event(GuildScheduledEvent(state=self._state, guild=self, data=d)) for d in data]
+        return self.events
+
+    async def fetch_event(self, id: int, with_user_count: bool = True) -> Optional[GuildScheduledEvent]:
+        """|coro|
+
+        Fetches the :class:`GuildScheduledEvent` with the given id.
+
+        Parameters
+        ----------
+        id: :class:`int`
+            The id of the event to fetch.
+        with_user_count: :class:`bool`
+            Whether to include the number of interested users the event has, default ``True``.
+
+        Returns
+        -------
+        Optional[:class:`GuildScheduledEvent`]
+            The event on success.
+        """
+        data = await self._state.http.get_guild_event(guild_id=self.id, event_id=id, with_user_count=with_user_count)
+        if data:
+            event = GuildScheduledEvent(state=self._state, guild=self, data=data)
+            self._add_event(event)
+            return event
+
+    async def create_scheduled_event(self,
+                                     name: str,
+                                     entity_type: EventEntityType,
+                                     start_time: datetime,
+                                     end_time: Optional[datetime] = None,
+                                     channel: Optional[Union[StageChannel, VoiceChannel]] = None,
+                                     description: Optional[str] = None,
+                                     location: Optional[str] = None,
+                                     *, reason: Optional[str] = None
+                                     ) -> GuildScheduledEvent:
+        """|coro|
+        
+        Schedules a new Event in this guild. Requires ``MANAGE_EVENTS`` at least in the :param:`channel`
+        or in the entire guild if :param:`type` is :class:`EventType.external`.
+        
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the the name of the scheduled event. 1-100 characters long.
+        entity_type: :class:`EventEntityType`
+            The entity_type of the scheduled event.
+
+            **:param:`end_time` and :param:`location` must be provided if entity_type is :class:`EventEntityType.external`,
+             otherwise :param:`channel`.**
+
+        start_time: :class:`datetime.datetime`
+            The time when the event will start. Must be a valid date in the future.
+        end_time: Optional[:class:`datetime.datetime`]
+            The time when the event will end. Must be a valid date in the future.
+            If :param:`entity_type` is :class:`EventEntityType.external` this must be provided.
+        channel: Optional[Union[:class:`StageChannel`, :class:`VoiceChannel`]]
+            The channel in which the event takes place.
+            Must be provided if :param:`entity_type` is :class:`EventEntityType.stage` or :class:`EventEntityType.voice`.
+        description: Optional[:class`str`]
+            The description of the scheduled event. 1-1000 characters long.
+        location: Optional[:class:`str`]
+            The location where the event will take place. 1-100 characters long.
+            **Must be provided if :param:`entity_type` is :class:`EventEntityType.external`**
+        reason: Optional[:class:`str`]
+            The reason for scheduling the event, shows up in the audit-log.
+
+        Returns
+        -------
+        :class:`GuildScheduledEvent`
+            The scheduled event on success.
+
+        Raises
+        ------
+        TypeError:
+            Any parameter is of wrong type.
+        errors.InvalidArgument:
+            entity_type is EventEntityType.stage or EventEntityType.voice but channel is not provided
+            or EventEntityType.external but no location or end_time provided.
+        ValueError:
+            The value of any parameter is invalid. (e.g. to long/short)
+        errors.Forbidden:
+            You don't have permissions to schedule the event.
+        discord.HTTPException:
+            Scheduling the event failed.
+        """
+
+        fields: Dict[str, Any] = {}
+
+        if not isinstance(entity_type, EventEntityType):
+            entity_type = try_enum(EventEntityType, entity_type)
+            if not isinstance(entity_type, EventEntityType):
+                raise ValueError('entity_type must be a valid EventEntityType.')
+
+        if 1 > len(name) > 100:
+            raise ValueError(f'The length of the name must be between 1 and 100 characters long; got {len(name)}.')
+        fields['name'] = str(name)
+
+        if int(entity_type) == 3 and not location:
+            raise InvalidArgument('location must be provided if type is EventEntityType.external')
+        elif int(entity_type) != 3 and not channel:
+            raise InvalidArgument('channel must be provided if type is EventEntityType.stage or EventEntityType.voice.')
+
+        fields['entity_type'] = int(entity_type)
+
+        if channel is not None and not entity_type.external:
+            if not isinstance(channel, (VoiceChannel, StageChannel)):
+                raise TypeError(f'The channel must be a StageChannel or VoiceChannel object, not {channel.__class__.__name__}.')
+            if (entity_type) not in (1, 2):
+                entity_type = {StageChannel: EventEntityType.stage, VoiceChannel: EventEntityType.voice}.get(type(channel))
+                fields['entity_type'] = entity_type.value
+            fields['channel_id'] = str(channel.id)
+            fields['entity_metadata'] = None
+
+        if description is not None:
+            if 1 > len(description) > 1000:
+                raise ValueError(
+                    f'The length of the description must be between 1 and 1000 characters long; got {len(description)}.'
+                )
+            fields['description'] = description
+
+        if location is not None and entity_type.external:
+            if 1 > len(location) > 100:
+                raise ValueError(
+                    f'The length of the location must be between 1 and 100 characters long; got {len(location)}.'
+                )
+            if not entity_type.external:
+                entity_type = EventEntityType.external
+                fields['entity_type'] = entity_type.value
+            fields['channel_id'] = None
+            fields['entity_metadata'] = {'location': location}
+
+        if entity_type.external and not end_time:
+            raise ValueError('end_time is required for external events.')
+
+        if not isinstance(start_time, datetime):
+            raise TypeError(f'The start_time must be a datetime.datetime object, not {start_time.__class__.__name__}.')
+        elif start_time < datetime.utcnow():
+            raise ValueError(f'The start_time could not be in the past.')
+
+        fields['scheduled_start_time'] = start_time.isoformat()
+
+        if end_time:
+            if not isinstance(end_time, datetime):
+                raise TypeError(f'The end_time must be a datetime.datetime object, not {end_time.__class__.__name__}.')
+            elif end_time < datetime.utcnow():
+                raise ValueError(f'The end_time could not be in the past.')
+
+            fields['scheduled_end_time'] = end_time.isoformat()
+
+        fields['privacy_level'] = 2
+
+        data = await self._state.http.create_guild_event(guild_id=self.id, fields=fields, reason=reason)
+        event = GuildScheduledEvent(state=self._state, guild=self, data=data)
+        self._add_event(event)
+        return event
+
+

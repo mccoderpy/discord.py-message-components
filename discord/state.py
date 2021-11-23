@@ -27,7 +27,6 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
-import typing
 from collections import deque, OrderedDict
 import copy
 import datetime
@@ -39,11 +38,14 @@ import inspect
 import gc
 
 import os
+from typing import Union
 
 from .guild import Guild
 from .activity import BaseActivity
+from .scheduled_event import GuildScheduledEvent
 from .user import User, ClientUser
 from .emoji import Emoji
+from .sticker import Sticker, GuildSticker
 from .mentions import AllowedMentions
 from .partial_emoji import PartialEmoji
 from .message import Message
@@ -52,12 +54,12 @@ from .channel import *
 from .raw_models import *
 from .member import Member
 from .role import Role
-from .enums import ChannelType, try_enum, Status
+from .enums import ChannelType, try_enum, Status, MessageType, ComponentType
 from . import utils
 from .flags import Intents, MemberCacheFlags
 from .object import Object
 from .invite import Invite
-from .interactions import Interaction, InteractionType
+from .interactions import BaseInteraction, InteractionType
 
 
 class ChunkRequest:
@@ -118,7 +120,7 @@ class ConnectionState:
         self.max_messages = options.get('max_messages', 1000)
         if self.max_messages is not None and self.max_messages <= 0:
             self.max_messages = 1000
-
+        self.sync_commands_on_ready: bool = options.get('sync_commands', False)
         self.dispatch = dispatch
         self.syncer = syncer
         self.is_bot = None
@@ -126,6 +128,7 @@ class ConnectionState:
         self.hooks = hooks
         self.shard_count = None
         self._ready_task = None
+        self.application_id = None
         self.heartbeat_timeout = options.get('heartbeat_timeout', 60.0)
         self.guild_ready_timeout = options.get('guild_ready_timeout', 2.0)
         if self.guild_ready_timeout < 0:
@@ -206,6 +209,8 @@ class ConnectionState:
         self.user = None
         self._users = weakref.WeakValueDictionary()
         self._emojis = {}
+        self._stickers = {}
+        self._events = {}
         self._calls = {}
         self._guilds = {}
         self._voice_clients = {}
@@ -277,7 +282,7 @@ class ConnectionState:
         for vc in self.voice_clients:
             vc.main_ws = ws
 
-    def store_user(self, data):
+    def store_user(self, data) -> User:
         # this way is 300% faster than `dict.setdefault`.
         user_id = int(data['id'])
         try:
@@ -291,13 +296,35 @@ class ConnectionState:
     def store_user_no_intents(self, data):
         return User(state=self, data=data)
 
-    def get_user(self, id):
+    def get_user(self, id) -> User:
         return self._users.get(id)
 
-    def store_emoji(self, guild, data):
+    def store_emoji(self, guild, data) -> Emoji:
         emoji_id = int(data['id'])
         self._emojis[emoji_id] = emoji = Emoji(guild=guild, state=self, data=data)
         return emoji
+
+    def store_sticker(self, data, pack=None) -> Union[Sticker, GuildSticker]:
+        sticker_id = int(data['id'])
+        guild_id = data.get('guild_id', None)
+        if guild_id:
+            self._stickers[sticker_id] = sticker = GuildSticker(state=self, data=data)
+        else:
+            self._stickers[sticker_id] = sticker = Sticker(state=self, data=data, pack=pack)
+        return sticker
+
+    def store_event(self, guild, data) -> GuildScheduledEvent:
+        event_id = int(data['id'])
+        try:
+            event = self._events[event_id]
+        except KeyError:
+            self._events[event_id] = event = GuildScheduledEvent(state=self, guild=guild, data=data)
+        else:
+            try:
+                guild._add_event(event)
+            except AttributeError: # If it is a PartialInviteGuild
+                pass
+        return event
 
     @property
     def guilds(self):
@@ -327,6 +354,13 @@ class ConnectionState:
 
     def get_emoji(self, emoji_id):
         return self._emojis.get(emoji_id)
+
+    @property
+    def stickers(self):
+        return list(self._stickers.values())
+
+    def get_sticker(self, sticker_id):
+        return self._stickers.get(sticker_id)
 
     @property
     def private_channels(self):
@@ -457,9 +491,11 @@ class ConnectionState:
         except asyncio.CancelledError:
             pass
         else:
-            # dispatch the event
+            # sync the application-sub_commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
+            await self._get_client()._request_sync_commands()
             self.call_handlers('ready')
             self.dispatch('ready')
+
         finally:
             self._ready_task = None
 
@@ -471,6 +507,8 @@ class ConnectionState:
         self.clear()
         self.user = user = ClientUser(state=self, data=data['user'])
         self._users[user.id] = user
+
+
 
         for guild_data in data['guilds']:
             self._add_guild_from_data(guild_data)
@@ -487,6 +525,17 @@ class ConnectionState:
             factory, _ = _channel_factory(pm['type'])
             self._add_private_channel(factory(me=user, data=pm, state=self))
 
+
+        if self.application_id is None:
+            try:
+                application = data['application']
+            except KeyError:
+                pass
+            else:
+                # flags will always be present here
+                # self.application_flags = ApplicationFlags._from_value(application['flags'])  # type: ignore
+                self.application_id = utils._get_as_snowflake(application, 'id')
+
         self.dispatch('connect')
         self._ready_task = asyncio.ensure_future(self._delay_ready(), loop=self.loop)
 
@@ -499,7 +548,7 @@ class ConnectionState:
         self.dispatch('message', message)
         if self._messages is not None:
             self._messages.append(message)
-        if channel and channel.__class__ is TextChannel:
+        if channel and channel.__class__ is TextChannel or ThreadChannel:
             channel.last_message_id = message.id
 
     def parse_message_delete(self, data):
@@ -541,35 +590,119 @@ class ConnectionState:
 
     def parse_interaction_create(self, data):
         self.dispatch('interaction_create', data)
-        if data.get('type', data.get('t', 0)) < 3:
-            return
-        interaction = Interaction(state=self, data=data)
-        interaction._message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
+        interaction = BaseInteraction.from_type(state=self, data=data)
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
             interaction._guild = self._get_guild(interaction.guild_id)
             interaction._channel = interaction.guild.get_channel(interaction.channel_id)
             interaction.member = interaction.guild.get_member(interaction.user_id)
             if interaction.member is None:
-                # This can only be the case if member-intents are not activated. or the member is not in the guild-cache right now
+                # This can only be the case if ``GUILD_MEMBERS`` Intents are not enabled or the member is not in the cache right now.
                 interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
         else:
-            interaction._channel = self._get_private_channel(interaction.channel_id)
-        if interaction.message is not None:
-            if interaction.interaction_type == InteractionType.Component:
-                if interaction.component_type == 2:
-                    self.dispatch('button_click', interaction, interaction.component)
-                    self.dispatch('raw_button_click', interaction, interaction.component)
-                elif interaction.component_type == 3:
-                    self.dispatch('selection_select', interaction, interaction.component)
-                    self.dispatch('raw_selection_select', interaction, interaction.component)
-        else:
-            interaction._message = Message(state=self, channel=interaction.channel, data=interaction._message_data)
-            if interaction.interaction_type == InteractionType.Component:
-                if interaction.component_type == 2:
-                    self.dispatch('raw_button_click', interaction, interaction.component)
-                elif interaction.component_type == 3:
-                    self.dispatch('raw_selection_select', interaction, interaction.component)
+            self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id) or PartialMessageable(id=interaction.channel_id)
+
+        if interaction.type in (InteractionType.ApplicationCommand, InteractionType.ApplicationCommandAutocomplete):
+            cmd = self._get_client()._get_application_command(interaction.data.id)
+            if cmd:
+                interaction._command = cmd
+                self._get_client()._schedule_event(cmd._parse_arguments, '_application_command_invoke', interaction)
+        elif interaction.type == InteractionType.Component:
+            interaction._message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
+            if interaction.cached_message is not None:
+                if interaction.type == InteractionType.Component:
+                    if interaction.data.component_type == ComponentType.Button:
+                        self.dispatch('button_click', interaction, interaction.component)
+                        self.dispatch('raw_button_click', interaction, interaction.component)
+                    elif interaction.data.component_type == ComponentType.SelectMenu:
+                        self.dispatch('selection_select', interaction, interaction.component)
+                        self.dispatch('raw_selection_select', interaction, interaction.component)
+            else:
+                interaction._message = Message(state=self, channel=interaction.channel, data=interaction._message_data)
+                if interaction.type == InteractionType.Component:
+                    if interaction.data.component_type == ComponentType.Button:
+                        self.dispatch('raw_button_click', interaction, interaction.component)
+                    elif interaction.data.component_type == ComponentType.SelectMenu:
+                        self.dispatch('raw_selection_select', interaction, interaction.component)
+
+    def parse_thread_create(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        thread = ThreadChannel(state=self, guild=guild, data=data)
+        guild._add_thread(thread)
+        self.dispatch('thread_create', thread)
+
+    def parse_thread_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        thread = guild.get_channel(int(data['id']))
+        if not thread:
+            thread = ThreadChannel(state=self, guild=guild, data=data)
+            guild._add_thread(thread)
+        old_thread = copy.copy(thread)
+        thread._update(guild, data)
+        self.dispatch('thread_update', old_thread, thread)
+
+    def parse_thread_delete(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        thread = guild.get_channel(int(data['id']))
+        guild._remove_thread(thread)
+        self.dispatch('thread_delete', thread)
+
+
+    def parse_thread_member_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        thread = guild.get_channel(int(data['id']))
+        if thread:
+            old_thread = copy.copy(thread)
+            thread._add_self(data)
+            self.dispatch('thread_member_update', old_thread, thread)
+
+
+    def parse_thread_members_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        thread = guild.get_channel(int(data['id']))
+        if thread:
+            old_thread = copy.copy(thread)
+            thread._sync_from_members_update(data)
+            self.dispatch('thread_members_update', old_thread, thread)
+
+    def parse_thread_list_sync(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        old_guild = copy.copy(guild.thread_channels)
+        channel_ids = [int(c) for c in data.get('channel_ids', [])]
+        for t in data['threads']:
+            thread = ThreadChannel(state=self, guild=guild, data=t)
+            guild._add_thread(thread)
+            try:
+                channel_ids.remove(thread.parent_id)
+            except ValueError:
+                pass
+        for m in data['members']:
+            me = ThreadMember(state=self,  guild=guild, data=m)
+            thread = guild.get_channel(me.thread_id)
+            thread._add_member(me)
+
+        for c in channel_ids:
+            channel = guild.get_channel(c)
+            channel._threads = {}
+        self.dispatch('thread_list_sync', old_guild, guild)
+
+    def parse_guild_scheduled_event_create(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        event = self.store_event(guild, data)
+        self.dispatch('guild_scheduled_event_create', guild, event)
+
+    def parse_guild_scheduled_event_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        event = guild.get_event(int(data['id']))
+        before = copy.copy(event)
+        event._update(data)
+        self.dispatch('guild_scheduled_event_update', guild, before, event)
+
+    def parse_scheduled_event_delete(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        event = guild.get_event(int(data['id']))
+        event._update(data)
+        self.dispatch('guild_scheduled_event_delete', guild, event)
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']
@@ -853,6 +986,18 @@ class ConnectionState:
             self._emojis.pop(emoji.id, None)
         guild.emojis = tuple(map(lambda d: self.store_emoji(guild, d), data['emojis']))
         self.dispatch('guild_emojis_update', guild, before_emojis, guild.emojis)
+
+    def parse_guild_stickers_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is None:
+            log.debug('GUILD_STICKERS_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+            return
+
+        before_stickers = guild.stickers
+        for sticker in before_stickers:
+            self._stickers.pop(sticker.id, None)
+        guild.stickers = tuple(map(lambda d: self.store_sticker(d), data['stickers']))
+        self.dispatch('guild_stickers_update', guild, before_stickers, guild.stickers)
 
     def _get_create_guild(self, data):
         if data.get('unavailable') is False:
@@ -1164,6 +1309,7 @@ class ConnectionState:
             if channel is not None:
                 return channel
 
+
     def create_message(self, *, channel, data):
         return Message(state=self, channel=channel, data=data)
 
@@ -1173,6 +1319,7 @@ class AutoShardedConnectionState(ConnectionState):
         self._ready_task = None
         self.shard_ids = ()
         self.shards_launched = asyncio.Event()
+
 
     def _update_message_references(self):
         for msg in self._messages:
@@ -1252,7 +1399,8 @@ class AutoShardedConnectionState(ConnectionState):
         # clear the current task
         self._ready_task = None
 
-        # dispatch the event
+        # sync the application-sub_commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
+        self.dispatch('request_sync_commands')
         self.call_handlers('ready')
         self.dispatch('ready')
 

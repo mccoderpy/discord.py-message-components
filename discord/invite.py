@@ -24,11 +24,19 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+from typing import Optional, TYPE_CHECKING
+
 from .asset import Asset
+from .welcome_screen import WelcomeScreen
 from .utils import parse_time, snowflake_time, _get_as_snowflake
 from .object import Object
 from .mixins import Hashable
 from .enums import ChannelType, VerificationLevel, try_enum
+
+if TYPE_CHECKING:
+    from .state import ConnectionState
+    from .scheduled_event import GuildScheduledEvent
+
 
 class PartialInviteChannel:
     """Represents a "partial" invite channel.
@@ -132,9 +140,9 @@ class PartialInviteGuild:
     """
 
     __slots__ = ('_state', 'features', 'icon', 'banner', 'id', 'name', 'splash',
-                 'verification_level', 'description')
+                 'verification_level', 'description', 'welcome_screen')
 
-    def __init__(self, state, data, id):
+    def __init__(self, state: 'ConnectionState', data, id):
         self._state = state
         self.id = id
         self.name = data['name']
@@ -144,6 +152,11 @@ class PartialInviteGuild:
         self.splash = data.get('splash')
         self.verification_level = try_enum(VerificationLevel, data.get('verification_level'))
         self.description = data.get('description')
+        welcome_screen = data.get('welcome_screen', None)
+        if welcome_screen:
+            self.welcome_screen = WelcomeScreen(state=state, guild=self._state._get_guild(self.id) or self, data=welcome_screen)
+        else:
+            self.welcome_screen = None
 
     def __str__(self):
         return self.name
@@ -289,11 +302,12 @@ class Invite(Hashable):
 
     __slots__ = ('max_age', 'code', 'guild', 'revoked', 'created_at', 'uses',
                  'temporary', 'max_uses', 'inviter', 'channel', '_state',
-                 'approximate_member_count', 'approximate_presence_count' )
+                 'approximate_member_count', 'approximate_presence_count',
+                 'event')
 
     BASE = 'https://discord.gg'
 
-    def __init__(self, *, state, data):
+    def __init__(self, *, state: 'ConnectionState', data):
         self._state = state
         self.max_age = data.get('max_age')
         self.code = data.get('code')
@@ -309,6 +323,11 @@ class Invite(Hashable):
         inviter_data = data.get('inviter')
         self.inviter = None if inviter_data is None else self._state.store_user(inviter_data)
         self.channel = data.get('channel')
+        guild_scheduled_event = data.get('guild_scheduled_event', None)
+        if guild_scheduled_event is not None:
+            self.event: Optional['GuildScheduledEvent'] = state.store_event(guild=self.guild, data=guild_scheduled_event)
+        else:
+            self.event = None
 
     @classmethod
     def from_incomplete(cls, *, state, data):

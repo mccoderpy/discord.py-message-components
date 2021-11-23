@@ -29,10 +29,14 @@ import inspect
 import itertools
 import sys
 from operator import attrgetter
+from typing import Optional
+
+from typing_extensions import Literal
 
 import discord.abc
 
 from . import utils
+from .asset import Asset
 from .user import BaseUser, User
 from .activity import create_activity
 from .permissions import Permissions
@@ -190,7 +194,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         .. note::
 
-            Due to a Discord API limitation, a user's Spotify activity may not appear
+            Due to a Discord APIMethodes limitation, a user's Spotify activity may not appear
             if they are listening to a song with a title longer
             than 128 characters. See :issue:`1738` for more information.
 
@@ -208,7 +212,8 @@ class Member(discord.abc.Messageable, _BaseUser):
     """
 
     __slots__ = ('_roles', 'joined_at', 'premium_since', '_client_status',
-                 'activities', 'guild', 'pending', 'nick', '_user', '_state')
+                 'activities', 'guild', 'pending', 'nick', 'guild_avatar', '_user', '_state',
+                 '_communication_disabled_until')
 
     def __init__(self, *, data, guild, state):
         self._state = state
@@ -223,6 +228,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.activities = tuple(map(create_activity, data.get('activities', [])))
         self.nick = data.get('nick', None)
         self.pending = data.get('pending', False)
+        self.guild_avatar = data.get('avatar', None)
+        self._communication_disabled_until = data.get('communication_disabled_until', None)
 
     def __str__(self):
         return str(self._user)
@@ -283,8 +290,10 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.joined_at = member.joined_at
         self.premium_since = member.premium_since
         self._client_status = member._client_status.copy()
+        self._communication_disabled_until = member._communication_disabled_until
         self.guild = member.guild
         self.nick = member.nick
+        self.guild_avatar = member.guild_avatar
         self.pending = member.pending
         self.activities = member.activities
         self._state = member._state
@@ -313,6 +322,11 @@ class Member(discord.abc.Messageable, _BaseUser):
             self.pending = data['pending']
         except KeyError:
             pass
+
+        try:
+            self._communication_disabled_until = data['communication_disabled_until']
+        except KeyError:
+            self._communication_disabled_until = None
 
         self.premium_since = utils.parse_time(data.get('premium_since'))
         self._update_roles(data)
@@ -442,13 +456,51 @@ class Member(discord.abc.Messageable, _BaseUser):
         return self.nick or self.name
 
     @property
+    def guild_avatar_url(self):
+        return self.guild_avatar_url_as()
+
+    def guild_avatar_url_as(self, *, format: str = None, static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp', size = 1024):
+        """Returns an :class:`Asset` for the guild-avatar or None.
+
+        The format must be one of 'webp', 'jpeg', or 'png'. The
+        size must be a power of 2 between 16 and 4096.
+
+        Parameters
+        -----------
+        format: :class:`str`
+            The format to attempt to convert the avatar to.
+        size: :class:`int`
+            The size of the image to display.
+
+        Raises
+        ------
+        InvalidArgument
+            Bad image format passed to ``format`` or invalid ``size``.
+
+        Returns
+        --------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
+        if self.guild_avatar:
+            return Asset._from_guild_avatar(self._state, self, static_format=static_format, format=format, size=size)
+
+    def is_guild_avatar_animated(self):
+        """:class:`bool`: Indicates if the member has an animated guild-avatar."""
+        return bool(self.guild_avatar and self.guild_avatar.startswith('a_'))
+
+    @property
+    def display_avatar_url(self):
+        return self.guild_avatar_url or self.avatar_url
+
+    @property
     def activity(self):
         """Union[:class:`BaseActivity`, :class:`Spotify`]: Returns the primary
         activity the user is currently doing. Could be ``None`` if no activity is being done.
 
         .. note::
 
-            Due to a Discord API limitation, this may be ``None`` if 
+            Due to a Discord APIMethodes limitation, this may be ``None`` if
             the user is listening to a song on Spotify with a title longer
             than 128 characters. See :issue:`1738` for more information.
 
@@ -544,6 +596,13 @@ class Member(discord.abc.Messageable, _BaseUser):
     def voice(self):
         """Optional[:class:`VoiceState`]: Returns the member's current voice state."""
         return self.guild._voice_state_for(self._user.id)
+
+    @property
+    def communication_disabled_until(self) -> Optional[datetime.datetime]:
+        return self._communication_disabled_until and datetime.datetime.fromisoformat(self._communication_disabled_until)
+
+    async def mute(self, until: datetime.datetime, *, reason=None):
+          await self.edit(communication_disabled_until=until, reason=reason)
 
     async def ban(self, **kwargs):
         """|coro|
@@ -675,6 +734,17 @@ class Member(discord.abc.Messageable, _BaseUser):
             pass
         else:
             payload['roles'] = tuple(r.id for r in roles)
+
+
+        try:
+            communication_disabled_until: Optional[datetime.datetime] = fields['communication_disabled_until']
+        except KeyError:
+            pass
+        else:
+            if communication_disabled_until:
+                payload['communication_disabled_until'] = communication_disabled_until.isoformat()
+            else:
+                payload['communication_disabled_until'] = ''
 
         if payload:
             await http.edit_member(guild_id, self.id, reason=reason, **payload)

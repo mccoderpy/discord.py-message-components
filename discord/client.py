@@ -25,20 +25,26 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
+import inspect
 import logging
 import signal
 import sys
 import traceback
+import types
+import typing
 
 import aiohttp
 
+from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
+    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup
+from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
 from .template import Template
 from .widget import Widget
 from .guild import Guild
 from .channel import _channel_factory
-from .enums import ChannelType
+from .enums import ChannelType, ApplicationCommandType
 from .mentions import AllowedMentions
 from .errors import *
 from .enums import Status, VoiceRegion
@@ -112,7 +118,7 @@ class _ClientEventTask(asyncio.Task):
 
 class Client:
     r"""Represents a client connection that connects to Discord.
-    This class is used to interact with the Discord WebSocket and API.
+    This class is used to interact with the Discord WebSocket and APIMethodes.
 
     A number of options can be passed to the :class:`Client`.
 
@@ -139,7 +145,7 @@ class Client:
     shard_count: Optional[:class:`int`]
         The total number of shards.
     intents: :class:`Intents`
-        The intents that you want to enable for the session. This is a way of
+        The intents that you want to enable for the _session. This is a way of
         disabling and enabling certain gateway events from triggering and being sent.
         If not given, defaults to a regularly constructed :class:`Intents` class.
 
@@ -217,6 +223,21 @@ class Client:
 
         .. versionadded:: 1.3
 
+    sync_commands: :class:`bool`
+        Whether to sync application-commands on startup, default ``False``.
+
+        This will register global and guild application-commands(slash-, user- and message-commands)
+        that are not registered yet, update changes and remove application-commands that could not be found
+        in the code anymore if :attr:`delete_not_existing_commands` is set to ``True`` what it is by default.
+
+        .. note::
+            It can take up to an hour until updates on global application-commands are available
+            in all guilds the bot is in due to global caching on discords side.
+            For testing purposes it is recommended to use guild-only commands because they are available immediately.
+
+    delete_not_existing_commands: :class:`bool`
+        Whether to remove global and guild application-commands that are not in the code anymore, default ``True``.
+
     Attributes
     -----------
     ws
@@ -228,6 +249,11 @@ class Client:
         self.ws = None
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self._listeners = {}
+        self.sync_commands: bool = options.get('sync_commands', False)
+        self.delete_not_existing_commands = options.pop('delete_not_existing_commands', True)
+        self._application_commands_by_type = {'chat_input': {}, 'message': {}, 'user': {}}
+        self._guild_specific_application_commands = {}
+        self._application_commands = {}
         self.shard_id = options.get('shard_id')
         self.shard_count = options.get('shard_count')
 
@@ -306,6 +332,11 @@ class Client:
     def emojis(self):
         """List[:class:`.Emoji`]: The emojis that the connected client has."""
         return self._connection.emojis
+
+    @property
+    def stickers(self):
+        """List[:class:`.Sticker`]: The stickers that the connected client has."""
+        return self._connection.stickers
 
     @property
     def cached_messages(self):
@@ -392,7 +423,6 @@ class Client:
                     if result:
                         self._schedule_event(future, method, *args, **kwargs)
 
-
         try:
             coro = getattr(self, method)
         except AttributeError:
@@ -411,6 +441,59 @@ class Client:
         """
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
+
+    async def on_application_command_error(self, cmd, exception, *args, **kwargs):
+        """|coro|
+
+            The default error handler when an Exception was raised when invoking an application-command.
+
+            By default this prints to :data:`sys.stderr` however it could be
+            overridden to have a different implementation.
+            Check :func:`~discord.on_application_command_error` for more details.
+            """
+        print('Ignoring exception in {type}-command {name}'.format(type=cmd.type, name=cmd.name), file=sys.stderr)
+        traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
+
+    async def _request_sync_commands(self):
+        """Used to sync sub_commands if the ``GUILD_CREATE`` stream is over
+
+        .. warning::
+            **DO NOT OVERWRITE THIS METHOD!!! IF YOU DO SO, THE APPLICATION-COMMANDS WILL NOT BE SYNCED AND NO COMMAND REGISTERED WILL BE DISPATCHED.**
+        """
+        if not hasattr(self, 'app'):
+            await self.application_info()
+        if self.sync_commands is True:
+            log.info('Checking for changes on application-commands for application %s (%s)...', self.app.name, self.app.id)
+            await self._sync_commands()
+            log.info('Done!')
+        else:
+            log.info('Collecting application-commands for Application %s (%s)', self.app.name, self.app.id)
+            global_registered_raw = await self.http.get_application_commands(self.app.id)
+            for raw_command in global_registered_raw:
+                try:
+                    command = self._application_commands_by_type[str(ApplicationCommandType.try_value(raw_command['type']))][raw_command['name']]
+                except KeyError:
+                    continue
+                else:
+                    command._fill_data(raw_command)
+                    command._state = self._connection
+                    self._application_commands[command.id] = command
+            for guild in self.guilds:
+                try:
+                    registered_guild_commands_raw = await self.http.get_application_commands(self.app.id, guild_id=guild.id)
+                except HTTPException:
+                    log.warning('Missing access to guild %s (%s) or don\'t have the application.commands scope in there, skipping!', guild.name, guild.id)
+                    continue
+                for updated in registered_guild_commands_raw:
+                    try:
+                        command = self._guild_specific_application_commands[guild.id][str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+                    except KeyError:
+                        continue
+                    else:
+                        command._fill_data(updated)
+                        command._state = self._connection
+                        self._application_commands[command.id] = command
+                        guild._application_commands[command.id] = command
 
     @utils.deprecated('Guild.chunk')
     async def request_offline_members(self, *guilds):
@@ -457,7 +540,7 @@ class Client:
     async def before_identify_hook(self, shard_id, *, initial=False):
         """|coro|
 
-        A hook that is called before IDENTIFYing a session. This is useful
+        A hook that is called before IDENTIFYing a _session. This is useful
         if you wish to have more control over the synchronization of multiple
         IDENTIFYing clients.
 
@@ -553,7 +636,7 @@ class Client:
         -------
         :exc:`.GatewayNotFound`
             If the gateway to connect to Discord is not found. Usually if this
-            is thrown then there is a Discord API outage.
+            is thrown then there is a Discord APIMethodes outage.
         :exc:`.ConnectionClosed`
             The websocket connection has been terminated.
         """
@@ -613,7 +696,7 @@ class Client:
                 log.exception("Attempting a reconnect in %.2fs", retry)
                 await asyncio.sleep(retry)
                 # Always try to RESUME the connection
-                # If the connection is not RESUME-able then the gateway will invalidate the session.
+                # If the connection is not RESUME-able then the gateway will invalidate the _session.
                 # This is apparently what the official Discord client does.
                 ws_params.update(sequence=self.ws.sequence, resume=True, session=self.ws.session_id)
 
@@ -1022,7 +1105,7 @@ class Client:
         setattr(self, coro.__name__, coro)
         log.debug('%s has successfully been registered as an event', coro.__name__)
         return coro
-    
+
     def on_click(self, custom_id=None):
         """
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
@@ -1132,8 +1215,441 @@ class Client:
             return func
 
         return decorator
-        
 
+    def slash_command(self, name: str = None, description: str = None, default_permission: bool = True,
+                      options: list = [], guild_ids: typing.List[int] = None, connector: dict = {},
+                      option_descriptions: dict = {}, base_name: str = None, base_desc: str = None,
+                      group_name: str = None, group_desc: str = None) -> lambda func: typing.Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+        """
+        A decorator that adds a slash-command to the client.
+
+        .. note::
+
+            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
+            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+
+        :param name:
+            The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
+            Default to the functions name.
+        :type name: Optional[:class:`str`]
+        :param description:
+            The description of the command shows up in the client. Must be between 1-100 characters long.
+            Default to the functions docstring or "No Description".
+        :type description: Optional[:class:`str`]
+        :param default_permission: Optional[:class:`bool`]
+            Whether the command should be usable by any user by default, default ``True``.
+            If set to ``False`` the command will not be available in Direct Messages.
+        :type default_permission: Optional[:class:`bool`]
+        :param options:
+            A list of max. 25 options for the command. If not provided the options will be generated
+            using :meth:`generate_options` that creates the options out of the function parameters.
+            Required options **must** be listed before optional ones.
+            Use :param:`options` to connect non-ascii option names with the parameter of the function.
+        :type options: Optional[List[:class:`SlashCommandOption`]]
+        :param guild_ids:
+            ID's of guilds this command should be registered in. If empty, the command will be global.
+        :type guild_ids: Optional[List[:class:`int`]]
+        :param connector:
+            A dictionary containing the name of function-parameters as keys and the name of the option as values.
+            Useful for using non-ascii Letters in your option names without getting ide-errors.
+        :type connector: Optional[Dict[:class:`str`, :class:`str`]]
+        :param option_descriptions:
+            Descriptions the :func:`generate_options` should take for the Options that will be generated.
+            The keys are the name of the option and the value the description.
+        :type option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
+        :param base_name:
+            The name of the base-command(a-z, _ and -, 1-32 characters) if you want the command
+            to be in a command-/sub-command-group.
+            If the base-command not exists yet, he will be addet.
+        :type base_name: Optional[:class:`str`]
+        :param base_desc:
+            The description of the base-command(1-100 characters), only needed if the :param:`base_name` was not used before
+            otherwise it will replace the one before.
+        :type base_desc: Optional[:class:`str`]
+        :param group_name:
+            The name of the command-group(a-z, _ and -, 1-32 characters) if you want the command
+            to be in a sub-command-group.
+        :type group_name: Optional[:class:`str`]
+        :param group_desc:
+            The description of the sub-command-group(1-100 characters), only needed if the :param:`group_name` was not used before
+            otherwise it will replace the one before.
+        :type group_desc: Optional[:class:`str`]
+
+        :raise TypeError:
+            The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
+            or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
+            itself is invalid.
+        :raise InvalidArgument:
+            You passed :param:`group_name` but no :param:`base_name`.
+        :raise ValueError:
+            Any of :param:`name`, :param:`description`, :param:`options`, :param:`base_name`, :param:`base_desc`, :param:`group_name` or :param:`group_desc` is not valid.
+
+        Returns
+        -------
+        Callable:
+            The function that wich registers the func given as a slash-command to the client and returns the generated command.
+        """
+
+        def decorator(func: typing.Awaitable[typing.Any]) -> typing.Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+            """
+
+            Parameters
+            ----------
+            func:
+                The function for the decorator.
+
+            Returns
+            -------
+            Union[:class:`SlashCommand`, :class:`GuildOnlySlashCommand`, :class:`SubCommand`, :class:`GuildOnlySubCommand`]:
+                The slash-command registered.
+                If neither :param:`guild_ids` or :param:`base_name` passed: An object of :class:`SlashCommand`.
+                If :param:`guild_ids` and no :param:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
+                representing the guild-only slash-commands.
+                If :param:`base_name` and no :param:`guild_ids` where passed: An object of class:`SubCommand`.
+                if :param:`base_name` and :param:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
+                representing the guild-only sub-commands.
+            """
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('The slash-command registered  must be a coroutine.')
+            _name = (name or func.__name__).lower()
+            _description = description or (inspect.cleandoc(func.__doc__)[:100]) if func.__doc__ else 'No Description'
+            _options = options or generate_options(func, descriptions=option_descriptions, connector=connector)
+            if group_name and not base_name:
+                raise InvalidArgument('You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.')
+            if guild_ids:
+                for guild_id in guild_ids:
+                    base, base_command, sub_command_group = None, None, None
+                    try:
+                        self._guild_specific_application_commands[guild_id]
+                    except KeyError:
+                        self._guild_specific_application_commands[guild_id] = {'chat_input': {}, 'message': {}, 'user': {}}
+                    if base_name:
+                        try:
+                            base_command = self._guild_specific_application_commands[guild_id]['chat_input'][base_name]
+                        except KeyError:
+                            base_command = self._guild_specific_application_commands[guild_id]['chat_input'][base_name] =\
+                                SlashCommand(name=base_name,
+                                             description=base_desc or 'No Description',
+                                             default_permission=default_permission,
+                                             guild_id=guild_id)
+                        else:
+                            base_command.description = base_desc or base_command.description
+                            base_command.default_permission = default_permission
+                        base = base_command
+                    if group_name:
+                        try:
+                            sub_command_group = self._guild_specific_application_commands[guild_id]['chat_input'][base_name]._sub_commands[group_name]
+                        except KeyError:
+                            sub_command_group = self._guild_specific_application_commands[guild_id]['chat_input'][base_name]._sub_commands[group_name] =\
+                                SubCommandGroup(parent=base_command,
+                                                name=group_name,
+                                                description=group_desc or 'No Description',
+                                                guild_id=guild_id)
+                        else:
+                            sub_command_group.description = group_desc or sub_command_group.description
+                        base = sub_command_group
+                    if base:
+                        base._sub_commands[_name] = SubCommand(parent=base, name=_name,
+                                                               description=_description, options=_options,
+                                                               connector=connector, func=func)
+                    else:
+                        self._guild_specific_application_commands[guild_id]['chat_input'][_name] =\
+                            SlashCommand(name=_name, description=_description,
+                                         default_permission=default_permission, options=_options,
+                                         func=func, guild_id=guild_id, connector=connector)
+                if base_name:
+                    base = GuildOnlySlashCommand(client=self, name=_name, description=_description,
+                                                 default_permission=default_permission, options=_options,
+                                                 guild_ids=guild_ids, connector=connector)
+                    if group_name:
+                        base = GuildOnlySubCommandGroup(parent=base, client=self, name=_name, description=_description,
+                                                        default_permission=default_permission, options=_options,
+                                                        guild_ids=guild_ids, connector=connector)
+                    return GuildOnlySubCommand(parent=base, client=self, name=_name, description=_description, options=_options,
+                                               func=func, guild_ids=guild_ids, connector=connector)
+                return GuildOnlySlashCommand(client=self, name=_name, description=_description,
+                                             default_permission=default_permission, options=_options,
+                                             func=func, guild_ids=guild_ids, connector=connector)
+            else:
+                base, base_command, sub_command_group = None, None, None
+                if base_name:
+                    try:
+                        base_command = self._application_commands_by_type['chat_input'][base_name]
+                    except KeyError:
+                        base_command = self._application_commands_by_type['chat_input'][base_name] =\
+                            SlashCommand(name=base_name,
+                                         description=base_desc or 'No Description',
+                                         default_permission=default_permission,
+                                         func=func)
+                    else:
+                        base_command.description = base_desc or base_command.description
+                        base_command.default_permission = default_permission
+                        base = base_command
+                if group_name:
+                    try:
+                        sub_command_group = self._application_commands_by_type['chat_input'][base_name]._sub_commands[group_name]
+                    except KeyError:
+                        sub_command_group = self._application_commands_by_type['chat_input'][base_name]._sub_commands[group_name]\
+                            = SubCommandGroup(parent=base_command,
+                                              name=group_name,
+                                              description=group_desc or 'No Description')
+                    else:
+                        sub_command_group.description = group_desc or sub_command_group.description
+                    base = sub_command_group
+                if base:
+                    command = base._sub_commands[_name] = SubCommand(parent=base, name=_name,
+                                                                     description=_description, options=_options,
+                                                                     func=func, connector=connector)
+                else:
+                    command = self._application_commands_by_type['chat_input'][_name] = SlashCommand(name=_name, description=_description,
+                                                                                                     default_permission=default_permission,
+                                                                                                     options=_options, func=func,
+                                                                                                     connector=connector)
+                return command
+        return decorator
+
+    def message_command(self, name: str = None, default_permission: bool = True, guild_ids: typing.List[int] = None):
+        """
+        A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
+        to the client.
+
+        .. note::
+
+            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
+            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+
+        Parameters
+        ----------
+        name: Optional[:class:`str`]
+            The name of the message-command, default to the functions name.
+            Must be between 1-32 characters long.
+        default_permission: Optional[:class:`bool`]
+            Whether the command should be usable by any user by default, default ``True``.
+            If set to ``False`` the command will not be available in Direct Messages.
+        guild_ids: Optional[List[:class:`int`]]
+            ID's of guilds this command should be registered in. If empty, the command will be global.
+
+        Returns
+        -------
+        MessageCommand:
+            The message-command registered.
+
+        Raises
+        ------
+        TypeError:
+            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
+        """
+        def decorator(func: typing.Awaitable):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('The message-command function registered  must be a coroutine.')
+            _name = name or func.__name__
+            cmd = MessageCommand(name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            if guild_ids:
+                for guild_id in guild_ids:
+                    try:
+                        self._guild_specific_application_commands[guild_id]['message'][cmd.name] = cmd
+                    except KeyError:
+                        self._guild_specific_application_commands[guild_id] = {'chat_input': {}, 'message': {cmd.name: cmd}, 'user': {}}
+            else:
+                self._application_commands_by_type['message'][cmd.name] = cmd
+            return cmd
+        return decorator
+
+    def user_command(self, name: str = None, default_permission: bool = True, guild_ids: typing.List[int] = None):
+        """
+       A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
+       to the client.
+
+       .. note::
+
+           :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
+           must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+
+       Parameters
+       ----------
+       name: Optional[:class:`str`]
+           The name of the user-command, default to the functions name.
+           Must be between 1-32 characters long.
+       default_permission: Optional[:class:`bool`]
+           Whether the command should be usable by any user by default, default ``True``.
+           If set to ``False`` the command will not be available in Direct Messages.
+       guild_ids: Optional[List[:class:`int`]]
+           ID's of guilds this command should be registered in. If empty, the command will be global.
+
+       Returns
+       -------
+       UserCommand:
+           The user-command registered.
+
+       Raises
+       ------
+       TypeError:
+           The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
+       """
+        def decorator(func):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('The user-command function registered  must be a coroutine.')
+            _name = name or func.__name__
+            cmd = UserCommand(name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            if guild_ids:
+                for guild_id in guild_ids:
+                    try:
+                        self._guild_specific_application_commands[guild_id]['user'][cmd.name] = cmd
+                    except KeyError:
+                        self._guild_specific_application_commands[guild_id] = {'chat_input': {}, 'message': {}, 'user': {cmd.name: cmd}}
+            else:
+                self._application_commands_by_type['user'][cmd.name] = cmd
+            return cmd
+        return decorator
+
+    async def _sync_commands(self):
+        from pprint import pprint
+        to_send = []
+        to_cep = []
+        to_maybe_remove = []
+        any_changed = False
+        has_update = False
+        if not hasattr(self, 'app'):
+            await self.application_info()
+        application_id = self.app.id
+        global_registered_raw: list = await self.http.get_application_commands(self.app.id)
+        global_registered = ApplicationCommand._sorted_by_type(global_registered_raw)
+        for x, commands in global_registered.items():
+            for command in commands:
+                if command['name'] in self._application_commands_by_type[x].keys():
+                    cmd = self._application_commands_by_type[x][command['name']]
+                    if cmd != command:
+                        pprint(cmd.to_dict())
+                        print('\n\n')
+                        pprint(command)
+                        any_changed = has_update = True
+                        c = cmd.to_dict()
+                        c['id'] = command['id']
+                        to_send.append(c)
+                    else:
+                        to_cep.append(command)
+                else:
+                    to_maybe_remove.append(command)
+                    any_changed = True
+            cmd_names = [c['name'] for c in commands]
+            for command in self._application_commands_by_type[x].values():
+                if command.name not in cmd_names:
+                    any_changed = True
+                    to_send.append(command.to_dict())
+
+        if any_changed is True:
+            updated = None
+            if len(to_send) == 1 and has_update and not to_maybe_remove:
+                log.info('Detected changes on global-application-command %s, updating.', to_send[0]['name'])
+                updated = await self.http.edit_application_command(application_id, to_send[0]['id'], to_send[0])
+            elif len(to_send) == 1 and not has_update and not to_maybe_remove:
+                log.info('Registering one new global-application-command %s.', to_send[0]['name'])
+                updated = await self.http.create_application_command(application_id, to_send[0])
+            else:
+                log.info('Detected multiple updated/new global-application-commands, bulk overwriting them...')
+                if not self.delete_not_existing_commands:
+                    to_send.extend(to_maybe_remove)
+                else:
+                    if len(to_maybe_remove) > 0:
+                        log.info('Removing %s global-application-commands that arent used in this code anymore.', len(to_maybe_remove))
+                to_send.extend(to_cep)
+                global_registered_raw = await self.http.bulk_overwrite_application_commands(application_id, to_send)
+            if updated:
+                global_registered_raw = await self.http.get_application_commands(application_id)
+            log.info('Synced global-application-commands.')
+        else:
+            log.info('No Changes found.')
+
+        for updated in global_registered_raw:
+            command = self._application_commands_by_type[str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+            if command:
+                command._fill_data(updated)
+                command._state = self._connection
+                self._application_commands[command.id] = command
+
+
+        log.info('Checking for changes on guild-specific application-commands...')
+        for guild_id, command_types in self._guild_specific_application_commands.items():
+            to_send = []
+            to_cep = []
+            to_maybe_remove = []
+            any_changed = False
+            has_update = False
+            try:
+                registered_guild_commands_raw = await self.http.get_application_commands(application_id, guild_id=guild_id)
+            except HTTPException:
+                log.warning('Missing access to guild %s or don\'t have the application.commands scope in there, skipping!' % guild_id)
+                continue
+            registered_guild_commands = ApplicationCommand._sorted_by_type(registered_guild_commands_raw)
+
+            for x, commands in registered_guild_commands.items():
+                for command in commands:
+                    if command['name'] in self._guild_specific_application_commands[guild_id][x].keys():
+                        cmd = self._guild_specific_application_commands[guild_id][x][command['name']]
+                        if cmd != command:
+                            pprint(cmd.to_dict())
+                            print('\n\n')
+                            pprint(command)
+                            any_changed = has_update = True
+                            c = cmd.to_dict()
+                            c['id'] = command['id']
+                            to_send.append(c)
+                        else:
+                            to_cep.append(command)
+                    else:
+                        to_maybe_remove.append(command)
+                        any_changed = True
+
+                for command in self._guild_specific_application_commands[guild_id][x].values():
+                    if command.name not in [c['name'] for c in commands]:
+                        any_changed = True
+                        to_send.append(command.to_dict())
+
+            if any_changed is True:
+                updated = None
+                if len(to_send) == 1 and has_update and not to_maybe_remove:
+                    log.info('Detected changes on application-command %s in %s (%s), updating.', to_send[0]['name'], self.get_guild(int(guild_id)), guild_id)
+                    updated = await self.http.edit_application_command(application_id, to_send[0]['id'], to_send[0], guild_id)
+                elif len(to_send) == 1 and not has_update and not to_maybe_remove:
+                    log.info('Registering one new application-command %s in %s (%s).', to_send[0]['name'], self.get_guild(int(guild_id)), guild_id)
+                    updated = await self.http.create_application_command(application_id, to_send[0], guild_id)
+                else:
+                    log.info('Detected multiple updated/new application-commands for %s (%s), bulk overwriting them...', self.get_guild(int(guild_id)), guild_id)
+                    if not self.delete_not_existing_commands:
+                        to_send.extend(to_maybe_remove)
+                    else:
+                        if len(to_maybe_remove) > 0:
+                            log.info('Removing %s application-commands from %s (%s) that arent used in this code anymore.', len(to_maybe_remove), self.get_guild(int(guild_id)), guild_id)
+                    to_send.extend(to_cep)
+                    registered_guild_commands_raw = await self.http.bulk_overwrite_application_commands(application_id, to_send, guild_id)
+                if updated:
+                    registered_guild_commands_raw = await self.http.get_application_commands(application_id, guild_id=guild_id)
+                log.info('Synced application-commands for %s (%s).' % (guild_id, self.get_guild(int(guild_id))))
+
+            for updated in registered_guild_commands_raw:
+                command = self._guild_specific_application_commands[int(guild_id)][str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+                if command:
+                    command._fill_data(updated)
+                    command._state = self._connection
+                    self._application_commands[command.id] = command
+                    self.get_guild(int(guild_id))._application_commands[command.id] = command
+
+    def _get_application_command(self, cmd_id):
+        return self._application_commands.get(cmd_id, None)
+
+    def _remove_application_command(self, cmd):
+        try:
+            del self._application_commands[cmd]
+        except (KeyError):
+            try:
+                del self._application_commands_by_type[cmd.type][cmd.name]
+            except (KeyError):
+                for guild_id in cmd.guild_ids:
+                    del self._guild_specific_application_commands[guild_id][cmd.type][cmd.name]
+
+    @property
+    def application_commands(self):
+        return list(self._application_commands.values())
 
     async def change_presence(self, *, activity=None, status=None, afk=False):
         """|coro|
@@ -1145,7 +1661,7 @@ class Client:
 
         .. code-block:: python3
 
-            game = discord.Game("with the API")
+            game = discord.Game("with the APIMethodes")
             await client.change_presence(status=discord.Status.idle, activity=game)
 
         Parameters
@@ -1202,7 +1718,7 @@ class Client:
 
         .. note::
 
-            This method is an API call. For general usage, consider :attr:`guilds` instead.
+            This method is an APIMethodes call. For general usage, consider :attr:`guilds` instead.
 
         Examples
         ---------
@@ -1283,7 +1799,7 @@ class Client:
 
         .. note::
 
-            This method is an API call. For general usage, consider :meth:`get_guild` instead.
+            This method is an APIMethodes call. For general usage, consider :meth:`get_guild` instead.
 
         Parameters
         -----------
@@ -1467,7 +1983,8 @@ class Client:
         data = await self.http.application_info()
         if 'rpc_origins' not in data:
             data['rpc_origins'] = None
-        return AppInfo(self._connection, data)
+        self.app = app = AppInfo(self._connection, data)
+        return app
 
     async def fetch_user(self, user_id):
         """|coro|
@@ -1479,7 +1996,7 @@ class Client:
 
         .. note::
 
-            This method is an API call. If you have :attr:`Intents.members` and member cache enabled, consider :meth:`get_user` instead.
+            This method is an APIMethodes call. If you have :attr:`Intents.members` and member cache enabled, consider :meth:`get_user` instead.
 
         Parameters
         -----------
@@ -1553,7 +2070,7 @@ class Client:
 
         .. note::
 
-            This method is an API call. For general usage, consider :meth:`get_channel` instead.
+            This method is an APIMethodes call. For general usage, consider :meth:`get_channel` instead.
 
         .. versionadded:: 1.2
 
@@ -1609,3 +2126,9 @@ class Client:
         """
         data = await self.http.get_webhook(webhook_id)
         return Webhook.from_state(data, state=self._connection)
+
+    async def fetch_all_nitro_stickers(self):
+        data = await self.http.get_all_nitro_stickers()
+        data = await self.http.get_all_nitro_stickers()
+        packs = [StickerPack(state=self._connection, data=d) for d in data['sticker_packs']]
+        return packs
