@@ -1,4 +1,4 @@
-equires = [
+requires = [
     "setuptools>=42",
     "wheel"
 ]
