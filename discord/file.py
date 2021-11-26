@@ -25,9 +25,12 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import os.path
-from os import PathLike
+
 import io
-from typing import Union
+from typing import Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 
 class File:
@@ -64,7 +67,7 @@ class File:
     __slots__ = ('fp', 'filename', 'description', 'spoiler', '_original_pos', '_owner', '_closer')
 
     def __init__(self,
-                 fp: Union[io.IOBase, str, bytes, PathLike[str], PathLike[bytes], int],
+                 fp: Union[io.IOBase, str, bytes, 'PathLike[str]', 'PathLike[bytes]', int],
                  filename: str = None,
                  description: str = None,
                  *,
@@ -140,5 +143,5 @@ class UploadFile(File):
 
             To pass binary data, consider usage of ``io.BytesIO``.
     """
-    def __init__(self, fp: Union[io.IOBase, str, bytes, PathLike[str], PathLike[bytes], int]):
+    def __init__(self, fp: Union[io.IOBase, str, bytes, 'PathLike[str]', 'PathLike[bytes]', int]):
         super().__init__(fp)
