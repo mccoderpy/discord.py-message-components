@@ -1512,7 +1512,7 @@ class DMChannel(abc.Messageable, Hashable):
         The direct message channel ID.
     """
 
-    __slots__ = ('id', 'recipient', 'me', '_state')
+    __slots__ = ('id', 'recipient', 'last_message_id', 'me', '_state')
 
     def __init__(self, *, me, state, data):
         self._state = state
@@ -1631,7 +1631,7 @@ class GroupChannel(abc.Messageable, Hashable):
         The group channel's name if provided.
     """
 
-    __slots__ = ('id', 'recipients', 'owner', 'icon', 'name', 'me', '_state')
+    __slots__ = ('id', 'recipients', 'owner', 'icon', 'name', 'last_message_id', 'me', '_state')
 
     def __init__(self, *, me, state, data):
         self._state = state
