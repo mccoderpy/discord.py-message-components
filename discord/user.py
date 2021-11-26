@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 from collections import namedtuple
-from typing import Literal
+from typing_extensions import  Literal
 
 import discord.abc
 from .flags import PublicUserFlags
