@@ -25,11 +25,12 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import copy
-import types
 from collections import namedtuple
 from datetime import datetime
-from os import PathLike
-from typing import Union, Optional, List, Tuple, Dict, Any
+from typing import Union, Optional, List, Tuple, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 from . import utils
 from .abc import GuildChannel
@@ -2408,7 +2409,7 @@ class Guild(Hashable):
         await ws.voice_state(self.id, channel_id, self_mute, self_deaf)
 
     async def create_sticker(self, name: str,
-                             file: Union[UploadFile, PathLike[str], PathLike[bytes]],
+                             file: Union[UploadFile, 'PathLike[str]', 'PathLike[bytes]'],
                              tags: Union[str, List[str]],
                              description: str = None,
                              *,
