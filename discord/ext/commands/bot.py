@@ -31,6 +31,7 @@ import importlib.util
 import sys
 import traceback
 import types
+from typing import TYPE_CHECKING
 
 import discord
 
@@ -58,7 +59,7 @@ def when_mentioned_or(*prefixes):
 
     .. code-block:: python3
 
-        bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
+        bot = sub_commands.Bot(command_prefix=sub_commands.when_mentioned_or('!'))
 
 
     .. note::
@@ -70,7 +71,7 @@ def when_mentioned_or(*prefixes):
 
             async def get_prefix(bot, message):
                 extras = await prefixes_for(message.guild) # returns a list
-                return commands.when_mentioned_or(*extras)(bot, message)
+                return sub_commands.when_mentioned_or(*extras)(bot, message)
 
 
     See Also
@@ -110,7 +111,7 @@ class BotBase(GroupMixin):
         self.owner_id = options.get('owner_id')
         self.owner_ids = options.get('owner_ids', set())
         self.strip_after_prefix = options.get('strip_after_prefix', False)
-
+        self.sync_on_cog_reload: bool = options.get('sync_commands_on_cog_reload', False)
         if self.owner_id and self.owner_ids:
             raise TypeError('Both owner_id and owner_ids are set.')
 
@@ -441,14 +442,14 @@ class BotBase(GroupMixin):
             This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
 
         .. important::
-            The Function this decorator attached to must be an corountine (means an awaitable)
+            The Function this decorator attached to must be an coroutine (means an awaitable)
 
         Parameters
         ----------
         
         :attr:`custom_id`: Optional[str]
 
-            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a diferent name then the custom_id use this one to set the custom_id.
+            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a different name then the custom_id use this one to set the custom_id.
 
 
         Example
@@ -609,7 +610,7 @@ class BotBase(GroupMixin):
     def add_cog(self, cog):
         """Adds a "cog" to the bot.
 
-        A cog is a class that has its own event listeners and commands.
+        A cog is a class that has its own event listeners and sub_commands.
 
         Parameters
         -----------
@@ -652,7 +653,7 @@ class BotBase(GroupMixin):
     def remove_cog(self, name):
         """Removes a cog from the bot.
 
-        All registered commands and event listeners that the
+        All registered sub_commands and event listeners that the
         cog has registered will be removed as well.
 
         If no cog is found then this method has no effect.
@@ -686,7 +687,7 @@ class BotBase(GroupMixin):
             if _is_submodule(name, cog.__module__):
                 self.remove_cog(cogname)
 
-        # remove all the commands from the module
+        # remove all the sub_commands from the module
         for cmd in self.all_commands.copy().values():
             if cmd.module is not None and _is_submodule(name, cmd.module):
                 if isinstance(cmd, GroupMixin):
@@ -756,7 +757,7 @@ class BotBase(GroupMixin):
     def load_extension(self, name, *, package=None):
         """Loads an extension.
 
-        An extension is a python module that contains commands, cogs, or
+        An extension is a python module that contains sub_commands, cogs, or
         listeners.
 
         An extension must have a global function, ``setup`` defined as
@@ -803,7 +804,7 @@ class BotBase(GroupMixin):
     def unload_extension(self, name, *, package=None):
         """Unloads an extension.
 
-        When the extension is unloaded, all commands, listeners, and cogs are
+        When the extension is unloaded, all sub_commands, listeners, and cogs are
         removed from the bot and the module is un-imported.
 
         The extension can provide an optional global function, ``teardown``,
@@ -903,11 +904,155 @@ class BotBase(GroupMixin):
             # revert sys.modules back to normal and raise back to caller
             sys.modules.update(modules)
             raise
+        else:
+            if self.sync_on_cog_reload:
+                self.loop.create_task(self._sync_commands())
 
     @property
     def extensions(self):
         """Mapping[:class:`str`, :class:`py:types.ModuleType`]: A read-only mapping of extension name to extension."""
         return types.MappingProxyType(self.__extensions)
+
+    def add_application_cmds_from_cog(self, cog: Cog):
+        """
+        Add all application-commands in the given cog to the internal list of application-commands.
+
+        Parameters
+        ----------
+        cog: :class:`.Cog`
+            The cog wich application-commands should be added to the internal list of application-commands.
+        """
+
+        for cmd_type, commands in cog.__application_commands_by_type__.items():
+
+            for command in commands.values():
+                # check if there is already a command with the same name
+                if command.name in self._application_commands_by_type[cmd_type]:
+                    existing_command = self._application_commands_by_type[cmd_type][command.name]
+
+                    if cmd_type == 'chat_input':
+                        if command.has_subcommands:
+                            # if the command has subcommands add them to the existing one.
+                            for sub_command in command.sub_commands:
+                                if sub_command.type.sub_command_group:
+                                    # if the subcommand is a group that already exists, add the subcommands of it
+                                    # to the existing group
+                                    if sub_command.name in existing_command.sub_commands\
+                                            and existing_command._sub_commands[sub_command.name].type.sub_command_group:
+                                        existing_group = existing_command._sub_commands[sub_command.name]
+                                        for sub_cmd in sub_command.sub_commands:
+                                            # set the parent of the subcommand to the existing group
+                                            sub_cmd.parent = existing_group
+                                            existing_group._sub_commands[sub_cmd.name] = sub_cmd
+                                        continue
+
+                                # set the parent of the subcommand to the existing command
+                                sub_command.parent = existing_command
+                                existing_command._sub_commands[sub_command.name] = sub_command
+                    else:
+                        # if its not a slash-command overwrite the existing one
+                        self._application_commands_by_type[cmd_type][command.name] = command
+                        continue
+
+                    if command.description != 'No Description':
+                        existing_command.description = command.description
+
+                    # maybe remove the if-statement in the future
+                    if command.default_permission is not True:
+                        existing_command.default_permission = command.default_permission
+
+                else:
+                    self._application_commands_by_type[cmd_type][command.name] = command
+
+        for guild_id, commands_by_type in cog.__guild_specific_application_commands__.items():
+
+            if guild_id not in self._guild_specific_application_commands:
+                # There are no commands only for this guild yet. So skip the checks and just add them.
+                self._guild_specific_application_commands[guild_id] = commands_by_type
+                continue
+
+            for cmd_type, commands in commands_by_type.items():
+
+                for command in commands.values():
+                    if command.name in self._guild_specific_application_commands[guild_id][cmd_type]:
+                        existing_command = self._guild_specific_application_commands[guild_id][cmd_type][command.name]
+
+                        if cmd_type == 'chat_input':
+                            if command.has_subcommands:
+
+                                # if the command has subcommands add them to the existing one.
+                                for sub_command in command.sub_commands:
+                                    if sub_command.type.sub_command_group:
+                                        # if the subcommand is a group that already exists, add the subcommands of it
+                                        # to the existing group
+                                        if sub_command.name in existing_command.sub_commands \
+                                                and existing_command._sub_commands[
+                                            sub_command.name].type.sub_command_group:
+                                            existing_group = existing_command._sub_commands[sub_command.name]
+                                            for sub_cmd in sub_command.sub_commands:
+                                                # set the parent of the subcommand to the existing group
+                                                sub_cmd.parent = existing_group
+                                                existing_group._sub_commands[sub_cmd.name] = sub_cmd
+                                            continue
+
+                                    # set the parent of the subcommand to the existing command
+                                    sub_command.parent = existing_command
+                                    existing_command._sub_commands[sub_command.name] = sub_command
+                        else:
+                            # if its not a slash-command overwrite the existing one
+                            self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
+                            continue
+
+                        if command.description != 'No Description':
+                            existing_command.description = command.description
+
+                        # maybe remove the if-statement in the future
+                        if command.default_permission is not True:
+                            existing_command.default_permission = command.default_permission
+
+                    else:
+                        self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
+
+
+
+    def remove_application_cmds_from_cog(self, cog: Cog):
+        """
+        Removes all application-commands in the given cog from the internal list of application-commands.
+
+        Parameters
+        ----------
+        cog: :class:`.Cog`
+            The cog wich application-commands should be removed from the internal list of application-commands.
+        """
+        for t in self._application_commands_by_type.values():
+            for cmd in t.values():
+                if cmd.cog and cmd.cog == cog:
+                    self._remove_application_command(cmd, from_cache=False)
+                # Remove all subcommands from this command if they are in the cog.
+                if cmd.type == 'chat_input' and cmd.has_subcommands:
+                    for sub_command in cmd.sub_commands:
+                        if sub_command.type.sub_command_group:
+                            for sub_cmd in sub_command.sub_commands:
+                                if sub_cmd.cog and sub_cmd.cog == cog:
+                                    del sub_command._sub_commands[sub_cmd.name]
+                        if sub_command.cog and  sub_command.cog == cog:
+                            del cmd._sub_commands[sub_command.name]
+
+        for guild_id, t in self._guild_specific_application_commands.items():
+            for commands in t.values():
+                for cmd in commands.values():
+                    if cmd.cog and cmd.cog == cog:
+                        self._remove_application_command(cmd, from_cache=False)
+                    # Remove all subcommands from this command if they are in the cog.
+                    if cmd.type == 'chat_input' and cmd.has_subcommands:
+                        for sub_command in cmd.sub_commands:
+                            if sub_command.type.sub_command_group:
+                                for sub_cmd in sub_command.sub_commands:
+                                    if sub_cmd.cog and sub_cmd.cog == cog:
+                                        del sub_command._sub_commands[sub_cmd.name]
+                            if sub_command.cog and  sub_command.cog == cog:
+                                del cmd._sub_commands[sub_command.name]
+
 
     # help command stuff
 
@@ -1073,9 +1218,9 @@ class BotBase(GroupMixin):
     async def process_commands(self, message):
         """|coro|
 
-        This function processes the commands that have been registered
+        This function processes the sub_commands that have been registered
         to the bot and other groups. Without this coroutine, none of the
-        commands will be triggered.
+        sub_commands will be triggered.
 
         By default, this coroutine is called inside the :func:`.on_message`
         event. If you choose to override the :func:`.on_message` event, then
@@ -1090,7 +1235,7 @@ class BotBase(GroupMixin):
         Parameters
         -----------
         message: :class:`discord.Message`
-            The message to process commands for.
+            The message to process sub_commands for.
         """
         if message.author.bot:
             return
@@ -1109,7 +1254,7 @@ class Bot(BotBase, discord.Client):
     this bot.
 
     This class also subclasses :class:`.GroupMixin` to provide the functionality
-    to manage commands.
+    to manage sub_commands.
 
     Attributes
     -----------
@@ -1143,13 +1288,13 @@ class Bot(BotBase, discord.Client):
             when passing an empty string, it should always be last as no prefix
             after it will be matched.
     case_insensitive: :class:`bool`
-        Whether the commands should be case insensitive. Defaults to ``False``. This
+        Whether the sub_commands should be case insensitive. Defaults to ``False``. This
         attribute does not carry over to groups. You must set it to every group if
-        you require group commands to be case insensitive as well.
+        you require group sub_commands to be case insensitive as well.
     description: :class:`str`
         The content prefixed into the default help message.
     self_bot: :class:`bool`
-        If ``True``, the bot will only listen to commands invoked by itself rather
+        If ``True``, the bot will only listen to sub_commands invoked by itself rather
         than ignoring itself. If ``False`` (the default) then the bot will ignore
         itself. This cannot be changed once initialised.
     help_command: Optional[:class:`.HelpCommand`]
@@ -1174,6 +1319,8 @@ class Bot(BotBase, discord.Client):
         the ``command_prefix`` is set to ``!``. Defaults to ``False``.
 
         .. versionadded:: 1.7
+    sync_on_cog_reload: :class:`bool`
+        Whether to sync global and guild-only application-commands when reloading an extension, default ``False``.
     """
     pass
 

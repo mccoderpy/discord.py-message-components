@@ -62,8 +62,8 @@ from .voice_client import VoiceClient, VoiceProtocol
 from .audit_logs import AuditLogChanges, AuditLogEntry, AuditLogDiff
 from .raw_models import *
 from .team import *
-from .sticker import Sticker
-
+from .sticker import Sticker, GuildSticker
+from .scheduled_event import GuildScheduledEvent
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
 version_info = VersionInfo(major=1, minor=7, micro=2, releaselevel='final', serial=0)

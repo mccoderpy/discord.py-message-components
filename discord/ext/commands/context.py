@@ -32,7 +32,7 @@ class Context(discord.abc.Messageable):
 
     This class contains a lot of meta data to help you understand more about
     the invocation context. This class is not created manually and is instead
-    passed around to commands as the first parameter.
+    passed around to sub_commands as the first parameter.
 
     This class implements the :class:`~discord.abc.Messageable` ABC.
 
@@ -61,7 +61,7 @@ class Context(discord.abc.Messageable):
         The command names of the parents that triggered this invocation. Useful for
         finding out which aliases called the command.
 
-        For example in commands ``?a b c test``, the invoked parents are ``['a', 'b', 'c']``.
+        For example in sub_commands ``?a b c test``, the invoked parents are ``['a', 'b', 'c']``.
 
         .. versionadded:: 1.7
 
@@ -271,7 +271,7 @@ class Context(discord.abc.Messageable):
         .. note::
 
             Due to the way this function works, instead of returning
-            something similar to :meth:`~.commands.HelpCommand.command_not_found`
+            something similar to :meth:`~.sub_commands.HelpCommand.command_not_found`
             this returns :class:`None` on bad input or no help command.
 
         Parameters

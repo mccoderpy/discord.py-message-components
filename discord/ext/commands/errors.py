@@ -53,6 +53,7 @@ __all__ = (
     'RoleNotFound',
     'BadInviteArgument',
     'EmojiNotFound',
+    'StickerNotFound',
     'PartialEmojiConversionFailure',
     'BadBoolArgument',
     'MissingRole',
@@ -390,6 +391,21 @@ class PartialEmojiConversionFailure(BadArgument):
         self.argument = argument
         super().__init__('Couldn\'t convert "{}" to PartialEmoji.'.format(argument))
 
+class StickerNotFound(BadArgument):
+    """Exception raised when the bot can not find the sticker.
+
+    This inherits from :exc:`BadArgument`
+
+
+    Attributes
+    -----------
+    argument: :class:`str`
+        The sticker supplied by the caller that was not found
+    """
+    def __init__(self, argument):
+        self.argument = argument
+        super().__init__('Sticker "{}" not found.'.format(argument))
+
 class BadBoolArgument(BadArgument):
     """Exception raised when a boolean argument was not convertable.
 
@@ -479,7 +495,7 @@ class MissingRole(CheckFailure):
     -----------
     missing_role: Union[:class:`str`, :class:`int`]
         The required role that is missing.
-        This is the parameter passed to :func:`~.commands.has_role`.
+        This is the parameter passed to :func:`~.sub_commands.has_role`.
     """
     def __init__(self, missing_role):
         self.missing_role = missing_role
@@ -497,7 +513,7 @@ class BotMissingRole(CheckFailure):
     -----------
     missing_role: Union[:class:`str`, :class:`int`]
         The required role that is missing.
-        This is the parameter passed to :func:`~.commands.has_role`.
+        This is the parameter passed to :func:`~.sub_commands.has_role`.
     """
     def __init__(self, missing_role):
         self.missing_role = missing_role
@@ -516,7 +532,7 @@ class MissingAnyRole(CheckFailure):
     -----------
     missing_roles: List[Union[:class:`str`, :class:`int`]]
         The roles that the invoker is missing.
-        These are the parameters passed to :func:`~.commands.has_any_role`.
+        These are the parameters passed to :func:`~.sub_commands.has_any_role`.
     """
     def __init__(self, missing_roles):
         self.missing_roles = missing_roles
@@ -544,7 +560,7 @@ class BotMissingAnyRole(CheckFailure):
     -----------
     missing_roles: List[Union[:class:`str`, :class:`int`]]
         The roles that the bot's member is missing.
-        These are the parameters passed to :func:`~.commands.has_any_role`.
+        These are the parameters passed to :func:`~.sub_commands.has_any_role`.
 
     """
     def __init__(self, missing_roles):

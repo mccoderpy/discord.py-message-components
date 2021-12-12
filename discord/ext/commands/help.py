@@ -270,10 +270,10 @@ class HelpCommand:
         The context that invoked this help formatter. This is generally set after
         the help command assigned, :func:`command_callback`\, has been called.
     show_hidden: :class:`bool`
-        Specifies if hidden commands should be shown in the output.
+        Specifies if hidden sub_commands should be shown in the output.
         Defaults to ``False``.
     verify_checks: Optional[:class:`bool`]
-        Specifies if commands should have their :attr:`.Command.checks` called
+        Specifies if sub_commands should have their :attr:`.Command.checks` called
         and verified. If ``True``, always calls :attr:`.Commands.checks`.
         If ``None``, only calls :attr:`.Commands.checks` in a guild setting.
         If ``False``, never calls :attr:`.Commands.checks`. Defaults to ``True``.
@@ -375,7 +375,7 @@ class HelpCommand:
             cog: cog.get_commands()
             for cog in bot.cogs.values()
         }
-        mapping[None] = [c for c in bot.commands if c.cog is None]
+        mapping[None] = [c for c in bot.sub_commands if c.cog is None]
         return mapping
 
     @property
@@ -541,7 +541,7 @@ class HelpCommand:
     async def filter_commands(self, commands, *, sort=False, key=None):
         """|coro|
 
-        Returns a filtered list of commands and optionally sorts them.
+        Returns a filtered list of sub_commands and optionally sorts them.
 
         This takes into account the :attr:`verify_checks` and :attr:`show_hidden`
         attributes.
@@ -549,7 +549,7 @@ class HelpCommand:
         Parameters
         ------------
         commands: Iterable[:class:`Command`]
-            An iterable of commands that are getting filtered.
+            An iterable of sub_commands that are getting filtered.
         sort: :class:`bool`
             Whether to sort the result.
         key: Optional[Callable[:class:`Command`, Any]]
@@ -560,7 +560,7 @@ class HelpCommand:
         Returns
         ---------
         List[:class:`Command`]
-            A list of commands that passed the filter.
+            A list of sub_commands that passed the filter.
         """
 
         if sort and key is None:
@@ -600,12 +600,12 @@ class HelpCommand:
         Parameters
         ------------
         commands: Sequence[:class:`Command`]
-            A sequence of commands to check for the largest size.
+            A sequence of sub_commands to check for the largest size.
 
         Returns
         --------
         :class:`int`
-            The maximum width of the commands.
+            The maximum width of the sub_commands.
         """
 
         as_lengths = (
@@ -691,15 +691,15 @@ class HelpCommand:
 
             You can access the invocation context with :attr:`HelpCommand.context`.
 
-            Also, the commands in the mapping are not filtered. To do the filtering
+            Also, the sub_commands in the mapping are not filtered. To do the filtering
             you will have to call :meth:`filter_commands` yourself.
 
         Parameters
         ------------
         mapping: Mapping[Optional[:class:`Cog`], List[:class:`Command`]]
-            A mapping of cogs to commands that have been requested by the user for help.
-            The key of the mapping is the :class:`~.commands.Cog` that the command belongs to, or
-            ``None`` if there isn't one, and the value is a list of commands that belongs to that cog.
+            A mapping of cogs to sub_commands that have been requested by the user for help.
+            The key of the mapping is the :class:`~.sub_commands.Cog` that the command belongs to, or
+            ``None`` if there isn't one, and the value is a list of sub_commands that belongs to that cog.
         """
         return None
 
@@ -720,8 +720,8 @@ class HelpCommand:
 
             You can access the invocation context with :attr:`HelpCommand.context`.
 
-            To get the commands that belong to this cog see :meth:`Cog.get_commands`.
-            The commands returned not filtered. To do the filtering you will have to call
+            To get the sub_commands that belong to this cog see :meth:`Cog.get_commands`.
+            The sub_commands returned not filtered. To do the filtering you will have to call
             :meth:`filter_commands` yourself.
 
         Parameters
@@ -748,8 +748,8 @@ class HelpCommand:
 
             You can access the invocation context with :attr:`HelpCommand.context`.
 
-            To get the commands that belong to this group without aliases see
-            :attr:`Group.commands`. The commands returned not filtered. To do the
+            To get the sub_commands that belong to this group without aliases see
+            :attr:`Group.sub_commands`. The sub_commands returned not filtered. To do the
             filtering you will have to call :meth:`filter_commands` yourself.
 
         Parameters
@@ -894,7 +894,7 @@ class DefaultHelpCommand(HelpCommand):
         The maximum number of characters that fit in a line.
         Defaults to 80.
     sort_commands: :class:`bool`
-        Whether to sort the commands in the output alphabetically. Defaults to ``True``.
+        Whether to sort the sub_commands in the output alphabetically. Defaults to ``True``.
     dm_help: Optional[:class:`bool`]
         A tribool that indicates if the help command should DM the user instead of
         sending it to the channel it received it from. If the boolean is set to
@@ -906,7 +906,7 @@ class DefaultHelpCommand(HelpCommand):
         The number of characters the paginator must accumulate before getting DM'd to the
         user if :attr:`dm_help` is set to ``None``. Defaults to 1000.
     indent: :class:`int`
-        How much to indent the commands from a heading. Defaults to ``2``.
+        How much to indent the sub_commands from a heading. Defaults to ``2``.
     commands_heading: :class:`str`
         The command list's heading string used when the help command is invoked with a category name.
         Useful for i18n. Defaults to ``"Commands:"``
@@ -945,7 +945,7 @@ class DefaultHelpCommand(HelpCommand):
                "You can also type {0}{1} category for more info on a category.".format(self.clean_prefix, command_name)
 
     def add_indented_commands(self, commands, *, heading, max_size=None):
-        """Indents a list of commands after the specified heading.
+        """Indents a list of sub_commands after the specified heading.
 
         The formatting is added to the :attr:`paginator`.
 
@@ -957,14 +957,14 @@ class DefaultHelpCommand(HelpCommand):
         Parameters
         -----------
         commands: Sequence[:class:`Command`]
-            A list of commands to indent for output.
+            A list of sub_commands to indent for output.
         heading: :class:`str`
             The heading to add to the output. This is only added
-            if the list of commands is greater than 0.
+            if the list of sub_commands is greater than 0.
         max_size: Optional[:class:`int`]
             The max size to use for the gap between indents.
             If unspecified, calls :meth:`get_max_size` on the
-            commands parameter.
+            sub_commands parameter.
         """
 
         if not commands:
@@ -987,7 +987,7 @@ class DefaultHelpCommand(HelpCommand):
             await destination.send(page)
 
     def add_command_formatting(self, command):
-        """A utility function to format the non-indented block of commands and groups.
+        """A utility function to format the non-indented block of sub_commands and groups.
 
         Parameters
         ------------
@@ -1035,11 +1035,11 @@ class DefaultHelpCommand(HelpCommand):
             cog = command.cog
             return cog.qualified_name + ':' if cog is not None else no_category
 
-        filtered = await self.filter_commands(bot.commands, sort=True, key=get_category)
+        filtered = await self.filter_commands(bot.sub_commands, sort=True, key=get_category)
         max_size = self.get_max_size(filtered)
         to_iterate = itertools.groupby(filtered, key=get_category)
 
-        # Now we can add the commands to the page.
+        # Now we can add the sub_commands to the page.
         for category, commands in to_iterate:
             commands = sorted(commands, key=lambda c: c.name) if self.sort_commands else list(commands)
             self.add_indented_commands(commands, heading=category, max_size=max_size)
@@ -1092,7 +1092,7 @@ class MinimalHelpCommand(HelpCommand):
     Attributes
     ------------
     sort_commands: :class:`bool`
-        Whether to sort the commands in the output alphabetically. Defaults to ``True``.
+        Whether to sort the sub_commands in the output alphabetically. Defaults to ``True``.
     commands_heading: :class:`str`
         The command list's heading string used when the help command is invoked with a category name.
         Useful for i18n. Defaults to ``"Commands"``
@@ -1169,17 +1169,17 @@ class MinimalHelpCommand(HelpCommand):
         return None
 
     def add_bot_commands_formatting(self, commands, heading):
-        """Adds the minified bot heading with commands to the output.
+        """Adds the minified bot heading with sub_commands to the output.
 
         The formatting should be added to the :attr:`paginator`.
 
         The default implementation is a bold underline heading followed
-        by commands separated by an EN SPACE (U+2002) in the next line.
+        by sub_commands separated by an EN SPACE (U+2002) in the next line.
 
         Parameters
         -----------
         commands: Sequence[:class:`Command`]
-            A list of commands that belong to the heading.
+            A list of sub_commands that belong to the heading.
         heading: :class:`str`
             The heading to add to the line.
         """
@@ -1223,7 +1223,7 @@ class MinimalHelpCommand(HelpCommand):
         self.paginator.add_line('**%s** %s' % (self.aliases_heading, ', '.join(aliases)), empty=True)
 
     def add_command_formatting(self, command):
-        """A utility function to format commands and groups.
+        """A utility function to format sub_commands and groups.
 
         Parameters
         ------------
@@ -1278,7 +1278,7 @@ class MinimalHelpCommand(HelpCommand):
             cog = command.cog
             return cog.qualified_name if cog is not None else no_category
 
-        filtered = await self.filter_commands(bot.commands, sort=True, key=get_category)
+        filtered = await self.filter_commands(bot.sub_commands, sort=True, key=get_category)
         to_iterate = itertools.groupby(filtered, key=get_category)
 
         for category, commands in to_iterate:

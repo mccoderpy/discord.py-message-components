@@ -26,12 +26,20 @@ DEALINGS IN THE SOFTWARE.
 
 import inspect
 import copy
+import typing
+
 from ._types import _BaseCommand
 
 __all__ = (
     'CogMeta',
     'Cog',
 )
+
+from ... import InvalidArgument
+
+from ...application_commands import generate_options, SlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, \
+    GuildOnlySlashCommand, MessageCommand, UserCommand, GuildOnlySubCommandGroup
+
 
 class CogMeta(type):
     """A metaclass for defining a cog.
@@ -46,13 +54,13 @@ class CogMeta(type):
 
         import abc
 
-        class CogABCMeta(commands.CogMeta, abc.ABCMeta):
+        class CogABCMeta(sub_commands.CogMeta, abc.ABCMeta):
             pass
 
         class SomeMixin(metaclass=abc.ABCMeta):
             pass
 
-        class SomeCogMixin(SomeMixin, commands.Cog, metaclass=CogABCMeta):
+        class SomeCogMixin(SomeMixin, sub_commands.Cog, metaclass=CogABCMeta):
             pass
 
     .. note::
@@ -63,7 +71,7 @@ class CogMeta(type):
 
         .. code-block:: python3
 
-            class MyCog(commands.Cog, name='My Cog'):
+            class MyCog(sub_commands.Cog, name='My Cog'):
                 pass
 
     Attributes
@@ -83,15 +91,18 @@ class CogMeta(type):
 
         .. code-block:: python3
 
-            class MyCog(commands.Cog, command_attrs=dict(hidden=True)):
-                @commands.command()
+            class MyCog(sub_commands.Cog, command_attrs=dict(hidden=True)):
+                @sub_commands.command()
                 async def foo(self, ctx):
                     pass # hidden -> True
 
-                @commands.command(hidden=False)
+                @sub_commands.command(hidden=False)
                 async def bar(self, ctx):
                     pass # hidden -> False
     """
+    __application_commands_by_type__ = {'chat_input': {}, 'message': {}, 'user': {}}
+    __guild_specific_application_commands__ = {}
+
 
     def __new__(cls, *args, **kwargs):
         name, bases, attrs = args
@@ -106,6 +117,9 @@ class CogMeta(type):
         commands = {}
         listeners = {}
         cog_interaction_listeners = {}
+        application_commands_by_type = {}
+        guild_specific_application_commands = {}
+
         no_bot_cog = 'Commands or listeners must not start with cog_ or bot_ (in method {0.__name__}.{1})'
 
         new_cls = super().__new__(cls, name, bases, attrs, **kwargs)
@@ -125,6 +139,7 @@ class CogMeta(type):
                     if elem.startswith(('cog_', 'bot_')):
                         raise TypeError(no_bot_cog.format(base, elem))
                     commands[elem] = value
+
                 elif inspect.iscoroutinefunction(value):
                     try:
                         getattr(value, '__cog_listener__')
@@ -175,8 +190,8 @@ def _cog_special_method(func):
 class Cog(metaclass=CogMeta):
     """The base class that all cogs must inherit from.
 
-    A cog is a collection of commands, listeners, and optional state to
-    help group commands together. More information on them can be found on
+    A cog is a collection of sub_commands, listeners, and optional state to
+    help group sub_commands together. More information on them can be found on
     the :ref:`ext_commands_cogs` page.
 
     When inheriting from this class, the options shown in :class:`CogMeta`
@@ -192,6 +207,9 @@ class Cog(metaclass=CogMeta):
 
         # Either update the command with the cog provided defaults or copy it.
         self.__cog_commands__ = tuple(c._update_copy(cmd_attrs) for c in cls.__cog_commands__)
+
+        self.__application_commands_by_type__ = cls.__application_commands_by_type__
+        self.__guild_specific_application_commands__ = cls.__guild_specific_application_commands__
 
         lookup = {
             cmd.qualified_name: cmd
@@ -209,7 +227,6 @@ class Cog(metaclass=CogMeta):
                 # Update our parent's reference to our self
                 parent.remove_command(command.name)
                 parent.add_command(command)
-
         return self
 
     def get_commands(self):
@@ -241,7 +258,7 @@ class Cog(metaclass=CogMeta):
         self.__cog_description__ = description
 
     def walk_commands(self):
-        """An iterator that recursively walks through this cog's commands and subcommands.
+        """An iterator that recursively walks through this cog's sub_commands and subcommands.
 
         Yields
         ------
@@ -264,6 +281,11 @@ class Cog(metaclass=CogMeta):
             The listeners defined in this cog.
         """
         return [(name, getattr(self, method_name)) for name, method_name in self.__cog_listeners__]
+
+    @classmethod
+    def get_application_commands(cls):
+        return [()]
+
 
     @classmethod
     def _get_overridden_method(cls, method):
@@ -336,10 +358,10 @@ class Cog(metaclass=CogMeta):
             # the Button
             Button(label='Hey im a cool blue Button',
                    custom_id='cool blue Button',
-                   style=ButtonColor.blurple)
+                   style=ButtonStyle.blurple)
 
             # function that's called when the Button pressed
-            @commands.Cog.on_click(custom_id='cool blue Button')
+            @sub_commands.Cog.on_click(custom_id='cool blue Button')
             async def cool_blue_button(i: discord.Interaction, button):
                 await i.respond(f'Hey you pressed a `{button.custom_id}`!', hidden=True)
 
@@ -394,7 +416,7 @@ class Cog(metaclass=CogMeta):
                             ], placeholder='Choose your Gender')
 
             # function that's called when the SelectMenu is used
-            @commands.Cog.on_select()
+            @sub_commands.Cog.on_select()
             async def choose_your_gender(i: discord.Interaction, select_menu):
                 await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
@@ -416,6 +438,319 @@ class Cog(metaclass=CogMeta):
             except AttributeError:
                 actual.__interaction_listener_names__ = [('raw_selection_select', name)]
             return func
+        return decorator
+
+    @classmethod
+    def slash_command(cls,
+                      name: str = None,
+                      description: str = None,
+                      default_permission: bool = True,
+                      options: list = [],
+                      guild_ids: typing.List[int] = None,
+                      connector: dict = {},
+                      option_descriptions: dict = {},
+                      base_name: str = None,
+                      base_desc: str = None,
+                      group_name: str = None,
+                      group_desc: str = None) -> lambda func: typing.Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+        """
+        A decorator that adds a slash-command to the client.
+
+        .. note::
+
+            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
+            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+
+        :param name:
+            The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
+            Default to the functions name.
+        :type name: Optional[:class:`str`]
+        :param description:
+            The description of the command shows up in the client. Must be between 1-100 characters long.
+            Default to the functions docstring or "No Description".
+        :type description: Optional[:class:`str`]
+        :param default_permission: Optional[:class:`bool`]
+            Whether the command should be usable by any user by default, default ``True``.
+            If set to ``False`` the command will not be available in Direct Messages.
+        :type default_permission: Optional[:class:`bool`]
+        :param options:
+            A list of max. 25 options for the command. If not provided the options will be generated
+            using :meth:`generate_options` that creates the options out of the function parameters.
+            Required options **must** be listed before optional ones.
+            Use :param:`options` to connect non-ascii option names with the parameter of the function.
+        :type options: Optional[List[:class:`SlashCommandOption`]]
+        :param guild_ids:
+            ID's of guilds this command should be registered in. If empty, the command will be global.
+        :type guild_ids: Optional[List[:class:`int`]]
+        :param connector:
+            A dictionary containing the name of function-parameters as keys and the name of the option as values.
+            Useful for using non-ascii Letters in your option names without getting ide-errors.
+        :type connector: Optional[Dict[:class:`str`, :class:`str`]]
+        :param option_descriptions:
+            Descriptions the :func:`generate_options` should take for the Options that will be generated.
+            The keys are the name of the option and the value the description.
+        :type option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
+        :param base_name:
+            The name of the base-command(a-z, _ and -, 1-32 characters) if you want the command
+            to be in a command-/sub-command-group.
+            If the base-command not exists yet, he will be addet.
+        :type base_name: Optional[:class:`str`]
+        :param base_desc:
+            The description of the base-command(1-100 characters), only needed if the :param:`base_name` was not used before
+            otherwise it will replace the one before.
+        :type base_desc: Optional[:class:`str`]
+        :param group_name:
+            The name of the command-group(a-z, _ and -, 1-32 characters) if you want the command
+            to be in a sub-command-group.
+        :type group_name: Optional[:class:`str`]
+        :param group_desc:
+            The description of the sub-command-group(1-100 characters), only needed if the :param:`group_name` was not used before
+            otherwise it will replace the one before.
+        :type group_desc: Optional[:class:`str`]
+
+        :raise TypeError:
+            The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
+            or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
+            itself is invalid.
+        :raise InvalidArgument:
+            You passed :param:`group_name` but no :param:`base_name`.
+        :raise ValueError:
+            Any of :param:`name`, :param:`description`, :param:`options`, :param:`base_name`, :param:`base_desc`, :param:`group_name` or :param:`group_desc` is not valid.
+
+        Returns
+        -------
+        Callable:
+            The function that wich registers the func given as a slash-command to the client and returns the generated command.
+        """
+
+        def decorator(func: typing.Awaitable[typing.Any]) -> typing.Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+            """
+
+            Parameters
+            ----------
+            func:
+                The function for the decorator.
+
+            Returns
+            -------
+            Union[:class:`SlashCommand`, :class:`GuildOnlySlashCommand`, :class:`SubCommand`, :class:`GuildOnlySubCommand`]:
+                The slash-command registered.
+                If neither :param:`guild_ids` or :param:`base_name` passed: An object of :class:`SlashCommand`.
+                If :param:`guild_ids` and no :param:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
+                representing the guild-only slash-commands.
+                If :param:`base_name` and no :param:`guild_ids` where passed: An object of class:`SubCommand`.
+                if :param:`base_name` and :param:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
+                representing the guild-only sub-commands.
+            """
+            actual = func
+            if isinstance(actual, staticmethod):
+                actual = actual.__func__
+            if not inspect.iscoroutinefunction(actual):
+                raise TypeError('The slash-command function registered  must be a coroutine.')
+            _name = (name or actual.__name__).lower()
+            _description = description or ((inspect.cleandoc(actual.__doc__)[:100]) if actual.__doc__ else 'No Description')
+            _options = options or generate_options(actual, descriptions=option_descriptions, connector=connector, is_cog=True)
+            if group_name and not base_name:
+                raise InvalidArgument('You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.')
+            if guild_ids:
+                for guild_id in guild_ids:
+                    base, base_command, sub_command_group = None, None, None
+                    try:
+                        cls.__guild_specific_application_commands__[guild_id]
+                    except KeyError:
+                        cls.__guild_specific_application_commands__[guild_id] = {'chat_input': {}, 'message': {}, 'user': {}}
+                    if base_name:
+                        try:
+                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]
+                        except KeyError:
+                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name] =\
+                                SlashCommand(cog=cls,
+                                             name=base_name,
+                                             description=base_desc or 'No Description',
+                                             default_permission=default_permission,
+                                             guild_id=guild_id)
+                        else:
+                            base_command.description = base_desc or base_command.description
+                            base_command.default_permission = default_permission
+                        base = base_command
+                    if group_name:
+                        try:
+                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]._sub_commands[group_name]
+                        except KeyError:
+                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]._sub_commands[group_name] =\
+                                SubCommandGroup(cog=cls,
+                                                parent=base_command,
+                                                name=group_name,
+                                                description=group_desc or 'No Description',
+                                                guild_id=guild_id)
+                        else:
+                            sub_command_group.description = group_desc or sub_command_group.description
+                        base = sub_command_group
+                    if base:
+                        base._sub_commands[_name] = SubCommand(cog=cls,
+                                                               parent=base,
+                                                               name=_name,
+                                                               description=_description,
+                                                               options=_options,
+                                                               connector=connector,
+                                                               func=func)
+                    else:
+                        cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name] =\
+                            SlashCommand(cog=cls,
+                                         name=_name,
+                                         description=_description,
+                                         default_permission=default_permission,
+                                         options=_options,
+                                         func=func,
+                                         guild_id=guild_id,
+                                         connector=connector)
+
+                if base_name:
+                    base = GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
+                                                 default_permission=default_permission, options=_options,
+                                                 guild_ids=guild_ids, connector=connector)
+                    if group_name:
+                        base = GuildOnlySubCommandGroup(cog=cls, parent=base, name=_name,
+                                                        description=_description, default_permission=default_permission,
+                                                        options=_options, guild_ids=guild_ids, connector=connector)
+                    return GuildOnlySubCommand(cog=cls, parent=base, name=_name, description=_description,
+                                               options=_options, func=func, guild_ids=guild_ids, connector=connector)
+                return GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
+                                             default_permission=default_permission, options=_options,
+                                             func=func, guild_ids=guild_ids, connector=connector)
+            else:
+                base, base_command, sub_command_group = None, None, None
+                if base_name:
+                    try:
+                        base_command = cls.__application_commands_by_type__['chat_input'][base_name]
+                    except KeyError:
+                        base_command =SlashCommand(
+                            cog=cls,
+                            name=base_name,
+                            description=base_desc or 'No Description',
+                            default_permission=default_permission,
+                            func=func)
+                    else:
+                        base_command.description = base_desc or base_command.description
+                        base_command.default_permission = default_permission
+                        base = base_command
+                if group_name:
+                    try:
+                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]
+                    except KeyError:
+                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]\
+                            = SubCommandGroup(cog=cls,
+                                              parent=base_command,
+                                              name=group_name,
+                                              description=group_desc or 'No Description')
+                    else:
+                        sub_command_group.description = group_desc or sub_command_group.description
+                    base = sub_command_group
+                if base:
+                    command = base._sub_commands[_name] = SubCommand(cog=cls,
+                                                                     parent=base,
+                                                                     name=_name,
+                                                                     description=_description,
+                                                                     options=_options,
+                                                                     func=func, connector=connector)
+                else:
+                    command = SlashCommand(
+                        name=_name, description=_description,
+                        default_permission=default_permission,
+                        options=_options, func=func,
+                        connector=connector)
+                return command
+        return decorator
+
+    @classmethod
+    def message_command(cls, name: str = None, default_permission: bool = True, guild_ids: typing.List[int] = None) -> lambda func: MessageCommand:
+        """
+        A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
+        to the client.
+
+        .. note::
+
+            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
+            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+
+        Parameters
+        ----------
+        name: Optional[:class:`str`]
+            The name of the message-command, default to the functions name.
+            Must be between 1-32 characters long.
+        default_permission: Optional[:class:`bool`]
+            Whether the command should be usable by any user by default, default ``True``.
+            If set to ``False`` the command will not be available in Direct Messages.
+        guild_ids: Optional[List[:class:`int`]]
+            ID's of guilds this command should be registered in. If empty, the command will be global.
+
+        Returns
+        -------
+        MessageCommand:
+            The message-command registered.
+
+        Raises
+        ------
+        TypeError:
+            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
+        """
+        def decorator(func: typing.Awaitable):
+            actual = func
+            if isinstance(actual, staticmethod):
+                actual = actual.__func__
+            if not inspect.iscoroutinefunction(actual):
+                raise TypeError('The message-command function registered  must be a coroutine.')
+            _name = name or actual.__name__
+            cmd = MessageCommand(cog=cls,
+                                 name=_name,
+                                 default_permission=default_permission,
+                                 func=func,
+                                 guild_ids=guild_ids)
+            return cmd
+        return decorator
+
+
+    @classmethod
+    def user_command(cls, name: str = None, default_permission: bool = True, guild_ids: typing.List[int] = None) -> lambda func: UserCommand:
+        """
+       A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
+       to the client.
+
+       .. note::
+
+           :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
+           must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+
+       Parameters
+       ----------
+       name: Optional[:class:`str`]
+           The name of the user-command, default to the functions name.
+           Must be between 1-32 characters long.
+       default_permission: Optional[:class:`bool`]
+           Whether the command should be usable by any user by default, default ``True``.
+           If set to ``False`` the command will not be available in Direct Messages.
+       guild_ids: Optional[List[:class:`int`]]
+           ID's of guilds this command should be registered in. If empty, the command will be global.
+
+       Returns
+       -------
+       UserCommand:
+           The user-command registered.
+
+       Raises
+       ------
+       TypeError:
+           The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
+       """
+        def decorator(func: typing.Awaitable):
+            actual = func
+            if isinstance(actual, staticmethod):
+                func = actual.__func__
+            if not inspect.iscoroutinefunction(actual):
+                raise TypeError('The user-command function registered  must be a coroutine.')
+            _name = name or actual.__name__
+            cmd = UserCommand(cog=cls, name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            return cmd
         return decorator
 
     def has_error_handler(self):
@@ -458,7 +793,7 @@ class Cog(metaclass=CogMeta):
 
     @_cog_special_method
     def cog_check(self, ctx):
-        """A special method that registers as a :func:`commands.check`
+        """A special method that registers as a :func:`sub_commands.check`
         for every command and subcommand in this cog.
 
         This function **can** be a coroutine and must take a sole parameter,
@@ -472,7 +807,7 @@ class Cog(metaclass=CogMeta):
         is dispatched inside this cog.
 
         This is similar to :func:`.on_command_error` except only applying
-        to the commands inside this cog.
+        to the sub_commands inside this cog.
 
         This **must** be a coroutine.
 
@@ -551,6 +886,8 @@ class Cog(metaclass=CogMeta):
         for (_type, method_name, custom_id) in self.__cog_interaction_listeners__:
             bot.add_interaction_listener(_type, getattr(self, method_name), custom_id)
 
+        bot.add_application_cmds_from_cog(self)
+
         return self
 
     def _eject(self, bot):
@@ -566,6 +903,8 @@ class Cog(metaclass=CogMeta):
 
             for (_type, method_name, custom_id) in self.__cog_interaction_listeners__:
                 bot.remove_interaction_listener(_type, getattr(self, method_name), custom_id)
+
+            bot.remove_application_cmds_from_cog(self)
 
             if cls.bot_check is not Cog.bot_check:
                 bot.remove_check(self.bot_check)

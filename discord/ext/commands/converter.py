@@ -49,6 +49,7 @@ __all__ = (
     'StageChannelConverter',
     'EmojiConverter',
     'PartialEmojiConverter',
+    'StickerConverter',
     'CategoryChannelConverter',
     'IDConverter',
     'StoreChannelConverter',
@@ -146,7 +147,7 @@ class MemberConverter(IDConverter):
         ws = bot._get_websocket(shard_id=guild.shard_id)
         cache = guild._state.member_cache_flags.joined
         if ws.is_ratelimited():
-            # If we're being rate limited on the WS, then fall back to using the HTTP API
+            # If we're being rate limited on the WS, then fall back to using the HTTP APIMethodes
             # So we don't have to wait ~60 seconds for the query to finish
             try:
                 member = await guild.fetch_member(user_id)
@@ -353,6 +354,34 @@ class TextChannelConverter(IDConverter):
                 result = _get_from_guilds(bot, 'get_channel', channel_id)
 
         if not isinstance(result, discord.TextChannel):
+            raise ChannelNotFound(argument)
+
+        return result
+
+class ThreadChannelConverter(IDConverter):
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+
+        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+        result = None
+        guild = ctx.guild
+
+        if match is None:
+            # not a mention
+            if guild:
+                result = discord.utils.get(guild.thread_channels, name=argument)
+            else:
+                def check(c):
+                    return isinstance(c, discord.ThreadChannel) and c.name == argument
+                result = discord.utils.find(check, bot.get_all_channels())
+        else:
+            channel_id = int(match.group(1))
+            if guild:
+                result = guild.get_channel(channel_id)
+            else:
+                result = _get_from_guilds(bot, 'get_channel', channel_id)
+
+        if not isinstance(result, discord.ThreadChannel):
             raise ChannelNotFound(argument)
 
         return result
@@ -744,6 +773,47 @@ class PartialEmojiConverter(Converter):
                                                    id=emoji_id)
 
         raise PartialEmojiConversionFailure(argument)
+
+
+class StickerConverter(IDConverter):
+    """Converts to a :class:`~discord.Sticker`.
+
+    All lookups are done for the local guild first, if available. If that lookup
+    fails, then it checks the client's global cache.
+
+    The lookup strategy is as follows (in order):
+
+    1. Lookup by name.
+    2. Lookup by ID.
+    """
+    async def convert(self, ctx, argument):
+        match = self._get_id_match(argument)
+        result = None
+        bot = ctx.bot
+        guild = ctx.guild
+
+        if match is None:
+            # Try to get the sticker by name. Try local guild first.
+            if guild:
+                result = discord.utils.get(guild.stickers, name=argument)
+
+            if result is None:
+                result = discord.utils.get(bot.stickers, name=argument)
+        else:
+            sticker_id = int(match.group(1))
+
+            # Try to look up sticker by id.
+            if guild:
+                result = discord.utils.get(guild.stickers, id=sticker_id)
+
+            if result is None:
+                result = discord.utils.get(bot.stickers, id=sticker_id)
+
+        if result is None:
+            raise StickerNotFound(argument)
+
+        return result
+
 
 class clean_content(Converter):
     """Converts the argument to mention scrubbed version of

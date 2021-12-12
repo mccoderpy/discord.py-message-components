@@ -625,7 +625,7 @@ class Command(_BaseCommand):
 
         If the command has no parents then it returns an empty :class:`list`.
 
-        For example in commands ``?a b c test``, the parents are ``[c, b, a]``.
+        For example in sub_commands ``?a b c test``, the parents are ``[c, b, a]``.
 
         .. versionadded:: 1.1
         """
@@ -643,7 +643,7 @@ class Command(_BaseCommand):
 
         If the command has no parents then it returns ``None``.
 
-        For example in commands ``?a b c test``, the root parent is ``a``.
+        For example in sub_commands ``?a b c test``, the root parent is ``a``.
         """
         if not self.parent:
             return None
@@ -723,7 +723,7 @@ class Command(_BaseCommand):
         # first, call the command local hook:
         cog = self.cog
         if self._before_invoke is not None:
-            # should be cog if @commands.before_invoke is used
+            # should be cog if @sub_commands.before_invoke is used
             instance = getattr(self._before_invoke, '__self__', cog)
             # __self__ only exists for methods, not functions
             # however, if @command.before_invoke is used, it will be a function
@@ -800,7 +800,7 @@ class Command(_BaseCommand):
         Parameters
         -----------
         ctx: :class:`.Context`
-            The invocation context to use when checking the commands cooldown status.
+            The invocation context to use when checking the sub_commands cooldown status.
 
         Returns
         --------
@@ -1090,7 +1090,7 @@ class Command(_BaseCommand):
 
 class GroupMixin:
     """A mixin that implements common functionality for classes that behave
-    similar to :class:`.Group` and are allowed to register commands.
+    similar to :class:`.Group` and are allowed to register sub_commands.
 
     Attributes
     -----------
@@ -1098,7 +1098,7 @@ class GroupMixin:
         A mapping of command name to :class:`.Command`
         objects.
     case_insensitive: :class:`bool`
-        Whether the commands should be case insensitive. Defaults to ``False``.
+        Whether the sub_commands should be case insensitive. Defaults to ``False``.
     """
     def __init__(self, *args, **kwargs):
         case_insensitive = kwargs.get('case_insensitive', False)
@@ -1108,7 +1108,7 @@ class GroupMixin:
 
     @property
     def commands(self):
-        """Set[:class:`.Command`]: A unique set of commands without aliases that are registered."""
+        """Set[:class:`.Command`]: A unique set of sub_commands without aliases that are registered."""
         return set(self.all_commands.values())
 
     def recursively_remove_all_commands(self):
@@ -1118,7 +1118,7 @@ class GroupMixin:
             self.remove_command(command.name)
 
     def add_command(self, command):
-        """Adds a :class:`.Command` into the internal list of commands.
+        """Adds a :class:`.Command` into the internal list of sub_commands.
 
         This is usually not called, instead the :meth:`~.GroupMixin.command` or
         :meth:`~.GroupMixin.group` shortcut decorators are used instead.
@@ -1157,7 +1157,7 @@ class GroupMixin:
 
     def remove_command(self, name):
         """Remove a :class:`.Command` from the internal list
-        of commands.
+        of sub_commands.
 
         This could also be used as a way to remove aliases.
 
@@ -1193,7 +1193,7 @@ class GroupMixin:
         return command
 
     def walk_commands(self):
-        """An iterator that recursively walks through all commands and subcommands.
+        """An iterator that recursively walks through all sub_commands and subcommands.
 
         .. versionchanged:: 1.4
             Duplicates due to aliases are no longer returned
@@ -1201,7 +1201,7 @@ class GroupMixin:
         Yields
         ------
         Union[:class:`.Command`, :class:`.Group`]
-            A command or group from the internal list of commands.
+            A command or group from the internal list of sub_commands.
         """
         for command in self.commands:
             yield command
@@ -1210,7 +1210,7 @@ class GroupMixin:
 
     def get_command(self, name):
         """Get a :class:`.Command` from the internal list
-        of commands.
+        of sub_commands.
 
         This could also be used as a way to get aliases.
 
@@ -1283,7 +1283,7 @@ class GroupMixin:
         return decorator
 
 class Group(GroupMixin, Command):
-    """A class that implements a grouping protocol for commands to be
+    """A class that implements a grouping protocol for sub_commands to be
     executed as subcommands.
 
     This class is a subclass of :class:`.Command` and thus all options
@@ -1301,7 +1301,7 @@ class Group(GroupMixin, Command):
         that the checks and the parsing dictated by its parameters
         will be executed. Defaults to ``False``.
     case_insensitive: :class:`bool`
-        Indicates if the group's commands should be case insensitive.
+        Indicates if the group's sub_commands should be case insensitive.
         Defaults to ``False``.
     """
     def __init__(self, *args, **attrs):
@@ -1468,12 +1468,12 @@ def check(predicate):
     .. code-block:: python3
 
         def owner_or_permissions(**perms):
-            original = commands.has_permissions(**perms).predicate
+            original = sub_commands.has_permissions(**perms).predicate
             async def extended_check(ctx):
                 if ctx.guild is None:
                     return False
                 return ctx.guild.owner_id == ctx.author.id or await original(ctx)
-            return commands.check(extended_check)
+            return sub_commands.check(extended_check)
 
     .. note::
 
@@ -1494,7 +1494,7 @@ def check(predicate):
             return ctx.message.author.id == 85309593344815104
 
         @bot.command()
-        @commands.check(check_if_it_is_me)
+        @sub_commands.check(check_if_it_is_me)
         async def only_for_me(ctx):
             await ctx.send('I know you!')
 
@@ -1505,7 +1505,7 @@ def check(predicate):
         def is_me():
             def predicate(ctx):
                 return ctx.message.author.id == 85309593344815104
-            return commands.check(predicate)
+            return sub_commands.check(predicate)
 
         @bot.command()
         @is_me()
@@ -1575,10 +1575,10 @@ def check_any(*checks):
         def is_guild_owner():
             def predicate(ctx):
                 return ctx.guild is not None and ctx.guild.owner_id == ctx.author.id
-            return commands.check(predicate)
+            return sub_commands.check(predicate)
 
         @bot.command()
-        @commands.check_any(commands.is_owner(), is_guild_owner())
+        @sub_commands.check_any(sub_commands.is_owner(), is_guild_owner())
         async def only_for_owners(ctx):
             await ctx.send('Hello mister owner!')
     """
@@ -1588,7 +1588,7 @@ def check_any(*checks):
         try:
             pred = wrapped.predicate
         except AttributeError:
-            raise TypeError('%r must be wrapped by commands.check decorator' % wrapped) from None
+            raise TypeError('%r must be wrapped by sub_commands.check decorator' % wrapped) from None
         else:
             unwrapped.append(pred)
 
@@ -1675,7 +1675,7 @@ def has_any_role(*items):
     .. code-block:: python3
 
         @bot.command()
-        @commands.has_any_role('Library Devs', 'Moderators', 492212595072434186)
+        @sub_commands.has_any_role('Library Devs', 'Moderators', 492212595072434186)
         async def cool(ctx):
             await ctx.send('You are cool indeed')
     """
@@ -1768,7 +1768,7 @@ def has_permissions(**perms):
     .. code-block:: python3
 
         @bot.command()
-        @commands.has_permissions(manage_messages=True)
+        @sub_commands.has_permissions(manage_messages=True)
         async def test(ctx):
             await ctx.send('You can manage messages.')
 
@@ -1934,7 +1934,7 @@ def is_nsfw():
     """
     def pred(ctx):
         ch = ctx.channel
-        if ctx.guild is None or (isinstance(ch, discord.TextChannel) and ch.is_nsfw()):
+        if ctx.guild is None or (isinstance(ch, (discord.TextChannel, discord.ThreadChannel)) and ch.is_nsfw()):
             return True
         raise NSFWChannelRequired(ch)
     return check(pred)
@@ -2010,7 +2010,7 @@ def max_concurrency(number, per=BucketType.default, *, wait=False):
 def before_invoke(coro):
     """A decorator that registers a coroutine as a pre-invoke hook.
 
-    This allows you to refer to one before invoke hook for several commands that
+    This allows you to refer to one before invoke hook for several sub_commands that
     do not have to be within the same cog.
 
     .. versionadded:: 1.4
@@ -2024,22 +2024,22 @@ def before_invoke(coro):
             print(ctx.author, 'used', ctx.command, 'at', ctx.message.created_at)
 
         @bot.command()
-        @commands.before_invoke(record_usage)
+        @sub_commands.before_invoke(record_usage)
         async def who(ctx): # Output: <User> used who at <Time>
             await ctx.send('i am a bot')
 
-        class What(commands.Cog):
+        class What(sub_commands.Cog):
 
-            @commands.before_invoke(record_usage)
-            @commands.command()
+            @sub_commands.before_invoke(record_usage)
+            @sub_commands.command()
             async def when(self, ctx): # Output: <User> used when at <Time>
                 await ctx.send('and i have existed since {}'.format(ctx.bot.user.created_at))
 
-            @commands.command()
+            @sub_commands.command()
             async def where(self, ctx): # Output: <Nothing>
                 await ctx.send('on Discord')
 
-            @commands.command()
+            @sub_commands.command()
             async def why(self, ctx): # Output: <Nothing>
                 await ctx.send('because someone made me')
 
@@ -2056,7 +2056,7 @@ def before_invoke(coro):
 def after_invoke(coro):
     """A decorator that registers a coroutine as a post-invoke hook.
 
-    This allows you to refer to one after invoke hook for several commands that
+    This allows you to refer to one after invoke hook for several sub_commands that
     do not have to be within the same cog.
 
     .. versionadded:: 1.4

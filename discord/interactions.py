@@ -291,7 +291,7 @@ class BaseInteraction:
         """Represents a :class:`discord.Interaction`-object."""
         return f'<Interaction {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
     
-    async def defer(self, response_type: Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False, data=None) -> None:
+    async def defer(self, response_type: Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
         |coro|
 
@@ -322,9 +322,6 @@ class BaseInteraction:
         if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": int(response_type), "data": {'flags': 64 if hidden else None}}
-        if int(response_type) == 9:
-            for key, value in data.items():
-                base['data'][key] = value
         try:
             data = await self._http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.id,
                                                           token=self._token, application_id=self._application_id)
@@ -599,10 +596,10 @@ class BaseInteraction:
             return AutocompleteInteraction(state=state, data=data)
 
 class ApplicationCommandInteraction(BaseInteraction):
-    async def defer(self, type: Literal[5, 9] = 5, hidden: bool = False, data=None):
+    async def defer(self, type: Literal[5, 9] = 5, hidden: bool = False):
         if isinstance(type, int):
             type = InteractionCallbackType.from_value(type)
-        return await super().defer(type, hidden=hidden, data=data)
+        return await super().defer(type, hidden=hidden)
 
 class ComponentInteraction(BaseInteraction):
     @property

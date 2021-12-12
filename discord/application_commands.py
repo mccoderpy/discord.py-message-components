@@ -29,10 +29,10 @@ import copy
 import typing
 import asyncio
 import inspect
-from .utils import async_all, find
+from .utils import async_all, find, get
 from typing_extensions import Literal
 from .abc import User, GuildChannel, Role
-from typing import Union, Optional, List, Dict
+from typing import Union, Optional, List, Dict, Any
 from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, try_enum
 
 __all__ = (
@@ -100,6 +100,7 @@ class ApplicationCommand:
         self._state_ = kwargs.get('state', None)
         self.func = kwargs.pop('func', None)
         self.cog = kwargs.get('cog', None)
+        self.disabled: bool = False
 
     @property
     def _state(self):
@@ -177,18 +178,20 @@ class ApplicationCommand:
         if not checks:
             return True
 
-        return await async_all(check(*args, **kwargs) for check in checks)
+        return await async_all(check(*args) for check in checks)
 
-    async def invoke(self, *args, **kwargs):
+    async def invoke(self, interaction, *args, **kwargs):
         if self.cog is not None:
-            args = (self.cog, *args)
+            args = (self.cog, interaction, *args)
+        else:
+            args = (interaction, *args)
         try:
-            if await self.can_run(*args, **kwargs):
+            if await self.can_run(*args):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(exc, *args, **kwargs)
-            self._state.dispatch('application_command_error', self, exc)
+                await self.on_error(*args, exc)
+            self._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -283,11 +286,12 @@ class SlashCommandOptionChoice:
 
     @classmethod
     def from_dict(cls, data):
-        return cls(data['name'], data['value'])
+        return cls(name=data['name'], value=data['value'])
 
 
 class SlashCommandOption:
-    __slots__ = ('type', 'name', 'description', 'required', '_choices', 'options', '_autocomplete', '_min_value', '_max_value', '_channel_types')
+    __slots__ = ('type', 'name', 'description', 'required', 'default', '_choices', 'options',
+                 '_autocomplete', '_min_value', '_max_value', '_channel_types')
 
     def __init__(self,
                  option_type: Union[OptionType, int, type],
@@ -299,6 +303,7 @@ class SlashCommandOption:
                  min_value: Optional[Union[int, float]] = None,
                  max_value: Optional[Union[int, float]] = None,
                  channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
+                 default: Optional[Any] = None,
                  **kwargs) -> None:
         """
         Representing an option for a :class:`SlashCommand`/:class:`SubCommand`.
@@ -331,8 +336,8 @@ class SlashCommandOption:
             `autocomplete <https://discord.com/developers/docs/interactions/application-commands#autocomplete>`_
             interactions for this option, default ``False``.
             With autocomplete, you can check the user's input and send matching choices to the client.
-            **Autocomplete can only be used with options of the type string, integer or number.
-            If autocomplete is activated, the option cannot have :param:`choices`.**
+            **Autocomplete can only be used with options of the type** ``string``, ``integer`` or ``number``.
+            **If autocomplete is activated, the option cannot have** :param:`choices` **.**
         min_value: Optional[Union[:class:`int`, :class:`float`]]
             If the :param:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
             this is the minimum value the users input must be of.
@@ -342,6 +347,9 @@ class SlashCommandOption:
         channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
             A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
             Only valid if :param:`option_type` is :class:`OptionType.channel`.
+        default: Optional[Any]
+            The default value that should be passed to the function if the option is not providet, default ``None``.
+            Usuly used for autocomplete callback.
         """
         if not isinstance(option_type, OptionType):
             option_type, channel_type = OptionType.from_type(option_type)
@@ -366,9 +374,15 @@ class SlashCommandOption:
         self.max_value: Optional[Union[int, float]] = max_value
         self.choices: Optional[List[SlashCommandOptionChoice]] = choices
         self.channel_types: Optional[List[Union[GuildChannel, ChannelType, int]]] = channel_types
+        self.default = default
 
     def __repr__(self):
-        return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>' % (self.type, self.name, self.description, self.required, self.choices)
+        return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>'\
+               % (self.type,
+                  self.name,
+                  self.description,
+                  self.required,
+                  self.choices)
 
     @property
     def autocomplete(self) -> bool:
@@ -413,7 +427,8 @@ class SlashCommandOption:
             elif self.autocomplete:
                 raise TypeError('Options with autocomplete could not have choices.')
         if len(value) > 25:
-            raise ValueError('The maximum of choices per Option is 25, got %s. It is recommended to use autocomplete if you have more than 25 options.' % len(choices))
+            raise ValueError('The maximum of choices per Option is 25, got %s.'
+                             'It is recommended to use autocomplete if you have more than 25 options.' % len(choices))
         self._choices = value
 
     @property
@@ -514,7 +529,9 @@ class SubCommand(SlashCommandOption):
     def __init__(self, parent, name: str, description: str, options: List[SlashCommandOption] = [], **kwargs):
         self.parent = parent
         if (not re.match('^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
-            raise ValueError('The name of the Sub-Command must be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
+            raise ValueError(
+                'The name of the Sub-Command must be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.'
+                % (name, len(name)))
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError('The description of the Sub-Command must be 1-100 characters long, got %s.' % len(description))
@@ -528,7 +545,11 @@ class SubCommand(SlashCommandOption):
         super().__init__(OptionType.sub_command, name=name, description=description, options=options)
 
     def __repr__(self):
-        return '<SubCommand parent=%s, name=%s, description=%s, options=%s>' % (self.parent.name, self.name, self.description, self.options)
+        return '<SubCommand parent=%s, name=%s, description=%s, options=%s>' \
+               % (self.parent.name,
+                  self.name,
+                  self.description,
+                  self.options)
 
     def to_dict(self):
         base = {
@@ -548,16 +569,19 @@ class SubCommand(SlashCommandOption):
 
         return await async_all(check(*args, **kwargs) for check in checks)
 
-    async def invoke(self, *args, **kwargs):
+    async def invoke(self, interaction, *args, **kwargs):
         if self.cog is not None:
-            args = (self.cog, *args)
+            args = (self.cog, interaction, *args)
+        else:
+            args = (interaction, *args)
+
         try:
-            if await self.can_run(*args, **kwargs):
+            if await self.can_run(*args):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(exc, *args)
-            self.parent.parent._state.dispatch('application_command_error', self, exc, *args)
+                await self.on_error(interaction, exc)
+            self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
     def autocomplete_callback(self, coro):
         """
@@ -574,16 +598,18 @@ class SubCommand(SlashCommandOption):
             raise TypeError('The autocomplete callback function must be a coroutine.')
         self.autocomplete_func = func
 
-    async def invoke_autocomplete(self, *args, **kwargs):
+    async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if self.cog is not None:
-            args = (self.cog, *args)
+            args = (self.cog, interaction, *args)
+        else:
+            args = (interaction, *args)
         try:
-            if await self.can_run(*args, __func=self.autocomplete_func, **kwargs):
+            if await self.can_run(*args, __func=self.autocomplete_func):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(exc, *args)
-            self.parent.parent._state.dispatch('application_command_error', self, exc, *args)
+                await self.on_error(interaction, exc)
+            self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -599,7 +625,13 @@ class GuildOnlySubCommand(SubCommand):
         self.guild_ids = guild_ids or self.parent.guild_ids
 
     def __repr__(self):
-        return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>' % (self.parent.name, self.name, self.description, self.options, self.guild_ids)
+        return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>'\
+               % (self.parent.name,
+                  self.name,
+                  self.description,
+                  self.options,
+                  ', '.join([str(g) for g in self.guild_ids])
+                  )
 
 
 class SlashCommand(ApplicationCommand):
@@ -650,7 +682,12 @@ class SlashCommand(ApplicationCommand):
             sc.parent = self
 
     def __repr__(self):
-        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s>' % (self.name, self.description, self.default_permission, self._options or self.sub_commands, self.guild_id)
+        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s>' \
+               % (self.name,
+                  self.description,
+                  self.default_permission,
+                  self.options or self.sub_commands,
+                  self.guild_id)
 
     @property
     def _state(self):
@@ -665,6 +702,10 @@ class SlashCommand(ApplicationCommand):
     @property
     def parent(self):
         return self
+
+    @property
+    def has_subcommands(self) -> bool:
+        return bool(self.sub_commands)
 
     def autocomplete_callback(self, coro):
         """
@@ -682,45 +723,22 @@ class SlashCommand(ApplicationCommand):
             raise TypeError('The autocomplete callback function must be a coroutine.')
         self.autocomplete_func = coro
 
-    async def invoke_autocomplete(self, *args, **kwargs):
+    async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
             print(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
+
         if self.cog is not None:
-            args = (self.cog, *args)
+            args = (self.cog, interaction, *args)
+        else:
+            args = (interaction, *args)
+
         try:
-            if await self.can_run(*args, __func=self.autocomplete_func, **kwargs):
+            if await self.can_run(*args, __func=self.autocomplete_func):
                 await self.autocomplete_func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(exc, *args)
-            self._state.dispatch('application_command_error', self, exc, *args)
-
-    def subcommand(self, name: str = None, description: str = None, options: List[SlashCommandOption] = [], **kwargs):
-        def decorator(func):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('The sub-command function must be a coroutine.')
-            _name = (name or func.__name__).lower()
-            _description = description or inspect.cleandoc(func.__doc__)[:100] or 'No Description'
-            if len(options) > 25:
-                raise ValueError('The maximum of options per command is 25, got %s' % len(options))
-            descriptions = kwargs.get('option_descriptions', {})
-            connector = kwargs.get('connector', {})
-            _options = options or generate_options(func, descriptions=descriptions, connector=connector)
-            self._sub_commands[_name] = subcommand = SubCommand(self, _name, _description, _options, func=func, connector=connector, **kwargs)
-            return subcommand
-        return decorator
-
-    def subcommandgroup(self, name: str = None, description: str = None, commands: List[SubCommand] = []):
-        def decorator(func):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('The sub-command-group function must be a coroutine.')
-            _name = (name or func.__name__).lower()
-            _description = description or inspect.cleandoc(func.__doc__)[:100] or 'No Description'
-            if len(commands) > 25:
-                raise ValueError('The maximum of options per command is 25, got %s' % len(commands))
-            self._sub_commands[_name] = subcommand = SubCommandGroup(self, _name, _description, commands, func=func)
-            return subcommand
-        return decorator
+                await self.on_error(interaction, exc)
+            self._state.dispatch('application_command_error', self, interaction, exc)
 
     @property
     def sub_commands(self) -> Optional[List[Union['SubCommandGroup[SubCommand]', SubCommand]]]:
@@ -734,22 +752,30 @@ class SlashCommand(ApplicationCommand):
 
     @classmethod
     def from_dict(cls, state, data):
-        return cls(data['name'], data.get('description', 'No Description'), data.get('default_permission', True), [SlashCommandOption.from_dict(opt) for opt in data.get('options', [])], state=state, **data)
+        return cls(name=data['name'],
+                   description=data.get('description', 'No Description'),
+                   default_permission=data.get('default_permission', True),
+                   options=[SlashCommandOption.from_dict(opt) for opt in data.get('options', [])],
+                   state=state,
+                   **data)
 
     @staticmethod
     def _filter_id_out(argument):
         return int(argument.strip('<!@&#>'))
 
-    async def invoke(self, *args, **kwargs):
+    async def invoke(self, interaction, *args, **kwargs):
         if self.cog is not None:
-            args = (self.cog, *args)
+            args = (self.cog, interaction, *args)
+        else:
+            args = (interaction, *args)
+
         try:
-            if await self.can_run(*args, **kwargs):
+            if await self.can_run(*args):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(exc, *args)
-            self._state.dispatch('application_command_error', self, exc, *args)
+                await self.on_error(interaction, exc)
+            self._state.dispatch('application_command_error', self, interaction, exc)
 
     async def _parse_arguments(self, interaction):
         to_invoke = self
@@ -786,51 +812,32 @@ class SlashCommand(ApplicationCommand):
                         params[name] = interaction.data.resolved.roles[_id] or option.value
                     else:
                         params[name] = interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
+
+        # pass the default values of the options to the params if they are not providet (usaly used for autocomplete)
+        for o in to_invoke.options:
+            if o.name not in params:
+                params[o.name] = o.default
+
+        interaction.params = params
+
         if interaction.type == InteractionType.ApplicationCommandAutocomplete:
+            interaction.focused = get(params, focused=True)
             return await to_invoke.invoke_autocomplete(interaction, **params)
         return await to_invoke.invoke(interaction, **params)
 
 
 class GuildOnlySlashCommand(SlashCommand):
     def __init__(self, *args, **kwargs):
-        self.client = kwargs.pop('client', None)
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
-        return '<GuildOnlySlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_ids=%s>' % (self.name, self.description, self.default_permission, self.options, self.guild_ids)
-
-    def subcommandgroup(self, name: str = None, description: str = None, commands: List[SubCommand] = [], guild_ids: List[int] = None):
-        def decorator(func):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('The sub-command-group function registered must be a coroutine.')
-            _name = (name or func.__name__).lower()
-            _description = description or inspect.cleandoc(func.__doc__)[:100] or 'No Description'
-            if len(commands) > 25:
-                raise ValueError('The maximum of options per command is 25, got %s' % len(commands))
-            _guild_ids = guild_ids or self.guild_ids
-            for guild_id in _guild_ids:
-                self.client._guild_specific_application_commands[guild_id]['chat_input'][self.name]._sub_commands[_name] = SubCommandGroup(self, _name, _description, commands, func=func)
-            self._sub_commands[_name] = subcommand = GuildOnlySubCommandGroup(parent=self, name=_name, description=_description, commands=commands, guild_ids=_guild_ids, func=func)
-            return subcommand
-        return decorator
-
-    def subcommand(self, name: str = None, description: str = None, options: List[SlashCommandOption] = [], guild_ids: List[int] = None, **kwargs):
-        def decorator(func):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('The sub-command function registered must be a coroutine.')
-            _name = (name or func.__name__).lower()
-            _description = description or inspect.cleandoc(func.__doc__)[:100] or 'No Description'
-            if len(options) > 25:
-                raise ValueError('The maximum of options per command is 25, got %s' % len(options))
-            connector = kwargs.pop('connector', {})
-            descriptions = kwargs.get('option_descriptions', {})
-            _options = options or generate_options(func, connector=connector, descriptions=descriptions)
-            _guild_ids = guild_ids or self.guild_ids
-            for guild_id in _guild_ids:
-                self.client._guild_specific_application_commands[guild_id]['chat_input'][self.name]._sub_commands[_name] = SubCommand(self, _name, _description, _options, func=func, connector=connector, **kwargs)
-            self._sub_commands[_name] = subcommand = GuildOnlySubCommand(parent=self, name=_name, description=_description, options=_options, guild_ids=_guild_ids, func=func, connector=connector, **kwargs)
-            return subcommand
-        return decorator
+        return '<GuildOnlySlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_ids=%s>'\
+               % (self.name,
+                  self.description,
+                  self.default_permission,
+                  self.options,
+                  ', '.join([str(g) for g in self.guild_ids])
+                  )
 
 
 class UserCommand(ApplicationCommand):
@@ -843,10 +850,14 @@ class UserCommand(ApplicationCommand):
     
     @classmethod
     def from_dict(cls, state, data):
-        return cls(data['name'], data['default_permission'], state=state, **data)
+        return cls(name=data['name'],
+                   default_permission=data['default_permission'],
+                   state=state,
+                   **data)
 
     async def _parse_arguments(self, interaction):
         member = interaction.data.resolved.members[interaction.data.target_id]
+        interaction.member = member
         await self.invoke(interaction, member)
 
 
@@ -860,17 +871,20 @@ class MessageCommand(ApplicationCommand):
 
     @classmethod
     def from_dict(cls, state, data):
-        return cls(data['name'], data['default_permission'], state=state, **data)
+        return cls(name=data['name'],
+                   default_permission=data['default_permission'],
+                   state=state,
+                   **data)
 
     async def _parse_arguments(self, interaction):
         message = interaction.data.resolved.messages[interaction.data.target_id]
+        interaction.message = message
         await self.invoke(interaction, message)
 
 
 class SubCommandGroup(SlashCommandOption):
     def __init__(self, parent: Union[SlashCommand, GuildOnlySlashCommand], name: str, description: str, commands: List[SubCommand] = [], **kwargs):
-
-        self.cog = kwargs.get('cog', parent.cog)
+        self.cog = kwargs.get('cog', None)
         if (not re.match(r'^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
             raise ValueError('The name of the Sub-Command-Group must be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
         self.name = name
@@ -889,7 +903,12 @@ class SubCommandGroup(SlashCommandOption):
         self.parent = parent
 
     def __repr__(self):
-        return '<SubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s>' % (self.parent.name, self.name, self.description, self.sub_commands)
+        return '<SubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s>' % \
+               (self.parent.name,
+                self.name,
+                self.description,
+                ', '.join([sub_cmd.name for sub_cmd in self.sub_commands])
+                )
 
     @property
     def parent(self) -> SlashCommand:
@@ -900,21 +919,6 @@ class SubCommandGroup(SlashCommandOption):
         setattr(self, '_parent_', value)
         for sub_command in self.sub_commands:
             sub_command.parent = self
-
-    def subcommand(self, name: str = None, description: str = None, options: List[SlashCommandOption] = [], **kwargs):
-        def decorator(func):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('The sub-command funcion must be a coroutine.')
-            _name = (name or func.__name__).lower()
-            _description = description or inspect.cleandoc(func.__doc__)[:100] or 'No Description'
-            if len(options) > 25:
-                raise ValueError('The maximum of options per command is 25, got %s' % len(options))
-            connector = kwargs.get('connector', {})
-            descriptions = kwargs.get('option_descriptions', {})
-            _options = options or generate_options(func, connector=connector, descriptions=descriptions)
-            self._sub_commands[_name] = subcommand = SubCommand(self, _name, _description, _options, func=func, connector=connector, **kwargs)
-            return subcommand
-        return decorator
 
     @property
     def sub_commands(self):
@@ -935,26 +939,13 @@ class GuildOnlySubCommandGroup(SubCommandGroup):
         super().__init__(*args, **kwargs, guild_ids=guild_ids)
 
     def __repr__(self):
-        return '<GuildOnlySubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s, guild_ids=%s>' % (self.parent, self.name, self.description, self.sub_commands, self.guild_ids)
-
-    def subcommand(self, name: str = None, description: str = None, options: List[SlashCommandOption] = [], guild_ids: List[int] = None, **kwargs):
-        def decorator(func):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('The sub-command function registered must be a coroutine.')
-            _name = (name or func.__name__).lower()
-            _description = description or inspect.cleandoc(func.__doc__)[:100] or 'No Description'
-            if len(options) > 25:
-                raise ValueError('The maximum of options per command is 25, got %s' % len(options))
-            connector = kwargs.get('connector', {})
-            descriptions = kwargs.get('option_descriptions', {})
-            _options = options or generate_options(func, connector=connector, descriptions=descriptions)
-            _guild_ids = guild_ids or self.guild_ids
-            for guild_id in _guild_ids:
-                self.parent.client._guild_specific_application_commands[guild_id]['chat_input'][self.parent.name]._sub_commands[self.name]._sub_commands[_name] = SubCommand(self, _name, _description, _options, func=func, connector=connector, **kwargs)
-
-            self._sub_commands[_name] = subcommand = GuildOnlySubCommand(parent=self, name=_name, description=_description, options=_options, guild_ids=_guild_ids, func=func, connector=connector, **kwargs)
-            return subcommand
-        return decorator
+        return '<GuildOnlySubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s, guild_ids=%s>' % \
+               (self.parent.name,
+                self.name,
+                self.description,
+                ', '.join([sub_cmd.name for sub_cmd in self.sub_commands]),
+                ', '.join([str(g) for g in self.guild_ids])
+                )
 
 
 def generate_options(func: typing.Callable, descriptions: dict = {}, connector: dict = {}, is_cog: bool = False):
@@ -1005,16 +996,24 @@ def generate_options(func: typing.Callable, descriptions: dict = {}, connector: 
         channel_types = []
         required = True
         is_channel = False
+        default = None
 
         if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD): # Skip parameters like *args and **kwargs
             continue
         if param.default is not inspect._empty:
             # If a default value for the parameter is set, then the option is not requiered.
             required = False
+            default = param.default
         if param.annotation is inspect._empty:
             # The parameter is not anotated.
             # Since we can't know what the person wants, we assume it's a string, add the option and continue.
-            options.append(SlashCommandOption(OptionType.string, name, description, required))
+            options.append(
+                SlashCommandOption(option_type=OptionType.string,
+                                   name=name,
+                                   description=description,
+                                   required=required,
+                                   default=default)
+            )
             continue
         if isinstance(param.annotation, SlashCommandOption):
             # If you annotate a parameter with an instance of SlashCommandOption (not recomered)
@@ -1038,11 +1037,14 @@ def generate_options(func: typing.Callable, descriptions: dict = {}, connector: 
                     channel_types.append(ChannelType.from_type(arg))
                     is_channel = True
             if is_channel:
-                options.append(SlashCommandOption(option_type=OptionType.channel,
-                                                  name=name,
-                                                  required=required,
-                                                  channel_types=channel_types,
-                                                  description=description))
+                options.append(
+                    SlashCommandOption(option_type=OptionType.channel,
+                                       name=name,
+                                       required=required,
+                                       channel_types=channel_types,
+                                       description=description,
+                                       default=default)
+                )
                 continue
             else:
                 param = param.replace(annotation=args[0])
@@ -1078,7 +1080,15 @@ def generate_options(func: typing.Callable, descriptions: dict = {}, connector: 
                         choices.append(SlashCommandOptionChoice(str(k), option_type(v)))
                 else:
                     choices.append(SlashCommandOptionChoice(str(arg), option_type(arg)))
-            options.append(SlashCommandOption(option_type=option_type, name=name, description=description, requiered=required, choices=choices))
+            options.append(
+                SlashCommandOption(
+                    option_type=option_type,
+                    name=name,
+                    description=description,
+                    requiered=required,
+                    choices=choices,
+                    default=default)
+            )
             continue
         elif isinstance(param.annotation, dict):
             # Use a dictionary as annotation to declare choices for a option.
@@ -1090,8 +1100,23 @@ def generate_options(func: typing.Callable, descriptions: dict = {}, connector: 
                 option_type = str
             for k, v in param.annotation.items():
                 choices.append(SlashCommandOptionChoice(str(k), option_type(v)))
-            options.append(SlashCommandOption(option_type=OptionType.string, name=name, description=description, requiered=required, choices=choices))
+            options.append(
+                SlashCommandOption(option_type=OptionType.string,
+                                   name=name,
+                                   description=description,
+                                   requiered=required,
+                                   choices=choices,
+                                   default=default)
+            )
             continue
         _type, channel_type = OptionType.from_type(param.annotation) or OptionType.string
-        options.append(SlashCommandOption(option_type=_type, name=name, description=description, required=required, choices=choices, channel_types=channel_type))
+        options.append(
+            SlashCommandOption(option_type=_type,
+                               name=name,
+                               description=description,
+                               required=required,
+                               choices=choices,
+                               channel_types=channel_type,
+                               default=default)
+        )
     return options
