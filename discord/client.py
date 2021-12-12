@@ -465,7 +465,7 @@ class Client:
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
 
-    async def on_application_command_error(self, cmd, exception, *args, **kwargs):
+    async def on_application_command_error(self, cmd, interaction, exception, *args, **kwargs):
         """|coro|
 
             The default error handler when an Exception was raised when invoking an application-command.
@@ -474,7 +474,7 @@ class Client:
             overridden to have a different implementation.
             Check :func:`~discord.on_application_command_error` for more details.
             """
-        print('Ignoring exception in {type}-command {name}'.format(type=cmd.type, name=cmd.name), file=sys.stderr)
+        print('Ignoring exception in {type} {name}'.format(type=cmd.type, name=cmd.name), file=sys.stderr)
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     async def _request_sync_commands(self):
@@ -1345,6 +1345,7 @@ class Client:
                 raise InvalidArgument(
                     'You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.'
                 )
+            guild_cmds = []
             if guild_ids:
                 for guild_id in guild_ids:
                     base, base_command, sub_command_group = None, None, None
@@ -1383,15 +1384,18 @@ class Client:
                         base._sub_commands[_name] = SubCommand(parent=base, name=_name,
                                                                description=_description, options=_options,
                                                                connector=connector, func=func)
+                        guild_cmds.append(base._sub_commands[_name])
                     else:
                         self._guild_specific_application_commands[guild_id]['chat_input'][_name] =\
                             SlashCommand(name=_name, description=_description,
                                          default_permission=default_permission, options=_options,
                                          func=func, guild_id=guild_id, connector=connector)
+                        guild_cmds.append(self._guild_specific_application_commands[guild_id]['chat_input'][_name])
                 if base_name:
                     base = GuildOnlySlashCommand(client=self, name=_name, description=_description,
                                                  default_permission=default_permission, options=_options,
-                                                 guild_ids=guild_ids, connector=connector)
+                                                 guild_ids=guild_ids, connector=connector,
+                                                 commands=guild_cmds)
                     if group_name:
                         base = GuildOnlySubCommandGroup(parent=base, client=self, name=_name, description=_description,
                                                         default_permission=default_permission, options=_options,
@@ -1400,7 +1404,8 @@ class Client:
                                                options=_options, func=func, guild_ids=guild_ids, connector=connector)
                 return GuildOnlySlashCommand(client=self, name=_name, description=_description,
                                              default_permission=default_permission, options=_options,
-                                             func=func, guild_ids=guild_ids, connector=connector)
+                                             func=func, guild_ids=guild_ids, connector=connector,
+                                             commands=guild_cmds)
             else:
                 base, base_command, sub_command_group = None, None, None
                 if base_name:

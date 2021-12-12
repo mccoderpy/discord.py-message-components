@@ -190,8 +190,12 @@ class ApplicationCommand:
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(*args, exc)
-            self._state.dispatch('application_command_error', self, interaction, exc)
+                if self.cog is not None:
+                    await self.on_error(self.cog, interaction, exc)
+                else:
+                    await self.on_error(self.cog, interaction, exc)
+            else:
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -580,8 +584,12 @@ class SubCommand(SlashCommandOption):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(interaction, exc)
-            self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
+                if self.cog is not None:
+                    await self.on_error(self.cog, interaction, exc)
+                else:
+                    await self.on_error(self.cog, interaction, exc)
+            else:
+                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
     def autocomplete_callback(self, coro):
         """
@@ -608,8 +616,12 @@ class SubCommand(SlashCommandOption):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(interaction, exc)
-            self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
+                if self.cog is not None:
+                    await self.on_error(self.cog, interaction, exc)
+                else:
+                    await self.on_error(self.cog, interaction, exc)
+            else:
+                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -623,6 +635,7 @@ class GuildOnlySubCommand(SubCommand):
     def __init__(self, *args, guild_ids: List[int] = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.guild_ids = guild_ids or self.parent.guild_ids
+        self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
         return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>'\
@@ -633,6 +646,12 @@ class GuildOnlySubCommand(SubCommand):
                   ', '.join([str(g) for g in self.guild_ids])
                   )
 
+    def error(self, coro):
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError('The error handler registered must be a coroutine.')
+        for cmd in self._commands:
+            cmd.on_error = coro
+        return coro
 
 class SlashCommand(ApplicationCommand):
     def __init__(self,
@@ -737,8 +756,12 @@ class SlashCommand(ApplicationCommand):
                 await self.autocomplete_func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(interaction, exc)
-            self._state.dispatch('application_command_error', self, interaction, exc)
+                if self.cog is not None:
+                    await self.on_error(self.cog, interaction, exc)
+                else:
+                    await self.on_error(self.cog, interaction, exc)
+            else:
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     @property
     def sub_commands(self) -> Optional[List[Union['SubCommandGroup[SubCommand]', SubCommand]]]:
@@ -774,8 +797,12 @@ class SlashCommand(ApplicationCommand):
                 await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
-                await self.on_error(interaction, exc)
-            self._state.dispatch('application_command_error', self, interaction, exc)
+                if self.cog is not None:
+                    await self.on_error(self.cog, interaction, exc)
+                else:
+                    await self.on_error(self.cog, interaction, exc)
+            else:
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     async def _parse_arguments(self, interaction):
         to_invoke = self
@@ -829,6 +856,7 @@ class SlashCommand(ApplicationCommand):
 class GuildOnlySlashCommand(SlashCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
         return '<GuildOnlySlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_ids=%s>'\
@@ -839,6 +867,12 @@ class GuildOnlySlashCommand(SlashCommand):
                   ', '.join([str(g) for g in self.guild_ids])
                   )
 
+    def error(self, coro):
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError('The error handler registered must be a coroutine.')
+        for cmd in self._commands:
+            cmd.on_error = coro
+        return coro
 
 class UserCommand(ApplicationCommand):
     def __init__(self, name, default_permission: bool = True, **kwargs):
