@@ -651,7 +651,7 @@ class Guild(Hashable):
         """
         return sorted(self._roles.values())
 
-    def get_role(self, role_id):
+    def get_role(self, role_id) -> Optional[Role]:
         """Returns a role with the given ID.
 
         Parameters

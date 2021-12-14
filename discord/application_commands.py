@@ -47,7 +47,8 @@ __all__ = (
     'SubCommand',
     'GuildOnlySubCommand',
     'UserCommand',
-    'MessageCommand'
+    'MessageCommand',
+    'generate_options'
 )
 
 
@@ -982,7 +983,7 @@ class GuildOnlySubCommandGroup(SubCommandGroup):
                 )
 
 
-def generate_options(func: typing.Callable, descriptions: dict = {}, connector: dict = {}, is_cog: bool = False):
+def generate_options(func: typing.Awaitable[Any], descriptions: dict = {}, connector: dict = {}, is_cog: bool = False):
     """
     This function is used to create the options for a :class:`SlashCommand`/:class:`SubCommand`
     out of the parameters of a functionn if no options are providet in the decorator.

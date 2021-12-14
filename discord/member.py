@@ -44,6 +44,7 @@ from .enums import Status, try_enum
 from .colour import Colour
 from .object import Object
 
+
 class VoiceState:
     """Represents a Discord user's voice state.
 
@@ -118,6 +119,7 @@ class VoiceState:
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
+
 def flatten_user(cls):
     for attr, value in itertools.chain(BaseUser.__dict__.items(), User.__dict__.items()):
         # ignore private/special methods
@@ -156,7 +158,9 @@ def flatten_user(cls):
 
     return cls
 
+
 _BaseUser = discord.abc.User
+
 
 @flatten_user
 class Member(discord.abc.Messageable, _BaseUser):
@@ -284,7 +288,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     @classmethod
     def _copy(cls, member):
-        self = cls.__new__(cls) # to bypass __init__
+        self = cls.__new__(cls)  # to bypass __init__
 
         self._roles = utils.SnowflakeList(member._roles, is_sorted=True)
         self.joined_at = member.joined_at
@@ -601,8 +605,8 @@ class Member(discord.abc.Messageable, _BaseUser):
     def communication_disabled_until(self) -> Optional[datetime.datetime]:
         return self._communication_disabled_until and datetime.datetime.fromisoformat(self._communication_disabled_until)
 
-    async def mute(self, until: datetime.datetime, *, reason=None):
-          await self.edit(communication_disabled_until=until, reason=reason)
+    async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None):
+        await self.edit(communication_disabled_until=until, reason=reason)
 
     async def ban(self, **kwargs):
         """|coro|
@@ -611,21 +615,21 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
         await self.guild.ban(self, **kwargs)
 
-    async def unban(self, *, reason=None):
+    async def unban(self, *, reason: Optional[str] = None):
         """|coro|
 
         Unbans this member. Equivalent to :meth:`Guild.unban`.
         """
         await self.guild.unban(self, reason=reason)
 
-    async def kick(self, *, reason=None):
+    async def kick(self, *, reason: Optional[str] = None):
         """|coro|
 
         Kicks this member. Equivalent to :meth:`Guild.kick`.
         """
         await self.guild.kick(self, reason=reason)
 
-    async def edit(self, *, reason=None, **fields):
+    async def edit(self, *, reason: Optional[str] = None, **fields):
         """|coro|
 
         Edits the member's data.
@@ -735,7 +739,6 @@ class Member(discord.abc.Messageable, _BaseUser):
         else:
             payload['roles'] = tuple(r.id for r in roles)
 
-
         try:
             communication_disabled_until: Optional[datetime.datetime] = fields['communication_disabled_until']
         except KeyError:
@@ -783,7 +786,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         else:
             await self._state.http.edit_my_voice_state(self.guild.id, payload)
 
-    async def move_to(self, channel, *, reason=None):
+    async def move_to(self, channel, *, reason: Optional[str] = None):
         """|coro|
 
         Moves a member to a new voice channel (they must be connected first).
@@ -806,7 +809,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
         await self.edit(voice_channel=channel, reason=reason)
 
-    async def add_roles(self, *roles, reason=None, atomic=True):
+    async def add_roles(self, *roles, reason: Optional[str] = None, atomic=True):
         r"""|coro|
 
         Gives the member a number of :class:`Role`\s.
@@ -845,7 +848,7 @@ class Member(discord.abc.Messageable, _BaseUser):
             for role in roles:
                 await req(guild_id, user_id, role.id, reason=reason)
 
-    async def remove_roles(self, *roles, reason=None, atomic=True):
+    async def remove_roles(self, *roles, reason: str = None, atomic=True):
         r"""|coro|
 
         Removes :class:`Role`\s from this member.
@@ -875,7 +878,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
 
         if not atomic:
-            new_roles = [Object(id=r.id) for r in self.roles[1:]] # remove @everyone
+            new_roles = [Object(id=r.id) for r in self.roles[1:]]  # remove @everyone
             for role in roles:
                 try:
                     new_roles.remove(Object(id=role.id))

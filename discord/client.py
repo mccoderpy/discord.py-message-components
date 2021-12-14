@@ -29,11 +29,10 @@ import inspect
 import logging
 import signal
 import sys
+import re
 import traceback
 import warnings
-import types
-import typing
-from typing import List, Union, Dict, Any, Awaitable
+from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable
 
 import aiohttp
 
@@ -64,6 +63,7 @@ from .appinfo import AppInfo
 
 log = logging.getLogger(__name__)
 
+
 def _cancel_tasks(loop):
     try:
         task_retriever = asyncio.Task.all_tasks
@@ -93,6 +93,7 @@ def _cancel_tasks(loop):
                 'task': task
             })
 
+
 def _cleanup_loop(loop):
     try:
         _cancel_tasks(loop)
@@ -101,6 +102,7 @@ def _cleanup_loop(loop):
     finally:
         log.info('Closing the event loop.')
         loop.close()
+
 
 class _ClientEventTask(asyncio.Task):
     def __init__(self, original_coro, event_name, coro, *, loop):
@@ -117,6 +119,7 @@ class _ClientEventTask(asyncio.Task):
         if self._exception is not None:
             info.append(('exception', repr(self._exception)))
         return '<ClientEventTask {}>'.format(' '.join('%s=%s' % t for t in info))
+
 
 class Client:
     r"""Represents a client connection that connects to Discord.
@@ -247,35 +250,17 @@ class Client:
     loop: :class:`asyncio.AbstractEventLoop`
         The event loop that the client uses for HTTP requests and websocket operations.
     """
-    def __init__(self, *, loop=None, **options):
+    def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None, **options):
         self.ws = None
-        self.loop = asyncio.get_event_loop() if loop is None else loop
+        self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop() if loop is None else loop
         self._listeners = {}
         self.sync_commands: bool = options.get('sync_commands', False)
         self.delete_not_existing_commands: bool = options.pop('delete_not_existing_commands', True)
-        self._application_commands_by_type: Dict[str,
-                                                 Dict[str,
-                                                     Union[
-                                                         SlashCommand,
-                                                         UserCommand,
-                                                         MessageCommand
-                                                 ]]
-        ] = {
-            'chat_input': {},
-            'message': {},
-            'user': {}
+        self._application_commands_by_type: Dict[str, Dict[str, Union[SlashCommand, UserCommand, MessageCommand]]] = {
+            'chat_input': {}, 'message': {}, 'user': {}
         }
-        self._guild_specific_application_commands: Dict[int,
-                                                        Dict[str,
-                                                             Dict[str,
-                                                                  Union[
-                                                                      SlashCommand,
-                                                                      UserCommand,
-                                                                      MessageCommand
-                                                                  ]
-                                                             ]
-                                                        ]
-        ] = {}
+        self._guild_specific_application_commands: Dict[
+            int, Dict[str, Dict[str, Union[SlashCommand, UserCommand, MessageCommand]]]] = {}
         self._application_commands: Dict[int, ApplicationCommand] = {}
         self.shard_id = options.get('shard_id')
         self.shard_count = options.get('shard_count')
@@ -465,7 +450,7 @@ class Client:
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
 
-    async def on_application_command_error(self, cmd, interaction, exception, *args, **kwargs):
+    async def on_application_command_error(self, cmd, interaction, exception):
         """|coro|
 
             The default error handler when an Exception was raised when invoking an application-command.
@@ -509,8 +494,8 @@ class Client:
                     continue
                 for updated in registered_guild_commands_raw:
                     try:
-                        command = self._guild_specific_application_commands[guild.id]\
-                            [str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+                        command = self._guild_specific_application_commands[guild.id][
+                            str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
                     except KeyError:
                         continue
                     else:
@@ -1002,7 +987,7 @@ class Client:
         """
         await self._ready.wait()
 
-    def wait_for(self, event, *, check=None, timeout=None):
+    def wait_for(self, event, *, check=None, timeout: Optional[float] = None):
         """|coro|
 
         Waits for a WebSocket event to be dispatched.
@@ -1130,7 +1115,9 @@ class Client:
         log.debug('%s has successfully been registered as an event', coro.__name__)
         return coro
 
-    def on_click(self, custom_id=None):
+    def on_click(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
         """
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
          if so, the :func:`func` is called..
@@ -1143,13 +1130,13 @@ class Client:
 
         Parameters
         ----------
-        custom_id: Optional[str]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
             If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
 
         Example
         -------
-
         .. code-block:: python
 
             # the Button
@@ -1167,11 +1154,13 @@ class Client:
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
 
-            _name = custom_id if custom_id is not None else func.__name__
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(func.__name__)
 
             try:
                 listeners = self._listeners['raw_button_click']
@@ -1179,12 +1168,14 @@ class Client:
                 listeners = []
                 self._listeners['raw_button_click'] = listeners
 
-            listeners.append((func, lambda i, c: str(c.custom_id) == str(custom_id)))
+            listeners.append((func, lambda i, c: _custom_id.match(str(c.custom_id))))
             return func
 
         return decorator
     
-    def on_select(self, custom_id=None):
+    def on_select(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
         """
         A decorator with which you can assign a function to a specific :class:`discord.SelectMenu` (or its custom_id).
         
@@ -1196,14 +1187,14 @@ class Client:
 
         Parameters
         -----------
-        custom_id: Optional[str]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
             If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as an function name
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
 
 
         Example
         -------
-
         .. code-block:: python
 
             # the SelectMenu
@@ -1224,11 +1215,13 @@ class Client:
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
 
-            _custom_id = custom_id if custom_id is not None else func.__name__
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(func.__name__)
 
             try:
                 listeners = self._listeners['raw_selection_select']
@@ -1236,7 +1229,7 @@ class Client:
                 listeners = []
                 self._listeners['raw_selection_select'] = listeners
 
-            listeners.append((func, lambda i, c: str(c.custom_id) == str(_custom_id)))
+            listeners.append((func, lambda i, c: _custom_id.match(str(c.custom_id))))
             return func
 
         return decorator
@@ -1244,8 +1237,14 @@ class Client:
     def slash_command(self, name: str = None, description: str = None, default_permission: bool = True,
                       options: list = [], guild_ids: List[int] = None, connector: dict = {},
                       option_descriptions: dict = {}, base_name: str = None, base_desc: str = None,
-                      group_name: str = None, group_desc: str = None) -> lambda func:\
-            Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+                      group_name: str = None, group_desc: str = None) -> Callable[
+                                                                         [Awaitable[Any]],
+                                                                         Union[
+                                                                             SlashCommand,
+                                                                             GuildOnlySlashCommand,
+                                                                             SubCommand,
+                                                                             GuildOnlySubCommand
+                                                                         ]]:
         """
         A decorator that adds a slash-command to the client.
 
@@ -1368,15 +1367,17 @@ class Client:
                         base = base_command
                     if group_name:
                         try:
-                            sub_command_group = self._guild_specific_application_commands[guild_id]['chat_input']\
-                                [base_name]._sub_commands[group_name]
+                            sub_command_group = \
+                                self._guild_specific_application_commands[guild_id]['chat_input'][
+                                    base_name]._sub_commands[
+                                    group_name]
                         except KeyError:
-                            sub_command_group = self._guild_specific_application_commands[guild_id]['chat_input']\
-                                [base_name]._sub_commands[group_name] =\
-                                SubCommandGroup(parent=base_command,
-                                                name=group_name,
-                                                description=group_desc or 'No Description',
-                                                guild_id=guild_id)
+                            sub_command_group = \
+                            self._guild_specific_application_commands[guild_id]['chat_input'][base_name]._sub_commands[
+                                group_name] = SubCommandGroup(parent=base_command,
+                                                              name=group_name,
+                                                              description=group_desc or 'No Description',
+                                                              guild_id=guild_id)
                         else:
                             sub_command_group.description = group_desc or sub_command_group.description
                         base = sub_command_group
@@ -1420,14 +1421,14 @@ class Client:
                     else:
                         base_command.description = base_desc or base_command.description
                         base_command.default_permission = default_permission
-                        base = base_command
+                    base = base_command
                 if group_name:
                     try:
-                        sub_command_group = self._application_commands_by_type['chat_input']\
-                            [base_name]._sub_commands[group_name]
+                        sub_command_group = self._application_commands_by_type['chat_input'][base_name]._sub_commands[
+                            group_name]
                     except KeyError:
-                        sub_command_group = self._application_commands_by_type['chat_input']\
-                            [base_name]._sub_commands[group_name] = SubCommandGroup(
+                        sub_command_group = self._application_commands_by_type['chat_input'][base_name]._sub_commands[
+                            group_name] = SubCommandGroup(
                             parent=base_command,
                             name=group_name,
                             description=group_desc or 'No Description'
@@ -1448,7 +1449,10 @@ class Client:
                 return command
         return decorator
 
-    def message_command(self, name: str = None, default_permission: bool = True, guild_ids: List[int] = None):
+    def message_command(self,
+                        name: str = None,
+                        default_permission: bool = True,
+                        guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], MessageCommand]:
         """
         A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
         to the client.
@@ -1479,7 +1483,7 @@ class Client:
         TypeError:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
         """
-        def decorator(func: Awaitable):
+        def decorator(func: Awaitable[Any]) -> MessageCommand:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('The message-command function registered  must be a coroutine.')
             _name = name or func.__name__
@@ -1499,7 +1503,10 @@ class Client:
             return cmd
         return decorator
 
-    def user_command(self, name: str = None, default_permission: bool = True, guild_ids: List[int] = None):
+    def user_command(self,
+                     name: str = None,
+                     default_permission: bool = True,
+                     guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], UserCommand]:
         """
        A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
        to the client.
@@ -1530,7 +1537,7 @@ class Client:
        TypeError:
            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
        """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]) -> UserCommand:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('The user-command function registered  must be a coroutine.')
             _name = name or func.__name__
@@ -1615,7 +1622,6 @@ class Client:
                 command._fill_data(updated)
                 command._state = self._connection
                 self._application_commands[command.id] = command
-
 
         log.info('Checking for changes on guild-specific application-commands...')
         for guild_id, command_types in self._guild_specific_application_commands.items():
@@ -1707,8 +1713,8 @@ class Client:
                 log.info('Synced application-commands for %s (%s).' % (guild_id, self.get_guild(int(guild_id))))
 
             for updated in registered_guild_commands_raw:
-                command = self._guild_specific_application_commands[int(guild_id)]\
-                    [str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+                command = self._guild_specific_application_commands[int(guild_id)][
+                    str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
                 if command:
                     command._fill_data(updated)
                     command._state = self._connection
@@ -1799,7 +1805,7 @@ class Client:
 
     # Guild stuff
 
-    def fetch_guilds(self, *, limit=100, before=None, after=None):
+    def fetch_guilds(self, *, limit: Optional[int] = 100, before=None, after=None):
         """Retrieves an :class:`.AsyncIterator` that enables receiving your guilds.
 
         .. note::
@@ -2219,7 +2225,6 @@ class Client:
         return Webhook.from_state(data, state=self._connection)
 
     async def fetch_all_nitro_stickers(self):
-        data = await self.http.get_all_nitro_stickers()
         data = await self.http.get_all_nitro_stickers()
         packs = [StickerPack(state=self._connection, data=d) for d in data['sticker_packs']]
         return packs

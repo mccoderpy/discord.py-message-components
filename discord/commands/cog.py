@@ -26,8 +26,9 @@ DEALINGS IN THE SOFTWARE.
 
 import inspect
 import copy
+import re
 import typing
-
+from typing import Optional, Union, List, Callable, Awaitable, Pattern, AnyStr, Any
 from ._types import _BaseCommand
 
 __all__ = (
@@ -103,7 +104,6 @@ class CogMeta(type):
     __application_commands_by_type__ = {'chat_input': {}, 'message': {}, 'user': {}}
     __guild_specific_application_commands__ = {}
 
-
     def __new__(cls, *args, **kwargs):
         name, bases, attrs = args
         attrs['__cog_name__'] = kwargs.pop('name', name)
@@ -117,8 +117,6 @@ class CogMeta(type):
         commands = {}
         listeners = {}
         cog_interaction_listeners = {}
-        application_commands_by_type = {}
-        guild_specific_application_commands = {}
 
         no_bot_cog = 'Commands or listeners must not start with cog_ or bot_ (in method {0.__name__}.{1})'
 
@@ -183,9 +181,11 @@ class CogMeta(type):
     def qualified_name(cls):
         return cls.__cog_name__
 
+
 def _cog_special_method(func):
     func.__cog_special_method__ = None
     return func
+
 
 class Cog(metaclass=CogMeta):
     """The base class that all cogs must inherit from.
@@ -286,7 +286,6 @@ class Cog(metaclass=CogMeta):
     def get_application_commands(cls):
         return [()]
 
-
     @classmethod
     def _get_overridden_method(cls, method):
         """Return None if the method is not overridden. Otherwise returns the overridden method."""
@@ -334,7 +333,9 @@ class Cog(metaclass=CogMeta):
         return decorator
     
     @classmethod
-    def on_click(cls, custom_id=None):
+    def on_click(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
         """
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
         if so, the :func:`func` is called.
@@ -347,9 +348,10 @@ class Cog(metaclass=CogMeta):
 
         Parameters
         ----------
-        custom_id: Optional[str]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
             If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
 
         Example
         -------
@@ -370,23 +372,27 @@ class Cog(metaclass=CogMeta):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
             actual.__cog_interaction_listener__ = True
-            name = custom_id if custom_id else actual.__name__
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(actual.__name__)
             try:
-                actual.__interaction_listener_names__.append(('raw_button_click', name))
+                actual.__interaction_listener_names__.append(('raw_button_click', _custom_id))
             except AttributeError:
-                actual.__interaction_listener_names__ = [('raw_button_click', name)]
+                actual.__interaction_listener_names__ = [('raw_button_click', _custom_id)]
             return func
         return decorator
 
     @classmethod
-    def on_select(cls, custom_id=None):
+    def on_select(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
         """
         A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
 
@@ -398,9 +404,10 @@ class Cog(metaclass=CogMeta):
 
         Parameters
         -----------
-        custom_id: Optional[str]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
             If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as an function name
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
 
         Example
         -------
@@ -425,18 +432,20 @@ class Cog(metaclass=CogMeta):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
             actual.__cog_interaction_listener__ = True
-            name = custom_id if custom_id else actual.__name__
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(actual.__name__)
             try:
-                actual.__interaction_listener_names__.append(('raw_selection_select', name))
+                actual.__interaction_listener_names__.append(('raw_selection_select', _custom_id))
             except AttributeError:
-                actual.__interaction_listener_names__ = [('raw_selection_select', name)]
+                actual.__interaction_listener_names__ = [('raw_selection_select', _custom_id)]
             return func
         return decorator
 
@@ -446,13 +455,15 @@ class Cog(metaclass=CogMeta):
                       description: str = None,
                       default_permission: bool = True,
                       options: list = [],
-                      guild_ids: typing.List[int] = None,
+                      guild_ids: List[int] = None,
                       connector: dict = {},
                       option_descriptions: dict = {},
                       base_name: str = None,
                       base_desc: str = None,
                       group_name: str = None,
-                      group_desc: str = None) -> lambda func: typing.Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+                      group_desc: str = None) -> Callable[
+        [Awaitable[Any]], Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]
+    ]:
         """
         A decorator that adds a slash-command to the client.
 
@@ -523,7 +534,9 @@ class Cog(metaclass=CogMeta):
             The function that wich registers the func given as a slash-command to the client and returns the generated command.
         """
 
-        def decorator(func: typing.Awaitable[typing.Any]) -> typing.Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
+        def decorator(func: Awaitable[Any]) -> Union[
+            SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand
+        ]:
             """
 
             Parameters
@@ -578,12 +591,12 @@ class Cog(metaclass=CogMeta):
                         try:
                             sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]._sub_commands[group_name]
                         except KeyError:
-                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]._sub_commands[group_name] =\
-                                SubCommandGroup(cog=cls,
-                                                parent=base_command,
-                                                name=group_name,
-                                                description=group_desc or 'No Description',
-                                                guild_id=guild_id)
+                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][
+                                base_name]._sub_commands[group_name] = SubCommandGroup(cog=cls,
+                                                                                       parent=base_command,
+                                                                                       name=group_name,
+                                                                                       description=group_desc or 'No Description',
+                                                                                       guild_id=guild_id)
                         else:
                             sub_command_group.description = group_desc or sub_command_group.description
                         base = sub_command_group
@@ -629,7 +642,7 @@ class Cog(metaclass=CogMeta):
                     try:
                         base_command = cls.__application_commands_by_type__['chat_input'][base_name]
                     except KeyError:
-                        base_command =SlashCommand(
+                        base_command = cls.__application_commands_by_type__['chat_input'][base_name] = SlashCommand(
                             cog=cls,
                             name=base_name,
                             description=base_desc or 'No Description',
@@ -638,16 +651,16 @@ class Cog(metaclass=CogMeta):
                     else:
                         base_command.description = base_desc or base_command.description
                         base_command.default_permission = default_permission
-                        base = base_command
+                    base = base_command
                 if group_name:
                     try:
                         sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]
                     except KeyError:
-                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]\
-                            = SubCommandGroup(cog=cls,
-                                              parent=base_command,
-                                              name=group_name,
-                                              description=group_desc or 'No Description')
+                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[
+                            group_name] = SubCommandGroup(cog=cls,
+                                                          parent=base_command,
+                                                          name=group_name,
+                                                          description=group_desc or 'No Description')
                     else:
                         sub_command_group.description = group_desc or sub_command_group.description
                     base = sub_command_group
@@ -659,7 +672,7 @@ class Cog(metaclass=CogMeta):
                                                                      options=_options,
                                                                      func=func, connector=connector)
                 else:
-                    command = SlashCommand(
+                    command = cls.__application_commands_by_type__['chat_input'][_name] = SlashCommand(
                         name=_name, description=_description,
                         default_permission=default_permission,
                         options=_options, func=func,
@@ -668,7 +681,10 @@ class Cog(metaclass=CogMeta):
         return decorator
 
     @classmethod
-    def message_command(cls, name: str = None, default_permission: bool = True, guild_ids: typing.List[int] = None) -> lambda func: MessageCommand:
+    def message_command(cls,
+                        name: str = None,
+                        default_permission: bool = True,
+                        guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], MessageCommand]:
         """
         A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
         to the client.
@@ -699,7 +715,7 @@ class Cog(metaclass=CogMeta):
         TypeError:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
         """
-        def decorator(func: typing.Awaitable):
+        def decorator(func: Awaitable[Any]) -> MessageCommand:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
@@ -714,9 +730,11 @@ class Cog(metaclass=CogMeta):
             return cmd
         return decorator
 
-
     @classmethod
-    def user_command(cls, name: str = None, default_permission: bool = True, guild_ids: typing.List[int] = None) -> lambda func: UserCommand:
+    def user_command(cls,
+                     name: str = None,
+                     default_permission: bool = True,
+                     guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], UserCommand]:
         """
        A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
        to the client.
@@ -747,7 +765,7 @@ class Cog(metaclass=CogMeta):
        TypeError:
            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
        """
-        def decorator(func: typing.Awaitable):
+        def decorator(func: Awaitable[Any]) -> UserCommand:
             actual = func
             if isinstance(actual, staticmethod):
                 func = actual.__func__
