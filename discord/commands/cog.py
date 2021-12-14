@@ -155,7 +155,7 @@ class CogMeta(type):
                             raise TypeError(no_bot_cog.format(base, elem))
                         listeners[elem] = value
 
-        new_cls.__cog_commands__ = list(commands.values()) # this will be copied in Cog.__new__
+        new_cls.__cog_commands__ = list(commands.values())  # this will be copied in Cog.__new__
 
         listeners_as_list = []
         for listener in listeners.values():
@@ -330,8 +330,9 @@ class Cog(metaclass=CogMeta):
             # to pick it up but the metaclass unfurls the function and
             # thus the assignments need to be on the actual function
             return func
+
         return decorator
-    
+
     @classmethod
     def on_click(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
         [Awaitable[Any]], Awaitable[Any]
@@ -372,6 +373,7 @@ class Cog(metaclass=CogMeta):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
+
         def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
             actual = func
             if isinstance(actual, staticmethod):
@@ -387,6 +389,7 @@ class Cog(metaclass=CogMeta):
             except AttributeError:
                 actual.__interaction_listener_names__ = [('raw_button_click', _custom_id)]
             return func
+
         return decorator
 
     @classmethod
@@ -432,6 +435,7 @@ class Cog(metaclass=CogMeta):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
+
         def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
             actual = func
             if isinstance(actual, staticmethod):
@@ -447,6 +451,7 @@ class Cog(metaclass=CogMeta):
             except AttributeError:
                 actual.__interaction_listener_names__ = [('raw_selection_select', _custom_id)]
             return func
+
         return decorator
 
     @classmethod
@@ -561,10 +566,13 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('The slash-command function registered  must be a coroutine.')
             _name = (name or actual.__name__).lower()
-            _description = description or ((inspect.cleandoc(actual.__doc__)[:100]) if actual.__doc__ else 'No Description')
-            _options = options or generate_options(actual, descriptions=option_descriptions, connector=connector, is_cog=True)
+            _description = description or (
+                (inspect.cleandoc(actual.__doc__)[:100]) if actual.__doc__ else 'No Description')
+            _options = options or generate_options(actual, descriptions=option_descriptions, connector=connector,
+                                                   is_cog=True)
             if group_name and not base_name:
-                raise InvalidArgument('You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.')
+                raise InvalidArgument(
+                    'You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.')
             guild_cmds = []
             if guild_ids:
                 for guild_id in guild_ids:
@@ -572,12 +580,15 @@ class Cog(metaclass=CogMeta):
                     try:
                         cls.__guild_specific_application_commands__[guild_id]
                     except KeyError:
-                        cls.__guild_specific_application_commands__[guild_id] = {'chat_input': {}, 'message': {}, 'user': {}}
+                        cls.__guild_specific_application_commands__[guild_id] = {'chat_input': {}, 'message': {},
+                                                                                 'user': {}}
                     if base_name:
                         try:
-                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]
+                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][
+                                base_name]
                         except KeyError:
-                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name] =\
+                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][
+                                base_name] = \
                                 SlashCommand(cog=cls,
                                              name=base_name,
                                              description=base_desc or 'No Description',
@@ -589,7 +600,8 @@ class Cog(metaclass=CogMeta):
                         base = base_command
                     if group_name:
                         try:
-                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]._sub_commands[group_name]
+                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][
+                                base_name]._sub_commands[group_name]
                         except KeyError:
                             sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][
                                 base_name]._sub_commands[group_name] = SubCommandGroup(cog=cls,
@@ -610,7 +622,7 @@ class Cog(metaclass=CogMeta):
                                                                func=func)
                         guild_cmds.append(base._sub_commands[_name])
                     else:
-                        cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name] =\
+                        cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name] = \
                             SlashCommand(cog=cls,
                                          name=_name,
                                          description=_description,
@@ -654,7 +666,8 @@ class Cog(metaclass=CogMeta):
                     base = base_command
                 if group_name:
                     try:
-                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]
+                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[
+                            group_name]
                     except KeyError:
                         sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[
                             group_name] = SubCommandGroup(cog=cls,
@@ -678,6 +691,7 @@ class Cog(metaclass=CogMeta):
                         options=_options, func=func,
                         connector=connector)
                 return command
+
         return decorator
 
     @classmethod
@@ -715,6 +729,7 @@ class Cog(metaclass=CogMeta):
         TypeError:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
         """
+
         def decorator(func: Awaitable[Any]) -> MessageCommand:
             actual = func
             if isinstance(actual, staticmethod):
@@ -728,6 +743,7 @@ class Cog(metaclass=CogMeta):
                                  func=func,
                                  guild_ids=guild_ids)
             return cmd
+
         return decorator
 
     @classmethod
@@ -765,6 +781,7 @@ class Cog(metaclass=CogMeta):
        TypeError:
            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
        """
+
         def decorator(func: Awaitable[Any]) -> UserCommand:
             actual = func
             if isinstance(actual, staticmethod):
@@ -772,8 +789,10 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('The user-command function registered  must be a coroutine.')
             _name = name or actual.__name__
-            cmd = UserCommand(cog=cls, name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            cmd = UserCommand(cog=cls, name=_name, default_permission=default_permission, func=func,
+                              guild_ids=guild_ids)
             return cmd
+
         return decorator
 
     def has_error_handler(self):
