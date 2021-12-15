@@ -944,6 +944,8 @@ class BotBase(GroupMixin):
 
             for command in commands.values():
                 # check if there is already a command with the same name
+                command.cog = cog
+                command.disabled = False
                 if command.name in self._application_commands_by_type[cmd_type]:
                     existing_command = self._application_commands_by_type[cmd_type][command.name]
 
@@ -951,6 +953,8 @@ class BotBase(GroupMixin):
                         if command.has_subcommands:
                             # if the command has subcommands add them to the existing one.
                             for sub_command in command.sub_commands:
+                                sub_command.cog = cog
+                                suB_command.disabled = False
                                 if sub_command.type.sub_command_group:
                                     # if the subcommand is a group that already exists, add the subcommands of it
                                     # to the existing group
@@ -960,8 +964,15 @@ class BotBase(GroupMixin):
                                         for sub_cmd in sub_command.sub_commands:
                                             # set the parent of the subcommand to the existing group
                                             sub_cmd.parent = existing_group
+                                            sub_cmd.cog = cog
+                                            sub_cmd.disabled = False
                                             existing_group._sub_commands[sub_cmd.name] = sub_cmd
                                         continue
+                                    else:
+                                        for sub_cmd in sub_command.sub_commands:
+                                            sub_cmd.cog = cog
+                                            sub_cmd.disabled = False
+                                        existing_command._sub_commands[sub_command.name] = sub_command
 
                                 # set the parent of the subcommand to the existing command
                                 sub_command.parent = existing_command
@@ -991,6 +1002,8 @@ class BotBase(GroupMixin):
             for cmd_type, commands in commands_by_type.items():
 
                 for command in commands.values():
+                    command.cog = cog
+                    command.disabled = False
                     if command.name in self._guild_specific_application_commands[guild_id][cmd_type]:
                         existing_command = self._guild_specific_application_commands[guild_id][cmd_type][command.name]
 
@@ -999,17 +1012,27 @@ class BotBase(GroupMixin):
 
                                 # if the command has subcommands add them to the existing one.
                                 for sub_command in command.sub_commands:
+                                    sub_command.cog = cog
+                                    sub_command.disabled = False
                                     if sub_command.type.sub_command_group:
                                         # if the subcommand is a group that already exists, add the subcommands of it
                                         # to the existing group
-                                        if sub_command.name in existing_command.sub_commands and \
-                                                existing_command._sub_commands[sub_command.name].type.sub_command_group:
+                                        if sub_command.name in existing_command.sub_commands \
+                                                and existing_command._sub_commands[
+                                            sub_command.name].type.sub_command_group:
                                             existing_group = existing_command._sub_commands[sub_command.name]
                                             for sub_cmd in sub_command.sub_commands:
                                                 # set the parent of the subcommand to the existing group
                                                 sub_cmd.parent = existing_group
+                                                sub_cmd.cog = cog
+                                                sub_cmd.disabled = False
                                                 existing_group._sub_commands[sub_cmd.name] = sub_cmd
                                             continue
+                                        else:
+                                            for sub_cmd in sub_command.sub_commands:
+                                                sub_cmd.cog = cog
+                                                command.disabled = False
+                                            existing_command._sub_commands[sub_command.name] = sub_command
 
                                     # set the parent of the subcommand to the existing command
                                     sub_command.parent = existing_command
