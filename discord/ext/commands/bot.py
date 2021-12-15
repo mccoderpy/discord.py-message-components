@@ -28,10 +28,11 @@ import asyncio
 import collections
 import inspect
 import importlib.util
+import re
 import sys
 import traceback
 import types
-from typing import TYPE_CHECKING
+from typing import Optional, Union, Pattern, AnyStr, Callable, Awaitable, Any
 
 import discord
 
@@ -42,12 +43,14 @@ from . import errors
 from .help import HelpCommand, DefaultHelpCommand
 from .cog import Cog
 
+
 def when_mentioned(bot, msg):
     """A callable that implements a command prefix equivalent to being mentioned.
 
     These are meant to be passed into the :attr:`.Bot.command_prefix` attribute.
     """
     return [bot.user.mention + ' ', '<@!%s> ' % bot.user.id]
+
 
 def when_mentioned_or(*prefixes):
     """A callable that implements when mentioned or other prefixes provided.
@@ -85,14 +88,18 @@ def when_mentioned_or(*prefixes):
 
     return inner
 
+
 def _is_submodule(parent, child):
     return parent == child or child.startswith(parent + ".")
+
 
 class _DefaultRepr:
     def __repr__(self):
         return '<default-help-command>'
 
+
 _default = _DefaultRepr()
+
 
 class BotBase(GroupMixin):
     def __init__(self, command_prefix, help_command=_default, description=None, **options):
@@ -138,7 +145,6 @@ class BotBase(GroupMixin):
         for (func, check) in self.extra_interaction_events.get(event_name, []):
             if check(*args, **kwargs):
                 self._schedule_event(func, ev, *args, **kwargs)
-
 
     async def close(self):
         for extension in tuple(self.__extensions):
@@ -397,18 +403,27 @@ class BotBase(GroupMixin):
         self._after_invoke = coro
         return coro
 
-
-    def on_click(self, custom_id=None):
+    def on_click(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]= None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
         """
-        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same; if so, the :func:`func` is called..
+        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
+        if so, the :func:`func` is called.
 
-        You can find more info about this in the `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
+        You can find more info about this in the 
+        `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
 
         The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
-
+        
+        Parameters
+        ----------
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
+            If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
+            or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed. 
+        
         Example
         -------
-
         .. code-block:: python
 
             # the Button
@@ -426,35 +441,37 @@ class BotBase(GroupMixin):
         :class:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
-            _custom_id = custom_id if custom_id is not None else func.__name__
+            _custom_id = re.compile(custom_id) if (
+                        custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(func.__name__)
             self.add_interaction_listener('raw_button_click', func, _custom_id)
             return func
+        
         return decorator
     
-    def on_select(self, custom_id=None):
+    def on_select(self, custom_id:Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
         """
         A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
         
-        .. note::
-            This will always give exactly one Parameter of type `discord.Interaction <./interaction.html#discord-interaction>`_ like an `raw_selection_select-Event <#on-raw-button-click>`_.
-
         .. important::
             The Function this decorator attached to must be an coroutine (means an awaitable)
 
         Parameters
         ----------
-        
-        :attr:`custom_id`: Optional[str]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
 
-            If the :attr:`custom_id` of the SelectMenu could not use as an function name or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            If the :attr:`custom_id` of the SelectMenu could not use as an function name
+            or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
 
 
         Example
         -------
-
         .. code-block:: python
 
             # the SelectMenu
@@ -475,19 +492,20 @@ class BotBase(GroupMixin):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func):
+        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
-            _custom_id = custom_id if custom_id is not None else func.__name__
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(func.__name__)
             self.add_interaction_listener('raw_selection_select', func, _custom_id)
             return func
 
         return decorator
-        
     
     # listener registration
 
-    def add_interaction_listener(self, _type,  func, custom_id):
+    def add_interaction_listener(self, _type,  func, custom_id: re.Pattern):
         """
         This adds an interaction(decorator) like :meth:`on_click` or :meth:`on_select` to the client listeners.
 
@@ -501,9 +519,9 @@ class BotBase(GroupMixin):
             listeners = []
             self.extra_interaction_events[_type] = listeners
         
-        listeners.append((func, lambda i, c: c.custom_id == custom_id))
+        listeners.append((func, lambda i, c: custom_id.match(str(c.custom_id))))
 
-    def remove_interaction_listener(self, _type,  func, custom_id):
+    def remove_interaction_listener(self, _type,  func, custom_id: re.Pattern):
         """
         This removes an interaction(decorator) like :meth:`on_click` or :meth:`on_select` from the client listeners.
 
@@ -513,7 +531,7 @@ class BotBase(GroupMixin):
         """
         try:
             if _type in self.extra_interaction_events:
-                self.extra_interaction_events[_type].remove((func, lambda i, c: c.custom_id == custom_id))
+                self.extra_interaction_events[_type].remove((func, lambda i, c: custom_id.match(str(c.custom_id))))
         except ValueError:
             pass
 
@@ -922,7 +940,6 @@ class BotBase(GroupMixin):
         cog: :class:`.Cog`
             The cog wich application-commands should be added to the internal list of application-commands.
         """
-
         for cmd_type, commands in cog.__application_commands_by_type__.items():
 
             for command in commands.values():
@@ -985,9 +1002,8 @@ class BotBase(GroupMixin):
                                     if sub_command.type.sub_command_group:
                                         # if the subcommand is a group that already exists, add the subcommands of it
                                         # to the existing group
-                                        if sub_command.name in existing_command.sub_commands \
-                                                and existing_command._sub_commands[
-                                            sub_command.name].type.sub_command_group:
+                                        if sub_command.name in existing_command.sub_commands and \
+                                                existing_command._sub_commands[sub_command.name].type.sub_command_group:
                                             existing_group = existing_command._sub_commands[sub_command.name]
                                             for sub_cmd in sub_command.sub_commands:
                                                 # set the parent of the subcommand to the existing group
@@ -1013,8 +1029,6 @@ class BotBase(GroupMixin):
                     else:
                         self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
 
-
-
     def remove_application_cmds_from_cog(self, cog: Cog):
         """
         Removes all application-commands in the given cog from the internal list of application-commands.
@@ -1035,7 +1049,7 @@ class BotBase(GroupMixin):
                             for sub_cmd in sub_command.sub_commands:
                                 if sub_cmd.cog and sub_cmd.cog == cog:
                                     del sub_command._sub_commands[sub_cmd.name]
-                        if sub_command.cog and  sub_command.cog == cog:
+                        if sub_command.cog and sub_command.cog == cog:
                             del cmd._sub_commands[sub_command.name]
 
         for guild_id, t in self._guild_specific_application_commands.items():
@@ -1050,9 +1064,8 @@ class BotBase(GroupMixin):
                                 for sub_cmd in sub_command.sub_commands:
                                     if sub_cmd.cog and sub_cmd.cog == cog:
                                         del sub_command._sub_commands[sub_cmd.name]
-                            if sub_command.cog and  sub_command.cog == cog:
+                            if sub_command.cog and sub_command.cog == cog:
                                 del cmd._sub_commands[sub_command.name]
-
 
     # help command stuff
 
@@ -1246,6 +1259,7 @@ class BotBase(GroupMixin):
     async def on_message(self, message):
         await self.process_commands(message)
 
+
 class Bot(BotBase, discord.Client):
     """Represents a discord bot.
 
@@ -1323,6 +1337,7 @@ class Bot(BotBase, discord.Client):
         Whether to sync global and guild-only application-commands when reloading an extension, default ``False``.
     """
     pass
+
 
 class AutoShardedBot(BotBase, discord.AutoShardedClient):
     """This is similar to :class:`.Bot` except that it is inherited from
