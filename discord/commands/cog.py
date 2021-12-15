@@ -673,6 +673,7 @@ class Cog(metaclass=CogMeta):
                                                                      func=func, connector=connector)
                 else:
                     command = cls.__application_commands_by_type__['chat_input'][_name] = SlashCommand(
+                        cog=cls,
                         name=_name, description=_description,
                         default_permission=default_permission,
                         options=_options, func=func,
