@@ -538,7 +538,6 @@ class GuildChannel:
 
         # Apply channel specific role permission overwrites
         for overwrite in remaining_overwrites:
-            print(type(overwrite.type))
             if overwrite.type == 'role' and roles.has(overwrite.id):
                 denies |= overwrite.deny
                 allows |= overwrite.allow
@@ -547,7 +546,6 @@ class GuildChannel:
 
         # Apply member specific permission overwrites
         for overwrite in remaining_overwrites:
-            print(type(overwrite.type))
             if overwrite.type == 'member' and overwrite.id == member.id:
                 base.handle_overwrite(allow=overwrite.allow, deny=overwrite.deny)
                 break
@@ -1279,8 +1277,8 @@ class Messageable(metaclass=abc.ABCMeta):
     def history(self,
                 *,
                 limit: Optional[int] = 100,
-                before: Optional[Union[Snowflake, datetime.datetime]] = None,
-                after: Optional[Union[Snowflake, datetime.datetime]] = None,
+                before: Optional[Union[Snowflake, 'datetime.datetime']] = None,
+                after: Optional[Union[Snowflake, 'datetime.datetime']] = None,
                 around: Optional[Union[Snowflake, 'datetime.datetime']] = None,
                 oldest_first: Optional[bool] = None):
         """Returns an :class:`~discord.AsyncIterator` that enables receiving the destination's message history.
