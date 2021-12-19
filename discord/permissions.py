@@ -469,7 +469,7 @@ class Permissions(BaseFlags):
 
     @flag_value
     def use_slash_commands(self):
-        """:class:`bool`: Returns ``True`` if a user can use slash sub_commands and context-menu sub_commands.
+        """:class:`bool`: Returns ``True`` if a user can use slash commands and context-menu commands.
 
         .. versionadded:: 1.7
         """

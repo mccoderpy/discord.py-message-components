@@ -463,7 +463,7 @@ class Client:
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     async def _request_sync_commands(self):
-        """Used to sync sub_commands if the ``GUILD_CREATE`` stream is over
+        """Used to sync commands if the ``GUILD_CREATE`` stream is over
 
         .. warning::
             **DO NOT OVERWRITE THIS METHOD!!! IF YOU DO SO, THE APPLICATION-COMMANDS WILL NOT BE SYNCED AND NO COMMAND REGISTERED WILL BE DISPATCHED.**
@@ -1558,17 +1558,22 @@ class Client:
         return decorator
 
     async def _sync_commands(self):
+        if not hasattr(self, 'app'):
+            await self.application_info()
         log.info('Checking for changes on application-commands for application %s (%s)...', self.app.name, self.app.id)
+
         to_send = []
         to_cep = []
         to_maybe_remove = []
+
         any_changed = False
         has_update = False
-        if not hasattr(self, 'app'):
-            await self.application_info()
+
         application_id = self.app.id
-        global_registered_raw: list = await self.http.get_application_commands(self.app.id)
-        global_registered = ApplicationCommand._sorted_by_type(global_registered_raw)
+
+        global_registered_raw: List[Dict] = await self.http.get_application_commands(self.app.id)
+        global_registered: Dict[str, List[ApplicationCommand]] = ApplicationCommand._sorted_by_type(global_registered_raw)
+
         for x, commands in global_registered.items():
             for command in commands:
                 if command['name'] in self._application_commands_by_type[x].keys():
@@ -1592,31 +1597,32 @@ class Client:
         if any_changed is True:
             updated = None
             if len(to_send) == 1 and has_update and not to_maybe_remove:
-                log.info('Detected changes on global-application-command %s, updating.', to_send[0]['name'])
+                log.info('Detected changes on global application-command %s, updating.', to_send[0]['name'])
                 updated = await self.http.edit_application_command(application_id, to_send[0]['id'], to_send[0])
             elif len(to_send) == 1 and not has_update and not to_maybe_remove:
-                log.info('Registering one new global-application-command %s.', to_send[0]['name'])
+                log.info('Registering one new global application-command %s.', to_send[0]['name'])
                 updated = await self.http.create_application_command(application_id, to_send[0])
             else:
-                log.info('Detected %s updated/new global-application-commands, bulk overwriting them...', len(to_send))
+                log.info('Detected %s updated/new global application-commands, bulk overwriting them...', len(to_send))
                 if not self.delete_not_existing_commands:
                     to_send.extend(to_maybe_remove)
                 else:
                     if len(to_maybe_remove) > 0:
                         log.info(
-                            'Removing %s global-application-commands that arent used in this code anymore.',
-                            len(to_maybe_remove)
+                            'Removing %s global application-commands that arent used in this code anymore.'
+                            ' To prevent this set `remove_not_existing_commands` of %s to False',
+                            len(to_maybe_remove), self.__class__.__name__
                         )
                 to_send.extend(to_cep)
                 global_registered_raw = await self.http.bulk_overwrite_application_commands(application_id, to_send)
             if updated:
                 global_registered_raw = await self.http.get_application_commands(application_id)
-            log.info('Synced global-application-commands.')
+            log.info('Synced global application-commands.')
         else:
-            log.info('No Changes found.')
+            log.info('No Changes on global application-commands found.')
 
         for updated in global_registered_raw:
-            command = self._application_commands_by_type[str(ApplicationCommandType.try_value(int(updated['type'])))]\
+            command = self._application_commands_by_type[ApplicationCommandType.try_value(updated['type']).name]\
                 .get(updated['name'], None)
             if command:
                 command._fill_data(updated)
@@ -1624,6 +1630,9 @@ class Client:
                 self._application_commands[command.id] = command
 
         log.info('Checking for changes on guild-specific application-commands...')
+
+        any_guild_commands_changed = False
+
         for guild_id, command_types in self._guild_specific_application_commands.items():
             to_send = []
             to_cep = []
@@ -1646,7 +1655,7 @@ class Client:
                     if command['name'] in self._guild_specific_application_commands[guild_id][x].keys():
                         cmd = self._guild_specific_application_commands[guild_id][x][command['name']]
                         if cmd != command:
-                            any_changed = has_update = True
+                            any_changed = has_update = any_guild_commands_changed = True
                             c = cmd.to_dict()
                             c['id'] = command['id']
                             to_send.append(c)
@@ -1714,13 +1723,15 @@ class Client:
 
             for updated in registered_guild_commands_raw:
                 command = self._guild_specific_application_commands[int(guild_id)][
-                    str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+                    ApplicationCommandType.try_value(updated['type']).name].get(updated['name'], None)
                 if command:
                     command._fill_data(updated)
                     command._state = self._connection
                     self._application_commands[command.id] = command
                     self.get_guild(int(guild_id))._application_commands[command.id] = command
-        log.info('Successful synced all global and guild-only application-commands.')
+        if not any_guild_commands_changed:
+            log.info('No Changes on guild-specific application-commands found.')
+        log.info('Successful synced all global and guild-specific application-commands.')
 
     def _get_application_command(self, cmd_id):
         return self._application_commands.get(cmd_id, None)

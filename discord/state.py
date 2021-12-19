@@ -491,7 +491,7 @@ class ConnectionState:
         except asyncio.CancelledError:
             pass
         else:
-            # sync the application-sub_commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
+            # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
             await self._get_client()._request_sync_commands()
             self.call_handlers('ready')
             self.dispatch('ready')
@@ -604,7 +604,7 @@ class ConnectionState:
 
         if interaction.type in (InteractionType.ApplicationCommand, InteractionType.ApplicationCommandAutocomplete):
             cmd = self._get_client()._get_application_command(interaction.data.id)
-            if cmd:
+            if cmd and not cmd.disabled:
                 interaction._command = cmd
                 self._get_client()._schedule_event(cmd._parse_arguments, '_application_command_invoke', interaction)
         elif interaction.type == InteractionType.Component:
@@ -1399,7 +1399,7 @@ class AutoShardedConnectionState(ConnectionState):
         # clear the current task
         self._ready_task = None
 
-        # sync the application-sub_commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
+        # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
         self.dispatch('request_sync_commands')
         self.call_handlers('ready')
         self.dispatch('ready')
