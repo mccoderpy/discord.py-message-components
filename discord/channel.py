@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 import datetime
 import time
 import asyncio
-from typing import Optional, TYPE_CHECKING
+from typing import Union, Optional, Callable, TYPE_CHECKING
 
 from .object import Object
 
@@ -39,6 +39,7 @@ from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchi
 
 if TYPE_CHECKING:
     from .state import ConnectionState
+    from .member import Member
 
 __all__ = (
     'TextChannel',
@@ -328,7 +329,15 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         message_ids = [m.id for m in messages]
         await self._state.http.delete_messages(self.id, message_ids)
 
-    async def purge(self, *, limit=100, check=None, before=None, after=None, around=None, oldest_first=False, bulk=True):
+    async def purge(self,
+                    *,
+                    limit: Optional[int] = 100,
+                    check: Callable = None,
+                    before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+                    after: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+                    around: Optional[Union[abc.Snowflake, datetime.datetime]]=  None,
+                    oldest_first: Optional[bool] = False,
+                    bulk: Optional[bool] = True):
         """|coro|
 
         Purges a list of messages that meet the criteria given by the predicate
@@ -763,7 +772,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
         return await self._state.http.remove_thread_member(channel_id=self.id)
 
-    async def add_member(self, member):
+    async def add_member(self, member: Union['Member', int]):
         """|coro|
 
         Adds another member to the thread.
@@ -787,7 +796,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
         return await self._state.http.add_thread_member(channeL_id=self.id, member_id=member_id)
 
-    async def remove_member(self, member):
+    async def remove_member(self, member: Union['Member', int]):
         """|coro|
 
         Removes a member from the thread.

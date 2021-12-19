@@ -31,6 +31,8 @@ import datetime
 import re
 import io
 
+from typing import Union, Optional, List
+
 from . import utils
 from .channel import ThreadChannel
 from .reaction import Reaction
@@ -571,13 +573,13 @@ class Message(Hashable):
         self.channel = channel
         self.call = None
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
-        self.type = try_enum(MessageType, data['type'])
+        self.type: MessageType = try_enum(MessageType, data['type'])
         self._thread = data.get('thread', None)
         self.pinned = data['pinned']
-        self.flags = MessageFlags._from_value(data.get('flags', 0))
-        self.mention_everyone = data['mention_everyone']
-        self.tts = data['tts']
-        self.content = data['content']
+        self.flags: MessageFlags = MessageFlags._from_value(data.get('flags', 0))
+        self.mention_everyone: bool  = data['mention_everyone']
+        self.tts: bool = data['tts']
+        self.content: Optional[str] = data['content']
         self.nonce = data.get('nonce')
         self.stickers = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
 
@@ -1039,7 +1041,7 @@ class Message(Hashable):
                 if isinstance(component, SelectMenu):
                     yield component
 
-    async def delete(self, *, delay=None):
+    async def delete(self, *, delay: Optional[float] = None):
         """|coro|
 
         Deletes the message.

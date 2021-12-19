@@ -1,4 +1,3 @@
-import typing
 import logging
 
 from discord import abc
@@ -214,7 +213,7 @@ class EphemeralMessage:
 
         try:
             await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id, token=self.__interaction__._token, application_id=self.__interaction__._application_id, deferred=self.__interaction__.deferred, use_webhook=True, files=None, data=fields)
-        except NotFound as exc:
+        except NotFound:
             log.warning('Unknown Interaction')
         else:
             if not self.__interaction__.callback_message:
@@ -252,7 +251,7 @@ class SelectionSelect:
 class BaseInteraction:
 
     """
-    The Class for an discord-interaction like klick an :class:`Button` or select an option of :class:`SelectMenu` in discord
+    The Class for an discord-interaction like klick a :class:`Button` or select an option of :class:`SelectMenu` in discord
 
     For more general information's about Interactions visit the Documentation of the
     `Discord-API <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_
@@ -282,7 +281,7 @@ class BaseInteraction:
         self.user: Optional[User] = None
         self.deferred = False
         self.deferred_hidden = False
-        self.callback_message = None
+        self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
         self.cached_message = self._message_data and self._state._get_message(int(self._message_data['id']))
@@ -291,7 +290,9 @@ class BaseInteraction:
         """Represents a :class:`discord.Interaction`-object."""
         return f'<Interaction {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
     
-    async def defer(self, response_type: Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
+    async def defer(self,
+                    response_type: Union[Literal[5, 6], InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
+                    hidden: bool = False) -> Optional[Message]:
         """
         |coro|
 
@@ -320,18 +321,25 @@ class BaseInteraction:
             (you could not do this hidden as it isn't an respond anymore).
         """
         if self.deferred:
-            return log.warning("\033[91You have already responded to this Interaction!\033[0m")
+            log.warning("\033[91You have already responded to this Interaction!\033[0m")
+            return
         base = {"type": int(response_type), "data": {'flags': 64 if hidden else None}}
         try:
-            data = await self._http.post_initial_response(_resp=base, use_webhook=False, interaction_id=self.id,
-                                                          token=self._token, application_id=self._application_id)
+            data = await self._http.post_initial_response(_resp=base,
+                                                          use_webhook=False,
+                                                          interaction_id=self.id,
+                                                          token=self._token,
+                                                          application_id=self._application_id)
         except NotFound:
             log.warning(f'Unknown Interaction {self.id}')
         else:
             self.deferred = True
             if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
                 self.deferred_hidden = True
-            return data
+            if not data and response_type.msg_with_source or response_type.deferred_msg_with_source:
+                data = await self.get_original_callback()
+                msg = self.callback_message = Message(state=self._state, channel=self.channel, data=data)
+                return msg
 
     async def edit(self,
                    content: Optional[str] = None,
@@ -368,14 +376,15 @@ class BaseInteraction:
             pass
         else:
             if embed is not None:
-                embeds = fields.pop('embeds', []).reverse()
+                embeds = list(reversed(fields.pop('embeds', [])))
                 embeds.append(embed.to_dict())
                 fields['embeds'] = list(reversed(embeds))
             else:
                 fields['embeds'] = None
 
         if fields.get('embeds', None) and len(fields['embeds']) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(fields["embeds"])}')
+            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, '
+                                  f'got: {len(fields["embeds"])}')
 
         try:
            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = fields['components']
@@ -411,7 +420,9 @@ class BaseInteraction:
             data = await state.http.send_interaction_response(token=self._token, interaction_id=self.id,
                                                               application_id=self._application_id, data=fields,
                                                               deferred=self.deferred,
-                                                              followup=True if self.callback_message else False,
+                                                              followup=True if (self.callback_message and not
+                                                                                self.callback_message.flags.loading)
+                                                              else False,
                                                               use_webhook=False)
 
         if not isinstance(data, dict):
@@ -611,10 +622,28 @@ class ApplicationCommandInteraction(BaseInteraction):
         else:
             self.target = None
 
-    async def defer(self, type: Literal[5, 9] = 5, hidden: bool = False):
+    async def defer(self,
+                    type: Union[Literal[5], InteractionCallbackType.deferred_msg_with_source] = 5,
+                    hidden: bool = False) -> Message:
+        """
+        Defers the interaction, the user sees a loading state
+
+        Parameters
+        ----------
+        type: Union[Literal[5], :class:`InteractionCallbackType.deferred_msg_with_source`]
+            Currently only one type
+        hidden: Optional[:class:`bool`]
+            Weather only the author of the command should see this
+
+        Returns
+        -------
+        Message:
+            The Message containing the loading-state
+        """
         if isinstance(type, int):
             type = InteractionCallbackType.from_value(type)
-        return await super().defer(type, hidden=hidden)
+        data = await super().defer(type, hidden=hidden)
+        return data
 
 class ComponentInteraction(BaseInteraction):
     @property

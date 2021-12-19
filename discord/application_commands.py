@@ -196,7 +196,7 @@ class ApplicationCommand:
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self._state.dispatch('application_command_error', self, interaction, exc)
+                self._state.dispatch('application_command_error', interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -589,7 +589,7 @@ class SubCommand(SlashCommandOption):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
+                self.parent.parent._state.dispatch('application_command_error', interaction, exc)
 
     def autocomplete_callback(self, coro):
         """
@@ -625,7 +625,7 @@ class SubCommand(SlashCommandOption):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
+                self.parent.parent._state.dispatch('application_command_error', interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -766,7 +766,7 @@ class SlashCommand(ApplicationCommand):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self._state.dispatch('application_command_error', self, interaction, exc)
+                self._state.dispatch('application_command_error', interaction, exc)
 
     @property
     def sub_commands(self) -> Optional[List[Union['SubCommandGroup[SubCommand]', SubCommand]]]:
@@ -807,7 +807,7 @@ class SlashCommand(ApplicationCommand):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self._state.dispatch('application_command_error', self, interaction, exc)
+                self._state.dispatch('application_command_error', interaction, exc)
 
     async def _parse_arguments(self, interaction):
         to_invoke = self

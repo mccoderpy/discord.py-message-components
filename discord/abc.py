@@ -32,6 +32,8 @@ import sys
 import copy
 import asyncio
 
+from typing import Union, Optional, List, Any, TYPE_CHECKING
+
 from .iterators import HistoryIterator
 from .context_managers import Typing
 from .enums import try_enum, ChannelType, PermissionType
@@ -44,6 +46,13 @@ from .file import File
 from .components import Button, SelectMenu, ActionRow
 from .voice_client import VoiceClient, VoiceProtocol
 from . import utils
+
+if TYPE_CHECKING:
+    import datetime
+    from .embeds import Embed
+    from .sticker import GuildSticker
+    from .message import Message, MessageReference
+
 
 class _Undefined:
     def __repr__(self):
@@ -939,10 +948,23 @@ class Messageable(metaclass=abc.ABCMeta):
     async def _get_channel(self):
         raise NotImplementedError
 
-    async def send(self, content=None, *, tts=False, embed=None, embeds=None, components=None, file=None,
-                                          files=None, delete_after=None, nonce=None,
-                                          allowed_mentions=None, reference=None,
-                                          mention_author=None, stickers=None, hidden=None, **kwargs):
+    async def send(self,
+                   content: Any = None,
+                   *,
+                   tts: bool = False,
+                   embed: Optional['Embed'] = None,
+                   embeds: Optional[List['Embed']] = None,
+                   components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+                   file: Optional[File] = None,
+                   files: Optional[List[File]] = None,
+                   stickers: Optional[List['GuildSticker']] = None,
+                   delete_after: Optional[float] = None,
+                   nonce: Optional[int] = None,
+                   allowed_mentions: Optional[AllowedMentions] = None,
+                   reference: Optional[Union['Message', 'MessageReference']] = None,
+                   mention_author: Optional[bool] = None,
+                   hidden=None,
+                   **kwargs):
         """|coro|
 
         Sends a message to the destination with the content given.
@@ -975,6 +997,8 @@ class Messageable(metaclass=abc.ABCMeta):
             The file to upload.
         files: List[:class:`~discord.File`]
             A list of files to upload. Must be a maximum of 10.
+        stickers: List[:class:`~discord.GuildSticker`]
+            A list of up to 3 :class:`discord.GuildSticker` that should be send with the message.
         nonce: :class:`int`
             The nonce to use for sending this message. If the message was successfully sent,
             then the message will have a nonce with this value.
@@ -1252,7 +1276,13 @@ class Messageable(metaclass=abc.ABCMeta):
         data = await state.http.pins_from(channel.id)
         return [state.create_message(channel=channel, data=m) for m in data]
 
-    def history(self, *, limit=100, before=None, after=None, around=None, oldest_first=None):
+    def history(self,
+                *,
+                limit: Optional[int] = 100,
+                before: Optional[Union[Snowflake, datetime.datetime]] = None,
+                after: Optional[Union[Snowflake, datetime.datetime]] = None,
+                around: Optional[Union[Snowflake, 'datetime.datetime']] = None,
+                oldest_first: Optional[bool] = None):
         """Returns an :class:`~discord.AsyncIterator` that enables receiving the destination's message history.
 
         You must have :attr:`~Permissions.read_message_history` permissions to use this.

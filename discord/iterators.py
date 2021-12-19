@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import asyncio
 import datetime
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .scheduled_event import GuildScheduledEvent
@@ -233,7 +233,7 @@ class HistoryIterator(_AsyncIterator):
         ``True`` if `after` is specified, otherwise ``False``.
     """
 
-    def __init__(self, messageable, limit,
+    def __init__(self, messageable, limit: int,
                  before=None, after=None, around=None, oldest_first=None):
 
         if isinstance(before, datetime.datetime):
@@ -509,7 +509,7 @@ class GuildIterator(_AsyncIterator):
     after: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
         Object after which all guilds must be.
     """
-    def __init__(self, bot, limit, before=None, after=None):
+    def __init__(self, bot, limit: int, before=None, after=None):
 
         if isinstance(before, datetime.datetime):
             before = Object(id=time_snowflake(before, high=False))
@@ -517,9 +517,9 @@ class GuildIterator(_AsyncIterator):
             after = Object(id=time_snowflake(after, high=True))
 
         self.bot = bot
-        self.limit = limit
-        self.before = before
-        self.after = after
+        self.limit: int = limit
+        self.before: Optional[Object] = before
+        self.after: Optional[Object] = after
 
         self._filter = None
 
