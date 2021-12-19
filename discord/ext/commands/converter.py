@@ -23,7 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
+import datetime
 import re
 import inspect
 import typing
@@ -813,6 +813,142 @@ class StickerConverter(IDConverter):
             raise StickerNotFound(argument)
 
         return result
+
+
+class datetimeConverter(Converter):
+    """Converts to a :class:`datetime.datetime`. Made by mccuber04#2960
+
+    Valid formats for the time(``H`` = hour | ``M`` = minute | ``S`` = second):
+        ``HH:MM:SS``,
+        ``HH:MM``
+
+        Each value can also be specified as a single digit.
+
+        All ``:`` could be ``-`` too.
+
+    Valid formats for the date(``d`` = day | ``m`` = month | ``y`` = year):
+        ``dd.mm.yyyy``,
+        ``dd.mm``,
+        ``dd``,
+        ``yyyy``
+        ``mm.yyyy``
+
+        Each value for day and month can also be specified as a single digit.
+
+        All ``.`` could be ``,``, ``-`` and ``/`` too.
+
+    .. note::
+        Values that are not specified are filled with those of the current time.
+
+        If you want to pass a time in 12h-format that is in the afternoon,
+        the ``pm`` must be after the time like ``08:42 pm 04.10.2022``.
+    """
+    time_regex = re.compile(
+        r'(?P<hour>'  # group for hour value
+        r'0?[0-9]'  # 0 to 9
+        r'|'  # or
+        r'1[0-9]'  # 10 to 19
+        r'|'  # or
+        r'2[0-3]'  # 20 to 23
+        r')'
+        r'[:\-]'  # brake could be : or -
+        r'(?P<minute>'  # group for minute value
+        r'[1-5][0-9]'  # 10 to 59
+        r'|'  # or
+        r'0?[0-9]'  # 0 to 9
+        r')'
+        r'('  # group for brake and second
+        r'[:\-]'  # brake could be : or -
+        r'(?P<second>'  # group for second value
+        r'[1-5][0-9]'  # 10 to 59
+        r'|'  # or
+        r'[0-9]'  # 0 to 9
+        r')'
+        r')?'  # mark the brake and second group as optional
+        r' ?' # a optional whitespace
+        r'(?P<am_or_pm>'  # group for am or pm value if it is in 12h-format
+        r'am' # am for ante mediteran (Morning), would be ignored
+        r'|'  # or
+        r'pm'  # pm for post mediteran (afternoon)
+        r')'
+    )
+    date_regex = re.compile(
+        r'(?P<day>'  # group for day value
+        r'3[0-1]'  # 31. or 30.
+        r'|'  # or
+        r'[1-2][0-9]'  # 10. to 29.
+        r'|'  # or
+        r'0?[1-9]'  # 1. to 9.
+        r')?'  # mark the day as optional
+        r'('  # group for brake and month
+        r'[.,\-/]'  # brake could be . or , or - or /
+        r'(?P<month>'  # group for month value
+        r'1[0-2]'  # october to december
+        r'|'  # or
+        r'0?[1-9]'  # january to september
+        r')'
+        r')?'  # mark the brake and month group as optional 
+        r'('  # group for brake and year
+        r'[.,\-/]'  # brake could be . or , or - or /
+        r'(?P<year>'  # group for year value
+        r'[1-9][0-9]{3}'  # any year from 1000 to 9999 in format yyyy
+        r'|'  # or
+        r'[0-9]{2}'   # any year from 2000 to 2099 in format YY (20YY)
+        r')'
+        r'(\s|$)' # to be shure that "1996telefon" is not valid there should be a whitespace or the end of the string after the year
+        r')?'  # mark the brake and year group as optional
+    )
+
+    async def convert(self, ctx, argument) -> datetime.datetime:
+        argument = argument.lower().rstrip()
+
+        now = datetime.datetime.utcnow()  # to set defaults for non provided parts
+        invalid = False
+
+        date = self.date_regex.search(argument)
+
+        if date and any(date.groups()):
+            day = int(date.group('day') or now.day)
+            month = int(date.group('month') or now.month)
+            year = date.group('year')
+
+            if year and len(year) == 2: # it is in YY (20YY) format, convert it to a full year (yyyy)
+                year = '20' + year
+
+            year = int(year or now.year)
+            # to make something like ``10.2022`` also valid
+            if date.group('day') and not date.group('month'):
+                month = day
+                day = now.day
+        else:
+            invalid = True
+            day, month, year = now.day, now.month, now.year
+
+        time = self.time_regex.search(argument)
+
+        if time and any(time.groups()):
+            invalid = False
+            pm = bool(time.group('am_or_pm') == 'pm')
+            hour = int(time.group('hour') or now.hour)
+            # if it is in 12-hour format and pm, just increase it by 12 so that it is in 24-hour format
+            if pm and hour <= 12:
+                hour += 12
+            minute = int(time.group('minute') or now.minute)
+            second = int(time.group('second') or now.second)
+
+        else:
+            # set the time to the current if no time provided
+            hour, minute, second = now.hour, now.minute, now.second
+
+        if invalid:
+            raise DatetimeConversionFailure(argument)
+
+        try:
+            result = datetime.datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+        except Exception as exc:
+            raise DatetimeConversionFailure(argument, original_exception=exc)
+        else:
+            return result
 
 
 class clean_content(Converter):

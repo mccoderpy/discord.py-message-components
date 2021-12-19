@@ -954,7 +954,7 @@ class BotBase(GroupMixin):
                             # if the command has subcommands add them to the existing one.
                             for sub_command in command.sub_commands:
                                 sub_command.cog = cog
-                                suB_command.disabled = False
+                                sub_command.disabled = False
                                 if sub_command.type.sub_command_group:
                                     # if the subcommand is a group that already exists, add the subcommands of it
                                     # to the existing group
@@ -977,6 +977,10 @@ class BotBase(GroupMixin):
                                 # set the parent of the subcommand to the existing command
                                 sub_command.parent = existing_command
                                 existing_command._sub_commands[sub_command.name] = sub_command
+                        else:
+                            self._application_commands_by_type[cmd_type][command.name] = command
+                            continue
+
                     else:
                         # if its not a slash-command overwrite the existing one
                         self._application_commands_by_type[cmd_type][command.name] = command

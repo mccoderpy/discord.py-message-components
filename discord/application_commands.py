@@ -194,7 +194,7 @@ class ApplicationCommand:
                 if self.cog is not None:
                     await self.on_error(self.cog, interaction, exc)
                 else:
-                    await self.on_error(self.cog, interaction, exc)
+                    await self.on_error(interaction, exc)
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
@@ -579,7 +579,6 @@ class SubCommand(SlashCommandOption):
             args = (self.cog, interaction, *args)
         else:
             args = (interaction, *args)
-
         try:
             if await self.can_run(*args):
                 await self.func(*args, **kwargs)
@@ -588,7 +587,7 @@ class SubCommand(SlashCommandOption):
                 if self.cog is not None:
                     await self.on_error(self.cog, interaction, exc)
                 else:
-                    await self.on_error(self.cog, interaction, exc)
+                    await self.on_error(interaction, exc)
             else:
                 self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
@@ -608,19 +607,23 @@ class SubCommand(SlashCommandOption):
         self.autocomplete_func = func
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
+        if not self.autocomplete_func:
+            print(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
+            return
+
         if self.cog is not None:
             args = (self.cog, interaction, *args)
         else:
             args = (interaction, *args)
         try:
             if await self.can_run(*args, __func=self.autocomplete_func):
-                await self.func(*args, **kwargs)
+                await self.autocomplete_func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
                 if self.cog is not None:
                     await self.on_error(self.cog, interaction, exc)
                 else:
-                    await self.on_error(self.cog, interaction, exc)
+                    await self.on_error(interaction, exc)
             else:
                 self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
@@ -746,6 +749,7 @@ class SlashCommand(ApplicationCommand):
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
             print(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
+            return
 
         if self.cog is not None:
             args = (self.cog, interaction, *args)
@@ -760,7 +764,7 @@ class SlashCommand(ApplicationCommand):
                 if self.cog is not None:
                     await self.on_error(self.cog, interaction, exc)
                 else:
-                    await self.on_error(self.cog, interaction, exc)
+                    await self.on_error(interaction, exc)
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
@@ -801,7 +805,7 @@ class SlashCommand(ApplicationCommand):
                 if self.cog is not None:
                     await self.on_error(self.cog, interaction, exc)
                 else:
-                    await self.on_error(self.cog, interaction, exc)
+                    await self.on_error(interaction, exc)
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
@@ -885,15 +889,15 @@ class UserCommand(ApplicationCommand):
     
     @classmethod
     def from_dict(cls, state, data):
-        return cls(name=data['name'],
-                   default_permission=data['default_permission'],
-                   state=state,
-                   **data)
+        return cls(
+            name=data['name'],
+            default_permission=data['default_permission'],
+            state=state,
+            **data
+        )
 
     async def _parse_arguments(self, interaction):
-        member = interaction.data.resolved.members[interaction.data.target_id]
-        interaction.member = member
-        await self.invoke(interaction, member)
+        await self.invoke(interaction, interaction.target)
 
 
 class MessageCommand(ApplicationCommand):
@@ -906,15 +910,15 @@ class MessageCommand(ApplicationCommand):
 
     @classmethod
     def from_dict(cls, state, data):
-        return cls(name=data['name'],
-                   default_permission=data['default_permission'],
-                   state=state,
-                   **data)
+        return cls(
+            name=data['name'],
+            default_permission=data['default_permission'],
+            state=state,
+            **data
+        )
 
     async def _parse_arguments(self, interaction):
-        message = interaction.data.resolved.messages[interaction.data.target_id]
-        interaction.message = message
-        await self.invoke(interaction, message)
+        await self.invoke(interaction, interaction.target)
 
 
 class SubCommandGroup(SlashCommandOption):

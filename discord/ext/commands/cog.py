@@ -208,8 +208,15 @@ class Cog(metaclass=CogMeta):
         # Either update the command with the cog provided defaults or copy it.
         self.__cog_commands__ = tuple(c._update_copy(cmd_attrs) for c in cls.__cog_commands__)
 
-        self.__application_commands_by_type__ = cls.__application_commands_by_type__
-        self.__guild_specific_application_commands__ = cls.__guild_specific_application_commands__
+        # set the functions of the commands to the method itself
+
+        self.__application_commands_by_type__ = copy.copy(cls.__application_commands_by_type__)
+
+        self.__guild_specific_application_commands__ = copy.copy(cls.__guild_specific_application_commands__)
+
+        # TODO: solve this thing on a better way
+        cls.__class__.__application_commands_by_type__ = {'chat_input': {}, 'message': {}, 'user': {}}
+        cls.__class__.__guild_specific_application_commands__ = {}
 
         lookup = {
             cmd.qualified_name: cmd
@@ -607,7 +614,7 @@ class Cog(metaclass=CogMeta):
                                                                description=_description,
                                                                options=_options,
                                                                connector=connector,
-                                                               func=func)
+                                                               func=actual)
                         guild_cmds.append(base._sub_commands[_name])
                     else:
                         cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name] =\
@@ -616,7 +623,7 @@ class Cog(metaclass=CogMeta):
                                          description=_description,
                                          default_permission=default_permission,
                                          options=_options,
-                                         func=func,
+                                         func=actual,
                                          guild_id=guild_id,
                                          connector=connector)
                         guild_cmds.append(cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name])
@@ -631,11 +638,11 @@ class Cog(metaclass=CogMeta):
                                                         description=_description, default_permission=default_permission,
                                                         options=_options, guild_ids=guild_ids, connector=connector)
                     return GuildOnlySubCommand(cog=cls, parent=base, name=_name, description=_description,
-                                               options=_options, func=func, guild_ids=guild_ids, connector=connector,
+                                               options=_options, func=actual, guild_ids=guild_ids, connector=connector,
                                                commands=guild_cmds)
                 return GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
                                              default_permission=default_permission, options=_options,
-                                             func=func, guild_ids=guild_ids, connector=connector)
+                                             func=actual, guild_ids=guild_ids, connector=connector)
             else:
                 base, base_command, sub_command_group = None, None, None
                 if base_name:
@@ -647,7 +654,7 @@ class Cog(metaclass=CogMeta):
                             name=base_name,
                             description=base_desc or 'No Description',
                             default_permission=default_permission,
-                            func=func)
+                            func=actual)
                     else:
                         base_command.description = base_desc or base_command.description
                         base_command.default_permission = default_permission
@@ -670,13 +677,13 @@ class Cog(metaclass=CogMeta):
                                                                      name=_name,
                                                                      description=_description,
                                                                      options=_options,
-                                                                     func=func, connector=connector)
+                                                                     func=actual, connector=connector)
                 else:
                     command = cls.__application_commands_by_type__['chat_input'][_name] = SlashCommand(
                         cog=cls,
                         name=_name, description=_description,
                         default_permission=default_permission,
-                        options=_options, func=func,
+                        options=_options, func=actual,
                         connector=connector)
                 return command
         return decorator
@@ -726,7 +733,7 @@ class Cog(metaclass=CogMeta):
             cmd = MessageCommand(cog=cls,
                                  name=_name,
                                  default_permission=default_permission,
-                                 func=func,
+                                 func=actual.__name__,
                                  guild_ids=guild_ids)
             return cmd
         return decorator
@@ -773,7 +780,11 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('The user-command function registered  must be a coroutine.')
             _name = name or actual.__name__
-            cmd = UserCommand(cog=cls, name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            cmd = UserCommand(cog=cls,
+                              name=_name,
+                              default_permission=default_permission,
+                              func=actual.__name__,
+                              guild_ids=guild_ids)
             return cmd
         return decorator
 

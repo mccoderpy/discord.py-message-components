@@ -55,6 +55,7 @@ __all__ = (
     'EmojiNotFound',
     'StickerNotFound',
     'PartialEmojiConversionFailure',
+    'DatetimeConversionFailure',
     'BadBoolArgument',
     'MissingRole',
     'BotMissingRole',
@@ -405,6 +406,29 @@ class StickerNotFound(BadArgument):
     def __init__(self, argument):
         self.argument = argument
         super().__init__('Sticker "{}" not found.'.format(argument))
+
+class DatetimeConversionFailure(BadArgument):
+    """Exception raised when the conversion to a :class:`datetime.datetime` object failed
+
+    This inherits from :exc:`BadArgument`
+
+    Attributes
+    -----------
+    argument: :class: :class:`str`
+        The date/time supplied by the caller that could not converted.
+    original_exception: Optional[Any]
+        The original exception that was raised when trying to create the datetime.datetime object.
+    """
+    def __init__(self, argument, original_exception=None):
+        self.argument = argument
+        self.original_exception = original_exception
+        super().__init__(
+            '"{}" could not be converted to a datetime.datetime object. '
+            'The time should be in a format like H(H):M(M):S(S) '
+            'and date in a format like d(d).m(m).yyyy'.format(argument)
+        )
+
+
 
 class BadBoolArgument(BadArgument):
     """Exception raised when a boolean argument was not convertable.

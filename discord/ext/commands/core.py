@@ -441,8 +441,11 @@ class Command(_BaseCommand):
         except AttributeError:
             pass
         else:
-            if module is not None and (module.startswith('discord.') and not module.endswith('converter')):
-                converter = getattr(converters, converter.__name__ + 'Converter', converter)
+            if module is not None:
+                if module.startswith('discord.') and module.endswith('converter'):
+                    pass
+                else:
+                    converter = getattr(converters, converter.__name__ + 'Converter', converter)
 
         try:
             if inspect.isclass(converter):

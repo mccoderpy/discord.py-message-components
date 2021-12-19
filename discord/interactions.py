@@ -511,10 +511,16 @@ class BaseInteraction:
             flags.suppress_embeds = True
         if flags:
             data['flags'] = flags.value
-        if self.deferred:
-            method = state.http.edit_interaction_response(token=self._token, interaction_id=self.id, application_id=self._application_id, data=data, files=files, deferred=self.deferred)
+        if self.deferred and not self.callback_message:
+            method = state.http.edit_interaction_response(token=self._token, interaction_id=self.id,
+                                                          application_id=self._application_id,
+                                                          data=data, files=files, deferred=self.deferred)
         else:
-            method = state.http.send_interaction_response(token=self._token, interaction_id=self.id, application_id=self._application_id, data=data, files=files, deferred=self.deferred, followup=True if self.callback_message else False, use_webhook=False)
+            method = state.http.send_interaction_response(token=self._token, interaction_id=self.id,
+                                                          application_id=self._application_id, data=data, files=files,
+                                                          deferred=self.deferred,
+                                                          followup=True if self.callback_message else False,
+                                                          use_webhook=False)
         data = await method
 
         if not isinstance(data, dict):
@@ -596,6 +602,15 @@ class BaseInteraction:
             return AutocompleteInteraction(state=state, data=data)
 
 class ApplicationCommandInteraction(BaseInteraction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.data.type.user:
+            self.target = self.data.resolved.members[self.data.target_id]
+        elif self.data.type.message:
+            self.target = self.data.resolved.messages[self.data.target_id]
+        else:
+            self.target = None
+
     async def defer(self, type: Literal[5, 9] = 5, hidden: bool = False):
         if isinstance(type, int):
             type = InteractionCallbackType.from_value(type)
@@ -656,8 +671,8 @@ class InteractionData:
         return int(self._data.get('id', 0))
 
     @property
-    def type(self):
-        return InteractionType.try_value(self._data.get('type', None))
+    def type(self) -> Optional[ApplicationCommandType]:
+        return try_enum(ApplicationCommandType, self._data.get('type', None))
 
     @property
     def component_type(self):
