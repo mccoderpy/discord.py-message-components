@@ -730,7 +730,7 @@ class Message(Hashable):
     def _handle_thread(self, value):
         thread = self.channel.get_thread(self.id)
         if thread:
-            thread._update(value)
+            thread._update(self.guild, value)
         else:
             thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
             self.channel.guild._add_thread(thread)
@@ -1474,22 +1474,34 @@ class Message(Hashable):
 
         return await self.channel.send(content, reference=self, **kwargs)
 
-    async def create_thread(self, *, name, auto_archive_duration: AutoArchiveDuration = None, private=False, reason: str = None):
+    async def create_thread(self,
+                            name: str,
+                            auto_archive_duration: AutoArchiveDuration = None,
+                            private: bool = False,
+                            reason: str = None):
         """|coro|
 
         Creates a new thread in the channel of the message with this Message as the Starter-Message.
         """
         if self.channel.type not in (ChannelType.text, ChannelType.news):
             raise Exception('You could not create a thread inside a %s.' % self.channel.__class__.__name__)
-        if private is True and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).use_private_threads:
-            raise MissingPermissionsToCreateThread('use_private_threads', 'send_messages', type=ChannelType.private_thread)
-        elif private is False and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).use_public_threads:
-            raise MissingPermissionsToCreateThread('use_public_threads', 'send_messages', type=ChannelType.public_thread)
+        if private is True and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).create_private_threads:
+            raise MissingPermissionsToCreateThread('create_private_threads', 'send_messages_in_threads',
+                                                   type=ChannelType.private_thread)
+        elif private is False and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).create_public_threads:
+            raise MissingPermissionsToCreateThread('create_public_threads', 'send_messages_in_threads',
+                                                   type=ChannelType.public_thread)
         if len(name) > 100 or len(name) < 1:
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
-        aad = (self.channel.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration))
+        aad = (self.channel.default_auto_archive_duration if not auto_archive_duration else
+               try_enum(AutoArchiveDuration, auto_archive_duration))
         _type = ChannelType.private_thread if private is True else ChannelType.public_thread
-        data = await self._state.http.create_thread(self.channel.id, message_id=self.id, name=name, auto_archive_duration=aad, type=_type, reason=reason)
+        data = await self._state.http.create_thread(self.channel.id,
+                                                    message_id=self.id,
+                                                    name=name,
+                                                    auto_archive_duration=aad,
+                                                    type=_type,
+                                                    reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
 
         self.channel._threads[thread.id] = thread

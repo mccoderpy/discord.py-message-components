@@ -575,15 +575,21 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         from .message import PartialMessage
         return PartialMessage(channel=self, id=message_id)
 
-    async def create_thread(self, *, name, auto_archive_duration: AutoArchiveDuration = None, private=False, reason: str = None):
+    async def create_thread(self,
+                            name: str,
+                            auto_archive_duration: AutoArchiveDuration = None,
+                            private: bool = False,
+                            reason: str = None):
         """|coro|
 
         Creates a new thread in this channel.
         """
-        if private is True and not self.permissions_for(self.guild.get_member(self._state.self_id)).use_private_threads:
-            raise MissingPermissionsToCreateThread(Permissions.use_private_threads, Permissions.send_messages, type=ChannelType.private_thread)
-        elif private is False and not self.permissions_for(self.guild.get_member(self._state.self_id)).use_public_threads:
-            raise MissingPermissionsToCreateThread(Permissions.use_public_threads, Permissions.send_messages, type=ChannelType.public_thread)
+        if private is True and not self.permissions_for(self.guild.get_member(self._state.self_id)).create_private_threads:
+            raise MissingPermissionsToCreateThread(Permissions.use_private_threads, Permissions.send_messages_in_threads,
+                                                   type=ChannelType.private_thread)
+        elif private is False and not self.permissions_for(self.guild.get_member(self._state.self_id)).create_public_threads:
+            raise MissingPermissionsToCreateThread(Permissions.create_public_threads, Permissions.send_messages_in_threads,
+                                                   type=ChannelType.public_thread)
         if len(name) > 100 or len(name) < 1:
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
         aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration)).value

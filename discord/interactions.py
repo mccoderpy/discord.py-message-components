@@ -623,7 +623,7 @@ class ApplicationCommandInteraction(BaseInteraction):
             self.target = None
 
     async def defer(self,
-                    type: Union[Literal[5], InteractionCallbackType.deferred_msg_with_source] = 5,
+                    type: Union[Literal[5], InteractionCallbackType] = 5,
                     hidden: bool = False) -> Message:
         """
         Defers the interaction, the user sees a loading state
