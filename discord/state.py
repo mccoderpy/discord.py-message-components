@@ -593,37 +593,33 @@ class ConnectionState:
         interaction = BaseInteraction.from_type(state=self, data=data)
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
-            interaction._guild = self._get_guild(interaction.guild_id)
-            interaction._channel = interaction.guild.get_channel(interaction.channel_id)
+            interaction.channel = interaction.guild.get_channel(interaction.channel_id)
             interaction.member = interaction.guild.get_member(interaction.user_id)
             if interaction.member is None:
                 # This can only be the case if ``GUILD_MEMBERS`` Intents are not enabled or the member is not in the cache right now.
                 interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
         else:
-            self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id) or PartialMessageable(id=interaction.channel_id)
+            interaction.channel = self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id) or PartialMessageable(id=interaction.channel_id, type=ChannelType.private)
 
-        if interaction.type in (InteractionType.ApplicationCommand, InteractionType.ApplicationCommandAutocomplete):
+        if interaction.type.ApplicationCommand or interaction.type.ApplicationCommandAutocomplete:
             cmd = self._get_client()._get_application_command(interaction.data.id)
             if cmd and not cmd.disabled:
                 interaction._command = cmd
                 self._get_client()._schedule_event(cmd._parse_arguments, '_application_command_invoke', interaction)
-        elif interaction.type == InteractionType.Component:
+        elif interaction.type.Component:
             interaction._message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
             if interaction.cached_message is not None:
-                if interaction.type == InteractionType.Component:
-                    if interaction.data.component_type == ComponentType.Button:
-                        self.dispatch('button_click', interaction, interaction.component)
-                        self.dispatch('raw_button_click', interaction, interaction.component)
-                    elif interaction.data.component_type == ComponentType.SelectMenu:
-                        self.dispatch('selection_select', interaction, interaction.component)
-                        self.dispatch('raw_selection_select', interaction, interaction.component)
+                if interaction.data.component_type == ComponentType.Button:
+                    self.dispatch('button_click', interaction, interaction.component)
+                    self.dispatch('raw_button_click', interaction, interaction.component)
+                elif interaction.data.component_type == ComponentType.SelectMenu:
+                    self.dispatch('selection_select', interaction, interaction.component)
+                    self.dispatch('raw_selection_select', interaction, interaction.component)
             else:
-                interaction._message = Message(state=self, channel=interaction.channel, data=interaction._message_data)
-                if interaction.type == InteractionType.Component:
-                    if interaction.data.component_type == ComponentType.Button:
-                        self.dispatch('raw_button_click', interaction, interaction.component)
-                    elif interaction.data.component_type == ComponentType.SelectMenu:
-                        self.dispatch('raw_selection_select', interaction, interaction.component)
+                if interaction.data.component_type == ComponentType.Button:
+                    self.dispatch('raw_button_click', interaction, interaction.component)
+                elif interaction.data.component_type == ComponentType.SelectMenu:
+                    self.dispatch('raw_selection_select', interaction, interaction.component)
 
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))

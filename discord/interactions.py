@@ -33,15 +33,16 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-__all__ = ('EphemeralMessage',
-           'BaseInteraction',
-           'ApplicationCommandInteraction',
-           'ComponentInteraction',
-           'AutocompleteInteraction',
-           'option_str',
-           'option_float',
-           'option_int'
-           )
+__all__ = (
+    'EphemeralMessage',
+    'BaseInteraction',
+    'ApplicationCommandInteraction',
+    'ComponentInteraction',
+    'AutocompleteInteraction',
+    'option_str',
+    'option_float',
+    'option_int'
+)
 
 
 class EphemeralMessage:
@@ -261,8 +262,6 @@ class BaseInteraction:
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
-        self._guild = None
-        self._channel = None
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
@@ -397,7 +396,7 @@ class BaseInteraction:
         if self.message_is_hidden:
             return await self.message.edit(content=content, embed=embed, embeds=embeds, components=components, suppress=suppress)
         if not self.channel:
-            self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
+            self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
         if self.deferred:
             data = await state.http.edit_interaction_response(token=self._token, interaction_id=self.id,
@@ -449,7 +448,7 @@ class BaseInteraction:
         """
         state = self._state
         if not self.channel:
-            self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
+            self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
         data = {'tts': tts}
         if content:
@@ -564,9 +563,12 @@ class BaseInteraction:
     @property
     def channel(self) -> Union[DMChannel, 'TextChannel', ThreadChannel]:
         """The channel where the interaction was invoked in."""
-        if not self._channel:
-            self._channel = self.guild.get_channel(self.channel_id) if self.guild_id else self._state._get_channel(self.channel_id)
-        return self._channel
+        return getattr(self, '_channel', self.guild.get_channel(self.channel_id)
+        if self.guild_id else self._state._get_channel(self.channel_id))
+
+    @channel.setter
+    def channel(self, channel):
+        self._channel = channel
 
     @property
     def guild(self) -> Optional[Guild]:
