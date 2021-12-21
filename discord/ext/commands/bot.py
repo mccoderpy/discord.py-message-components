@@ -960,6 +960,9 @@ class BotBase(GroupMixin):
         cog: :class:`.Cog`
             The cog wich application-commands should be added to the internal list of application-commands.
         """
+
+        self.remove_application_cmds_from_cog(cog)  # to ensure that commands that arent in the cog anymore get removed
+
         for cmd_type, commands in cog.__application_commands_by_type__.items():
 
             for command in commands.values():
@@ -1085,10 +1088,12 @@ class BotBase(GroupMixin):
         cog: :class:`.Cog`
             The cog wich application-commands should be removed from the internal list of application-commands.
         """
+        to_remove = []
         for t in self._application_commands_by_type.values():
             for cmd in t.values():
                 if cmd.cog and cmd.cog == cog:
-                    self._remove_application_command(cmd, from_cache=False)
+                    to_remove.append(cmd)
+                    continue
                 # Remove all subcommands from this command if they are in the cog.
                 if cmd.type == 'chat_input' and cmd.has_subcommands:
                     for sub_command in cmd.sub_commands:
@@ -1100,10 +1105,12 @@ class BotBase(GroupMixin):
                             del cmd._sub_commands[sub_command.name]
 
         for guild_id, t in self._guild_specific_application_commands.items():
+            to_remove = []
             for commands in t.values():
                 for cmd in commands.values():
                     if cmd.cog and cmd.cog == cog:
-                        self._remove_application_command(cmd, from_cache=False)
+                        to_remove.append(cmd)
+                        continue
                     # Remove all subcommands from this command if they are in the cog.
                     if cmd.type == 'chat_input' and cmd.has_subcommands:
                         for sub_command in cmd.sub_commands:
@@ -1113,6 +1120,9 @@ class BotBase(GroupMixin):
                                         del sub_command._sub_commands[sub_cmd.name]
                             if sub_command.cog and sub_command.cog == cog:
                                 del cmd._sub_commands[sub_command.name]
+
+        for cmd in to_remove:
+            self._remove_application_command(cmd, from_cache=False)
 
     # help command stuff
 

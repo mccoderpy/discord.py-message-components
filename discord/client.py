@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
+import copy
 import inspect
 import logging
 import signal
@@ -1617,7 +1618,8 @@ class Client:
                 log.info('Registering one new global application-command %s.', to_send[0]['name'])
                 updated = await self.http.create_application_command(application_id, to_send[0])
             else:
-                log.info('Detected %s updated/new global application-commands, bulk overwriting them...', len(to_send))
+                if len(to_send) > 0:
+                    log.info('Detected %s updated/new global application-commands, bulk overwriting them...', len(to_send))
                 if not self.delete_not_existing_commands:
                     to_send.extend(to_maybe_remove)
                 else:
@@ -1688,7 +1690,7 @@ class Client:
                 updated = None
                 if len(to_send) == 1 and has_update and not to_maybe_remove:
                     log.info(
-                        'Detected changes on application-command %s in %s (%s), updating.',
+                        'Detected changes on application-command %s in guild %s (%s), updating.',
                         to_send[0]['name'],
                         self.get_guild(int(guild_id)),
                         guild_id
@@ -1699,26 +1701,28 @@ class Client:
                                                                        guild_id)
                 elif len(to_send) == 1 and not has_update and not to_maybe_remove:
                     log.info(
-                        'Registering one new application-command %s in %s (%s).',
+                        'Registering one new application-command %s in guild %s (%s).',
                         to_send[0]['name'],
                         self.get_guild(int(guild_id)),
                         guild_id
                     )
                     updated = await self.http.create_application_command(application_id, to_send[0], guild_id)
                 else:
-                    log.info(
-                        'Detected %s updated/new application-commands for %s (%s), bulk overwriting them...',
-                        len(to_send),
-                        self.get_guild(int(guild_id)),
-                        guild_id
-                    )
                     if not self.delete_not_existing_commands:
                         to_send.extend(to_maybe_remove)
                     else:
                         if len(to_maybe_remove) > 0:
                             log.info(
-                                'Removing %s application-commands from %s (%s) that arent used in this code anymore.',
+                                'Removing %s application-commands from guild %s (%s) that arent used in this code anymore.',
                                 len(to_maybe_remove),
+                                self.get_guild(int(guild_id)),
+                                guild_id
+                            )
+
+                    if len(to_send) != 0:
+                            log.info(
+                                'Detected %s updated/new application-commands for guild %s (%s), bulk overwriting them...',
+                                len(to_send),
                                 self.get_guild(int(guild_id)),
                                 guild_id
                             )
@@ -1743,8 +1747,10 @@ class Client:
                     command._state = self._connection
                     self._application_commands[command.id] = command
                     self.get_guild(int(guild_id))._application_commands[command.id] = command
+
         if not any_guild_commands_changed:
             log.info('No Changes on guild-specific application-commands found.')
+
         log.info('Successful synced all global and guild-specific application-commands.')
 
     def _get_application_command(self, cmd_id):
@@ -1754,7 +1760,7 @@ class Client:
         if isinstance(command, GuildOnlySlashCommand):
             for guild_id in command.guild_ids:
                 try:
-                    cmd = self._guild_specific_application_commands[guild_id][command.type][command.name]
+                    cmd = self._guild_specific_application_commands[guild_id][command.type.name][command.name]
                 except KeyError:
                     continue
                 else:
@@ -1762,12 +1768,20 @@ class Client:
                         del cmd
                     else:
                         cmd.disabled = True
+                        self._application_commands[cmd.id] = copy.copy(cmd)
+                        del cmd
             del command
         else:
             if from_cache:
                 del command
             else:
                 command.disabled = True
+                self._application_commands[command.id] = copy.copy(command)
+                if command.guild_id:
+                    self._guild_specific_application_commands[command.guild_id][command.type.name].pop(command.name)
+                else:
+                    self._application_commands_by_type[command.type.name].pop(command.name)
+
 
     @property
     def application_commands(self):
