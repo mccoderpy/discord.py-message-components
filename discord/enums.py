@@ -41,6 +41,7 @@ __all__ = (
     'InteractionType',
     'InteractionCallbackType',
     'TimestampStyle',
+    'Locale',
     'MessageType',
     'VoiceRegion',
     'SpeakingState',
@@ -341,7 +342,6 @@ class InteractionCallbackType(Enum):
     deferred_update_msg = 6
     update_msg = 7
     autocomplete_callback = 8
-    something = 9
 
     @classmethod
     def from_value(cls, value):
@@ -381,6 +381,67 @@ class TimestampStyle(Enum):
     @classmethod
     def from_value(cls, value):
         return try_enum(cls, value)
+
+
+class Locale(Enum):
+    en_US = 'en-US'
+    en_GB = 'en-GB'
+    bg = 'bg'
+    bulgarian = 'bg'
+    zh_CN = 'zh-CN'
+    chinese_china = 'zh-CN'
+    zh_TW = 'zh-TW'
+    chinese_taiwan = 'zh-TW'
+    hr = 'hr'
+    croatian = 'hr'
+    cs = 'cs'
+    czech = 'cs'
+    da = 'da'
+    danish = 'da'
+    nl = 'nl'
+    dutch = 'nl'
+    fi = 'fi'
+    finnish = 'fi'
+    fr = 'fr'
+    french = 'fr'
+    de = 'de'
+    german = 'de'
+    el = 'el'
+    greek = 'el'
+    hi = 'hi'
+    hindi = 'hi'
+    hu = 'hu'
+    hungarian = 'hu'
+    it = 'it'
+    italian = 'it'
+    ja = 'ja'
+    japanese = 'ja'
+    ko = 'ko'
+    korean = 'ko'
+    lt = 'lt'
+    lithuanian = 'lt'
+    no = 'no'
+    norwegian = 'no'
+    pl = 'pl'
+    polish = 'pl'
+    pt_BR = 'pt-BR'
+    portuguese_brazil = 'pt-BR'
+    ro = 'ro'
+    romanian = 'ro'
+    ru = 'ru'
+    russian = 'ru'
+    es_ES = 'es-ES'
+    spanish_spain = 'es-ES'
+    sv_SE = 'sv-SE'
+    swedish = 'sv-SE'
+    th = 'th'
+    thai = 'th'
+    tr = 'tr'
+    turkish = 'tr'
+    uk = 'uk'
+    ukrainian = 'uk'
+    vi = 'vi'
+    vietnamese = 'vi'
 
 
 class AutoArchiveDuration(Enum):

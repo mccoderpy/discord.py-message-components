@@ -169,6 +169,8 @@ class Guild(Hashable):
         results to a specific language.
     discovery_splash: :class:`str`
         The guild's discovery splash.
+    premium_progress_bar_enabled: :class:`bool`
+        Whether the guild has the boost progress bar enabled.
     welcome_screen: Optional[:class:`WelcomeScreen`]
         The welcome screen of a Community guild, shown to new members if enabled.
         .. versionadded:: 1.3
@@ -183,7 +185,8 @@ class Guild(Hashable):
                  'description', 'max_presences', 'max_members', 'max_video_channel_users',
                  'premium_tier', 'premium_subscription_count', '_system_channel_flags',
                  'preferred_locale', 'discovery_splash', '_rules_channel_id',
-                 '_public_updates_channel_id', '_welcome_screen', 'stickers')
+                 '_public_updates_channel_id', 'premium_progress_bar_enabled',
+                 '_welcome_screen', 'stickers')
 
     _PREMIUM_GUILD_LIMITS = {
         None: _GuildLimit(emoji=50, sticker=0, bitrate=96e3, filesize=8388608),
@@ -332,6 +335,7 @@ class Guild(Hashable):
         self.discovery_splash = guild.get('discovery_splash')
         self._rules_channel_id = utils._get_as_snowflake(guild, 'rules_channel_id')
         self._public_updates_channel_id = utils._get_as_snowflake(guild, 'public_updates_channel_id')
+        self.premium_progress_bar_enabled: bool = guild.get('premium_progress_bar_enabled')
         cache_online_members = self._state.member_cache_flags.online
         cache_joined = self._state.member_cache_flags.joined
         self_id = self._state.self_id

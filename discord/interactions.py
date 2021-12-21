@@ -25,8 +25,9 @@ from typing import (Union,
                     TYPE_CHECKING)
 from .components import Button, SelectMenu, ActionRow
 from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
-from .errors import NotFound, UnknowInteraction, InvalidArgument
-from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, MessageType, try_enum
+from .errors import NotFound, InvalidArgument
+from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType,\
+    try_enum
 
 if TYPE_CHECKING:
     from .application_commands import SlashCommand, MessageCommand, UserCommand
@@ -262,6 +263,8 @@ class BaseInteraction:
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
+        self.author_locale = try_enum(Locale, data.get('locale', None))
+        self.guild_locale = try_enum(Locale, data.get('guild_locale', None))
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
