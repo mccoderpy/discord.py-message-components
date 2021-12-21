@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-discord.ext.sub_commands
+discord.ext.commands
 ~~~~~~~~~~~~~~~~~~~~~
 
 An extension module to facilitate creation of bot sub_commands.

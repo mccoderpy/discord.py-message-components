@@ -1,6 +1,7 @@
 import logging
+import warnings
 
-from discord import abc
+from . import abc
 
 from . import utils
 from .role import Role
@@ -20,16 +21,27 @@ from typing import (Union,
                     List,
                     Optional,
                     Dict,
-                    Any)
+                    Any,
+                    TYPE_CHECKING)
 from .components import Button, SelectMenu, ActionRow
-from .channel import DMChannel, ThreadChannel, _channel_factory
+from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
 from .errors import NotFound, UnknowInteraction, InvalidArgument
 from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, MessageType, try_enum
 
+if TYPE_CHECKING:
+    from .application_commands import SlashCommand, MessageCommand, UserCommand
 
 log = logging.getLogger(__name__)
 
-__all__ = ('EphemeralMessage', 'BaseInteraction', 'ButtonClick', 'SelectionSelect',)
+__all__ = ('EphemeralMessage',
+           'BaseInteraction',
+           'ApplicationCommandInteraction',
+           'ComponentInteraction',
+           'AutocompleteInteraction',
+           'option_str',
+           'option_float',
+           'option_int'
+           )
 
 
 class EphemeralMessage:
@@ -221,33 +233,6 @@ class EphemeralMessage:
         return self
 
 
-class ButtonClick:
-    """Represents a :class:`discord.Button` that was pressed in an ephemeral Message(contains its custom_id and its hash)."""
-    def __init__(self, data):
-        self.component_type: int = data.get('component_type')
-        custom_id = data.get('custom_id')
-        self.custom_id: Union[str, int] = int(custom_id) if custom_id.isdigit() else custom_id
-        self.__hash__: str = data.get('hash', None)
-
-    def __hash__(self):
-        return self.__hash__
-
-    def __repr__(self):
-        return f"<ButtonClick custom_id={self.custom_id}{', hash='+self.__hash__ if self.__hash__ else ''}>"
-
-
-class SelectionSelect:
-    """Represents a :class:`discord.SelectMenu` in an ephemeral Message from which options have been selected (contains its custom_id and the selected options)."""
-    def __init__(self, data):
-        self.component_type: int = data.get('component_type')
-        custom_id = data.get('custom_id')
-        self.custom_id: Union[str, int] = int(custom_id) if custom_id.isdigit() else custom_id
-        self.values: List[Union[str, int]] = [int(value) if value.isdigit() else value for value in data.get('values', [])]
-
-    def __repr__(self):
-        return f'<SelectionSelect custom_id={self.custom_id}, values={self.values}>'
-
-
 class BaseInteraction:
 
     """
@@ -261,15 +246,17 @@ class BaseInteraction:
         self._data = data
         self._state = state
         self._http: HTTPClient = state.http
-        self.type = InteractionType.try_value(data['type'])
+        self.type: InteractionType = InteractionType.try_value(data['type'])
         self._application_id = int(data.get('application_id'))
-        self.id = int(data.get('id'))
-        self._token = data.get('token', None)
-        self._message_data = data.get('message', {})
-        self.message_id = int(self._message_data.get('id', 0))
-        self.message_flags = self._message_data.get('flags', 0)
+        self.id = int(data['id'])
+        self._token = data['token']
         self.guild_id = int(data.get('guild_id', 0))
         self.channel_id = int(data.get('channel_id', 0))
+        message_data = data.get('message', {})
+        if message_data:
+            self.message = Message(state=state, channel=self.channel, data=message_data)
+            self.cached_message = self.message and self._state._get_message(self.message.id)
+            self.message_id = self.message.id
         self.data = InteractionData(data=data.get('data', None), state=state, guild=self.guild, channel_id=self.channel_id)
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
@@ -284,15 +271,15 @@ class BaseInteraction:
         self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
-        self.cached_message = self._message_data and self._state._get_message(int(self._message_data['id']))
+
 
     def __repr__(self):
-        """Represents a :class:`discord.Interaction`-object."""
-        return f'<Interaction {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
+        """Represents a :class:`discord.B aseInteraction`-object."""
+        return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
     
     async def defer(self,
-                    response_type: Union[Literal[5, 6], InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
-                    hidden: bool = False) -> Optional[Message]:
+                    response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
+                    hidden: Optional[bool] = False) -> Optional[Message]:
         """
         |coro|
 
@@ -300,10 +287,10 @@ class BaseInteraction:
 
         If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
 
-        :param response_type: Optional[Literal[5, 6]]
+        :param response_type: Optional[:class:`InteractionCallbackType`]
             The type to response with, aiter :class:`InteractionCallbackType.deferred_msg_with_source` or :class:`InteractionCallbackType.deferred_update_msg` (e.g. 5 or 6)
 
-        :param hidden: Optional[bool]
+        :param hidden: Optional[:class:`bool`]
             Whether to defer ephemerally(only the :attr:`author` of the interaction can see the message)
 
             .. note::
@@ -316,13 +303,14 @@ class BaseInteraction:
             To provide this us this method
 
         .. note::
-            A Token will be Valid for 15 Minutes so you could edit the original :attr:`message` with :meth:`edit`, :meth:`respond` or doing anything other with this interaction for 15 minutes.
-            after that time you have to edit the original message with the Methode :meth:`edit` of the :attr:`message` and sending new messages with the :meth:`send` Methode of :attr:`channel`
-            (you could not do this hidden as it isn't an respond anymore).
+            A Token will be Valid for 15 Minutes so you could edit the original :attr:`message` with :meth:`edit`,
+             :meth:`respond` or doing anything other with this interaction for 15 minutes.
+            After that time you have to edit the original message with the Methode :meth:`edit` of the :attr:`message`
+             and send new messages with the :meth:`send` Methode of :attr:`channel`
+            (you could not do this hidden as it isn't a response anymore).
         """
         if self.deferred:
-            log.warning("\033[91You have already responded to this Interaction!\033[0m")
-            return
+            return warnings.warn("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": int(response_type), "data": {'flags': 64 if hidden else None}}
         try:
             data = await self._http.post_initial_response(_resp=base,
@@ -337,8 +325,7 @@ class BaseInteraction:
             if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
                 self.deferred_hidden = True
             if not data and response_type.msg_with_source or response_type.deferred_msg_with_source:
-                data = await self.get_original_callback()
-                msg = self.callback_message = Message(state=self._state, channel=self.channel, data=data)
+                msg = self.callback_message = await self.get_original_callback()
                 return msg
 
     async def edit(self,
@@ -553,7 +540,8 @@ class BaseInteraction:
         Fetch the Original Callback-Message of the Interaction
 
         .. warning::
-            This is a API-Call and should use carefully"""
+            This is a API-Call and should use carefully
+        """
         data = await self._state.http.get_original_interaction_response(self._token, self._application_id)
         msg = Message(state=self._state, channel=self.channel, data=data)
         self.callback_message = msg
@@ -574,19 +562,16 @@ class BaseInteraction:
         return self.member if self.member is not None else self.user
 
     @property
-    def channel(self):
-        return self._channel if self._channel else self.message.channel
+    def channel(self) -> Union[DMChannel, 'TextChannel', ThreadChannel]:
+        """The channel where the interaction was invoked in."""
+        if not self._channel:
+            self._channel = self.guild.get_channel(self.channel_id) if self.guild_id else self._state._get_channel(self.channel_id)
+        return self._channel
 
     @property
-    def guild(self) -> Guild:
+    def guild(self) -> Optional[Guild]:
+        """The guild of the interaction"""
         return self._state._get_guild(self.guild_id)
-
-    @property
-    def message(self) -> Union[Message, EphemeralMessage]:
-        if not self._message:
-            if self.message_is_hidden:
-                self._message = EphemeralMessage(state=self._state, channel=self.channel, data=self._message_data, interaction=self)
-        return self._message
 
     @property
     def message_is_dm(self) -> bool:
@@ -594,13 +579,7 @@ class BaseInteraction:
 
     @property
     def message_is_hidden(self) -> bool:
-        return self.message_flags == 64
-
-    @property
-    def command(self):
-        if getattr(self, '_command', None) is not None:
-            return self._command
-        return self._state._get_client()._get_application_command(self.data.id) if self.type == InteractionType.ApplicationCommand else None
+        return self.message.flags.ephemeral
 
     @classmethod
     def from_type(cls, state, data):
@@ -621,6 +600,13 @@ class ApplicationCommandInteraction(BaseInteraction):
             self.target = self.data.resolved.messages[self.data.target_id]
         else:
             self.target = None
+
+    @property
+    def command(self) -> Union['SlashCommand', 'MessageCommand', 'UserCommand']:
+        if getattr(self, '_command', None) is not None:
+            return self._command
+        return self._state._get_client()._get_application_command(self.data.id) \
+            if self.type == InteractionType.ApplicationCommand else None
 
     async def defer(self,
                     type: Union[Literal[5], InteractionCallbackType] = 5,
@@ -647,7 +633,7 @@ class ApplicationCommandInteraction(BaseInteraction):
 
 class ComponentInteraction(BaseInteraction):
     @property
-    def component(self) -> Union[Button, SelectMenu, ButtonClick, SelectionSelect, None]:
+    def component(self) -> Union[Button, SelectMenu]:
         if self._component is None:
             custom_id = self.data.custom_id
             if custom_id:
@@ -664,11 +650,13 @@ class ComponentInteraction(BaseInteraction):
 
 
 class AutocompleteInteraction(BaseInteraction):
-    async def suggest(self, choices: List[SlashCommandOptionChoice]):
+    async def suggest(self, choices: List[SlashCommandOptionChoice]) -> None:
         if len(choices) > 25:
             raise ValueError(f'The maximum of choices is 25. Got {len(choices)}.')
         else:
-            await self._http.send_autocomplete_callback(interaction_id=self.id, interaction_token=self._token, choices=choices)
+            await self._http.send_autocomplete_callback(interaction_id=self.id,
+                                                        interaction_token=self._token,
+                                                        choices=choices)
 
     async def respond(self, *args, **kwargs):
        raise NotImplementedError

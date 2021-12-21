@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Discord APIMethodes Wrapper
+Discord API Wrapper
 ~~~~~~~~~~~~~~~~~~~
 
-A basic wrapper for the Discord APIMethodes.
+A basic wrapper for the Discord API.
 
 :copyright: (c) 2015-present Rapptz
 :license: MIT, see LICENSE for more details.
@@ -44,7 +44,7 @@ from .file import File, UploadFile
 from .colour import Color, Colour
 from .integrations import Integration, IntegrationAccount, BotIntegration, IntegrationApplication, StreamIntegration
 from .application_commands import SlashCommandOption, SlashCommandOptionChoice, OptionType as SlashCommandOptionType
-from .interactions import BaseInteraction, ApplicationCommandInteraction, ComponentInteraction, AutocompleteInteraction, option_str as a_str, option_int as a_int, option_float as a_float
+from .interactions import *
 from .invite import Invite, PartialInviteChannel, PartialInviteGuild
 from .template import Template
 from .widget import Widget, WidgetMember, WidgetChannel

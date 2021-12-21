@@ -523,6 +523,27 @@ class Permissions(BaseFlags):
         """:class:`bool`: An alias for :attr:`send_messages_in_threads`."""
         return 1 << 38
 
+    @flag_value
+    def start_embeded_activities(self):
+        """:class:`bool`: Returns ``True` if a user can start embeded activities in a voice channel
+        (e.g. voice-activities)."""
+        return 1 << 39
+
+    @make_permission_alias('start_embeded_activities')
+    def start_voice_activities(self):
+        """:class:`bool`: An alias for :attr:`start_embeded_activities`."""
+        return 1 << 39
+    
+    @flag_value
+    def moderate_members(self):
+        """:class:`bool`: Returns ``True` if a user can moderate other members (like timeout them)."""
+        return 1 << 40
+
+    @make_permission_alias('moderate_members')
+    def timeout_members(self):
+        """:class:`bool`: An alias for :attr:`moderate_members`."""
+        return 1 << 40
+
 def augment_from_permissions(cls):
     cls.VALID_NAMES = set(Permissions.VALID_FLAGS)
     aliases = set()

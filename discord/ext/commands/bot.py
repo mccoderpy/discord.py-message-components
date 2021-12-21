@@ -62,7 +62,7 @@ def when_mentioned_or(*prefixes):
 
     .. code-block:: python3
 
-        bot = sub_commands.Bot(command_prefix=sub_commands.when_mentioned_or('!'))
+        bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
 
 
     .. note::
@@ -74,7 +74,7 @@ def when_mentioned_or(*prefixes):
 
             async def get_prefix(bot, message):
                 extras = await prefixes_for(message.guild) # returns a list
-                return sub_commands.when_mentioned_or(*extras)(bot, message)
+                return commands.when_mentioned_or(*extras)(bot, message)
 
 
     See Also
@@ -183,6 +183,26 @@ class BotBase(GroupMixin):
 
         print('Ignoring exception in command {}:'.format(context.command), file=sys.stderr)
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
+
+    async def on_application_command_error(self, cmd, interaction, exception):
+        """|coro|
+
+        The default error handler when an Exception was raised when invoking an application-command.
+
+        By default this prints to :data:`sys.stderr` however it could be
+        overridden to have a different implementation.
+        Check :func:`~discord.on_application_command_error` for more details.
+        """
+        if self.extra_events.get('on_application_command_error', None):
+            return
+
+        if hasattr(cmd, 'on_error'):
+            return
+
+        cog = cmd.cog
+        if cog and Cog._get_overridden_method(cog.cog_application_command_error) is not None:
+            return
+        await super().on_application_command_error(cmd, interaction, exception)
 
     # global check registration
 
@@ -628,7 +648,7 @@ class BotBase(GroupMixin):
     def add_cog(self, cog):
         """Adds a "cog" to the bot.
 
-        A cog is a class that has its own event listeners and sub_commands.
+        A cog is a class that has its own event listeners and commands.
 
         Parameters
         -----------
@@ -671,7 +691,7 @@ class BotBase(GroupMixin):
     def remove_cog(self, name):
         """Removes a cog from the bot.
 
-        All registered sub_commands and event listeners that the
+        All registered commands and event listeners that the
         cog has registered will be removed as well.
 
         If no cog is found then this method has no effect.
@@ -705,7 +725,7 @@ class BotBase(GroupMixin):
             if _is_submodule(name, cog.__module__):
                 self.remove_cog(cogname)
 
-        # remove all the sub_commands from the module
+        # remove all the commands from the module
         for cmd in self.all_commands.copy().values():
             if cmd.module is not None and _is_submodule(name, cmd.module):
                 if isinstance(cmd, GroupMixin):
@@ -775,7 +795,7 @@ class BotBase(GroupMixin):
     def load_extension(self, name, *, package=None):
         """Loads an extension.
 
-        An extension is a python module that contains sub_commands, cogs, or
+        An extension is a python module that contains commands, cogs, or
         listeners.
 
         An extension must have a global function, ``setup`` defined as
@@ -822,7 +842,7 @@ class BotBase(GroupMixin):
     def unload_extension(self, name, *, package=None):
         """Unloads an extension.
 
-        When the extension is unloaded, all sub_commands, listeners, and cogs are
+        When the extension is unloaded, all commands, listeners, and cogs are
         removed from the bot and the module is un-imported.
 
         The extension can provide an optional global function, ``teardown``,
@@ -1258,9 +1278,9 @@ class BotBase(GroupMixin):
     async def process_commands(self, message):
         """|coro|
 
-        This function processes the sub_commands that have been registered
+        This function processes the commands that have been registered
         to the bot and other groups. Without this coroutine, none of the
-        sub_commands will be triggered.
+        commands will be triggered.
 
         By default, this coroutine is called inside the :func:`.on_message`
         event. If you choose to override the :func:`.on_message` event, then
@@ -1275,7 +1295,7 @@ class BotBase(GroupMixin):
         Parameters
         -----------
         message: :class:`discord.Message`
-            The message to process sub_commands for.
+            The message to process commands for.
         """
         if message.author.bot:
             return
@@ -1295,7 +1315,7 @@ class Bot(BotBase, discord.Client):
     this bot.
 
     This class also subclasses :class:`.GroupMixin` to provide the functionality
-    to manage sub_commands.
+    to manage commands.
 
     Attributes
     -----------
@@ -1329,13 +1349,13 @@ class Bot(BotBase, discord.Client):
             when passing an empty string, it should always be last as no prefix
             after it will be matched.
     case_insensitive: :class:`bool`
-        Whether the sub_commands should be case insensitive. Defaults to ``False``. This
+        Whether the commands should be case insensitive. Defaults to ``False``. This
         attribute does not carry over to groups. You must set it to every group if
-        you require group sub_commands to be case insensitive as well.
+        you require group commands to be case insensitive as well.
     description: :class:`str`
         The content prefixed into the default help message.
     self_bot: :class:`bool`
-        If ``True``, the bot will only listen to sub_commands invoked by itself rather
+        If ``True``, the bot will only listen to commands invoked by itself rather
         than ignoring itself. If ``False`` (the default) then the bot will ignore
         itself. This cannot be changed once initialised.
     help_command: Optional[:class:`.HelpCommand`]

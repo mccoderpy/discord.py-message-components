@@ -37,7 +37,7 @@ from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern,
 import aiohttp
 
 from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
-    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup
+    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType
 from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
@@ -60,6 +60,8 @@ from .backoff import ExponentialBackoff
 from .webhook import Webhook
 from .iterators import GuildIterator
 from .appinfo import AppInfo
+
+from .interactions import ApplicationCommandInteraction
 
 log = logging.getLogger(__name__)
 
@@ -453,13 +455,25 @@ class Client:
     async def on_application_command_error(self, cmd, interaction, exception):
         """|coro|
 
-            The default error handler when an Exception was raised when invoking an application-command.
+        The default error handler when an Exception was raised when invoking an application-command.
 
-            By default this prints to :data:`sys.stderr` however it could be
-            overridden to have a different implementation.
-            Check :func:`~discord.on_application_command_error` for more details.
-            """
-        print('Ignoring exception in {type} {name}'.format(type=cmd.type, name=cmd.name), file=sys.stderr)
+        By default this prints to :data:`sys.stderr` however it could be
+        overridden to have a different implementation.
+        Check :func:`~discord.on_application_command_error` for more details.
+        """
+        if hasattr(cmd, 'on_error'):
+            return
+        if interaction.command.type.chat_input and cmd.type == OptionType.sub_command:
+            if cmd.parent.type == OptionType.sub_command_group:
+                name = f'sub-command {cmd.name} of sub-command-group {cmd.parent.name} of command {cmd.parent.parent.name}'
+            else:
+                name = f'sub-command {cmd.name} of command {cmd.parent.name}'
+        else:
+            name = cmd.name
+        print('Ignoring exception in {type} {name}({id})'.format(type=interaction.command.type,
+                                                                 name=name,
+                                                                 id=interaction.command.id),
+        file=sys.stderr)
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     async def _request_sync_commands(self):

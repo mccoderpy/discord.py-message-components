@@ -519,7 +519,7 @@ class MissingRole(CheckFailure):
     -----------
     missing_role: Union[:class:`str`, :class:`int`]
         The required role that is missing.
-        This is the parameter passed to :func:`~.sub_commands.has_role`.
+        This is the parameter passed to :func:`~.commands.has_role`.
     """
     def __init__(self, missing_role):
         self.missing_role = missing_role
@@ -537,7 +537,7 @@ class BotMissingRole(CheckFailure):
     -----------
     missing_role: Union[:class:`str`, :class:`int`]
         The required role that is missing.
-        This is the parameter passed to :func:`~.sub_commands.has_role`.
+        This is the parameter passed to :func:`~.commands.has_role`.
     """
     def __init__(self, missing_role):
         self.missing_role = missing_role
@@ -556,7 +556,7 @@ class MissingAnyRole(CheckFailure):
     -----------
     missing_roles: List[Union[:class:`str`, :class:`int`]]
         The roles that the invoker is missing.
-        These are the parameters passed to :func:`~.sub_commands.has_any_role`.
+        These are the parameters passed to :func:`~.commands.has_any_role`.
     """
     def __init__(self, missing_roles):
         self.missing_roles = missing_roles
@@ -584,7 +584,7 @@ class BotMissingAnyRole(CheckFailure):
     -----------
     missing_roles: List[Union[:class:`str`, :class:`int`]]
         The roles that the bot's member is missing.
-        These are the parameters passed to :func:`~.sub_commands.has_any_role`.
+        These are the parameters passed to :func:`~.commands.has_any_role`.
 
     """
     def __init__(self, missing_roles):

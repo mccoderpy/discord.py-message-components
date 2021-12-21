@@ -1,6 +1,30 @@
-from typing import Optional, Union, List, TYPE_CHECKING
-from typing_extensions import Literal
+# -*- coding: utf-8 -*-
 
+"""
+The MIT License (MIT)
+
+Copyright (c) 2021-present mccoderpy
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+"""
+
+from typing import Optional, Union, TYPE_CHECKING
 from datetime import datetime
 
 
@@ -194,11 +218,58 @@ class GuildScheduledEvent(Hashable):
                     before: 'User' = None,
                     after: 'User' = None,
                     with_member: bool = False) -> EventUsersIterator:
+        """Returns an :class:`~discord.AsyncIterator` that enables receiving the interest users of the event.
+
+        Examples
+        ---------
+
+        Usage ::
+
+            counter = 0
+            async for user in event.users(limit=200):
+                if user.id > 264905529753600000:  # all accounts created before 2018
+                    counter += 1
+
+        Flattening into a list: ::
+
+            users = await event.users(limit=123).flatten()
+            # users is now a list of Member/User...
+
+        All parameters are optional.
+
+        Parameters
+        -----------
+        limit: Optional[:class:`int`]
+            The number of users to retrieve.
+            If ``None``, retrieves every user of the event.
+            Note, however, that this would make it a slow operation.
+        before: Optional[Union[:class:`~discord.abc.Snowflake`, :class:`datetime.datetime`]]
+            Retrieve users before this user.
+            If a date is provided it must be a timezone-naive datetime representing UTC time.
+        after: Optional[Union[:class:`~discord.abc.Snowflake`, :class:`datetime.datetime`]]
+            Retrieve users after this user.
+            If a date is provided it must be a timezone-naive datetime representing UTC time.
+        with_member: Optional[:class:`bool`]
+            If set to ``True``, return the Member instead of the User if it is part of the guild the event is in.
+
+        Raises
+        ------
+        ~discord.Forbidden
+            You do not have permissions to get the event users.
+        ~discord.HTTPException
+            The request to get event users failed.
+
+        Yields
+        -------
+        Union[:class:`~discord.Member`, :class:`~discord.User`]
+            The user or member.
+        """
         return EventUsersIterator(event=self, limit=limit, before=before, after=after, with_member=with_member)
 
     async def delete(self, *, reason: str = None) -> None:
         """
         Deletes the event. Requires ``MANAGE_EVENTS``Permissions.
+
         Parameters
         ----------
         reason: Optional[:class:`str`]

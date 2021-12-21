@@ -55,13 +55,13 @@ class CogMeta(type):
 
         import abc
 
-        class CogABCMeta(sub_commands.CogMeta, abc.ABCMeta):
+        class CogABCMeta(commands.CogMeta, abc.ABCMeta):
             pass
 
         class SomeMixin(metaclass=abc.ABCMeta):
             pass
 
-        class SomeCogMixin(SomeMixin, sub_commands.Cog, metaclass=CogABCMeta):
+        class SomeCogMixin(SomeMixin, commands.Cog, metaclass=CogABCMeta):
             pass
 
     .. note::
@@ -72,7 +72,7 @@ class CogMeta(type):
 
         .. code-block:: python3
 
-            class MyCog(sub_commands.Cog, name='My Cog'):
+            class MyCog(commands.Cog, name='My Cog'):
                 pass
 
     Attributes
@@ -92,12 +92,12 @@ class CogMeta(type):
 
         .. code-block:: python3
 
-            class MyCog(sub_commands.Cog, command_attrs=dict(hidden=True)):
-                @sub_commands.command()
+            class MyCog(commands.Cog, command_attrs=dict(hidden=True)):
+                @commands.command()
                 async def foo(self, ctx):
                     pass # hidden -> True
 
-                @sub_commands.command(hidden=False)
+                @commands.command(hidden=False)
                 async def bar(self, ctx):
                     pass # hidden -> False
     """
@@ -190,8 +190,8 @@ def _cog_special_method(func):
 class Cog(metaclass=CogMeta):
     """The base class that all cogs must inherit from.
 
-    A cog is a collection of sub_commands, listeners, and optional state to
-    help group sub_commands together. More information on them can be found on
+    A cog is a collection of commands, listeners, and optional state to
+    help group commands together. More information on them can be found on
     the :ref:`ext_commands_cogs` page.
 
     When inheriting from this class, the options shown in :class:`CogMeta`
@@ -265,7 +265,7 @@ class Cog(metaclass=CogMeta):
         self.__cog_description__ = description
 
     def walk_commands(self):
-        """An iterator that recursively walks through this cog's sub_commands and subcommands.
+        """An iterator that recursively walks through this cog's commands and subcommands.
 
         Yields
         ------
@@ -370,7 +370,7 @@ class Cog(metaclass=CogMeta):
                    style=ButtonStyle.blurple)
 
             # function that's called when the Button pressed
-            @sub_commands.Cog.on_click(custom_id='cool blue Button')
+            @command.Cog.on_click(custom_id='cool blue Button')
             async def cool_blue_button(i: discord.Interaction, button):
                 await i.respond(f'Hey you pressed a `{button.custom_id}`!', hidden=True)
 
@@ -430,7 +430,7 @@ class Cog(metaclass=CogMeta):
                             ], placeholder='Choose your Gender')
 
             # function that's called when the SelectMenu is used
-            @sub_commands.Cog.on_select()
+            @commands.Cog.on_select()
             async def choose_your_gender(i: discord.Interaction, select_menu):
                 await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
@@ -828,7 +828,7 @@ class Cog(metaclass=CogMeta):
 
     @_cog_special_method
     def cog_check(self, ctx):
-        """A special method that registers as a :func:`sub_commands.check`
+        """A special method that registers as a :func:`commands.check`
         for every command and subcommand in this cog.
 
         This function **can** be a coroutine and must take a sole parameter,
@@ -842,7 +842,7 @@ class Cog(metaclass=CogMeta):
         is dispatched inside this cog.
 
         This is similar to :func:`.on_command_error` except only applying
-        to the sub_commands inside this cog.
+        to the commands inside this cog.
 
         This **must** be a coroutine.
 
@@ -882,6 +882,27 @@ class Cog(metaclass=CogMeta):
         -----------
         ctx: :class:`.Context`
             The invocation context.
+        """
+        pass
+
+    @_cog_special_method
+    async def cog_application_command_error(self, cmd, interaction, error):
+        """A special method that is called whenever an error
+        is dispatched inside this cog.
+
+        This is similar to :func:`.on_application_command_error` except only applying
+        to the application-commands inside this cog.
+
+        This **must** be a coroutine.
+
+        Parameters
+        -----------
+        cmd: Union[:class:`discord.SlashCommand`, :class:`discord.SubCommand`]
+            The invoked command.
+        interaction: :class:`discord.ApplicationCommandInteraction`
+            The interaction.
+        error: :class:`Exception`
+            The error that happened.
         """
         pass
 
