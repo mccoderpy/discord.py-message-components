@@ -477,15 +477,16 @@ class Client:
         file=sys.stderr)
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
-    async def _request_sync_commands(self):
+    async def _request_sync_commands(self, is_cog_reload: bool = False):
         """Used to sync commands if the ``GUILD_CREATE`` stream is over
 
         .. warning::
-            **DO NOT OVERWRITE THIS METHOD!!! IF YOU DO SO, THE APPLICATION-COMMANDS WILL NOT BE SYNCED AND NO COMMAND REGISTERED WILL BE DISPATCHED.**
+            **DO NOT OVERWRITE THIS METHOD!!!
+            IF YOU DO SO, THE APPLICATION-COMMANDS WILL NOT BE SYNCED AND NO COMMAND REGISTERED WILL BE DISPATCHED.**
         """
         if not hasattr(self, 'app'):
             await self.application_info()
-        if self.sync_commands is True:
+        if (is_cog_reload and getattr(self, 'sync_on_cog_reload', False) is True) or (not is_cog_reload and self.sync_commands is True):
             await self._sync_commands()
         else:
             log.info('Collecting application-commands for Application %s (%s)', self.app.name, self.app.id)
@@ -1713,10 +1714,12 @@ class Client:
                     else:
                         if len(to_maybe_remove) > 0:
                             log.info(
-                                'Removing %s application-commands from guild %s (%s) that arent used in this code anymore.',
+                                'Removing %s application-commands from guild %s (%s) that arent used in this code anymore.'
+                                 'To prevent this set `remove_not_existing_commands` of %s to False',
                                 len(to_maybe_remove),
                                 self.get_guild(int(guild_id)),
-                                guild_id
+                                guild_id,
+                                self.__class__.__name__
                             )
 
                     if len(to_send) != 0:
@@ -1738,6 +1741,7 @@ class Client:
                         guild_id=guild_id
                     )
                 log.info('Synced application-commands for %s (%s).' % (guild_id, self.get_guild(int(guild_id))))
+                any_guild_commands_changed = True
 
             for updated in registered_guild_commands_raw:
                 command = self._guild_specific_application_commands[int(guild_id)][

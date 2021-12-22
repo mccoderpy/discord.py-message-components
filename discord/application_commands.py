@@ -115,7 +115,7 @@ class ApplicationCommand:
         return super().__init__(self, *args, **kwargs)
 
     def __repr__(self):
-        return '<%s name=%s, id=%s>' % (self.__class__.__name__, self.name, self.id)
+        return '<%s name=%s, id=%s, disabled=%s>' % (self.__class__.__name__, self.name, self.id, self.disabled)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -196,7 +196,7 @@ class ApplicationCommand:
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self._state.dispatch('application_command_error', interaction, exc)
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -222,7 +222,7 @@ class ApplicationCommand:
         return getattr(self, '_id', None)
 
     @property
-    def type(self):
+    def type(self) -> ApplicationCommandType:
         return try_enum(ApplicationCommandType, self._type)
 
     @property
@@ -532,7 +532,7 @@ class SlashCommandOption:
 
 class SubCommand(SlashCommandOption):
     def __init__(self, parent, name: str, description: str, options: List[SlashCommandOption] = [], **kwargs):
-        self.parent = parent
+        self.parent: Union[SubCommandGroup, SubCommand] = parent
         if (not re.match('^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
             raise ValueError(
                 'The name of the Sub-Command must be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.'
@@ -589,7 +589,7 @@ class SubCommand(SlashCommandOption):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self.parent.parent._state.dispatch('application_command_error', interaction, exc)
+                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
     def autocomplete_callback(self, coro):
         """
@@ -625,7 +625,7 @@ class SubCommand(SlashCommandOption):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self.parent.parent._state.dispatch('application_command_error', interaction, exc)
+                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -705,12 +705,13 @@ class SlashCommand(ApplicationCommand):
             sc.parent = self
 
     def __repr__(self):
-        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s>' \
+        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s disabled=%s>' \
                % (self.name,
                   self.description,
                   self.default_permission,
                   self.options or self.sub_commands,
-                  self.guild_id)
+                  self.guild_id or 'None',
+                  self.disabled)
 
     @property
     def _state(self):
@@ -766,7 +767,7 @@ class SlashCommand(ApplicationCommand):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self._state.dispatch('application_command_error', interaction, exc)
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     @property
     def sub_commands(self) -> Optional[List[Union['SubCommandGroup[SubCommand]', SubCommand]]]:
@@ -807,7 +808,7 @@ class SlashCommand(ApplicationCommand):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self._state.dispatch('application_command_error', interaction, exc)
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     async def _parse_arguments(self, interaction):
         to_invoke = self

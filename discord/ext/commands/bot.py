@@ -26,6 +26,7 @@ DEALINGS IN THE SOFTWARE.
 
 import asyncio
 import collections
+import copy
 import inspect
 import importlib.util
 import re
@@ -914,7 +915,6 @@ class BotBase(GroupMixin):
         ExtensionFailed
             The extension setup function had an execution error.
         """
-
         name = self._resolve_name(name, package)
         lib = self.__extensions.get(name)
         if lib is None:
@@ -943,8 +943,7 @@ class BotBase(GroupMixin):
             sys.modules.update(modules)
             raise
         else:
-            if self.sync_on_cog_reload:
-                self.loop.create_task(self._sync_commands())
+             self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
 
     @property
     def extensions(self):
@@ -968,10 +967,8 @@ class BotBase(GroupMixin):
             for command in commands.values():
                 # check if there is already a command with the same name
                 command.cog = cog
-                command.disabled = False
                 if command.name in self._application_commands_by_type[cmd_type]:
                     existing_command = self._application_commands_by_type[cmd_type][command.name]
-
                     if cmd_type == 'chat_input':
                         if command.has_subcommands:
                             # if the command has subcommands add them to the existing one.
@@ -1030,10 +1027,8 @@ class BotBase(GroupMixin):
 
                 for command in commands.values():
                     command.cog = cog
-                    command.disabled = False
                     if command.name in self._guild_specific_application_commands[guild_id][cmd_type]:
                         existing_command = self._guild_specific_application_commands[guild_id][cmd_type][command.name]
-
                         if cmd_type == 'chat_input':
                             if command.has_subcommands:
 

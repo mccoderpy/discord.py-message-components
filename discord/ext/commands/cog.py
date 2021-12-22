@@ -730,11 +730,26 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('The message-command function registered  must be a coroutine.')
             _name = name or actual.__name__
-            cmd = MessageCommand(cog=cls,
-                                 name=_name,
-                                 default_permission=default_permission,
-                                 func=actual.__name__,
-                                 guild_ids=guild_ids)
+            cmd = MessageCommand(
+                cog=cls,
+                name=_name,
+                default_permission=default_permission,
+                func=actual,
+                guild_ids=guild_ids
+            )
+            if guild_ids:
+                for guild_id in guild_ids:
+                    try:
+                        cls.__guild_specific_application_commands__[guild_id]['message'][cmd.name] = cmd
+                    except KeyError:
+                        cls.__guild_specific_application_commands__[guild_id] = {
+                            'chat_input': {},
+                            'message': {cmd.name: cmd},
+                            'user': {}
+                        }
+            else:
+                cls.__application_commands_by_type__['message'][cmd.name] = cmd
+
             return cmd
         return decorator
 
@@ -776,15 +791,29 @@ class Cog(metaclass=CogMeta):
         def decorator(func: Awaitable[Any]) -> UserCommand:
             actual = func
             if isinstance(actual, staticmethod):
-                func = actual.__func__
+                actual = actual.__func__
             if not inspect.iscoroutinefunction(actual):
-                raise TypeError('The user-command function registered  must be a coroutine.')
+                raise TypeError('The user-command function registered must be a coroutine.')
             _name = name or actual.__name__
-            cmd = UserCommand(cog=cls,
-                              name=_name,
-                              default_permission=default_permission,
-                              func=actual.__name__,
-                              guild_ids=guild_ids)
+            cmd = UserCommand(
+                cog=cls,
+                name=_name,
+                default_permission=default_permission,
+                func=actual,
+                guild_ids=guild_ids
+            )
+            if guild_ids:
+                for guild_id in guild_ids:
+                    try:
+                        cls.__guild_specific_application_commands__[guild_id]['user'][cmd.name] = cmd
+                    except KeyError:
+                        cls.__guild_specific_application_commands__[guild_id] = {
+                            'chat_input': {},
+                            'message': {},
+                            'user': {cmd.name: cmd}
+                        }
+            else:
+                cls.__application_commands_by_type__['user'][cmd.name] = cmd
             return cmd
         return decorator
 
