@@ -586,6 +586,11 @@ class BaseInteraction:
     def message_is_hidden(self) -> bool:
         return self.message.flags.ephemeral
 
+    @property
+    def bot(self):
+        """Returns the discord.Client/commands.Bot instance"""
+        return self._state._get_client()
+
     @classmethod
     def from_type(cls, state, data):
         type = try_enum(InteractionType, data['type'])

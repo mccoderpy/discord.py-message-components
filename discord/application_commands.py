@@ -260,6 +260,14 @@ class ApplicationCommand:
             sorted_dict[predicate].append(cmd)
         return sorted_dict
 
+    async def delete(self):
+        if self.guild_id != 0:
+            guild_id = self.guild_id
+        else:
+            guild_id = None
+        await self._state.http.delete_application_command(self.application_id, self.id, guild_id)
+        if guild_id:
+            self._state._get_client()._remove_application_command(self)
 
 class SlashCommandOptionChoice:
     def __init__(self, name: str, value: Union[str, int, float] = None):
@@ -519,15 +527,21 @@ class SlashCommandOption:
 
     @classmethod
     def from_dict(cls, data):
-        return cls(type=try_enum(OptionType, data['type']),
-                   name=data['name'],
-                   description=data.get('description',
-                                        'No description'),
-                   required=data.get('required', False),
-                   choices=[SlashCommandOptionChoice.from_dict(c) for c in data.get('choices', [])],
-                   autocomplete=data.get('autocomplete', False),
-                   min_value=data.get('min_value', None),
-                   max_value=data.get('max_value', None))
+        option_type: OptionType = try_enum(OptionType, data['type'])
+        if option_type.sub_command_group:
+            return SubCommandGroup.from_dict(data)
+        elif option_type.sub_command:
+            return SubCommand.from_dict(data)
+        return cls(
+            option_type=try_enum(OptionType, data['type']),
+            name=data['name'],
+            description=data.get('description', 'No description'),
+            required=data.get('required', False),
+            choices=[SlashCommandOptionChoice.from_dict(c) for c in data.get('choices', [])],
+            autocomplete=data.get('autocomplete', False),
+            min_value=data.get('min_value', None),
+            max_value=data.get('max_value', None)
+        )
 
 
 class SubCommand(SlashCommandOption):
@@ -633,6 +647,14 @@ class SubCommand(SlashCommandOption):
         self.on_error = coro
         return coro
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            parent=data.get('parent', None),
+            name=data['name'],
+            description=data.get('description', 'No description'),
+            options=[SlashCommandOption.from_dict(c) for c in data.get('options', [])],
+        )
 
 class GuildOnlySubCommand(SubCommand):
     """Represents a :class:`SubCommand` for multiple guilds with the same function."""
@@ -666,8 +688,9 @@ class SlashCommand(ApplicationCommand):
                  connector: Dict[str, str] = {},
                  **kwargs):
         """
-        Represents a slash-command. You should use the :class:`discord.Client.slash_command` decorator by default
-        to create this.
+        Represents a slash-command.
+        You should use the :class:`discord.Client.slash_command` or :class:`discord.ext.commands.Cog.slash_command`
+        decorator by default to create this.
 
         Parameters
         ----------
@@ -705,13 +728,14 @@ class SlashCommand(ApplicationCommand):
             sc.parent = self
 
     def __repr__(self):
-        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s disabled=%s>' \
+        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s disabled=%s, id=%s>' \
                % (self.name,
                   self.description,
                   self.default_permission,
                   self.options or self.sub_commands,
                   self.guild_id or 'None',
-                  self.disabled)
+                  self.disabled,
+                  self.id)
 
     @property
     def _state(self):
@@ -781,12 +805,23 @@ class SlashCommand(ApplicationCommand):
 
     @classmethod
     def from_dict(cls, state, data):
-        return cls(name=data['name'],
-                   description=data.get('description', 'No Description'),
-                   default_permission=data.get('default_permission', True),
-                   options=[SlashCommandOption.from_dict(opt) for opt in data.get('options', [])],
-                   state=state,
-                   **data)
+        self: cls = cls.__new__(cls)
+        self._type = ApplicationCommandType.chat_input
+        self.name = data.pop('name')
+        self.disabled = False
+        self.connector = {}
+        self.description=data.pop('description', 'No Description')
+        self.default_permission=data.pop('default_permission', True)
+        self._guild_id = int(data.get('guild_id', 0))
+        self._state_ = state
+        for opt in data.get('options', []):
+            opt['parent'] = self
+        options = [SlashCommandOption.from_dict(opt) for opt in data.pop('options', [])]
+        self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in (
+        OptionType.sub_command, OptionType.sub_command_group)}
+        if not self._sub_commands:
+            self._options = {option.name: option for option in options}
+        return self
 
     @staticmethod
     def _filter_id_out(argument):
@@ -891,8 +926,8 @@ class UserCommand(ApplicationCommand):
     @classmethod
     def from_dict(cls, state, data):
         return cls(
-            name=data['name'],
-            default_permission=data['default_permission'],
+            name=data.pop('name'),
+            default_permission=data.pop('default_permission', True),
             state=state,
             **data
         )
@@ -912,8 +947,8 @@ class MessageCommand(ApplicationCommand):
     @classmethod
     def from_dict(cls, state, data):
         return cls(
-            name=data['name'],
-            default_permission=data['default_permission'],
+            name=data.pop('name'),
+            default_permission=data.pop('default_permission'),
             state=state,
             **data
         )
@@ -972,6 +1007,15 @@ class SubCommandGroup(SlashCommandOption):
             'options': [c.to_dict() for c in self.sub_commands]
         }
         return base
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            parent=data.get('parent', None),
+            name=data['name'],
+            description=data.get('description', 'No description'),
+            options=[SubCommand.from_dict(c) for c in data.get('options', [])],
+        )
 
 
 class GuildOnlySubCommandGroup(SubCommandGroup):

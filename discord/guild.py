@@ -4,6 +4,7 @@
 The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
+Copyright (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -27,15 +28,15 @@ DEALINGS IN THE SOFTWARE.
 import copy
 from collections import namedtuple
 from datetime import datetime
-from typing import Union, Optional, List, Tuple, Dict, Any, TYPE_CHECKING
+from typing import Union, Optional, List, Tuple, Dict, Any, Awaitable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from os import PathLike
+    from .ext.commands import Cog
+    from .application_commands import SlashCommandOption, SubCommandGroup, SubCommand, ApplicationCommand
 
 from . import utils
-from .abc import GuildChannel
 from .file import UploadFile
-from .partial_emoji import PartialEmoji
 from .role import Role
 from .member import Member, VoiceState
 from .emoji import Emoji
@@ -56,9 +57,14 @@ from .asset import Asset
 from .flags import SystemChannelFlags
 from .integrations import _integration_factory
 from .sticker import GuildSticker
+from .application_commands import SlashCommand, MessageCommand, UserCommand
 
 BanEntry = namedtuple('BanEntry', 'reason user')
 _GuildLimit = namedtuple('_GuildLimit', 'emoji sticker bitrate filesize')
+
+
+async def default_callback(interaction, *args, **kwargs):
+    await interaction.respond('This command has no callback set.', hidden=True)
 
 
 class Guild(Hashable):
@@ -169,11 +175,9 @@ class Guild(Hashable):
         results to a specific language.
     discovery_splash: :class:`str`
         The guild's discovery splash.
+        .. versionadded:: 1.3
     premium_progress_bar_enabled: :class:`bool`
         Whether the guild has the boost progress bar enabled.
-    welcome_screen: Optional[:class:`WelcomeScreen`]
-        The welcome screen of a Community guild, shown to new members if enabled.
-        .. versionadded:: 1.3
     """
 
     __slots__ = ('afk_timeout', 'afk_channel', '_members', '_channels', 'icon',
@@ -394,6 +398,9 @@ class Guild(Hashable):
         A list of application-commands from this application that are registered in this guild.
         """
         return list(self._application_commands.values())
+
+    def get_application_command(self, id):
+        return self._application_commands.get(id, None)
 
     @property
     def channels(self):
@@ -2648,4 +2655,69 @@ class Guild(Hashable):
         self._add_event(event)
         return event
 
+    async def _register_application_command(self, command):
+        client = self._state._get_client()
+        try:
+            client._guild_specific_application_commands[self.id]
+        except KeyError:
+            client._guild_specific_application_commands[self.id] = {
+                'chat_input': {},
+                'message': {},
+                'user': {}
+            }
+        client._guild_specific_application_commands[self.id][command.type.name][command.name] = command
+        data = command.to_dict()
+        command_data = await self._state.http.create_application_command(self._state._get_client().app.id, data=data, guild_id=self.id)
+        command._fill_data(command_data)
+        client._application_commands[command.id] = self._application_commands[command.id] = command
+        return command
+
+    async def add_slash_command(self,
+                                name: str,
+                                description: str = 'No description',
+                                default_permission: bool = True,
+                                options: List[Union['SubCommandGroup', 'SubCommand', 'SlashCommandOption']] = [],
+                                connector: Dict[str, str] = {},
+                                func: Awaitable = default_callback,
+                                cog: Optional['Cog'] = None) -> SlashCommand:
+        command = SlashCommand(name=name,
+                               description=description,
+                               default_permission=default_permission,
+                               options=options,
+                               connector=connector,
+                               func=func,
+                               guild_id=self.id,
+                               state=self._state,
+                               cog=cog)
+        return await self._register_application_command(command)
+
+    async def add_message_command(self,
+                                name: str,
+                                description: str = 'No description',
+                                default_permission: bool = True,
+                                func: Awaitable = default_callback,
+                                cog: Optional['Cog'] = None) -> MessageCommand:
+        command = MessageCommand(name=name,
+                               description=description,
+                               default_permission=default_permission,
+                               func=func,
+                               guild_id=self.id,
+                               state=self._state,
+                               cog=cog)
+        return await self._register_application_command(command)
+
+    async def add_user_command(self,
+                                name: str,
+                                description: str = 'No description',
+                                default_permission: bool = True,
+                                func: Awaitable = default_callback,
+                                cog: Optional['Cog'] = None) -> UserCommand:
+        command = UserCommand(name=name,
+                               description=description,
+                               default_permission=default_permission,
+                               func=func,
+                               guild_id=self.id,
+                               state=self._state,
+                               cog=cog)
+        return await self._register_application_command(command)
 

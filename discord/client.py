@@ -495,7 +495,9 @@ class Client:
                 try:
                     command = self._application_commands_by_type[str(ApplicationCommandType.try_value(raw_command['type']))][raw_command['name']]
                 except KeyError:
-                    continue
+                    command = ApplicationCommand._from_type(self._connection, data=raw_command)
+                    command._fill_data(raw_command)
+                    self._application_commands[command.id] = command
                 else:
                     command._fill_data(raw_command)
                     command._state = self._connection
@@ -511,14 +513,15 @@ class Client:
                 for updated in registered_guild_commands_raw:
                     try:
                         command = self._guild_specific_application_commands[guild.id][
-                            str(ApplicationCommandType.try_value(int(updated['type'])))].get(updated['name'], None)
+                            str(ApplicationCommandType.try_value(int(updated['type'])))][updated['name']]
                     except KeyError:
-                        continue
+                        command = ApplicationCommand._from_type(self._connection, data=updated)
+                        command._fill_data(updated)
+                        self._application_commands[command.id] = guild._application_commands[command.id] = command
                     else:
                         command._fill_data(updated)
                         command._state = self._connection
-                        self._application_commands[command.id] = command
-                        guild._application_commands[command.id] = command
+                        self._application_commands[command.id] = guild._application_commands[command.id] = command
 
     @utils.deprecated('Guild.chunk')
     async def request_offline_members(self, *guilds):
@@ -1645,6 +1648,10 @@ class Client:
                 command._fill_data(updated)
                 command._state = self._connection
                 self._application_commands[command.id] = command
+            else:
+                command = ApplicationCommand._from_type(self._connection, data=updated)
+                command._fill_data(updated)
+                self._application_commands[command.id] = command
 
         log.info('Checking for changes on guild-specific application-commands...')
 
@@ -1749,6 +1756,10 @@ class Client:
                 if command:
                     command._fill_data(updated)
                     command._state = self._connection
+                    self._application_commands[command.id] = command
+                else:
+                    command = ApplicationCommand._from_type(self._connection, data=updated)
+                    command._fill_data(updated)
                     self._application_commands[command.id] = command
                     self.get_guild(int(guild_id))._application_commands[command.id] = command
 
