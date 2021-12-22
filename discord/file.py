@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import os.path
 
 import io
-from typing import Union, TYPE_CHECKING
+from typing import Union, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -68,8 +68,8 @@ class File:
 
     def __init__(self,
                  fp: Union[io.IOBase, str, bytes, 'PathLike[str]', 'PathLike[bytes]', int],
-                 filename: str = None,
-                 description: str = None,
+                 filename: Optional[str] = None,
+                 description: Optional[str] = None,
                  *,
                  spoiler: bool = False):
         self.fp = fp
@@ -100,8 +100,7 @@ class File:
         else:
             self.filename = filename
 
-        if description:
-            self.description = description
+        self.description = description or None
 
         if spoiler and self.filename is not None and not self.filename.startswith('SPOILER_'):
             self.filename = 'SPOILER_' + self.filename
