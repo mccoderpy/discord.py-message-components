@@ -599,7 +599,8 @@ class ConnectionState:
                 # This can only be the case if ``GUILD_MEMBERS`` Intents are not enabled or the member is not in the cache right now.
                 interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
         else:
-            interaction.channel = self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id) or PartialMessageable(id=interaction.channel_id, type=ChannelType.private)
+            interaction.channel = self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id)\
+                                  or PartialMessageable(id=interaction.channel_id, type=ChannelType.private, state=self)
 
         if interaction.type.ApplicationCommand or interaction.type.ApplicationCommandAutocomplete:
             cmd = self._get_client()._get_application_command(interaction.data.id)
