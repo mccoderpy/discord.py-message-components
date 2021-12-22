@@ -263,8 +263,8 @@ class BaseInteraction:
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
-        self.author_locale = try_enum(Locale, data.get('locale', None))
-        self.guild_locale = try_enum(Locale, data.get('guild_locale', None))
+        self.author_locale: Locale = try_enum(Locale, data.get('locale', None))
+        self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale', None))
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
@@ -567,7 +567,7 @@ class BaseInteraction:
     def channel(self) -> Union[DMChannel, 'TextChannel', ThreadChannel]:
         """The channel where the interaction was invoked in."""
         return getattr(self, '_channel', self.guild.get_channel(self.channel_id)
-        if self.guild_id else self._state._get_channel(self.channel_id))
+        if self.guild_id else self._state.get_channel(self.channel_id))
 
     @channel.setter
     def channel(self, channel):
