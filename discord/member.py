@@ -216,8 +216,8 @@ class Member(discord.abc.Messageable, _BaseUser):
     """
 
     __slots__ = ('_roles', 'joined_at', 'premium_since', '_client_status',
-                 'activities', 'guild', 'pending', 'nick', 'guild_avatar', '_user', '_state',
-                 '_communication_disabled_until')
+                 'activities', 'guild', 'pending', 'nick', 'guild_avatar', 'guild_banner', 'guild_bio',
+                 '_user', '_state', '_communication_disabled_until')
 
     def __init__(self, *, data, guild, state):
         self._state = state
@@ -233,6 +233,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.nick = data.get('nick', None)
         self.pending = data.get('pending', False)
         self.guild_avatar = data.get('avatar', None)
+        self.guild_banner = data.get('banner', None)
         self._communication_disabled_until = data.get('communication_disabled_until', None)
 
     def __str__(self):
@@ -463,7 +464,11 @@ class Member(discord.abc.Messageable, _BaseUser):
     def guild_avatar_url(self):
         return self.guild_avatar_url_as()
 
-    def guild_avatar_url_as(self, *, format: str = None, static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp', size = 1024):
+    def guild_avatar_url_as(self,
+                            *,
+                            format: str = None,
+                            static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
+                            size: int = 1024):
         """Returns an :class:`Asset` for the guild-avatar or None.
 
         The format must be one of 'webp', 'jpeg', or 'png'. The
@@ -496,6 +501,48 @@ class Member(discord.abc.Messageable, _BaseUser):
     @property
     def display_avatar_url(self):
         return self.guild_avatar_url or self.avatar_url
+
+    @property
+    def guild_banner_url(self):
+        return self.guild_banner_url_as()
+
+    def guild_banner_url_as(self,
+                            *,
+                            format: str = None,
+                            static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
+                            size: int = 1024):
+        """Returns an :class:`Asset` for the guild-banner or None.
+
+        The format must be one of 'webp', 'jpeg', 'gif' or 'png'. The
+        size must be a power of 2 between 16 and 4096.
+
+        Parameters
+        -----------
+        format: :class:`str`
+            The format to attempt to convert the banner to.
+        size: :class:`int`
+            The size of the image to display.
+
+        Raises
+        ------
+        InvalidArgument
+            Bad image format passed to ``format`` or invalid ``size``.
+
+        Returns
+        --------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
+        if self.guild_avatar:
+            return Asset._from_guild_banner(self._state, self, static_format=static_format, format=format, size=size)
+
+    def is_guild_banner_animated(self):
+        """:class:`bool`: Indicates if the member has an animated guild-banner."""
+        return bool(self.guild_banner and self.guild_banner.startswith('a_'))
+
+    @property
+    def display_banner_url(self):
+        return self.guild_banner_url or self.banner_url
 
     @property
     def activity(self):
@@ -603,7 +650,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     @property
     def communication_disabled_until(self) -> Optional[datetime.datetime]:
-        return self._communication_disabled_until and datetime.datetime.fromisoformat(self._communication_disabled_until)
+        return datetime.datetime.fromisoformat(self._communication_disabled_until) if self._communication_disabled_until else None
 
     async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None):
         await self.edit(communication_disabled_until=until, reason=reason)
@@ -636,19 +683,21 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         Depending on the parameter passed, this requires different permissions listed below:
 
-        +---------------+--------------------------------------+
-        |   Parameter   |              Permission              |
-        +---------------+--------------------------------------+
-        | nick          | :attr:`Permissions.manage_nicknames` |
-        +---------------+--------------------------------------+
-        | mute          | :attr:`Permissions.mute_members`     |
-        +---------------+--------------------------------------+
-        | deafen        | :attr:`Permissions.deafen_members`   |
-        +---------------+--------------------------------------+
-        | roles         | :attr:`Permissions.manage_roles`     |
-        +---------------+--------------------------------------+
-        | voice_channel | :attr:`Permissions.move_members`     |
-        +---------------+--------------------------------------+
+        +------------------------------+--------------------------------------+
+        |          Parameter           |              Permission              |
+        +------------------------------+--------------------------------------+
+        | nick                         | :attr:`Permissions.manage_nicknames` |
+        +------------------------------+--------------------------------------+
+        | mute                         | :attr:`Permissions.mute_members`     |
+        +------------------------------+--------------------------------------+
+        | deafen                       | :attr:`Permissions.deafen_members`   |
+        +------------------------------+--------------------------------------+
+        | roles                        | :attr:`Permissions.manage_roles`     |
+        +------------------------------+--------------------------------------+
+        | voice_channel                | :attr:`Permissions.move_members`     |
+        +------------------------------+--------------------------------------+
+        | communication_disabled_until | :attr:`Permissions.moderate_members` |
+        +------------------------------+--------------------------------------+
 
         All parameters are optional.
 
@@ -673,6 +722,9 @@ class Member(discord.abc.Messageable, _BaseUser):
         voice_channel: Optional[:class:`VoiceChannel`]
             The voice channel to move the member to.
             Pass ``None`` to kick them from voice.
+        communication_disabled_until: Optional[:class:`datetime.datetime`]
+            Temporarily puts the member in timeout until this time.
+            If ``None``, then the member  is removed from timeout.
         reason: Optional[:class:`str`]
             The reason for editing this member. Shows up on the audit log.
 
@@ -744,13 +796,15 @@ class Member(discord.abc.Messageable, _BaseUser):
         except KeyError:
             pass
         else:
-            if communication_disabled_until:
+            if communication_disabled_until is not None:
                 payload['communication_disabled_until'] = communication_disabled_until.isoformat()
             else:
-                payload['communication_disabled_until'] = ''
+                payload['communication_disabled_until'] = None
 
         if payload:
-            await http.edit_member(guild_id, self.id, reason=reason, **payload)
+            data = await http.edit_member(guild_id, self.id, reason=reason, **payload)
+            self._update(data)
+            return self
 
         # TODO: wait for WS event for modify-in-place behaviour
 
