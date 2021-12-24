@@ -4,6 +4,7 @@
 The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
+Copyright (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -24,11 +25,12 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-import inspect
-import copy
 import re
-import typing
-from typing import Optional, Union, List, Callable, Awaitable, Pattern, AnyStr, Any
+import copy
+import inspect
+
+from typing import Optional, Union, List, Dict, Callable, Awaitable, Pattern, AnyStr, Any
+
 from ._types import _BaseCommand
 
 __all__ = (
@@ -37,9 +39,7 @@ __all__ = (
 )
 
 from ... import InvalidArgument
-
-from ...application_commands import generate_options, SlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, \
-    GuildOnlySlashCommand, MessageCommand, UserCommand, GuildOnlySubCommandGroup
+from discord.application_commands import *
 
 
 class CogMeta(type):
@@ -290,10 +290,6 @@ class Cog(metaclass=CogMeta):
         return [(name, getattr(self, method_name)) for name, method_name in self.__cog_listeners__]
 
     @classmethod
-    def get_application_commands(cls):
-        return [()]
-
-    @classmethod
     def _get_overridden_method(cls, method):
         """Return None if the method is not overridden. Otherwise returns the overridden method."""
         return getattr(method.__func__, '__cog_special_method__', method)
@@ -458,17 +454,17 @@ class Cog(metaclass=CogMeta):
 
     @classmethod
     def slash_command(cls,
-                      name: str = None,
-                      description: str = None,
+                      name: Optional[str] = None,
+                      description: str = 'No description',
                       default_permission: bool = True,
-                      options: list = [],
+                      options: List['SlashCommandOption'] = [],
                       guild_ids: List[int] = None,
-                      connector: dict = {},
-                      option_descriptions: dict = {},
-                      base_name: str = None,
-                      base_desc: str = None,
-                      group_name: str = None,
-                      group_desc: str = None) -> Callable[
+                      connector: Dict[str, str] = {},
+                      option_descriptions: Dict[str, str] = {},
+                      base_name: Optional[str] = None,
+                      base_desc: Optional[str] = None,
+                      group_name: Optional[str] = None,
+                      group_desc: Optional[str] = None) -> Callable[
         [Awaitable[Any]], Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]
     ]:
         """

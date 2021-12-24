@@ -200,7 +200,7 @@ class BotBase(GroupMixin):
         if hasattr(cmd, 'on_error'):
             return
 
-        cog = cmd.cog
+        cog: Cog = cmd.cog
         if cog and Cog._get_overridden_method(cog.cog_application_command_error) is not None:
             return
         await super().on_application_command_error(cmd, interaction, exception)
@@ -966,14 +966,13 @@ class BotBase(GroupMixin):
 
             for command in commands.values():
                 # check if there is already a command with the same name
-                command.cog = cog
+                command._set_cog(cog, recursive=True)
                 if command.name in self._application_commands_by_type[cmd_type]:
                     existing_command = self._application_commands_by_type[cmd_type][command.name]
                     if cmd_type == 'chat_input':
                         if command.has_subcommands:
                             # if the command has subcommands add them to the existing one.
                             for sub_command in command.sub_commands:
-                                sub_command.cog = cog
                                 sub_command.disabled = False
                                 if sub_command.type.sub_command_group:
                                     # if the subcommand is a group that already exists, add the subcommands of it
@@ -984,13 +983,11 @@ class BotBase(GroupMixin):
                                         for sub_cmd in sub_command.sub_commands:
                                             # set the parent of the subcommand to the existing group
                                             sub_cmd.parent = existing_group
-                                            sub_cmd.cog = cog
                                             sub_cmd.disabled = False
                                             existing_group._sub_commands[sub_cmd.name] = sub_cmd
                                         continue
                                     else:
                                         for sub_cmd in sub_command.sub_commands:
-                                            sub_cmd.cog = cog
                                             sub_cmd.disabled = False
                                         existing_command._sub_commands[sub_command.name] = sub_command
 
@@ -1017,6 +1014,10 @@ class BotBase(GroupMixin):
                     self._application_commands_by_type[cmd_type][command.name] = command
 
         for guild_id, commands_by_type in cog.__guild_specific_application_commands__.items():
+            # Set the cog og the commands to the Cog isinstance
+            for cmd_type, commands in commands_by_type.items():
+                for command in commands.values():
+                    command._set_cog(cog, recursive=True)
 
             if guild_id not in self._guild_specific_application_commands:
                 # There are no commands only for this guild yet. So skip the checks and just add them.
@@ -1024,9 +1025,7 @@ class BotBase(GroupMixin):
                 continue
 
             for cmd_type, commands in commands_by_type.items():
-
                 for command in commands.values():
-                    command.cog = cog
                     if command.name in self._guild_specific_application_commands[guild_id][cmd_type]:
                         existing_command = self._guild_specific_application_commands[guild_id][cmd_type][command.name]
                         if cmd_type == 'chat_input':
@@ -1034,7 +1033,6 @@ class BotBase(GroupMixin):
 
                                 # if the command has subcommands add them to the existing one.
                                 for sub_command in command.sub_commands:
-                                    sub_command.cog = cog
                                     sub_command.disabled = False
                                     if sub_command.type.sub_command_group:
                                         # if the subcommand is a group that already exists, add the subcommands of it
@@ -1046,13 +1044,11 @@ class BotBase(GroupMixin):
                                             for sub_cmd in sub_command.sub_commands:
                                                 # set the parent of the subcommand to the existing group
                                                 sub_cmd.parent = existing_group
-                                                sub_cmd.cog = cog
                                                 sub_cmd.disabled = False
                                                 existing_group._sub_commands[sub_cmd.name] = sub_cmd
                                             continue
                                         else:
                                             for sub_cmd in sub_command.sub_commands:
-                                                sub_cmd.cog = cog
                                                 command.disabled = False
                                             existing_command._sub_commands[sub_command.name] = sub_command
 

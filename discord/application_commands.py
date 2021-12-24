@@ -5,7 +5,6 @@ The MIT License (MIT)
 
 Copyright (c) 2021-present mccoderpy
 
-
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -26,14 +25,17 @@ DEALINGS IN THE SOFTWARE.
 """
 import re
 import copy
-import typing
 import asyncio
 import inspect
 from .utils import async_all, find, get
 from typing_extensions import Literal
 from .abc import User, GuildChannel, Role
-from typing import Union, Optional, List, Dict, Any
+from typing import Union, Optional, List, Dict, Any, Awaitable, TYPE_CHECKING
 from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, try_enum
+
+if TYPE_CHECKING:
+    from .ext.commands import Cog
+
 
 __all__ = (
     'OptionType',
@@ -110,6 +112,17 @@ class ApplicationCommand:
     @_state.setter
     def _state(self, value):
         setattr(self, '_state_', value)
+
+    @property
+    def cog(self) -> Optional['Cog']:
+        return getattr(self, '_cog', None)
+
+    @cog.setter
+    def cog(self, __cog: 'Cog'):
+        setattr(self, '_cog', __cog)
+
+    def _set_cog(self, cog: 'Cog', recursive: bool = False):
+        self.cog = cog
 
     def __call__(self, *args, **kwargs):
         return super().__init__(self, *args, **kwargs)
@@ -752,6 +765,23 @@ class SlashCommand(ApplicationCommand):
         return self
 
     @property
+    def cog(self) -> Optional['Cog']:
+        return getattr(self, '_cog', None)
+
+    @cog.setter
+    def cog(self, __cog: 'Cog'):
+        setattr(self, '_cog', __cog)
+
+    def _set_cog(self, cog: 'Cog', recursive: bool = False):
+        self.cog = cog
+        if recursive:
+            for command in self.sub_commands:
+                if command.type.sub_command_group:
+                    for sub_command in command.sub_commands:
+                        sub_command.cog = cog
+                command.cog = cog
+
+    @property
     def has_subcommands(self) -> bool:
         return bool(self.sub_commands)
 
@@ -1032,7 +1062,7 @@ class GuildOnlySubCommandGroup(SubCommandGroup):
                 )
 
 
-def generate_options(func: typing.Awaitable[Any], descriptions: dict = {}, connector: dict = {}, is_cog: bool = False):
+def generate_options(func: Awaitable[Any], descriptions: dict = {}, connector: dict = {}, is_cog: bool = False):
     """
     This function is used to create the options for a :class:`SlashCommand`/:class:`SubCommand`
     out of the parameters of a functionn if no options are providet in the decorator.
