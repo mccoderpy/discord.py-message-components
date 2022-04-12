@@ -1,11 +1,11 @@
-Welcome to discord.py-message-components' documentation!
+🇺🇦 Welcome to discord.py-message-components'! 🇺🇦
 =========================================================
 
 .. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
    :name: discord.py-message-components
    :align: center
    :alt: Name of the Project (discord.py-message-components)
-
+   
    ..
    .. image:: https://discord.com/api/guilds/852871920411475968/embed.png
       :target: https://discord.gg/sb69muSqsg
@@ -27,7 +27,14 @@ Welcome to discord.py-message-components' documentation!
       :target: https://discordpy-message-components.readthedocs.io/en/latest/
       :alt: Documentation Status
 
-   The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implemation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_ 
+   
+**NOTE:** 
+     This library will be further developed independently of discord.py.
+     New features are also implemented. It's not an extension!
+     The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet. 
+     
+     **❗Also important to know❗:** `Why is this library so inactive at the moment? <https://github.com/mccoderpy/discord.py-message-components/discussions/17#>`_
 
 .. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
@@ -41,14 +48,14 @@ Welcome to discord.py-message-components' documentation!
 You need help? Or have ideas/feedback?
 ______________________________________
 
-Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
 
 Installing
 __________
 
 **Python 3.5.3 or higher is required**
 
-This Library overwrite the original discord.py Library so to be sure all will work fine
+This library overwrite the original discord.py library (or any other that would be imported using `import discord`) so to be sure all will work fine
 first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library if it is installed:
 
 .. code:: sh
@@ -59,7 +66,7 @@ first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.
     # Windows
     py -3 -m pip uninstall discord.py
 
-Then install `this Library <https://pypi.org/project/discord.py-message-components>`_ using:
+Then install `this library <https://pypi.org/project/discord.py-message-components>`_ using:
 
 .. code:: sh
 
@@ -68,6 +75,18 @@ Then install `this Library <https://pypi.org/project/discord.py-message-componen
 
     # Windows
     py -3 -m pip install -U discord.py-message-components
+
+‼️To install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** use:
+
+.. code:: sh
+    
+    # Linux/macOS
+    python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+    
+    # Windows
+    py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
+
+Of curse you nead to have git installed on your device. If you need help with this take a look `here <https://github.com/git-guides/install-git>`_
 
 Examples
 --------
@@ -233,7 +252,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
     async def down(i: discord.Interaction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_y(-1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await i.edit(embed=discord.Embed(title="Little Game",
                                               description=display(x=pointer.possition_x, y=pointer.possition_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
@@ -245,7 +264,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
     async def right(i: discord.Interaction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await i.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left'),
@@ -257,7 +276,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
     async def left(i: discord.Interaction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(-1)
-        await message.edit(embed=discord.Embed(title="Little Game",
+        await i.edit(embed=discord.Embed(title="Little Game",
                                                description=display(x=pointer.possition_x, y=pointer.possition_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
