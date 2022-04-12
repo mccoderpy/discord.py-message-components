@@ -24,7 +24,7 @@ from typing import (Union,
                     Any,
                     TYPE_CHECKING)
 from .components import Button, SelectMenu, ActionRow
-from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
+from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel, PartialMessageable
 from .errors import NotFound, InvalidArgument
 from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType,\
     try_enum
@@ -566,7 +566,7 @@ class BaseInteraction:
     @property
     def channel(self) -> Union[DMChannel, 'TextChannel', ThreadChannel]:
         """The channel where the interaction was invoked in."""
-        return (self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id))
+        return self.guild.get_channel(self.channel_id) if self.guild_id else (self._state.get_channel(self.channel_id) or PartialMessageable(id=self.channel_id, type=ChannelType.private, state=self._state))
 
     @property
     def guild(self) -> Optional[Guild]:
