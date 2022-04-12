@@ -566,12 +566,7 @@ class BaseInteraction:
     @property
     def channel(self) -> Union[DMChannel, 'TextChannel', ThreadChannel]:
         """The channel where the interaction was invoked in."""
-        return getattr(self, '_channel', self.guild.get_channel(self.channel_id)
-        if self.guild_id else self._state.get_channel(self.channel_id))
-
-    @channel.setter
-    def channel(self, channel):
-        self._channel = channel
+        return (self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id))
 
     @property
     def guild(self) -> Optional[Guild]:
