@@ -48,8 +48,7 @@ __all__ = (
 
 class EphemeralMessage:
     """
-    Since Discord doesn't return anything when we send a ephemeral message,
-    this class has no attributes and you can't do anything with it.
+    Like a normal :class:`discord.Message` but with an modified :meth:`edit` method and without delete method.
     """
 
     def __init__(self, *, state, channel, data, interaction):
@@ -57,18 +56,20 @@ class EphemeralMessage:
         self.__interaction__ = interaction
         self.id = int(data.get('id', 0))
         self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
+        self.channel = channel
+        self._update(data)
+
+    def _update(self, data):
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
         self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
         self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
         self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')
         self.activity = data.get('activity')
-        self.channel = channel
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
         self.type = try_enum(MessageType, data['type'])
         self._thread = data.get('thread', None)
         self.pinned = data['pinned']
-        self.flags = MessageFlags._from_value(data.get('flags', 0))
         self.mention_everyone = data['mention_everyone']
         self.tts = data['tts']
         self.content = data['content']
@@ -226,10 +227,11 @@ class EphemeralMessage:
             fields['components'] = _components
 
         try:
-            await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id, token=self.__interaction__._token, application_id=self.__interaction__._application_id, deferred=self.__interaction__.deferred, use_webhook=True, files=None, data=fields)
+            data = await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id, token=self.__interaction__._token, application_id=self.__interaction__._application_id, deferred=self.__interaction__.deferred, use_webhook=True, files=None, data=fields)
         except NotFound:
             log.warning('Unknown Interaction')
         else:
+            self._update(data)
             if not self.__interaction__.callback_message:
                 self.__interaction__.callback_message = self
         return self
@@ -256,7 +258,10 @@ class BaseInteraction:
         self.channel_id = int(data.get('channel_id', 0))
         message_data = data.get('message', {})
         if message_data:
-            self.message = Message(state=state, channel=self.channel, data=message_data)
+            if MessageFlags._from_value(message_data['flags']).ephemeral:
+                self.message = EphemeralMessage(state=state, channel=self.channel, data=message_data, interaction=self)
+            else:
+                self.message = Message(state=state, channel=self.channel, data=message_data)
             self.cached_message = self.message and self._state._get_message(self.message.id)
             self.message_id = self.message.id
         self.data = InteractionData(data=data.get('data', None), state=state, guild=self.guild, channel_id=self.channel_id)
@@ -524,9 +529,12 @@ class BaseInteraction:
         data = await method
 
         if not isinstance(data, dict):
-            data = await self.get_original_callback()
-
-        msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
+            msg = await self.get_original_callback()
+        else:
+            if hidden: # should not be the case but im not shure at the moment
+                msg = EphemeralMessage(state=data=data, interaction=self, channel=self.channel) 
+            else:
+                msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
         if not hidden and delete_after is not None:
             await msg.delete(delay=delete_after)
         if hidden is True and not self.deferred:
@@ -545,7 +553,10 @@ class BaseInteraction:
             This is a API-Call and should use carefully
         """
         data = await self._state.http.get_original_interaction_response(self._token, self._application_id)
-        msg = Message(state=self._state, channel=self.channel, data=data)
+        if MessageFlags._from_value(data['flags']).ephemeral:
+            msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
+        else:
+            msg = Message(state=self._state, channel=self.channel, data=data)
         self.callback_message = msg
         return msg
 
