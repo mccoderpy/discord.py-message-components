@@ -558,7 +558,7 @@ class Message(Hashable):
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
                  'role_mentions', '_cs_raw_role_mentions', 'type', 'call', 'flags',
                  '_cs_system_content', '_cs_guild', '_state', 'reactions', 'reference',
-                 'application', 'activity', 'stickers', '_thread')
+                 'application', 'activity', 'stickers', '_thread', 'interaction')
 
     def __init__(self, *, state, channel, data):
         self._state = state
@@ -582,6 +582,7 @@ class Message(Hashable):
         self.content: Optional[str] = data['content']
         self.nonce = data.get('nonce')
         self.stickers = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
+        self.interaction = data.get('interaction', None)
 
         try:
             ref = data['message_reference']
@@ -730,10 +731,10 @@ class Message(Hashable):
     def _handle_thread(self, value):
         thread = self.channel.get_thread(self.id)
         if thread:
-            thread._update(self.guild, value)
+            self._thread = thread._update(self.guild, value)
         else:
-            thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
-            self.channel.guild._add_thread(thread)
+            self._thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
+            self.channel.guild._add_thread(self._thread)
 
     def _handle_components(self, value):
         self.components = [ActionRow.from_dict(data) for data in value]
@@ -1041,6 +1042,10 @@ class Message(Hashable):
                 if isinstance(component, SelectMenu):
                     yield component
 
+    @property
+    def thread(self) -> Optional[ThreadChannel]:
+        return getattr(self, '_thread', None)
+
     async def delete(self, *, delay: Optional[float] = None):
         """|coro|
 
@@ -1197,6 +1202,7 @@ class Message(Hashable):
                     allowed_mentions = allowed_mentions.to_dict()
                 fields['allowed_mentions'] = allowed_mentions
 
+        # TODO: Make it possible to edit attachments
         is_interaction_response = fields.pop('__is_interaction_response', None)
         if is_interaction_response is True:
             deferred = fields.pop('__deferred', False)
@@ -1580,7 +1586,7 @@ class PartialMessage(Hashable):
 
     Attributes
     -----------
-    channel: Union[:class:`TextChannel`, :class:`DMChannel`]
+    channel: Union[:class:`TextChannel`, :class:`ThreadChannel`, :class:`DMChannel`]
         The channel associated with this partial message.
     id: :class:`int`
         The message ID.

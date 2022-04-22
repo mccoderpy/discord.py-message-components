@@ -27,13 +27,14 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import typing
-from .enums import ComponentType, ButtonStyle
+from .enums import ComponentType, ButtonStyle, TextInputStyle
 from .emoji import Emoji
-from typing import Union
+from typing import Union, List, Optional
+from typing_extensions import Literal
 from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, EmptyActionRow
 
-__all__ = ('Button', 'SelectMenu', 'ActionRow', 'SelectOption')
+__all__ = ('Button', 'SelectMenu', 'TextInputStyle', 'ActionRow', 'SelectOption')
 
 
 class Button:
@@ -496,6 +497,118 @@ class SelectMenu:
                    max_values=data.pop('max_values', 1))
 
 
+class Modal:
+    """
+    Represents a `Discord Modal <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-modal>`_
+
+    Parameters
+    ----------
+    custom_id: :class:`str`
+        A developer-defined identifier for the component, max 100 characters
+    title: :class:`str`
+        The title of the popup modal, max 45 characters
+    components: List[Union[ActionRow, List[TextInput]],]
+        Between 1 and 5 (inclusive) components that make up the modal
+    """
+    def __init__(self,
+                 custom_id: str,
+                 title: str,
+                 components: typing.List[Union['ActionRow', 'List']]) -> None:
+        # TODO: Add Error handling
+        self.custom_id = custom_id
+        self.title = title
+        self.components = []
+        for c in components:
+            if not isinstance(c, ActionRow):
+                c = ActionRow(c)
+            self.components.append(c)
+
+    def to_dict(self):
+        components = []
+        for a in self.components:
+            components.extend(a.to_dict())
+        return {
+            'custom_id': self.custom_id,
+            'title': self.title,
+            'components': components
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        print(data)
+        return cls(
+            custom_id=data['custom_id'],
+            title=data['title'],
+            components=_component_factory(data['components']))
+
+
+class TextInput:
+    """
+    Represents an `Discord-TextInput` <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
+
+    Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#TextInput>`_
+
+    Parameters
+    ----------
+    custom_id: Optional[Union[:class:`str`, :class:`int`]]
+        a developer-defined identifier for the input, max 100 characters
+    style: Optional[Union[:class:`TextInputStyle`, :class:`int`]] = TextInputStyle.short
+        The Style of the TextInput; so single- or multi-line
+    label: :class:`str`
+        The label for this component, max 45 characters
+    min_length: Optional[:class:`int`]
+        The minimum input length for a text input, min 0, max 4000
+    max_length: Optional[:class:`int`]
+        The maximum input length for a text input, min 1, max 4000
+    requiered: Optional[:class:`bool`] = True
+        Whether this component is required to be filled, default True
+    value: Optional[:class:`str`]
+        A pre-filled value for this component, max 4000 characters
+    placeholder: Optional[:class:`str`]
+        Custom placeholder text if the input is empty, max 100 characters
+    """
+    def __init__(self,
+                 label: str,
+                 custom_id: str,
+                 style: Union[TextInputStyle, Literal[1, 2]] = 1,
+                 min_length: Optional[int] = None,
+                 max_length: Optional[int] = None,
+                 required: Optional[bool] = True,
+                 value: Optional[str] = None,
+                 placeholder: Optional[str] = None) -> None:
+        self.label: Optional[str] = label
+        self.custom_id: Optional[str] = custom_id
+        self.style: Union[TextInputStyle, Literal[1, 2]] = style
+        self.min_length: Optional[int] = min_length
+        self.max_length: Optional[int] = max_length
+        self.required: bool = required
+        self.value: Optional[str] = value
+        self.placeholder: Optional[str] = placeholder
+
+    def to_dict(self) -> dict:
+        return {
+            'type': 4,
+            'label': self.label,
+            'custom_id': self.custom_id,
+            'style': int(self.style),
+            'min_length': self.min_length,
+            'max_length': self.max_length,
+            'required': self.required,
+            'value': self.value,
+            'placeholder': self.placeholder
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        new = cls.__new__(cls)
+        for attr in ('type', 'label', 'custom_id', 'style', 'min_length', 'max_length', 'required', 'value', 'placeholder'):
+            try:
+                new.__setattr__(attr, data[attr])
+            except KeyError:
+                continue
+        return new
+
+
 class ActionRow:
 
     """
@@ -515,12 +628,12 @@ class ActionRow:
     def __init__(self, *components):
         self.components = []
         for component in components:
-            if isinstance(component, (Button, SelectMenu)):
+            if isinstance(component, (Button, SelectMenu, TextInput)):
                 self.components.append(component)
             elif isinstance(component, dict):
                 if not component.get('type', None) in [2, 3]:
                     raise InvalidArgument('If you use an Dict instead of Button or SelectMenu you have to pass an type between 2 or 3')
-                self.components.append({2: Button.from_dict(component), 3: SelectMenu.from_dict(component)}.get(component.get('type')))
+                self.components.append({2: Button, 3: SelectMenu, 4: Modal}.get(component.get('type')).from_dict(component))
     
     def __repr__(self):
         return f'<ActionRow components={self.components}>'
@@ -533,12 +646,15 @@ class ActionRow:
         base = []
         base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
         objects = len([i['components'] for i in base])
-        if any([any([part['type'] == 2]) and any([part['type'] == 3]) for part in base]):
-            raise InvalidArgument('An ActionRow containing a select menu cannot also contain buttons')
+        if any([any([part['type'] == 2]) and any([part['type'] in (3, 4)]) for part in base]):
+            raise InvalidArgument('An ActionRow containing a SelectMenu cannot also contain buttons or TextInput')
         if any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
             raise InvalidArgument('An ActionRow can contain only one SelectMenu')
+        if any([any([part['type'] == 4]) and len(part) > 1 for part in base]):
+            raise InvalidArgument('An ActionRow can contain only one TextInput.')
         if any([len(ar['components']) < 1 for ar in base]):
             raise EmptyActionRow from base
+
         elif len(base) > 5 or objects > 25:
             raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 Buttons or 1 Select-Menu each; you have {len(base)} ActionRow's passed with {objects} objects")
         return base
@@ -763,5 +879,7 @@ def _component_factory(data):
         return Button.from_dict(data)
     elif component_type == ComponentType.SelectMenu:
         return SelectMenu.from_dict(data)
+    elif component_type == ComponentType.TextInput:
+        return TextInput.from_dict(data)
     else:
         return None

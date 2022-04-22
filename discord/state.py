@@ -593,10 +593,15 @@ class ConnectionState:
         interaction = BaseInteraction.from_type(state=self, data=data)
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
+            interaction.channel = interaction.guild.get_channel(interaction.channel_id)
             interaction.member = interaction.guild.get_member(interaction.user_id)
             if interaction.member is None:
                 # This can only be the case if ``GUILD_MEMBERS`` Intents are not enabled or the member is not in the cache right now.
                 interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
+        else:
+            interaction.channel = self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id)\
+                                  or PartialMessageable(id=interaction.channel_id, type=ChannelType.private, state=self)
+
         if interaction.type.ApplicationCommand or interaction.type.ApplicationCommandAutocomplete:
             cmd = self._get_client()._get_application_command(interaction.data.id)
             if cmd and not cmd.disabled:
@@ -616,6 +621,8 @@ class ConnectionState:
                     self.dispatch('raw_button_click', interaction, interaction.component)
                 elif interaction.data.component_type == ComponentType.SelectMenu:
                     self.dispatch('raw_selection_select', interaction, interaction.component)
+        elif interaction.type.ModalSubmit:
+            self.dispatch('modal_submit', interaction)
 
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))

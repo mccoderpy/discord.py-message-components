@@ -181,6 +181,7 @@ class Sticker(Hashable):
 
 
 class GuildSticker(Sticker):
+    """Represents a "custom" Sticker in a guild"""
     def __init__(self, *, state: 'ConnectionState', data):
         super().__init__(state=state, data=data)
         self.guild_id = int(data['guild_id'])

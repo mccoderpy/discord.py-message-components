@@ -23,8 +23,8 @@ from typing import (Union,
                     Dict,
                     Any,
                     TYPE_CHECKING)
-from .components import Button, SelectMenu, ActionRow
-from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel, PartialMessageable
+from .components import Button, SelectMenu, ActionRow, Modal, TextInput
+from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
 from .errors import NotFound, InvalidArgument
 from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType,\
     try_enum
@@ -40,6 +40,7 @@ __all__ = (
     'ApplicationCommandInteraction',
     'ComponentInteraction',
     'AutocompleteInteraction',
+    'ModalSubmitInteraction',
     'option_str',
     'option_float',
     'option_int'
@@ -231,7 +232,10 @@ class EphemeralMessage:
         except NotFound:
             log.warning('Unknown Interaction')
         else:
-            self._update(data)
+            if not isinstance(data, dict):
+                data = await self.__interaction__.get_original_callback()
+            else:
+                self._update(data)
             if not self.__interaction__.callback_message:
                 self.__interaction__.callback_message = self
         return self
@@ -241,7 +245,6 @@ class BaseInteraction:
 
     """
     The Class for an discord-interaction like klick a :class:`Button` or select an option of :class:`SelectMenu` in discord
-
     For more general information's about Interactions visit the Documentation of the
     `Discord-API <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_
     """
@@ -278,7 +281,6 @@ class BaseInteraction:
         self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
-
 
     def __repr__(self):
         """Represents a :class:`discord.B aseInteraction`-object."""
@@ -336,18 +338,13 @@ class BaseInteraction:
                 return msg
 
     async def edit(self,
-                   content: Optional[str] = None,
-                   embed: Optional[Embed] = None,
-                   embeds: Optional[List[Embed]] = None,
-                   components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
-                   delete_after: Optional[float] = None,
-                   suppress: bool = False,
                    **fields
                    ) -> Union[Message, EphemeralMessage, None]:
         """|coro|
 
         'Defers' if it isn't yet and edit the message
         """
+        
         try:
             content: Optional[str] = fields['content']
         except KeyError:
@@ -395,14 +392,18 @@ class BaseInteraction:
                     elif isinstance(component, (Button, SelectMenu)):
                         c_list.extend(ActionRow(component).to_dict())
                 fields['components'] = c_list
-        flags = MessageFlags._from_value(self.message.flags)
-        if suppress:
-            flags.suppress_embeds = True
-        if flags:
-            fields['flags'] = flags.value
+        flags = MessageFlags._from_value(self.message.flags.value)
+        try:
+            suppress: Optional[bool] = fields['suppress']
+        except KeyError:
+            pass
+        else:
+            flags.suppress_embeds = suppress
+        fields['flags'] = flags.value
+        delete_after: Optional[float] = fields.pop('delete_after', None)
         state = self._state
         if self.message_is_hidden:
-            return await self.message.edit(content=content, embed=embed, embeds=embeds, components=components, suppress=suppress)
+            return await self.message.edit(**fields)
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
@@ -417,15 +418,20 @@ class BaseInteraction:
                                                               followup=True if (self.callback_message and not
                                                                                 self.callback_message.flags.loading)
                                                               else False,
-                                                              use_webhook=False)
+                                                              use_webhook=False,
+                                                              type=7)
 
         if not isinstance(data, dict):
-            self._message = msg = await self.get_original_callback()
+            data = await self.get_original_callback(raw=True)
+            msg = self.message._update(data)
         else:
             if self.message:
                 msg = self.message._update(data)
             else:
-                msg = self._message = Message(state=state, channel=self.channel, data=data)
+                if MessageFlags._from_value(data['flags']).ephemeral:
+                    msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
+                else:
+                    msg = Message(state=self._state, channel=self.channel, data=data)
         if not self.callback_message:
             self.callback_message = msg
         if isinstance(msg, Message) and delete_after is not None:
@@ -508,14 +514,12 @@ class BaseInteraction:
         files = file_list
         if len(files) > 10:
             raise InvalidArgument(f'The maximum number of files that can be send with a message is 10, got: {len(files)}')
-
         flags = MessageFlags._from_value(0)
         if hidden:
             flags.ephemeral = True
         if suppress:
             flags.suppress_embeds = True
-        if flags:
-            data['flags'] = flags.value
+        data['flags'] = flags.value
         if self.deferred and not self.callback_message:
             method = state.http.edit_interaction_response(token=self._token, interaction_id=self.id,
                                                           application_id=self._application_id,
@@ -531,8 +535,8 @@ class BaseInteraction:
         if not isinstance(data, dict):
             msg = await self.get_original_callback()
         else:
-            if hidden: # should not be the case but im not shure at the moment
-                msg = EphemeralMessage(state=data=data, interaction=self, channel=self.channel) 
+            if hidden:  # should not be the case but im not sure at the moment
+                msg = EphemeralMessage(state=data, interaction=self, channel=self.channel, data=data)
             else:
                 msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
         if not hidden and delete_after is not None:
@@ -544,15 +548,28 @@ class BaseInteraction:
         self.deferred = True
         return msg
 
-    async def get_original_callback(self):
+    async def respond_with_modal(self, modal: 'Modal'):
+        data = await self._state.http.send_interaction_response(
+            token=self._token,
+            interaction_id=self.id,
+            application_id=self._application_id,
+            deferred=self.deferred,
+            use_webhook=False,
+            followup=False,
+            data=modal.to_dict(),
+            type=9
+        )
+        return data
+
+    async def get_original_callback(self, raw: bool = False):
         """|coro|
-
         Fetch the Original Callback-Message of the Interaction
-
         .. warning::
             This is a API-Call and should use carefully
         """
         data = await self._state.http.get_original_interaction_response(self._token, self._application_id)
+        if raw:
+            return data
         if MessageFlags._from_value(data['flags']).ephemeral:
             msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
         else:
@@ -577,7 +594,19 @@ class BaseInteraction:
     @property
     def channel(self) -> Union[DMChannel, 'TextChannel', ThreadChannel]:
         """The channel where the interaction was invoked in."""
-        return self.guild.get_channel(self.channel_id) if self.guild_id else (self._state.get_channel(self.channel_id) or PartialMessageable(id=self.channel_id, type=ChannelType.private, state=self._state))
+        return getattr(self, '_channel', self.guild.get_channel(self.channel_id)
+        if self.guild_id else self._state.get_channel(self.channel_id))
+
+    @channel.setter
+    def channel(self, channel):
+        self._channel = channel
+
+    @property
+    def command(self) -> Union['SlashCommand', 'MessageCommand', 'UserCommand']:
+        if getattr(self, '_command', None) is not None:
+            return self._command
+        return self._state._get_client()._get_application_command(self.data.id) \
+            if (self.type.ApplicationCommand or self.type.ApplicationCommandAutocomplete) else None
 
     @property
     def guild(self) -> Optional[Guild]:
@@ -606,6 +635,9 @@ class BaseInteraction:
             return ComponentInteraction(state=state, data=data)
         elif type == InteractionType.ApplicationCommandAutocomplete:
             return AutocompleteInteraction(state=state, data=data)
+        elif type == InteractionType.ModalSubmit:
+            return ModalSubmitInteraction(state=state, data=data)
+
 
 class ApplicationCommandInteraction(BaseInteraction):
     def __init__(self, *args, **kwargs):
@@ -616,13 +648,6 @@ class ApplicationCommandInteraction(BaseInteraction):
             self.target = self.data.resolved.messages[self.data.target_id]
         else:
             self.target = None
-
-    @property
-    def command(self) -> Union['SlashCommand', 'MessageCommand', 'UserCommand']:
-        if getattr(self, '_command', None) is not None:
-            return self._command
-        return self._state._get_client()._get_application_command(self.data.id) \
-            if self.type == InteractionType.ApplicationCommand else None
 
     async def defer(self,
                     type: Union[Literal[5], InteractionCallbackType] = 5,
@@ -646,6 +671,7 @@ class ApplicationCommandInteraction(BaseInteraction):
             type = InteractionCallbackType.from_value(type)
         data = await super().defer(type, hidden=hidden)
         return data
+
 
 class ComponentInteraction(BaseInteraction):
     @property
@@ -675,10 +701,24 @@ class AutocompleteInteraction(BaseInteraction):
                                                         choices=choices)
 
     async def respond(self, *args, **kwargs):
-       raise NotImplementedError
+        raise NotImplementedError
 
     async def defer(self, *args, **kwargs):
         raise NotImplementedError
+
+
+class ModalSubmitInteraction(BaseInteraction):
+    def get_field(self, custom_id) -> Union['TextInput', None]:
+        for ar in self.data.components:
+            for c in ar:
+                if c.custom_id == custom_id:
+                    return c
+        return None
+
+    @property
+    def custom_id(self):
+        return self.data.custom_id
+
 
 class InteractionData:
     def __init__(self, *, state, data, guild=None, **kwargs):
@@ -722,6 +762,12 @@ class InteractionData:
     @property
     def values(self):
         return self._data.get('values', [])
+
+    @property
+    def components(self):
+        c = self._data.get('components', None)
+        if c:
+            return [ActionRow.from_dict(a) for a in c]
 
 
 class option_str(str):
@@ -783,7 +829,7 @@ class ResolvedData:
         self._data = data
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
-        for attr in ('users', 'members', 'channels', 'roles', 'messages'):
+        for attr in ('users', 'members', 'channels', 'roles', 'messages', 'attachments'):
             setattr(self, f'_{attr}', {})
             value = data.get(attr, None)
             if value is not None:
@@ -839,3 +885,12 @@ class ResolvedData:
         _messages: dict = getattr(self, '_messages', {})
         for _id, m in value.items():
             _messages[int(_id)] = Message(state=self._state, channel=self._state.get_channel(self._channel_id), data=m)
+
+    @property
+    def attachments(self) -> Optional[Dict[int, Attachment]]:
+        return getattr(self, '_attachments', {})
+
+    def __handle_attachments(self, value: dict):
+        _attachments: dict = getattr(self, '_attachments', {})
+        for _id, a in value.items():
+            _attachments[int(_id)] = Attachment(state=self._state, data=a)

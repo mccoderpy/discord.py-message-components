@@ -102,7 +102,7 @@ aiohttp.hdrs.WEBSOCKET = 'websocket'
 
 
 class HTTPClient:
-    """Represents an HTTP client sending HTTP requests to the Discord APIMethodes."""
+    """Represents an HTTP client sending HTTP requests to the Discord API."""
 
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
@@ -120,7 +120,7 @@ class HTTPClient:
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
 
-        user_agent = 'DiscordBot (https://github.com/mccoder.py/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
+        user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
         self.user_agent = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
 
     def recreate(self):
@@ -450,7 +450,7 @@ class HTTPClient:
         return self.request(r, json=fields)
 
     def get_application_commands(self, application_id, command_id=None, guild_id=None):
-        return self.request(Route('GET', f'/applications/{application_id}{f"/guilds/{guild_id}" if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}'))
+        return self.request(Route('GET', f'/applications/{application_id}{f"/guilds/{guild_id}"if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}'))
 
     def create_application_command(self, application_id, data, guild_id=None):
         if guild_id:

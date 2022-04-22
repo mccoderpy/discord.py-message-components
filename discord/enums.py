@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import types
 from collections import namedtuple
 
+
 __all__ = (
     'Enum',
     'ChannelType',
@@ -40,6 +41,7 @@ __all__ = (
     'PermissionType',
     'InteractionType',
     'InteractionCallbackType',
+    'OptionType',
     'TimestampStyle',
     'Locale',
     'MessageType',
@@ -60,6 +62,7 @@ __all__ = (
     'UserContentFilter',
     'FriendFlags',
     'TeamMembershipState',
+    'TextInputStyle',
     'Theme',
     'WebhookType',
     'ExpireBehaviour',
@@ -254,6 +257,7 @@ class InteractionType(Enum):
     ApplicationCommand             = 2
     Component                      = 3
     ApplicationCommandAutocomplete = 4
+    ModalSubmit                    = 5
 
 
 class ApplicationCommandType(Enum):
@@ -279,6 +283,7 @@ class ComponentType(Enum):
     ActionRow  = 1
     Button     = 2
     SelectMenu = 3
+    TextInput = 4
 
     def __str__(self):
         return getattr(self, 'name')
@@ -335,6 +340,30 @@ class ButtonColor(ButtonStyle):
     """
     pass
 
+
+class TextInputStyle(Enum):
+    """
+    :class:`TextInputStyle`
+
+    Represents the style for a :class:`discord.TTextInput`
+    """
+    short       = 1
+    singleline  = 1
+    paragraph   = 2
+    multiline   = 2
+
+    @classmethod
+    def from_value(cls, value):
+        return try_enum(cls, value)
+
+    # the same as in the class above.
+    def __str__(self):
+        return getattr(self, 'name')
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+
 class InteractionCallbackType(Enum):
     pong = 1
     msg_with_source = 4
@@ -353,6 +382,52 @@ class InteractionCallbackType(Enum):
 
     def __int__(self):
         return getattr(self, 'value')
+
+
+class OptionType(Enum):
+    sub_command       = 1
+    sub_command_group = 2
+    string            = 3
+    integer           = 4
+    boolean           = 5
+    user              = 6
+    channel           = 7
+    role              = 8
+    mentionable       = 9
+    number            = 10
+    attachment        = 11
+
+    def __int__(self):
+        return getattr(self, 'value')
+
+    def __str__(self):
+        return getattr(self, 'name')
+
+    @classmethod
+    def from_type(cls, t):
+        from .abc import User, GuildChannel, Role
+        from .message import Attachment
+        if isinstance(t, int):
+            return cls.try_value(t)
+        if issubclass(t, str):
+            return cls.string, None
+        if issubclass(t, bool):
+            return cls.boolean, None
+        if issubclass(t, int):
+            return cls.integer, None
+        if issubclass(t, User):
+            return cls.user, None
+        if issubclass(t, GuildChannel):
+            return cls.channel, [t.channel_type()]
+        if issubclass(t, Role):
+            return cls.role, None
+        if issubclass(t, Attachment):
+            return cls.attachment, None
+        if getattr(t, '__origin__', None) is Union:
+            args = getattr(t.annotation, '__args__', [])
+            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
+                return cls.mentionable, None
+        return t, None
 
 
 class TimestampStyle(Enum):

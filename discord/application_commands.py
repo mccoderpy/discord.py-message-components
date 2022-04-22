@@ -31,14 +31,12 @@ from .utils import async_all, find, get
 from typing_extensions import Literal
 from .abc import User, GuildChannel, Role
 from typing import Union, Optional, List, Dict, Any, Awaitable, TYPE_CHECKING
-from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, try_enum
-
+from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, OptionType, try_enum
 if TYPE_CHECKING:
     from .ext.commands import Cog
 
 
 __all__ = (
-    'OptionType',
     'ApplicationCommand',
     'SlashCommand',
     'GuildOnlySlashCommand',
@@ -52,47 +50,6 @@ __all__ = (
     'MessageCommand',
     'generate_options'
 )
-
-
-class OptionType(Enum):
-    sub_command       = 1
-    sub_command_group = 2
-    string            = 3
-    integer           = 4
-    boolean           = 5
-    user              = 6
-    channel           = 7
-    role              = 8
-    mentionable       = 9
-    number            = 10
-
-    def __int__(self):
-        return getattr(self, 'value')
-
-    def __str__(self):
-        return getattr(self, 'name')
-
-    @classmethod
-    def from_type(cls, t):
-        if isinstance(t, int):
-            return cls.try_value(t)
-        if issubclass(t, str):
-            return cls.string, None
-        if issubclass(t, bool):
-            return cls.boolean, None
-        if issubclass(t, int):
-            return cls.integer, None
-        if issubclass(t, User):
-            return cls.user, None
-        if issubclass(t, GuildChannel):
-            return cls.channel, [t.channel_type()]
-        if issubclass(t, Role):
-            return cls.role, None
-        if getattr(t, '__origin__', None) is Union:
-            args = getattr(t.annotation, '__args__', [])
-            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
-                return cls.mentionable, None
-        return r, None
 
 
 class ApplicationCommand:
@@ -158,7 +115,7 @@ class ApplicationCommand:
                     if option['type'] in (1, 2):
                         if not check_options(option.get('options', []), opt.get('options', [])):
                             return False
-                    for key in ('name', 'type', 'description', 'required', 'min_value', 'max_value'):
+                    for key in ('name', 'type', 'description', 'required', 'min_value', 'max_value', 'autocomplete'):
                         current_value = option.get(key, None)
                         if current_value != opt.get(key, None):
                             return False
@@ -283,7 +240,8 @@ class ApplicationCommand:
             self._state._get_client()._remove_application_command(self)
 
 class SlashCommandOptionChoice:
-    def __init__(self, name: str, value: Union[str, int, float] = None):
+    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Dict[str, str] = None):
+        # TODO: Add an (optional) feature for automatic generated name_localizations/guild_localisations by a translator
         """
         A class representing a choice for a :class:`SelectOption` or :class:`SubCommand`.
 
@@ -294,11 +252,13 @@ class SlashCommandOptionChoice:
         value: Union[:class:`str`, :class:`int`, :class:`float`]
             The value that will send as the options value.
             Must be of the type the option is of (:class:`str`, :class:`int` or :class:`float`).
+        name_localisations: Dict[:class:`str`, :class:`glas`]
         """
         if 100 < len(name) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
         self.name = name
-        self.value = value or name
+        self.value = value if value is not None else name
+        self.name_localizations = name_localizations
 
     def __repr__(self):
         return '<SlashCommandOptionChoice name=%s, value=%s>' % (self.name, self.value)
@@ -306,13 +266,14 @@ class SlashCommandOptionChoice:
     def to_dict(self):
         base = {
             'name': str(self.name),
-            'value': self.value
+            'value': self.value,
+            'name_localizations': self.name_localizations
         }
         return base
 
     @classmethod
     def from_dict(cls, data):
-        return cls(name=data['name'], value=data['value'])
+        return cls(name=data['name'], value=data['value'], name_localizations=data.get('name_localizations', {}))
 
 
 class SlashCommandOption:
@@ -384,7 +345,7 @@ class SlashCommandOption:
             if not isinstance(option_type, OptionType):
                 raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__}.')
         self.type = option_type
-        if (not re.match(r'^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
+        if (not re.match(r'^[-_\d\w\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE)) or 32 < len(name) < 1:
             raise ValueError('The name of the option has to be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
         self.name = name
         if 100 < len(description) < 1:
@@ -631,7 +592,7 @@ class SubCommand(SlashCommandOption):
         """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
-        self.autocomplete_func = func
+        self.autocomplete_func = coro
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
@@ -723,6 +684,7 @@ class SlashCommand(ApplicationCommand):
         kwargs:
             Keyword arguments used for internal handlig.
         """
+        self.autocomplete_func = None
         super().__init__(1, name=name, description=description, options=options, connector=connector, **kwargs)
         if (not re.match(r'^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
             raise ValueError('The name of the Slash-Command has to be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
@@ -802,10 +764,9 @@ class SlashCommand(ApplicationCommand):
         self.autocomplete_func = coro
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
-        if not self.autocomplete_func:
+        if self.autocomplete_func is None:
             print(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
             return
-
         if self.cog is not None:
             args = (self.cog, interaction, *args)
         else:
@@ -890,8 +851,8 @@ class SlashCommand(ApplicationCommand):
                     sub_command: SubCommand = self._sub_commands[options[0].name]
                     options = options[0].options
                 to_invoke = sub_command
+            connector = to_invoke.connector
             for option in options:
-                connector = dict(map(reversed, to_invoke.connector.items()))
                 name = connector.get(option.name) or option.name
                 if option.type in (OptionType.string, OptionType.integer, OptionType.boolean, OptionType.number):
                     params[name] = option.value
@@ -910,16 +871,21 @@ class SlashCommand(ApplicationCommand):
                         params[name] = interaction.data.resolved.roles[_id] or option.value
                     else:
                         params[name] = interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
+                elif option.type == OptionType.attachment:
+                    _id = self._filter_id_out(option.value)
+                    params[name] = interaction.data.resolved.attachments[_id] or option.value
 
         # pass the default values of the options to the params if they are not providet (usaly used for autocomplete)
+        connector = to_invoke.connector
         for o in to_invoke.options:
-            if o.name not in params:
-                params[o.name] = o.default
+            name = connector.get(o.name, o.name)
+            if name not in params and o.default is not None:
+                params[name] = o.default
 
+        interaction._command = self
         interaction.params = params
-
         if interaction.type == InteractionType.ApplicationCommandAutocomplete:
-            interaction.focused = get(params, focused=True)
+            interaction.focused = find(lambda o: (o.__getattribute__('focused') or None == True), options)
             return await to_invoke.invoke_autocomplete(interaction, **params)
         return await to_invoke.invoke(interaction, **params)
 

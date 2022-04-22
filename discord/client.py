@@ -1357,7 +1357,7 @@ class Client:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('The slash-command registered  must be a coroutine.')
             _name = (name or func.__name__).lower()
-            _description = description or (inspect.cleandoc(func.__doc__)[:100]) if func.__doc__ else 'No Description'
+            _description = description if description else (inspect.cleandoc(func.__doc__)[:100] if func.__doc__ else 'No Description')
             _options = options or generate_options(func, descriptions=option_descriptions, connector=connector)
             if group_name and not base_name:
                 raise InvalidArgument(
