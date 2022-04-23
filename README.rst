@@ -25,11 +25,11 @@
       :target: https://pepy.tech/project/discord.py-message-components
       :alt: Total downloads for the project
 
-   .. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=latest
-      :target: https://discordpy-message-components.readthedocs.io/en/latest/
+   .. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=developer
+      :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
 
-   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implemation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_ 
+   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & other features by `mccoderpy <https://github.com/mccoderpy/>`_ 
    
 **NOTE:** 
      This library will be further developed independently of discord.py.
@@ -38,14 +38,16 @@
      
      **❗Also important to know❗:** `Why is this library so inactive at the moment? <https://github.com/mccoderpy/discord.py-message-components/discussions/17#>`_
 
+**❗The most (new) features are only documented in Code currently❗**
+
 .. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
    :alt: Link to the documentation of discord.py-message-components
    :align: center
    :scale: 20%
-   :target: https://discordpy-message-components.readthedocs.io/en/latest/
-
-   **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/latest/>`_
+   :target: https://discordpy-message-components.readthedocs.io/en/developer/
+   
+   **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/developer/>`_
 
 You need help? Or have ideas/feedback?
 ______________________________________
@@ -67,18 +69,9 @@ first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.
 
     # Windows
     py -3 -m pip uninstall discord.py
+    # Replace discord.py with any other package that you have installed and that is imported with "discord
 
-Then install `this library <https://pypi.org/project/discord.py-message-components>`_ using:
-
-.. code:: sh
-
-    # Linux/macOS
-    python3 -m pip install -U discord.py-message-components
-
-    # Windows
-    py -3 -m pip install -U discord.py-message-components
-
-‼️To install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** use:
+Then install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** using:
 
 .. code:: sh
     
@@ -88,10 +81,22 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
     # Windows
     py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
 
-Of curse you nead to have git installed on your device. If you need help with this take a look `here <https://github.com/git-guides/install-git>`_
+**Of curse you nead to have git installed on your device. If you need help with this take a look** `here <https://github.com/git-guides/install-git>`_
+
+------------------------------------------
+
+To install `this library <https://pypi.org/project/discord.py-message-components>`_ from `PyPi <https://pypi.org>`_ use: ❗not up to date❗
+
+.. code:: sh
+
+    # Linux/macOS
+    python3 -m pip install -U discord.py-message-components
+
+    # Windows
+    py -3 -m pip install -U discord.py-message-components
 
 Examples
---------
+________
 
 **ℹFor more examples take a look in** `here <https://github.com/mccoderpy/discord.py-message-components/edit/developer/examples>`_
 
@@ -288,7 +293,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                                              arrow_button().set_label('→').set_custom_id('right'))]
                                )
 
-Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/latest/>`_ to see more examples.
+Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/developer/>`_ to see more examples.
 
 .. figure:: https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fmccoderpy%2Fdiscord.py-message-components%2Ftree%2Fdeveloper%2F&countColor=%23263759&style=flat
       :alt: Number(As image) how often this WebSite was visited
