@@ -29,7 +29,7 @@
       :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
 
-   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & other features by `mccoderpy <https://github.com/mccoderpy/>`_ 
+   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & many other features by `mccoderpy <https://github.com/mccoderpy/>`_ 
    
 **NOTE:** 
      This library will be further developed independently of discord.py.
