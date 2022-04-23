@@ -1,5 +1,7 @@
-🇺🇦 Welcome to discord.py-message-components'! 🇺🇦
-=========================================================
+.. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
+
+|flag_ua| Welcome to discord.py-message-components'! |flag_ua|
+==============================================================
 
 .. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
    :name: discord.py-message-components
@@ -90,6 +92,8 @@ Of curse you nead to have git installed on your device. If you need help with th
 
 Examples
 --------
+
+**ℹFor more examples take a look in** `here <https://github.com/mccoderpy/discord.py-message-components/edit/developer/examples>`_
 
 A Command that sends you a Message and edit it when you click a Button:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -285,3 +289,8 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                )
 
 Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/latest/>`_ to see more examples.
+
+.. figure:: https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fmccoderpy%2Fdiscord.py-message-components%2Ftree%2Fdeveloper%2F&countColor=%23263759&style=flat
+      :alt: Number(As image) how often this WebSite was visited
+      :align: center
+      :name: Visitor count
