@@ -17,7 +17,7 @@ class ModalSuggestions(commands.Cog):
                               color=discord.Color.orange())
         embed.add_field(
             name='Note:',
-            value='If you want to include images you must do this via. an file-hoster like '
+            value='If you want to include images/videos o.e. you must do this via. a file-hoster like '
                   '[tixte](https://tixte.com/?ref=mccoder-py-needs.to-sleep.xyz) or [imgur](https://imgur.com/).'
         )
         embed.set_footer(
