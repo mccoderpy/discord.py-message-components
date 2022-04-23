@@ -6,7 +6,7 @@ Discord API Wrapper
 
 A basic wrapper for the Discord API.
 
-:copyright: (c) 2015-present Rapptz
+:copyright: (c) 2015-present Rapptz 2022 mccoder.py
 :license: MIT, see LICENSE for more details.
 
 """
@@ -14,8 +14,8 @@ A basic wrapper for the Discord API.
 __title__ = 'discord'
 __author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2015-present Rapptz'
-__version__ = '1.7.5.4'
+__copyright__ = 'Copyright 2015-present Rapptz & 2022 mccoderpy'
+__version__ = '1.8a'
 
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
@@ -29,7 +29,7 @@ from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .activity import *
 from .channel import *
-from .components import ActionRow, Button, SelectMenu, SelectOption
+from .components import ActionRow, Button, SelectMenu, SelectOption, TextInput, Modal
 from .guild import Guild
 from .flags import *
 from .relationship import Relationship
@@ -66,6 +66,6 @@ from .sticker import Sticker, GuildSticker
 from .scheduled_event import GuildScheduledEvent
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
-version_info = VersionInfo(major=1, minor=7, micro=2, releaselevel='final', serial=0)
+version_info = VersionInfo(major=1, minor=8, micro=0, releaselevel='alpha', serial=0)
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
