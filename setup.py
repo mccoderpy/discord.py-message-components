@@ -64,7 +64,7 @@ setup(
     author_email="mccuber04@outlook.de",
     version=str(v if v else version),
     author="mccoder.py",
-    description="The discord.py Library with implementation of the Discord-Message-Components",
+    description="A \"fork\" of discord.py library made by Rapptz with implementation of the Discord-Message-Components & other features by mccoderpy",
     keywords='discord discord.py discord.py-message-components discord-components discord-interactions  message-components components ',
     long_description=readme,
     long_description_content_type="text/x-rst",
