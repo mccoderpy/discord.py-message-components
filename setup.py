@@ -16,14 +16,12 @@ if os.path.isfile('version.txt'):
         v = fp.read()
 
 if version and not v:
-    i = input(f'are you sure to use version {version}>> ')
-    version = i if i else version
+    version = i if (i := input(f'are you sure to use version {version}>> ')) else version
     with open('version.txt', 'w') as fp:
         fp.write(i)
 
 if not (version or v):
-    version = input('please set an version>> ')
-    if not version:
+    if not (version := input('please set an version>> ')):
         raise RuntimeError('version is not set')
 
 if version.endswith(('a', 'b', 'rc')):
@@ -67,7 +65,7 @@ setup(
     version=str(v if v else version),
     author="mccoder.py",
     description="The discord.py Library with implementation of the Discord-Message-Components",
-    keywords='discord.py discord.py-message-components discord-components discord-interactions discord message-components',
+    keywords='discord discord.py discord.py-message-components discord-components discord-interactions  message-components components ',
     long_description=readme,
     long_description_content_type="text/x-rst",
     extras_require=extras_require,
@@ -78,7 +76,6 @@ setup(
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
