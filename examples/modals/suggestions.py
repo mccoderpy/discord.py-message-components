@@ -21,8 +21,8 @@ class ModalSuggestions(commands.Cog):
                   '[tixte](https://tixte.com/?ref=mccoder-py-needs.to-sleep.xyz) or [imgur](https://imgur.com/).'
         )
         embed.set_footer(
-            text='**⚠The image link must be a direct(direct link to the file) link '
-                 '(These usually do not form an embed in Discord and look like normal uploaded files)⚠.**'
+            text='⚠The image link must be a direct(direct link to the file) link '
+                 '(These usually do not form an embed in Discord and look like normal uploaded files)⚠.'
         )
         await ctx.send(embed=embed, components=[[
             Button(label='New Suggestion',
