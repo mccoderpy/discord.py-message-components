@@ -6,7 +6,7 @@ Discord API Wrapper
 
 A basic wrapper for the Discord API.
 
-:copyright: (c) 2015-present Rapptz 2022 mccoder.py
+:copyright: (c) 2015-present Rapptz & 2022 mccoder.py
 :license: MIT, see LICENSE for more details.
 
 """
