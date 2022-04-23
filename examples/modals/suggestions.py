@@ -66,7 +66,7 @@ class ModalSuggestions(commands.Cog):
             pass
         else:
             description: str = inter.get_field('description').value
-            image_urls = re.findall(r"(?P<url>https://.*\.(jpeg|jpg|webp|png|gif|mp4))",
+            image_urls = re.findall(r"(?P<url>https://[^\s]+\.(jpeg|jpg|webp|png|gif|mp4))",
                                     description)  # i know this is actually not the best RegEx
             for index, url in enumerate(image_urls):
                 if index == 0:
@@ -158,11 +158,11 @@ class ModalSuggestions(commands.Cog):
                 await msg.edit(embeds=before_embeds, components=before_components)
             else:
                 if but.custom_id == 'suggestion:delete-yes':
-                    await interaction.message.thread.delete(
-                        reason=f'The associated suggestion for this thread was deleted by {interaction.author}.')
+                    if interaction.message.thread:
+                        await interaction.message.thread.delete(
+                            reason=f'The associated suggestion for this thread was deleted by {interaction.author}.')
                     await inter.edit(embed=discord.Embed(title='This message will be deleted in 3 Seconds.',
-                                                         color=discord.Color.green()))
-                    await inter.message.delete(delay=4)
+                                                         color=discord.Color.green()), delete_after=4)
                     if url_msg:
                         await url_msg.delete(delay=4)
                 else:
