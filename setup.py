@@ -16,12 +16,14 @@ if os.path.isfile('version.txt'):
         v = fp.read()
 
 if version and not v:
-    version = i if (i := input(f'are you sure to use version {version}>> ')) else version
+    i = input(f'are you sure to use version {version}>> ')
+    version = i if i else version
     with open('version.txt', 'w') as fp:
         fp.write(i)
 
 if not (version or v):
-    if not (version := input('please set an version>> ')):
+    version = input('please set an version>> ')
+    if not version:
         raise RuntimeError('version is not set')
 
 if version.endswith(('a', 'b', 'rc')):
