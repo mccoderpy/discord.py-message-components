@@ -353,7 +353,7 @@ class SelectMenu:
             self.custom_id = int(custom_id)
         else:
             self.custom_id = custom_id
-        if placeholder and len(placeholder) > 100:
+        if placeholder and len(placeholder) > 150:
             raise AttributeError('The maximum length of a the placeholder is 100 characters; your one is %s long (%s to long).' % (len(placeholder), len(placeholder) - 100))
         self.placeholder = placeholder
         if 25 < min_values < 0:
@@ -551,7 +551,7 @@ class TextInput:
     Parameters
     ----------
     custom_id: Optional[Union[:class:`str`, :class:`int`]]
-        a developer-defined identifier for the input, max 100 characters
+        A developer-defined identifier for the input, max 100 characters
     style: Optional[Union[:class:`TextInputStyle`, :class:`int`]] = TextInputStyle.short
         The Style of the TextInput; so single- or multi-line
     label: :class:`str`
