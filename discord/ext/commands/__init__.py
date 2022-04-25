@@ -6,7 +6,7 @@ discord.ext.commands
 
 An extension module to facilitate creation of bot sub_commands.
 
-:copyright: (c) 2015-present Rapptz
+:copyright: (c) 2015-present Rapptz 2021 mccoder.py
 :license: MIT, see LICENSE for more details.
 """
 

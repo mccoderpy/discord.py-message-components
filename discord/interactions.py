@@ -439,6 +439,7 @@ class BaseInteraction:
         if not self.callback_message:
             self.callback_message = msg
         self.deferred = True
+        self.message = msg
         return msg
 
     async def respond(self,
@@ -785,12 +786,14 @@ class option_int(int):
         __self.focused = focused
         return __self
 
+
 class option_float(float):
     def __new__(cls, *args, **kwargs):
         focused = kwargs.pop('focused', False)
         __self = super().__new__(cls, *args, **kwargs)
         __self.focused = focused
         return __self
+
 
 class InteractionDataOption:
     def __init__(self, *, state, data, guild=None, **kwargs):

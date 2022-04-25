@@ -1253,6 +1253,64 @@ class Client:
 
         return decorator
 
+    def on_submit(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
+        """
+        A decorator that registers a on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
+         if so, the :func:`func` is called..
+
+        The function this is attached to must take the same parameters as a
+        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
+
+        .. important::
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+
+        Parameters
+        ----------
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
+            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as an function name
+            or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
+
+        Example
+        -------
+        .. code-block:: python
+
+            # the Modal
+            Modal(title='Create a new suggestion',
+                  custom_id='suggestions_modal',
+                  components=[...])
+
+            # function that's called when the Modal is submitted
+            @client.on_submit(custom_id='suggestions_modal')
+            async def suggestions_modal_callback(i: discord.ModalSubmitInteraction, modal):
+                ...
+
+        Raises
+        ------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
+        def decorator(func: Awaitable[Any]):
+            if not asyncio.iscoroutinefunction(func):
+                raise TypeError('event registered must be a coroutine function')
+
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(func.__name__)
+
+            try:
+                listeners = self._listeners['modal_submit']
+            except KeyError:
+                listeners = []
+                self._listeners['modal_submit'] = listeners
+
+            listeners.append((func, lambda i, c: _custom_id.match(str(c.custom_id))))
+            return func
+
+        return decorator
+
     def slash_command(self, name: str = None, description: str = None, default_permission: bool = True,
                       options: list = [], guild_ids: List[int] = None, connector: dict = {},
                       option_descriptions: dict = {}, base_name: str = None, base_desc: str = None,

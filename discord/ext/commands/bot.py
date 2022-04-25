@@ -539,8 +539,10 @@ class BotBase(GroupMixin):
         except KeyError:
             listeners = []
             self.extra_interaction_events[_type] = listeners
-        
-        listeners.append((func, lambda i, c: custom_id.match(str(c.custom_id))))
+        if _type == 'modal_submit':
+            listeners.append((func, lambda i: custom_id.match(str(i.custom_id))))
+        else:
+            listeners.append((func, lambda i, c: custom_id.match(str(c.custom_id))))
 
     def remove_interaction_listener(self, _type,  func, custom_id: re.Pattern):
         """
@@ -552,7 +554,10 @@ class BotBase(GroupMixin):
         """
         try:
             if _type in self.extra_interaction_events:
-                self.extra_interaction_events[_type].remove((func, lambda i, c: custom_id.match(str(c.custom_id))))
+                if _type == 'modal_submit':
+                    self.extra_interaction_events[_type].remove((func, lambda i: custom_id.match(str(i.custom_id))))
+                else:
+                    self.extra_interaction_events[_type].remove((func, lambda i, c: custom_id.match(str(c.custom_id))))
         except ValueError:
             pass
 

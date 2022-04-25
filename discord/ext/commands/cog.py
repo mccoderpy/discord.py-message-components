@@ -367,7 +367,7 @@ class Cog(metaclass=CogMeta):
 
             # function that's called when the Button pressed
             @command.Cog.on_click(custom_id='cool blue Button')
-            async def cool_blue_button(i: discord.Interaction, button):
+            async def cool_blue_button(self, i: discord.ComponentInteraction, button):
                 await i.respond(f'Hey you pressed a `{button.custom_id}`!', hidden=True)
 
         Raises
@@ -427,7 +427,7 @@ class Cog(metaclass=CogMeta):
 
             # function that's called when the SelectMenu is used
             @commands.Cog.on_select()
-            async def choose_your_gender(i: discord.Interaction, select_menu):
+            async def choose_your_gender(self, i: discord.ComponentInteraction, select_menu):
                 await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
         Raises
@@ -450,6 +450,65 @@ class Cog(metaclass=CogMeta):
             except AttributeError:
                 actual.__interaction_listener_names__ = [('raw_selection_select', _custom_id)]
             return func
+        return decorator
+
+    @classmethod
+    def on_submit(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+        [Awaitable[Any]], Awaitable[Any]
+    ]:
+        """
+        A decorator that registers a on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
+         if so, the :func:`func` is called..
+
+        The function this is attached to must take the same parameters as a
+        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
+
+        .. important::
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+
+        Parameters
+        ----------
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
+            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as an function name
+            or you want to give the function a different name then the custom_id use this one to set the custom_id.
+            You can also specify a regex and if the custom_id matches it, the function will be executed.
+
+        Example
+        -------
+        .. code-block:: python
+
+            # the Modal
+            Modal(title='Create a new suggestion',
+                  custom_id='suggestions_modal',
+                  components=[...])
+
+            # function that's called when the Modal is submitted
+            @client.on_submit(custom_id='suggestions_modal')
+            async def suggestions_modal_callback(i: discord.ModalSubmitInteraction, modal):
+                ...
+
+        Raises
+        ------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
+
+        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
+            actual = func
+            if isinstance(actual, staticmethod):
+                actual = actual.__func__
+            if not inspect.iscoroutinefunction(actual):
+                raise TypeError('event registered must be a coroutine function')
+            actual.__cog_interaction_listener__ = True
+            _custom_id = re.compile(custom_id) if (
+                    custom_id is not None and not isinstance(custom_id, re.Pattern)
+            ) else re.compile(actual.__name__)
+            try:
+                actual.__interaction_listener_names__.append(('modal_submit', _custom_id))
+            except AttributeError:
+                actual.__interaction_listener_names__ = [('modal_submit', _custom_id)]
+            return func
+
         return decorator
 
     @classmethod
