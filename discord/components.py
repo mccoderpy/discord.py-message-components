@@ -519,7 +519,9 @@ class Modal:
         self.title = title
         self.components = []
         for c in components:
-            if not isinstance(c, ActionRow):
+            if isinstance(c, list):
+                c = ActionRow(*c)
+            elif not isinstance(c, ActionRow):
                 c = ActionRow(c)
             self.components.append(c)
 
