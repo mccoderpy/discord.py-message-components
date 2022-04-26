@@ -279,6 +279,7 @@ class BaseInteraction:
         self.user: Optional[User] = None
         self.deferred = False
         self.deferred_hidden = False
+        self.deferred_modal = False
         self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
@@ -345,6 +346,8 @@ class BaseInteraction:
 
         'Defers' if it isn't yet and edit the message
         """
+        if self.deferred_modal:
+            return await self.message.edit(**fields)
         if self.message_is_hidden:
             return await self.message.edit(**fields)
         try:
@@ -560,6 +563,8 @@ class BaseInteraction:
             data=modal.to_dict(),
             type=9
         )
+        self.deferred = True
+        self.deferred_modal = True
         return data
 
     async def get_original_callback(self, raw: bool = False):
