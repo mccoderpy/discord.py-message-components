@@ -58,7 +58,7 @@ async def json_or_text(response):
 
 
 class Route:
-    BASE = 'https://discord.com/api/v9'
+    BASE = 'https://discord.com/api/v10'
 
     def __init__(self, method, path, **parameters):
         self.path = path

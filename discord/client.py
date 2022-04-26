@@ -506,7 +506,7 @@ class Client:
                 try:
                     registered_guild_commands_raw = await self.http.get_application_commands(self.app.id, guild_id=guild.id)
                 except HTTPException:
-                    warnings.warn(
+                    log.info(
                         'Missing access to guild %s (%s) or don\'t have the application.commands scope in there, '
                         'skipping!' % (guild.name, guild.id))
                     continue
