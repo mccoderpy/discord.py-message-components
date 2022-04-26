@@ -224,6 +224,7 @@ class EphemeralMessage:
                     components[index] = ActionRow(component)
                 elif isinstance(component, list):
                     components[index] = ActionRow(*component)
+
             [_components.extend(*[c.to_dict()]) for c in components]
             fields['components'] = _components
 
@@ -344,7 +345,8 @@ class BaseInteraction:
 
         'Defers' if it isn't yet and edit the message
         """
-        
+        if self.message_is_hidden:
+            return await self.message.edit(**fields)
         try:
             content: Optional[str] = fields['content']
         except KeyError:
@@ -402,8 +404,6 @@ class BaseInteraction:
         fields['flags'] = flags.value
         delete_after: Optional[float] = fields.pop('delete_after', None)
         state = self._state
-        if self.message_is_hidden:
-            return await self.message.edit(**fields)
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
@@ -537,7 +537,7 @@ class BaseInteraction:
             msg = await self.get_original_callback()
         else:
             if hidden:  # should not be the case but im not sure at the moment
-                msg = EphemeralMessage(state=data, interaction=self, channel=self.channel, data=data)
+                msg = EphemeralMessage(state=self._state, interaction=self, channel=self.channel, data=data)
             else:
                 msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
         if not hidden and delete_after is not None:
