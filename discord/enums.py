@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-present Rapptz & 2022 mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -187,17 +187,19 @@ class Enum(metaclass=EnumMeta):
 
 
 class ChannelType(Enum):
-    text           = 0
-    private        = 1
-    voice          = 2
-    group          = 3
-    category       = 4
-    news           = 5
-    store          = 6
-    news_thread    = 10
-    public_thread  = 11
-    private_thread = 12
-    stage_voice    = 13
+    text            = 0
+    private         = 1
+    voice           = 2
+    group           = 3
+    category        = 4
+    news            = 5
+    store           = 6
+    news_thread     = 10
+    public_thread   = 11
+    private_thread  = 12
+    stage_voice     = 13
+    guild_directory = 14 # don't think bots can access them but yea... to have all listed here
+    forum_channel   = 15
 
 
     def __str__(self):

@@ -915,7 +915,7 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
             base.value &= ~denied.value
         return base
 
-class VoiceChannel(VocalGuildChannel):
+class VoiceChannel(VocalGuildChannel, abc.Messageable):
     """Represents a Discord guild voice channel.
 
     .. container:: operations
@@ -960,7 +960,7 @@ class VoiceChannel(VocalGuildChannel):
         .. versionadded:: 1.7
     """
 
-    __slots__ = ()
+    __slots__ = ('last_message_id',)
 
     def __repr__(self):
         attrs = [
@@ -978,6 +978,9 @@ class VoiceChannel(VocalGuildChannel):
     def channel_type():
         return ChannelType.voice
 
+    def _get_channel(self):
+        return self
+
     @property
     def type(self):
         """:class:`ChannelType`: The channel's Discord type."""
@@ -989,6 +992,7 @@ class VoiceChannel(VocalGuildChannel):
             'bitrate': self.bitrate,
             'user_limit': self.user_limit
         }, name=name, reason=reason)
+
 
     async def edit(self, *, reason=None, **options):
         """|coro|
