@@ -751,7 +751,7 @@ class BotBase(GroupMixin):
         for event_list in self.extra_interaction_events.copy().values():
             remove = []
             for index, event in enumerate(event_list):
-                if event.__module__ is not None and _is_submodule(name, event.__module__):
+                if event[0].__module__ is not None and _is_submodule(name, event[0].__module__):
                     remove.append(index)
 
             for index in reversed(remove):
