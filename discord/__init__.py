@@ -6,7 +6,7 @@ Discord API Wrapper
 
 A basic wrapper for the Discord API.
 
-:copyright: (c) 2015-present Rapptz & 2022 mccoder.py
+:copyright: (c) 2015-present Rapptz & 2022 mccoderpy
 :license: MIT, see LICENSE for more details.
 
 """
@@ -43,7 +43,7 @@ from .role import Role, RoleTags
 from .file import File, UploadFile
 from .colour import Color, Colour
 from .integrations import Integration, IntegrationAccount, BotIntegration, IntegrationApplication, StreamIntegration
-from .application_commands import SlashCommandOption, SlashCommandOptionChoice, OptionType as SlashCommandOptionType
+from .application_commands import *
 from .interactions import *
 from .invite import Invite, PartialInviteChannel, PartialInviteGuild
 from .template import Template

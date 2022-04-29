@@ -27,7 +27,6 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import abc
-import json
 import sys
 import copy
 import asyncio

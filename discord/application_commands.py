@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2021-present mccoderpy
+Copyright (c) 2022-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -23,20 +23,26 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+
+
 import re
 import copy
 import asyncio
 import inspect
+import warnings
 from .utils import async_all, find, get
 from typing_extensions import Literal
 from .abc import User, GuildChannel, Role
 from typing import Union, Optional, List, Dict, Any, Awaitable, TYPE_CHECKING
-from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, OptionType, try_enum
+from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
+from .permissions import Permissions
+
 if TYPE_CHECKING:
     from .ext.commands import Cog
 
 
 __all__ = (
+    'Localizations',
     'ApplicationCommand',
     'SlashCommand',
     'GuildOnlySlashCommand',
@@ -52,15 +58,54 @@ __all__ = (
 )
 
 
+class Localizations:
+    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])
+
+    def __init__(self, **kwargs) -> None:
+        self.__languages_dict__ = {}
+        for locale in self.__slots__:
+            try:
+                text = kwargs[locale]
+            except KeyError:
+                continue
+            else:
+                self.__languages_dict__[Locale[locale].value] = text
+                setattr(self, locale, text)
+
+
+    def __getitem__(self, item) -> Optional[str]:
+        return self.__languages_dict__.__getitem__(Locale[locale].value)
+
+    def __setitem__(self, key, value):
+        self__languages_dict__[Locale[key].value] = value
+
+    def to_dict(self) -> Dict[str, str]:
+        return self.__languages_dict__
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, str]) -> 'Localizations':
+        return cls(**{try_enum(cls, key): value for key, value in data.items()})
+
+
 class ApplicationCommand:
     def __init__(self, type: int, *args, **kwargs):
         self._type = type
+        self.name = kwargs.get('name', '')
         self._guild_ids = kwargs.get('guild_ids', None)
         self._guild_id = kwargs.get('guild_id', None)
         self._state_ = kwargs.get('state', None)
         self.func = kwargs.pop('func', None)
         self.cog = kwargs.get('cog', None)
+        dp = kwargs.get('default_permission', None)
+        if dp is not None:
+            warnings.warn('default_permission is deprecated, use default_member_permissions and allow_dm instead.', stacklevel=3, category=DeprecationWarning)
+
+        self.default_member_permissions = kwargs.get('default_member_permissions', True)
         self.disabled: bool = False
+
+        self.allow_dm = kwargs.get('allow_dm', True)
+        self.name_localizations = kwargs.get('name_localizations', Localizations())
+        self.description_localizations = kwargs.get('description_localizations', Localizations())
 
     @property
     def _state(self):
@@ -115,7 +160,8 @@ class ApplicationCommand:
                     if option['type'] in (1, 2):
                         if not check_options(option.get('options', []), opt.get('options', [])):
                             return False
-                    for key in ('name', 'type', 'description', 'required', 'min_value', 'max_value', 'autocomplete'):
+                    for key in ('type', 'name', 'name_localizations', 'description', 'description_localizations',
+                                'required', 'choices', 'min_value', 'max_value', 'autocomplete'):
                         current_value = option.get(key, None)
                         if current_value != opt.get(key, None):
                             return False
@@ -128,10 +174,13 @@ class ApplicationCommand:
                 options = [s.to_dict() for s in self.sub_commands]
             else:
                 options = []
-            return bool(int(self.type) == other.get('type') and self.name == other.get('name', None)\
-                   and getattr(self, 'description', '') == other.get('description', '')\
-                   and self.default_permission == other.get('default_permission', None)\
-                   and check_options(options, other.get('options', [])))
+            return bool(int(self.type) == other.get('type') and self.name == other.get('name', None)
+                        and self.name_localizations.to_dict() == other.get('name_localizations', {})
+                        and getattr(self, 'description', '') == other.get('description', '')
+                        and self.description_localizations.to_dict() == other.get('description_localizations', {})
+                        and str(self.default_member_permissions.value) == other.get('default_member_permissions', '0') and self.allow_dm == other.get('dm_permission', True)
+                        and check_options(options, other.get('options', [])))
+        return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -176,10 +225,13 @@ class ApplicationCommand:
 
     def to_dict(self):
         base = {
-            'name': str(self.name),
             'type': int(self.type),
+            'name': str(self.name),
+            'name_localizations': self.name_localizations.to_dict(),
             'description': getattr(self, 'description', ''),
-            'default_permission': bool(self.default_permission)
+            'description_localizations': self.description_localizations.to_dict(),
+            'default_member_permissions': self.default_member_permissions,
+            'dm_permission': self.allow_dm
         }
         if hasattr(self, 'options') and self.options:
             base['options'] = [o.to_dict() for o in self.options]
@@ -240,7 +292,7 @@ class ApplicationCommand:
             self._state._get_client()._remove_application_command(self)
 
 class SlashCommandOptionChoice:
-    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Dict[str, str] = None):
+    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Localizations = None):
         # TODO: Add an (optional) feature for automatic generated name_localizations/guild_localisations by a translator
         """
         A class representing a choice for a :class:`SelectOption` or :class:`SubCommand`.
@@ -267,13 +319,13 @@ class SlashCommandOptionChoice:
         base = {
             'name': str(self.name),
             'value': self.value,
-            'name_localizations': self.name_localizations
+            'name_localizations': self.name_localizations.to_dict()
         }
         return base
 
     @classmethod
     def from_dict(cls, data):
-        return cls(name=data['name'], value=data['value'], name_localizations=data.get('name_localizations', {}))
+        return cls(name=data['name'], value=data['value'], name_localizations=Localizations(**data.get('name_localizations', {})))
 
 
 class SlashCommandOption:
@@ -653,11 +705,15 @@ class GuildOnlySubCommand(SubCommand):
             cmd.on_error = coro
         return coro
 
+
 class SlashCommand(ApplicationCommand):
     def __init__(self,
                  name: str,
                  description: str,
-                 default_permission: bool = True,
+                 name_localizations: Optional[Localizations] = None,
+                 description_localizations: Optional[Localizations] = None,
+                 default_member_permissions: Optional[Union[Permissions, int]] = None,
+                 allow_dm: Optional[bool] = True,
                  options: List[SlashCommandOption] = [],
                  connector: Dict[str, str] = {},
                  **kwargs):
@@ -685,14 +741,22 @@ class SlashCommand(ApplicationCommand):
             Keyword arguments used for internal handlig.
         """
         self.autocomplete_func = None
-        super().__init__(1, name=name, description=description, options=options, connector=connector, **kwargs)
+        super().__init__(1,
+                         name=name,
+                         description=description,
+                         name_localizations=name_localizations,
+                         description_localizations=description_localizations,
+                         default_member_permissions=default_member_permissions,
+                         allow_dm=allow_dm,
+                         options=options,
+                         connector=connector,
+                         **kwargs)
         if (not re.match(r'^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
             raise ValueError('The name of the Slash-Command has to be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError('The description must be between 1 and 100 characters long, got %s.' % len(description))
         self.description = description
-        self.default_permission = default_permission
         if len(options) > 25:
             raise ValueError('The maximum of options per command is 25, got %s' % len(options))
         self.connector = connector
@@ -703,10 +767,10 @@ class SlashCommand(ApplicationCommand):
             sc.parent = self
 
     def __repr__(self):
-        return '<SlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_id=%s disabled=%s, id=%s>' \
+        return '<SlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_id=%s disabled=%s, id=%s>' \
                % (self.name,
                   self.description,
-                  self.default_permission,
+                  self.default_member_permissions,
                   self.options or self.sub_commands,
                   self.guild_id or 'None',
                   self.disabled,
@@ -896,10 +960,10 @@ class GuildOnlySlashCommand(SlashCommand):
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
-        return '<GuildOnlySlashCommand name=%s, description=%s, default_permission=%s, options=%s, guild_ids=%s>'\
+        return '<GuildOnlySlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_ids=%s>'\
                % (self.name,
                   self.description,
-                  self.default_permission,
+                  self.default_member_permissions,
                   self.options,
                   ', '.join([str(g) for g in self.guild_ids])
                   )
@@ -911,19 +975,26 @@ class GuildOnlySlashCommand(SlashCommand):
             cmd.on_error = coro
         return coro
 
+
 class UserCommand(ApplicationCommand):
-    def __init__(self, name, default_permission: bool = True, **kwargs):
+    def __init__(self,
+                 name: str,
+                 name_localizations: Optional[Localizations] = None,
+                 default_member_permissions: Optional[Union[Permissions, int]] = None,
+                 allow_dm: Optional[bool] = True,
+                 **kwargs):
         if 32 < len(name) < 1:
             raise ValueError('The name of the User-Command has to be 1-32 characters long, got %s.' % len(name))
-        super().__init__(2, **kwargs)
-        self.name = name
-        self.default_permission = default_permission
+        super().__init__(3, name=name, name_localizations=name_localizations, default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs)
     
     @classmethod
     def from_dict(cls, state, data):
+        dmp = data.get('default_member_permissions', None)
         return cls(
             name=data.pop('name'),
-            default_permission=data.pop('default_permission', True),
+            name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
+            default_member_permissions=int(dmp) if dmp else None,
+            allow_dm=data.get('dm_permission', True),
             state=state,
             **data
         )
@@ -933,18 +1004,24 @@ class UserCommand(ApplicationCommand):
 
 
 class MessageCommand(ApplicationCommand):
-    def __init__(self, name: str, default_permission: bool = True, **kwargs):
+    def __init__(self,
+                 name: str,
+                 name_localizations: Optional[Localizations] = None,
+                 default_member_permissions: Optional[Union[Permissions, int]] = None,
+                 allow_dm: Optional[bool] = True,
+                 **kwargs):
         if 32 < len(name) < 1:
             raise ValueError('The name of the Message-Command has to be 1-32 characters long, got %s.' % len(name))
-        super().__init__(3, **kwargs)
-        self.name = name
-        self.default_permission = default_permission
+        super().__init__(3, name=name, name_localizations=name_localizations, default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs)
 
     @classmethod
     def from_dict(cls, state, data):
+        dmp = data.get('default_member_permissions', None)
         return cls(
             name=data.pop('name'),
-            default_permission=data.pop('default_permission'),
+            name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
+            default_member_permissions=int(dmp) if dmp else None,
+            allow_dm=data.get('dm_permission', True),
             state=state,
             **data
         )

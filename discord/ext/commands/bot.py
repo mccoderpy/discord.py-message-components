@@ -748,6 +748,15 @@ class BotBase(GroupMixin):
             for index in reversed(remove):
                 del event_list[index]
 
+        for event_list in self.extra_interaction_events.copy().values():
+            remove = []
+            for index, event in enumerate(event_list):
+                if event.__module__ is not None and _is_submodule(name, event.__module__):
+                    remove.append(index)
+
+            for index in reversed(remove):
+                del event_list[index]
+
     def _call_module_finalizers(self, lib, key):
         try:
             func = getattr(lib, 'teardown')
