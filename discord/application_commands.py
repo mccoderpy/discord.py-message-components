@@ -230,7 +230,7 @@ class ApplicationCommand:
             'name_localizations': self.name_localizations.to_dict(),
             'description': getattr(self, 'description', ''),
             'description_localizations': self.description_localizations.to_dict(),
-            'default_member_permissions': str(self.default_member_permissions.value) if self.default_member_permissions else '',
+            'default_member_permissions': str(self.default_member_permissions.value) if self.default_member_permissions else None,
             'dm_permission': self.allow_dm
         }
         if hasattr(self, 'options') and self.options:
