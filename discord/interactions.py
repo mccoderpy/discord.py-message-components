@@ -544,6 +544,7 @@ class BaseInteraction:
             else:
                 msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
         if not hidden and delete_after is not None:
+            # TODO: Fix delting wrong message
             await msg.delete(delay=delete_after)
         if hidden is True and not self.deferred:
             self.deferred_hidden = True

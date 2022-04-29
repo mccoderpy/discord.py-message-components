@@ -58,9 +58,9 @@ __all__ = (
 )
 
 
+# TODO: Add a (optional) feature for automatic generated name_localizations & description_localisations by a translator
 class Localizations:
     __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])
-
     def __init__(self, **kwargs) -> None:
         self.__languages_dict__ = {}
         for locale in self.__slots__:
@@ -99,10 +99,8 @@ class ApplicationCommand:
         dp = kwargs.get('default_permission', None)
         if dp is not None:
             warnings.warn('default_permission is deprecated, use default_member_permissions and allow_dm instead.', stacklevel=3, category=DeprecationWarning)
-
-        self.default_member_permissions = kwargs.get('default_member_permissions', True)
+        self.default_member_permissions = kwargs.get('default_member_permissions', None)
         self.disabled: bool = False
-
         self.allow_dm = kwargs.get('allow_dm', True)
         self.name_localizations = kwargs.get('name_localizations', Localizations())
         self.description_localizations = kwargs.get('description_localizations', Localizations())
@@ -230,7 +228,7 @@ class ApplicationCommand:
             'name_localizations': self.name_localizations.to_dict(),
             'description': getattr(self, 'description', ''),
             'description_localizations': self.description_localizations.to_dict(),
-            'default_member_permissions': self.default_member_permissions,
+            'default_member_permissions': str(self.default_member_permissions.value) if self.default_member_permissions else '',
             'dm_permission': self.allow_dm
         }
         if hasattr(self, 'options') and self.options:
@@ -289,10 +287,11 @@ class ApplicationCommand:
             guild_id = None
         await self._state.http.delete_application_command(self.application_id, self.id, guild_id)
         if guild_id:
-            self._state._get_client()._remove_application_command(self)
+            self._state._get_client()._remove_application_command(self, from_cache=True)
+
 
 class SlashCommandOptionChoice:
-    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Localizations = None):
+    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Localizations = Localizations()):
         # TODO: Add an (optional) feature for automatic generated name_localizations/guild_localisations by a translator
         """
         A class representing a choice for a :class:`SelectOption` or :class:`SubCommand`.
@@ -710,8 +709,8 @@ class SlashCommand(ApplicationCommand):
     def __init__(self,
                  name: str,
                  description: str,
-                 name_localizations: Optional[Localizations] = None,
-                 description_localizations: Optional[Localizations] = None,
+                 name_localizations: Optional[Localizations] = Localizations(),
+                 description_localizations: Optional[Localizations] = Localizations(),
                  default_member_permissions: Optional[Union[Permissions, int]] = None,
                  allow_dm: Optional[bool] = True,
                  options: List[SlashCommandOption] = [],
@@ -861,12 +860,17 @@ class SlashCommand(ApplicationCommand):
     @classmethod
     def from_dict(cls, state, data):
         self: cls = cls.__new__(cls)
+        super(self).__init__(1, **data)
+        dmp = data.get('default_member_permissions', None)
         self._type = ApplicationCommandType.chat_input
-        self.name = data.pop('name')
         self.disabled = False
         self.connector = {}
-        self.description=data.pop('description', 'No Description')
-        self.default_permission=data.pop('default_permission', True)
+        self.name = data.pop('name')
+        self.name_localizations = Localizations.from_dict(data.get('name_localizations', {}))
+        self.description = data.pop('description', 'No Description')
+        self.description_localizations = Localizations.from_dict(data.get('description_localizations', {}))
+        self.default_member_permissions = Permissions(int(dmp)) if dmp else None
+        self.allow_dm = data.pop('dm_permission', True)
         self._guild_id = int(data.get('guild_id', 0))
         self._state_ = state
         for opt in data.get('options', []):

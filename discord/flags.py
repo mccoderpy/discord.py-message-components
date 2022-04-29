@@ -163,7 +163,7 @@ class SystemChannelFlags(BaseFlags):
 
     # For some reason the flags for system channels are "inverted"
     # ergo, if they're set then it means "suppress" (off in the GUI toggle)
-    # Since this is counter-intuitive from an APIMethodes perspective and annoying
+    # Since this is counter-intuitive from an API perspective and annoying
     # these will be inverted automatically
 
     def _has_flag(self, o):
@@ -272,6 +272,7 @@ class MessageFlags(BaseFlags):
         This message is an Interaction Response and the bot is "thinking"
         """
         return 128
+
 
 @fill_with_flags()
 class PublicUserFlags(BaseFlags):

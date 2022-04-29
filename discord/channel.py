@@ -557,7 +557,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         """Creates a :class:`PartialMessage` from the message ID.
 
         This is useful if you want to work with a message and only have its ID without
-        doing an unnecessary APIMethodes call.
+        doing an unnecessary API call.
 
         .. versionadded:: 1.6
 
@@ -829,7 +829,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
     async def _fetch_members(self):
         if not self._state._intents.members:
-            raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this APIMethodes-call.')
+            raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this API-call.')
         r =  await self._state.http.list_thread_members(channel_id=self.id)
         for thread_member in r:
             if not self.get_member(int(thread_member['user_id'])):
@@ -1595,7 +1595,7 @@ class DMChannel(abc.Messageable, Hashable):
         """Creates a :class:`PartialMessage` from the message ID.
 
         This is useful if you want to work with a message and only have its ID without
-        doing an unnecessary APIMethodes call.
+        doing an unnecessary API call.
 
         .. versionadded:: 1.6
 

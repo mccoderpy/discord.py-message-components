@@ -30,6 +30,7 @@ from .asset import Asset
 from .team import Team
 from .flags import ApplicationFlags
 
+
 class AppInfo:
     """Represents the application info for the bot provided by Discord.
 

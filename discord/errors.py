@@ -235,14 +235,14 @@ class InvalidButtonUrl(DiscordException):
 
 class URLAndCustomIDNotAlowed(DiscordException):
     """Exception that's thrown when there is an ``url`` and an ``custom_id`` passed in a :class:`discord.Button`,
-    what is not supportet by the Discord-APIMethodes.
+    what is not supportet by the Discord-API.
 
     .. note ::
          :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` don't send any Interaction to Discord when they are clicked.
     """
     def __init__(self, custom_id):
         msg = f"custom_id's ({custom_id}) are not alowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` because Discord don't send any Interaction when clicking on a Link-Button." \
-              f"For More Information visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
+              f"For More Information visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
         super().__init__(msg)
 
 
@@ -251,7 +251,7 @@ class EmptyActionRow(DiscordException):
     Exception that's thrown when there is an empty :class:`discord.ActionRow` in your message.
     """
     def __init__(self):
-        msg = 'The Discord-APIMethodes does not allows you to send an empty ActionRow, you have to parse at least one component'
+        msg = 'The Discord-API does not allows you to send an empty ActionRow, you have to parse at least one component'
         super().__init__(msg)
 
 

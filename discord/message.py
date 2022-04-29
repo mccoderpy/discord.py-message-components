@@ -333,7 +333,7 @@ class MessageReference:
 
     resolved: Optional[Union[:class:`Message`, :class:`DeletedReferencedMessage`]]
         The message that this reference resolved to. If this is ``None``
-        then the original message was not fetched either due to the Discord APIMethodes
+        then the original message was not fetched either due to the Discord API
         not attempting to resolve it or it not being available at the time of creation.
         If the message was resolved at a prior point but has since been deleted then
         this will be of type :class:`DeletedReferencedMessage`.

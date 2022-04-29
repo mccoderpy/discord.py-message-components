@@ -126,7 +126,7 @@ class _ClientEventTask(asyncio.Task):
 
 class Client:
     r"""Represents a client connection that connects to Discord.
-    This class is used to interact with the Discord WebSocket and APIMethodes.
+    This class is used to interact with the Discord WebSocket and API.
 
     A number of options can be passed to the :class:`Client`.
 
@@ -633,7 +633,7 @@ class Client:
         """|coro|
 
         Logs out of Discord and closes all connections.
-        
+
         .. deprecated:: 1.7
 
         .. note::
@@ -664,7 +664,7 @@ class Client:
         -------
         :exc:`.GatewayNotFound`
             If the gateway to connect to Discord is not found. Usually if this
-            is thrown then there is a Discord APIMethodes outage.
+            is thrown then there is a Discord API outage.
         :exc:`.ConnectionClosed`
             The websocket connection has been terminated.
         """
@@ -1191,13 +1191,13 @@ class Client:
             return func
 
         return decorator
-    
+
     def on_select(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
         A decorator with which you can assign a function to a specific :class:`discord.SelectMenu` (or its custom_id).
-        
+
         The function this is attached to must take the same parameters as a
         `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_selection_select>`_.
 
@@ -1870,7 +1870,7 @@ class Client:
 
         .. code-block:: python3
 
-            game = discord.Game("with the APIMethodes")
+            game = discord.Game("with the API")
             await client.change_presence(status=discord.Status.idle, activity=game)
 
         Parameters
@@ -1927,7 +1927,7 @@ class Client:
 
         .. note::
 
-            This method is an APIMethodes call. For general usage, consider :attr:`guilds` instead.
+            This method is an API call. For general usage, consider :attr:`guilds` instead.
 
         Examples
         ---------
@@ -2008,7 +2008,7 @@ class Client:
 
         .. note::
 
-            This method is an APIMethodes call. For general usage, consider :meth:`get_guild` instead.
+            This method is an API call. For general usage, consider :meth:`get_guild` instead.
 
         Parameters
         -----------
@@ -2205,7 +2205,7 @@ class Client:
 
         .. note::
 
-            This method is an APIMethodes call. If you have :attr:`Intents.members` and member cache enabled, consider :meth:`get_user` instead.
+            This method is an API call. If you have :attr:`Intents.members` and member cache enabled, consider :meth:`get_user` instead.
 
         Parameters
         -----------
@@ -2279,7 +2279,7 @@ class Client:
 
         .. note::
 
-            This method is an APIMethodes call. For general usage, consider :meth:`get_channel` instead.
+            This method is an API call. For general usage, consider :meth:`get_channel` instead.
 
         .. versionadded:: 1.2
 

@@ -198,7 +198,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         .. note::
 
-            Due to a Discord APIMethodes limitation, a user's Spotify activity may not appear
+            Due to a Discord API limitation, a user's Spotify activity may not appear
             if they are listening to a song with a title longer
             than 128 characters. See :issue:`1738` for more information.
 
@@ -551,7 +551,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         .. note::
 
-            Due to a Discord APIMethodes limitation, this may be ``None`` if
+            Due to a Discord API limitation, this may be ``None`` if
             the user is listening to a song on Spotify with a title longer
             than 128 characters. See :issue:`1738` for more information.
 

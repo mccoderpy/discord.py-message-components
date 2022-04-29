@@ -86,6 +86,7 @@ t.ActivityFlags = {
 }
 """
 
+
 class BaseActivity:
     """The base activity that all user-settable activities inherit from.
     A user-settable activity is one that can be used in :meth:`Client.change_presence`.
@@ -117,6 +118,10 @@ class BaseActivity:
         """
         if self._created_at is not None:
             return datetime.datetime.utcfromtimestamp(self._created_at / 1000)
+
+    def to_dict(self):
+        raise NotImplementedError()
+
 
 class Activity(BaseActivity):
     """Represents an activity in Discord.
@@ -264,6 +269,7 @@ class Activity(BaseActivity):
             return None
         else:
             return Asset.BASE + '/app-assets/{0}/{1}.png'.format(self.application_id, small_image)
+
     @property
     def large_image_text(self):
         """Optional[:class:`str`]: Returns the large image asset hover text of this activity if applicable."""
@@ -387,6 +393,7 @@ class Game(BaseActivity):
     def __hash__(self):
         return hash(self.name)
 
+
 class Streaming(BaseActivity):
     """A slimmed down version of :class:`Activity` that represents a Discord streaming status.
 
@@ -440,7 +447,7 @@ class Streaming(BaseActivity):
         self.name = extra.pop('details', name)
         self.game = extra.pop('state', None)
         self.url = url
-        self.details = extra.pop('details', self.name) # compatibility
+        self.details = extra.pop('details', self.name)  # compatibility
         self.assets = extra.pop('assets', {})
 
     @property
@@ -491,6 +498,7 @@ class Streaming(BaseActivity):
 
     def __hash__(self):
         return hash(self.name)
+
 
 class Spotify:
     """Represents a Spotify listening activity from Discord. This is a special case of
@@ -561,7 +569,7 @@ class Spotify:
 
     def to_dict(self):
         return {
-            'flags': 48, # SYNC | PLAY
+            'flags': 48,  # SYNC | PLAY
             'name': 'Spotify',
             'assets': self._assets,
             'party': self._party,
@@ -651,6 +659,7 @@ class Spotify:
         """:class:`str`: The party ID of the listening party."""
         return self._party.get('id', '')
 
+
 class CustomActivity(BaseActivity):
     """Represents a Custom activity from Discord.
 
@@ -728,7 +737,7 @@ class CustomActivity(BaseActivity):
         return o
 
     def __eq__(self, other):
-        return (isinstance(other, CustomActivity) and other.name == self.name and other.emoji == self.emoji)
+        return isinstance(other, CustomActivity) and other.name == self.name and other.emoji == self.emoji
 
     def __ne__(self, other):
         return not self.__eq__(other)

@@ -4,6 +4,7 @@
 The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
+Copyright (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -27,10 +28,11 @@ DEALINGS IN THE SOFTWARE.
 import asyncio
 import datetime
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from .scheduled_event import GuildScheduledEvent
+    from .abc import Snowflake, Messageable
 
 from .errors import NoMoreItems
 from .utils import time_snowflake, maybe_coroutine
@@ -38,6 +40,7 @@ from .object import Object
 from .audit_logs import AuditLogEntry
 
 OLDEST_OBJECT = Object(id=0)
+
 
 class _AsyncIterator:
     __slots__ = ()
@@ -99,8 +102,10 @@ class _AsyncIterator:
         else:
             return msg
 
+
 def _identity(x):
     return x
+
 
 class _ChunkedAsyncIterator(_AsyncIterator):
     def __init__(self, iterator, max_size):
@@ -122,6 +127,7 @@ class _ChunkedAsyncIterator(_AsyncIterator):
                 n += 1
         return ret
 
+
 class _MappedAsyncIterator(_AsyncIterator):
     def __init__(self, iterator, func):
         self.iterator = iterator
@@ -131,6 +137,7 @@ class _MappedAsyncIterator(_AsyncIterator):
         # this raises NoMoreItems and will propagate appropriately
         item = await self.iterator.next()
         return await maybe_coroutine(self.func, item)
+
 
 class _FilteredAsyncIterator(_AsyncIterator):
     def __init__(self, iterator, predicate):
@@ -151,8 +158,9 @@ class _FilteredAsyncIterator(_AsyncIterator):
             if ret:
                 return item
 
+
 class ReactionIterator(_AsyncIterator):
-    def __init__(self, message, emoji, limit=100, after=None):
+    def __init__(self, message, emoji, limit: int = 100, after: Optional['Snowflake'] = None):
         self.message = message
         self.limit = limit
         self.after = after
@@ -199,6 +207,7 @@ class ReactionIterator(_AsyncIterator):
                     else:
                         await self.users.put(User(state=self.state, data=element))
 
+
 class HistoryIterator(_AsyncIterator):
     """Iterator for receiving a channel's message history.
 
@@ -233,8 +242,13 @@ class HistoryIterator(_AsyncIterator):
         ``True`` if `after` is specified, otherwise ``False``.
     """
 
-    def __init__(self, messageable, limit: int,
-                 before=None, after=None, around=None, oldest_first=None):
+    def __init__(self,
+                 messageable: 'Messageable',
+                 limit: int,
+                 before: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 after: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 around: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 oldest_first: Optional[bool] = None):
 
         if isinstance(before, datetime.datetime):
             before = Object(id=time_snowflake(before, high=False))
@@ -249,10 +263,10 @@ class HistoryIterator(_AsyncIterator):
             self.reverse = oldest_first
 
         self.messageable = messageable
-        self.limit = limit
-        self.before = before
-        self.after = after or OLDEST_OBJECT
-        self.around = around
+        self.limit: int = limit
+        self.before: Optional[Object] = before
+        self.after: Optional[Object] = after or OLDEST_OBJECT
+        self.around: Optional[Object] = around
 
         self._filter = None  # message dict -> bool
 
@@ -312,7 +326,7 @@ class HistoryIterator(_AsyncIterator):
         while self._get_retrieve():
             data = await self._retrieve_messages(self.retrieve)
             if len(data) < 100:
-                self.limit = 0 # terminate the infinite loop
+                self.limit = 0  # terminate the infinite loop
 
             if self.reverse:
                 data = reversed(data)
@@ -332,7 +346,7 @@ class HistoryIterator(_AsyncIterator):
         if self._get_retrieve():
             data = await self._retrieve_messages(self.retrieve)
             if len(data) < 100:
-                self.limit = 0 # terminate the infinite loop
+                self.limit = 0  # terminate the infinite loop
 
             if self.reverse:
                 data = reversed(data)
@@ -376,13 +390,20 @@ class HistoryIterator(_AsyncIterator):
             return data
         return []
 
+
 class AuditLogIterator(_AsyncIterator):
-    def __init__(self, guild, limit=None, before=None, after=None, oldest_first=None, user_id=None, action_type=None):
+    def __init__(self,
+                 guild,
+                 limit=None,
+                 before=None,
+                 after=None,
+                 oldest_first=None,
+                 user_id=None,
+                 action_type=None):
         if isinstance(before, datetime.datetime):
             before = Object(id=time_snowflake(before, high=False))
         if isinstance(after, datetime.datetime):
             after = Object(id=time_snowflake(after, high=True))
-
 
         if oldest_first is None:
             self.reverse = after is not None
@@ -400,11 +421,9 @@ class AuditLogIterator(_AsyncIterator):
         self._users = {}
         self._state = guild._state
 
-
         self._filter = None  # entry dict -> bool
 
         self.entries = asyncio.Queue()
-
 
         if self.reverse:
             self._strategy = self._after_strategy
@@ -462,7 +481,7 @@ class AuditLogIterator(_AsyncIterator):
         if self._get_retrieve():
             users, data = await self._strategy(self.retrieve)
             if len(data) < 100:
-                self.limit = 0 # terminate the infinite loop
+                self.limit = 0  # terminate the infinite loop
 
             if self.reverse:
                 data = reversed(data)
@@ -509,7 +528,11 @@ class GuildIterator(_AsyncIterator):
     after: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
         Object after which all guilds must be.
     """
-    def __init__(self, bot, limit: int, before=None, after=None):
+    def __init__(self,
+                 bot,
+                 limit: int,
+                 before: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 after: Optional[Union['Snowflake', datetime.datetime]] = None):
 
         if isinstance(before, datetime.datetime):
             before = Object(id=time_snowflake(before, high=False))
@@ -607,6 +630,7 @@ class GuildIterator(_AsyncIterator):
             self.after = Object(id=int(data[0]['id']))
         return data
 
+
 class MemberIterator(_AsyncIterator):
     def __init__(self, guild, limit=1000, after=None):
 
@@ -661,14 +685,26 @@ class MemberIterator(_AsyncIterator):
 
 
 class EventUsersIterator(_AsyncIterator):
-    def __init__(self, event: 'GuildScheduledEvent', limit=100, before=None, after=None, with_member=False):
+    def __init__(self,
+                 event: 'GuildScheduledEvent',
+                 limit: int = 100,
+                 before: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 after: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 with_member: bool = False):
         self.guild = event.guild
         self.guild_id = event.guild_id
         self.state = event._state
         self.event = event
         self.limit = limit
-        self.before = before
-        self.after = after
+
+        if isinstance(before, datetime.datetime):
+            before = Object(id=time_snowflake(before, high=True))
+        if isinstance(after, datetime.datetime):
+            after = Object(id=time_snowflake(after, high=True))
+
+        self.before: Optional[Object] = before
+        self.after: Optional[Object] = after
+
         self.with_member = with_member
         self.users = asyncio.Queue()
         self.getter = event._state.http.get_guild_event_users

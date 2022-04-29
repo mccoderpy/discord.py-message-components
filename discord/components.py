@@ -507,17 +507,17 @@ class Modal:
         A developer-defined identifier for the component, max 100 characters
     title: :class:`str`
         The title of the popup modal, max 45 characters
-    components: List[Union[ActionRow, List[TextInput]],]
-        Between 1 and 5 (inclusive) components that make up the modal
+    components: List[Union[ActionRow, List[TextInput], TextInput]]
+        Between 1 and 5 (inclusive) components that make up the modal.
     """
     def __init__(self,
                  custom_id: str,
                  title: str,
-                 components: typing.List[Union['ActionRow', 'List']]) -> None:
+                 components: typing.List[Union['ActionRow', List['TextInput']]]) -> None:
         # TODO: Add Error handling
         self.custom_id = custom_id
         self.title = title
-        self.components = []
+        self.components: List[ActionRow] = []
         for c in components:
             if isinstance(c, list):
                 c = ActionRow(*c)
@@ -562,7 +562,7 @@ class TextInput:
         The minimum input length for a text input, min 0, max 4000
     max_length: Optional[:class:`int`]
         The maximum input length for a text input, min 1, max 4000
-    requiered: Optional[:class:`bool`] = True
+    required: Optional[:class:`bool`] = True
         Whether this component is required to be filled, default True
     value: Optional[:class:`str`]
         A pre-filled value for this component, max 4000 characters
@@ -624,7 +624,7 @@ class ActionRow:
         The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`or 1 :class:`SelectMenu`.
 
     .. note ::
-        For more information about ActionRow's visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+        For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
     """
 
     def __init__(self, *components):
@@ -632,10 +632,12 @@ class ActionRow:
         for component in components:
             if isinstance(component, (Button, SelectMenu, TextInput)):
                 self.components.append(component)
+            elif isinstance(component, self.__class__):
+                raise InvalidArgument('An ActionRow could not contain another ActionRow')
             elif isinstance(component, dict):
-                if not component.get('type', None) in [2, 3]:
-                    raise InvalidArgument('If you use an Dict instead of Button or SelectMenu you have to pass an type between 2 or 3')
-                self.components.append({2: Button, 3: SelectMenu, 4: Modal}.get(component.get('type')).from_dict(component))
+                if not component.get('type', None) in [2, 3, 4]:
+                    raise InvalidArgument('If you use a Dict instead of Button, SelectMenu or TextInput you have to provide the type')
+                self.components.append({2: Button, 3: SelectMenu, 4: TextInput}.get(component.get('type')).from_dict(component))
     
     def __repr__(self):
         return f'<ActionRow components={self.components}>'
@@ -649,7 +651,7 @@ class ActionRow:
         base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
         objects = len([i['components'] for i in base])
         if any([any([part['type'] == 2]) and any([part['type'] in (3, 4)]) for part in base]):
-            raise InvalidArgument('An ActionRow containing a SelectMenu cannot also contain buttons or TextInput')
+            raise InvalidArgument('An ActionRow containing a SelectMenu cannot also contain Buttons\' or a TextInput')
         if any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
             raise InvalidArgument('An ActionRow can contain only one SelectMenu')
         if any([any([part['type'] == 4]) and len(part) > 1 for part in base]):
@@ -667,7 +669,7 @@ class ActionRow:
     def __invert__(self):
         return self.components
 
-    def __getitem__(self, item) -> Union[Button, SelectMenu, None]:
+    def __getitem__(self, item) -> Union[Button, SelectMenu, TextInput]:
         return self.components[item]
 
     def __setitem__(self, index, component):

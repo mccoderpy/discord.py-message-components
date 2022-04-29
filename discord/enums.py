@@ -303,7 +303,7 @@ class ButtonStyle(Enum):
     Represents the Style for a :class:`discord.Button`
 
     .. note ::
-        For more information about the Button-Styles, visit the `Discord-APIMethodes Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
+        For more information about the Button-Styles, visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons-button-styles>`_.
 
     """
 
@@ -436,7 +436,7 @@ class TimestampStyle(Enum):
     """
     The Style to use in :meth:`discord.utils.styled_timestamp`.
 
-    See Also:  `The Discord-APIMethodes-Documentation <https://discord.com/developers/docs/reference#message-formating-timestamp-styles>`_
+    See Also:  `The Discord-API-Documentation <https://discord.com/developers/docs/reference#message-formating-timestamp-styles>`_
     """
 
     short_time  = 't'
@@ -461,64 +461,66 @@ class TimestampStyle(Enum):
 
 
 class Locale(Enum):
+    english_US = 'en-US'
     en_US = 'en-US'
+    english_GB = 'en-GB'
     en_GB = 'en-GB'
-    bg = 'bg'
     bulgarian = 'bg'
-    zh_CN = 'zh-CN'
+    bg = 'bg'
     chinese_china = 'zh-CN'
-    zh_TW = 'zh-TW'
+    zh_CN = 'zh-CN'
     chinese_taiwan = 'zh-TW'
-    hr = 'hr'
+    zh_TW = 'zh-TW'
     croatian = 'hr'
-    cs = 'cs'
+    hr = 'hr'
     czech = 'cs'
-    da = 'da'
+    cs = 'cs'
     danish = 'da'
-    nl = 'nl'
+    da = 'da'
     dutch = 'nl'
-    fi = 'fi'
+    nl = 'nl'
     finnish = 'fi'
-    fr = 'fr'
+    fi = 'fi'
     french = 'fr'
-    de = 'de'
+    fr = 'fr'
     german = 'de'
-    el = 'el'
+    de = 'de'
     greek = 'el'
-    hi = 'hi'
+    el = 'el'
     hindi = 'hi'
-    hu = 'hu'
+    hi = 'hi'
     hungarian = 'hu'
-    it = 'it'
+    hu = 'hu'
     italian = 'it'
-    ja = 'ja'
+    it = 'it'
     japanese = 'ja'
-    ko = 'ko'
+    ja = 'ja'
     korean = 'ko'
-    lt = 'lt'
+    ko = 'ko'
     lithuanian = 'lt'
-    no = 'no'
+    lt = 'lt'
     norwegian = 'no'
-    pl = 'pl'
+    no = 'no'
     polish = 'pl'
-    pt_BR = 'pt-BR'
+    pl = 'pl'
     portuguese_brazil = 'pt-BR'
-    ro = 'ro'
+    pt_BR = 'pt-BR'
     romanian = 'ro'
-    ru = 'ru'
+    ro = 'ro'
     russian = 'ru'
-    es_ES = 'es-ES'
+    ru = 'ru'
     spanish_spain = 'es-ES'
-    sv_SE = 'sv-SE'
+    es_ES = 'es-ES'
     swedish = 'sv-SE'
-    th = 'th'
+    sv_SE = 'sv-SE'
     thai = 'th'
-    tr = 'tr'
+    th = 'th'
     turkish = 'tr'
-    uk = 'uk'
+    tr = 'tr'
     ukrainian = 'uk'
-    vi = 'vi'
+    uk = 'uk'
     vietnamese = 'vi'
+    vi = 'vi'
 
 
 class AutoArchiveDuration(Enum):

@@ -57,7 +57,7 @@ class RoleTags:
     def __init__(self, data):
         self.bot_id = _get_as_snowflake(data, 'bot_id')
         self.integration_id = _get_as_snowflake(data, 'integration_id')
-        # NOTE: The APIMethodes returns "null" for this if it's valid, which corresponds to None.
+        # NOTE: The API returns "null" for this if it's valid, which corresponds to None.
         # This is different from other fields where "null" means "not there".
         # So in this case, a value of None is the same as True.
         # Which means we would need a different sentinel. For this purpose I used ellipsis.

@@ -158,7 +158,6 @@ class Embed:
         self = cls.__new__(cls)
 
         # fill in the basic fields
-
         self.title = data.get('title', EmptyEmbed)
         self.type = data.get('type', EmptyEmbed)
         self.description = data.get('description', EmptyEmbed)
@@ -376,6 +375,10 @@ class Embed:
         If the attribute has no value then :attr:`Empty` is returned.
         """
         return EmbedProxy(getattr(self, '_video', {}))
+
+    @video.setter
+    def video(self, value):
+        self._video = value
 
     @property
     def provider(self):
@@ -618,5 +621,5 @@ class Embed:
 
         if self.title:
             result['title'] = self.title
-
         return result
+

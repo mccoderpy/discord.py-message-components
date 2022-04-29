@@ -1399,9 +1399,9 @@ class AutoShardedConnectionState(ConnectionState):
         self._ready_task = None
 
         # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
-        self.dispatch('request_sync_commands')
         self.call_handlers('ready')
         self.dispatch('ready')
+        self.dispatch('request_sync_commands')
 
     def parse_ready(self, data):
         if not hasattr(self, '_ready_state'):
