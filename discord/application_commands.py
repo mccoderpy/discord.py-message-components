@@ -172,11 +172,13 @@ class ApplicationCommand:
                 options = [s.to_dict() for s in self.sub_commands]
             else:
                 options = []
+            dmp = str(self.default_member_permissions.value) if self.default_member_permissions else None
             return bool(int(self.type) == other.get('type') and self.name == other.get('name', None)
                         and self.name_localizations.to_dict() == other.get('name_localizations', {})
                         and getattr(self, 'description', '') == other.get('description', '')
                         and self.description_localizations.to_dict() == other.get('description_localizations', {})
-                        and str(self.default_member_permissions.value) == other.get('default_member_permissions', '0') and self.allow_dm == other.get('dm_permission', True)
+                        and dmp == other.get('default_member_permissions', None)
+                        and self.allow_dm == other.get('dm_permission', True)
                         and check_options(options, other.get('options', [])))
         return False
 
