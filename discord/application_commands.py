@@ -860,7 +860,6 @@ class SlashCommand(ApplicationCommand):
     @classmethod
     def from_dict(cls, state, data):
         self: cls = cls.__new__(cls)
-        super(self).__init__(1, **data)
         dmp = data.get('default_member_permissions', None)
         self._type = ApplicationCommandType.chat_input
         self.disabled = False
