@@ -43,6 +43,7 @@ from .context import Context
 from . import errors
 from .help import HelpCommand, DefaultHelpCommand
 from .cog import Cog
+from ... import ApplicationCommand
 
 
 def when_mentioned(bot, msg):
@@ -999,6 +1000,14 @@ class BotBase(GroupMixin):
                                             sub_cmd.parent = existing_group
                                             sub_cmd.disabled = False
                                             existing_group._sub_commands[sub_cmd.name] = sub_cmd
+                                        if command.description != 'No Description':
+                                            existing_command.description = command.description
+                                        existing_group.name_localizations.update(command.name_localizations)
+                                        existing_group.description_localizations.update(
+                                            command.description_localizations)
+                                        # maybe remove the if-statement in the future
+                                        if command.default_required_permissions:
+                                            existing_group.default_required_permissions = command.default_required_permissions
                                         continue
                                     else:
                                         for sub_cmd in sub_command.sub_commands:
@@ -1019,10 +1028,11 @@ class BotBase(GroupMixin):
 
                     if command.description != 'No Description':
                         existing_command.description = command.description
-
+                    existing_command.name_localizations.update(command.name_localizations)
+                    existing_command.description_localizations.update(command.description_localizations)
                     # maybe remove the if-statement in the future
-                    if command.default_permission is not True:
-                        existing_command.default_permission = command.default_permission
+                    if command.default_member_permissions:
+                        existing_command.member_required_permissions = command.default_member_permissions
 
                 else:
                     self._application_commands_by_type[cmd_type][command.name] = command
@@ -1060,10 +1070,12 @@ class BotBase(GroupMixin):
                                                 sub_cmd.parent = existing_group
                                                 sub_cmd.disabled = False
                                                 existing_group._sub_commands[sub_cmd.name] = sub_cmd
+                                            existing_group.name_localizations.update(sub_command.name_localizations)
+                                            existing_group.description_localizations.update(sub_command.description_localizations)
                                             continue
                                         else:
                                             for sub_cmd in sub_command.sub_commands:
-                                                command.disabled = False
+                                                sub_cmd.disabled = False
                                             existing_command._sub_commands[sub_command.name] = sub_command
 
                                     # set the parent of the subcommand to the existing command
@@ -1072,14 +1084,16 @@ class BotBase(GroupMixin):
                         else:
                             # if its not a slash-command overwrite the existing one
                             self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
+
                             continue
 
                         if command.description != 'No Description':
                             existing_command.description = command.description
-
+                        existing_command.name_localizations.update(command.name_localizations)
+                        existing_command.description_localizations.update(command.description_localizations)
                         # maybe remove the if-statement in the future
-                        if command.default_permission is not True:
-                            existing_command.default_permission = command.default_permission
+                        if command.default_member_permissions:
+                            existing_command.default_member_permissions = command.default_member_permissions
 
                     else:
                         self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command

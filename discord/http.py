@@ -450,7 +450,7 @@ class HTTPClient:
         return self.request(r, json=fields)
 
     def get_application_commands(self, application_id, command_id=None, guild_id=None):
-        return self.request(Route('GET', f'/applications/{application_id}{f"/guilds/{guild_id}"if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}'))
+        return self.request(Route('GET', f'/applications/{application_id}{f"/guilds/{guild_id}"if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}?with_localizations=true?'))
 
     def create_application_command(self, application_id, data, guild_id=None):
         if guild_id:

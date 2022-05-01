@@ -38,7 +38,7 @@ __all__ = (
     'Cog',
 )
 
-from ... import InvalidArgument
+from ... import InvalidArgument, Permissions
 from discord.application_commands import *
 
 
@@ -513,17 +513,25 @@ class Cog(metaclass=CogMeta):
 
     @classmethod
     def slash_command(cls,
-                      name: Optional[str] = None,
-                      description: str = 'No description',
-                      default_permission: bool = True,
-                      options: List['SlashCommandOption'] = [],
-                      guild_ids: List[int] = None,
-                      connector: Dict[str, str] = {},
-                      option_descriptions: Dict[str, str] = {},
+                      name: str = None,
+                      name_localizations: Optional[Localizations] = Localizations(),
+                      description: str = None,
+                      description_localizations: Optional[Localizations] = Localizations(),
+                      allow_dm: bool = True,
+                      default_required_permissions: Optional['Permissions'] = None,
+                      options: Optional[List] = [],
+                      guild_ids: Optional[List[int]] = None,
+                      connector: Optional[dict] = {},
+                      option_descriptions: Optional[dict] = {},
+                      option_descriptions_localizations: Optional[Dict[str, Localizations]] = {},
                       base_name: Optional[str] = None,
+                      base_name_localizations: Optional[Localizations] = Localizations(),
                       base_desc: Optional[str] = None,
+                      base_desc_localizations: Optional[Localizations] = Localizations(),
                       group_name: Optional[str] = None,
-                      group_desc: Optional[str] = None) -> Callable[
+                      group_name_localizations: Optional[Localizations] = Localizations(),
+                      group_desc: Optional[str] = None,
+                      group_desc_localizations: Optional[Localizations] = Localizations()) -> Callable[
         [Awaitable[Any]], Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]
     ]:
         """
@@ -538,14 +546,23 @@ class Cog(metaclass=CogMeta):
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
         :type name: Optional[:class:`str`]
+        :param name_localizations:
+            Localizations object for name field. Values follow the same restrictions as :param:`name
+        :type name_localizations: Optional[:class:`discord.Localizations`]`
         :param description:
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
         :type description: Optional[:class:`str`]
-        :param default_permission: Optional[:class:`bool`]
-            Whether the command should be usable by any user by default, default ``True``.
-            If set to ``False`` the command will not be available in Direct Messages.
-        :type default_permission: Optional[:class:`bool`]
+        :param description_localizations:
+            Localizations object for description field. Values follow the same restrictions as :param:`description`
+        :type description_localizations: Optional[:class:`discord.Localizations`]
+        :param allow_dm: Optional[:class:`bool`]
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+            By default, commands are visible.
+        :type allow_dm: Optional[:class:`bool`]
+        :param default_required_permissions:
+             Permissions that a Member needs by default to execute(see) the command.
+        :type default_required_permissions: Optional[:class:`discord.Permissions`]
         :param options:
             A list of max. 25 options for the command. If not provided the options will be generated
             using :meth:`generate_options` that creates the options out of the function parameters.
@@ -624,7 +641,13 @@ class Cog(metaclass=CogMeta):
                 raise TypeError('The slash-command function registered  must be a coroutine.')
             _name = (name or actual.__name__).lower()
             _description = description or ((inspect.cleandoc(actual.__doc__)[:100]) if actual.__doc__ else 'No Description')
-            _options = options or generate_options(actual, descriptions=option_descriptions, connector=connector, is_cog=True)
+            _options = options or generate_options(
+                actual,
+                descriptions=option_descriptions,
+                descriptions_localizations=option_descriptions_localizations,
+                connector=connector,
+                is_cog=True
+            )
             if group_name and not base_name:
                 raise InvalidArgument('You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.')
             guild_cmds = []
@@ -642,12 +665,15 @@ class Cog(metaclass=CogMeta):
                             base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name] =\
                                 SlashCommand(cog=cls,
                                              name=base_name,
+                                             name_localizations=base_name_localizations,
                                              description=base_desc or 'No Description',
-                                             default_permission=default_permission,
+                                             description_localizations=base_desc_localizations,
+                                             default_member_permissions=default_required_permissions,
                                              guild_id=guild_id)
                         else:
+                            base_command.name_localizations.update(base_name_localizations)
                             base_command.description = base_desc or base_command.description
-                            base_command.default_permission = default_permission
+                            base_command.description_localizations.update(base_desc_localizations)
                         base = base_command
                     if group_name:
                         try:
@@ -657,47 +683,55 @@ class Cog(metaclass=CogMeta):
                                 base_name]._sub_commands[group_name] = SubCommandGroup(cog=cls,
                                                                                        parent=base_command,
                                                                                        name=group_name,
+                                                                                       name_localizations=group_name_localizations,
                                                                                        description=group_desc or 'No Description',
+                                                                                       description_localizations=group_desc_localizations,
                                                                                        guild_id=guild_id)
                         else:
+                            sub_command_group.name_localizations.update(group_name_localizations)
                             sub_command_group.description = group_desc or sub_command_group.description
+                            sub_command_group.description_localizations.update(group_desc_localizations)
                         base = sub_command_group
                     if base:
                         base._sub_commands[_name] = SubCommand(cog=cls,
-                                                               parent=base,
-                                                               name=_name,
+                                                               parent=base, name=_name,
+                                                               name_localizations=name_localizations,
                                                                description=_description,
+                                                               description_localizations=description_localizations,
                                                                options=_options,
                                                                connector=connector,
                                                                func=actual)
                         guild_cmds.append(base._sub_commands[_name])
                     else:
                         cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name] =\
-                            SlashCommand(cog=cls,
-                                         name=_name,
-                                         description=_description,
-                                         default_permission=default_permission,
-                                         options=_options,
-                                         func=actual,
-                                         guild_id=guild_id,
-                                         connector=connector)
+                            SlashCommand(
+                                cog=cls,
+                                name=_name,
+                                name_localizations=name_localizations,
+                                description=_description,
+                                description_localizations=description_localizations,
+                                default_member_permissions=default_required_permissions,
+                                options=_options,
+                                guild_id=guild_id,
+                                connector=connector
+                            )
                         guild_cmds.append(cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name])
 
                 if base_name:
                     base = GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
-                                                 default_permission=default_permission, options=_options,
-                                                 guild_ids=guild_ids, connector=connector,
+                                                 default_member_permissions=default_required_permissions,
+                                                 options=_options, guild_ids=guild_ids, connector=connector,
                                                  commands=guild_cmds)
                     if group_name:
-                        base = GuildOnlySubCommandGroup(cog=cls, parent=base, name=_name,
-                                                        description=_description, default_permission=default_permission,
+                        base = GuildOnlySubCommandGroup(cog=cls, parent=base, name=_name, description=_description,
+                                                        default_member_permissions=default_required_permissions,
                                                         options=_options, guild_ids=guild_ids, connector=connector)
                     return GuildOnlySubCommand(cog=cls, parent=base, name=_name, description=_description,
                                                options=_options, func=actual, guild_ids=guild_ids, connector=connector,
                                                commands=guild_cmds)
                 return GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
-                                             default_permission=default_permission, options=_options,
-                                             func=actual, guild_ids=guild_ids, connector=connector)
+                                             default_member_permissions=default_required_permissions,
+                                             options=_options, func=actual, guild_ids=guild_ids, connector=connector)
             else:
                 base, base_command, sub_command_group = None, None, None
                 if base_name:
@@ -707,46 +741,65 @@ class Cog(metaclass=CogMeta):
                         base_command = cls.__application_commands_by_type__['chat_input'][base_name] = SlashCommand(
                             cog=cls,
                             name=base_name,
+                            name_localizations=base_name_localizations,
                             description=base_desc or 'No Description',
-                            default_permission=default_permission,
+                            description_localizations=base_desc_localizations,
+                            default_member_permissions=default_required_permissions,
+                            allow_dm=allow_dm,
                             func=actual)
                     else:
+                        base_command.name_localizations.update(base_name_localizations)
                         base_command.description = base_desc or base_command.description
-                        base_command.default_permission = default_permission
+                        base_command.description_localizations.update(base_desc_localizations)
+                        base_command.allow_dm = allow_dm
                     base = base_command
                 if group_name:
                     try:
                         sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]
                     except KeyError:
                         sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[
-                            group_name] = SubCommandGroup(cog=cls,
-                                                          parent=base_command,
-                                                          name=group_name,
-                                                          description=group_desc or 'No Description')
+                            group_name] = SubCommandGroup(
+                            parent=base_command,
+                            name=group_name,
+                            name_localizations=group_name_localizations,
+                            description=group_desc or 'No Description',
+                            description_localizations=group_desc_localizations
+                        )
                     else:
+                        sub_command_group.name_localizations.update(group_name_localizations)
                         sub_command_group.description = group_desc or sub_command_group.description
+                        sub_command_group.description_localizations.update(group_desc_localizations)
                     base = sub_command_group
                 if base:
                     command = base._sub_commands[_name] = SubCommand(cog=cls,
-                                                                     parent=base,
-                                                                     name=_name,
+                                                                     parent=base, name=_name,
+                                                                     name_localizations=name_localizations,
                                                                      description=_description,
+                                                                     description_localizations=description_localizations,
                                                                      options=_options,
-                                                                     func=actual, connector=connector)
+                                                                     func=actual,
+                                                                     connector=connector)
                 else:
                     command = cls.__application_commands_by_type__['chat_input'][_name] = SlashCommand(
                         cog=cls,
-                        name=_name, description=_description,
-                        default_permission=default_permission,
-                        options=_options, func=actual,
-                        connector=connector)
+                        name=_name,
+                        name_localizations=name_localizations,
+                        description=_description or 'No Description',
+                        description_localizations=description_localizations,
+                        default_member_permissions=default_required_permissions,
+                        allow_dm=allow_dm,
+                        func=actual,
+                        connector=connector
+                    )
                 return command
         return decorator
 
     @classmethod
     def message_command(cls,
                         name: str = None,
-                        default_permission: bool = True,
+                        name_localizations: Optional[Localizations] = Localizations(),
+                        default_required_permissions: Optional['Permissions'] = None,
+                        allow_dm: Optional[bool] = True,
                         guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], MessageCommand]:
         """
         A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
@@ -762,9 +815,11 @@ class Cog(metaclass=CogMeta):
         name: Optional[:class:`str`]
             The name of the message-command, default to the functions name.
             Must be between 1-32 characters long.
-        default_permission: Optional[:class:`bool`]
-            Whether the command should be usable by any user by default, default ``True``.
-            If set to ``False`` the command will not be available in Direct Messages.
+        default_required_permission: Optional[:class:`Permissions`]
+            Permissions that a Member needs by default to execute(see) the command.
+        allow_dm: Optional[:class:`discord.Permissions`]
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+            By default, commands are visible.
         guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
 
@@ -788,7 +843,9 @@ class Cog(metaclass=CogMeta):
             cmd = MessageCommand(
                 cog=cls,
                 name=_name,
-                default_permission=default_permission,
+                name_localizations=name_localizations,
+                default_member_permissions=default_required_permissions,
+                allow_dm=allow_dm,
                 func=actual,
                 guild_ids=guild_ids
             )
@@ -811,7 +868,9 @@ class Cog(metaclass=CogMeta):
     @classmethod
     def user_command(cls,
                      name: str = None,
-                     default_permission: bool = True,
+                     name_localizations: Optional[Localizations] = Localizations(),
+                     default_required_permissions: Optional['Permissions'] = None,
+                     allow_dm: Optional[bool] = True,
                      guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], UserCommand]:
         """
        A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
@@ -827,11 +886,12 @@ class Cog(metaclass=CogMeta):
        name: Optional[:class:`str`]
            The name of the user-command, default to the functions name.
            Must be between 1-32 characters long.
-       default_permission: Optional[:class:`bool`]
-           Whether the command should be usable by any user by default, default ``True``.
-           If set to ``False`` the command will not be available in Direct Messages.
-       guild_ids: Optional[List[:class:`int`]]
-           ID's of guilds this command should be registered in. If empty, the command will be global.
+       default_member_permission: Optional[:class:`discord.Permissions`]
+           Permissions that a Member needs by default to execute(see) the command.
+    allow_dm:  :class:`bool`
+        Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+    guild_ids: Optional[List[:class:`int`]]
+        ID's of guilds this command should be registered in. If empty, the command will be global.
 
        Returns
        -------
@@ -853,7 +913,9 @@ class Cog(metaclass=CogMeta):
             cmd = UserCommand(
                 cog=cls,
                 name=_name,
-                default_permission=default_permission,
+                name_localizations=name_localizations,
+                default_member_permissions=default_required_permissions,
+                allow_dm=allow_dm,
                 func=actual,
                 guild_ids=guild_ids
             )

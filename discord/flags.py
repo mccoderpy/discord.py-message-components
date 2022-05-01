@@ -824,6 +824,30 @@ class Intents(BaseFlags):
         """
         return 1 << 14
 
+    @flag_value
+    def message_content(self):
+        """:class:`bool`: Whether to receive the content, embeds, attachments and components of a message.
+
+        This corresponds to the following events:
+
+        - :func:`on_member_update` (activities, status)
+
+        This also corresponds to the following attributes and classes:
+
+        - :attr:`Message.content`
+        - :attr:`Message.embeds`
+        - :attr:`Message.attachments`
+        - :attr:`Message.components`
+
+        For more information go to the :ref:`message-content intent documentation <https://support-dev.discord.com/hc/en-us/articles/4404772028055>`.
+
+        .. note::
+
+            Currently, this requires opting in explicitly via the developer portal as well.
+            Bots in over 100 guilds will need to apply to Discord for verification.
+        """
+        return  1 << 15
+
 @fill_with_flags()
 class MemberCacheFlags(BaseFlags):
     """Controls the library's cache policy when it comes to members.

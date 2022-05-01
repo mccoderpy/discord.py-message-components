@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import types
+from typing import Union, Any
 from collections import namedtuple
 
 
@@ -69,8 +70,6 @@ __all__ = (
     'ExpireBehavior',
     'StickerType',
 )
-
-from typing import Union, Any
 
 
 def _create_value_cls(name):
@@ -223,7 +222,7 @@ class PermissionType(Enum):
 
     # i use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
     def __str__(self):
-        return getattr(self, 'name')
+        return getattr(self.name, 'name')
 
     def __int__(self):
         return getattr(self, 'value')
@@ -246,6 +245,7 @@ class EventEntityType(Enum):
         return getattr(self, 'value')
 
 EntityType = EventEntityType
+
 
 class EventStatus(Enum):
     scheduled = 1
@@ -411,6 +411,8 @@ class OptionType(Enum):
         from .message import Attachment
         if isinstance(t, int):
             return cls.try_value(t)
+        elif isinstance(t, str):
+            return cls[t]
         if issubclass(t, str):
             return cls.string, None
         if issubclass(t, bool):
@@ -420,7 +422,10 @@ class OptionType(Enum):
         if issubclass(t, User):
             return cls.user, None
         if issubclass(t, GuildChannel):
-            return cls.channel, [t.channel_type()]
+            if hasattr(t, 'channel_type'):
+                return cls.channel, [t.channel_type()]
+            else:
+                return cls.channel, None
         if issubclass(t, Role):
             return cls.role, None
         if issubclass(t, Attachment):
@@ -591,6 +596,7 @@ class VoiceRegion(Enum):
     def __str__(self):
         return self.value
 
+
 class SpeakingState(Enum):
     none       = 0
     voice      = 1
@@ -602,6 +608,7 @@ class SpeakingState(Enum):
 
     def __int__(self):
         return self.value
+
 
 class VerificationLevel(Enum):
     none              = 0
@@ -616,6 +623,7 @@ class VerificationLevel(Enum):
     def __str__(self):
         return self.name
 
+
 class ContentFilter(Enum):
     disabled    = 0
     no_role     = 1
@@ -624,10 +632,12 @@ class ContentFilter(Enum):
     def __str__(self):
         return self.name
 
+
 class UserContentFilter(Enum):
     disabled    = 0
     friends     = 1
     all_messages = 2
+
 
 class FriendFlags(Enum):
     noone = 0
@@ -636,9 +646,11 @@ class FriendFlags(Enum):
     guild_and_friends = 3
     everyone = 4
 
+
 class Theme(Enum):
     light = 'light'
     dark = 'dark'
+
 
 class Status(Enum):
     online = 'online'
@@ -651,6 +663,7 @@ class Status(Enum):
     def __str__(self):
         return self.value
 
+
 class DefaultAvatar(Enum):
     blurple = 0
     grey    = 1
@@ -662,57 +675,74 @@ class DefaultAvatar(Enum):
     def __str__(self):
         return self.name
 
+
 class RelationshipType(Enum):
     friend           = 1
     blocked          = 2
     incoming_request = 3
     outgoing_request = 4
 
+
 class NotificationLevel(Enum):
     all_messages  = 0
     only_mentions = 1
+
 
 class AuditLogActionCategory(Enum):
     create = 1
     delete = 2
     update = 3
 
+
 class AuditLogAction(Enum):
-    guild_update             = 1
-    channel_create           = 10
-    channel_update           = 11
-    channel_delete           = 12
-    overwrite_create         = 13
-    overwrite_update         = 14
-    overwrite_delete         = 15
-    kick                     = 20
-    member_prune             = 21
-    ban                      = 22
-    unban                    = 23
-    member_update            = 24
-    member_role_update       = 25
-    member_move              = 26
-    member_disconnect        = 27
-    bot_add                  = 28
-    role_create              = 30
-    role_update              = 31
-    role_delete              = 32
-    invite_create            = 40
-    invite_update            = 41
-    invite_delete            = 42
-    webhook_create           = 50
-    webhook_update           = 51
-    webhook_delete           = 52
-    emoji_create             = 60
-    emoji_update             = 61
-    emoji_delete             = 62
-    message_delete           = 72
-    message_bulk_delete      = 73
-    message_pin              = 74
-    message_unpin            = 75
-    integration_create       = 80
-    integration_update       = 81
-    integration_delete       = 82
+    guild_update                            = 1
+    channel_create                          = 10
+    channel_update                          = 11
+    channel_delete                          = 12
+    overwrite_create                        = 13
+    overwrite_update                        = 14
+    overwrite_delete                        = 15
+    kick                                    = 20
+    member_prune                            = 21
+    ban                                     = 22
+    unban                                   = 23
+    member_update                           = 24
+    member_role_update                      = 25
+    member_move                             = 26
+    member_disconnect                       = 27
+    bot_add                                 = 28
+    role_create                             = 30
+    role_update                             = 31
+    role_delete                             = 32
+    invite_create                           = 40
+    invite_update                           = 41
+    invite_delete                           = 42
+    webhook_create                          = 50
+    webhook_update                          = 51
+    webhook_delete                          = 52
+    emoji_create                            = 60
+    emoji_update                            = 61
+    emoji_delete                            = 62
+    message_delete                          = 72
+    message_bulk_delete                     = 73
+    message_pin                             = 74
+    message_unpin                           = 75
+    integration_create                      = 80
+    integration_update                      = 81
+    integration_delete                      = 82
+    stage_instance_create                   = 83
+    stage_instance_update                   = 84
+    stage_instance_delete                   = 85
+    sticker_create                          = 90
+    sticker_update                          = 91
+    sticker_delete                          = 92
+    scheduled_event_create                  = 100
+    scheduled_event_update                  = 101
+    scheduled_event_delete                  = 102
+    thread_create                           = 110
+    thread_update                           = 111
+    thread_delete                           = 112
+    application_command_permission_update   = 121
 
     @property
     def category(self):
@@ -752,6 +782,19 @@ class AuditLogAction(Enum):
             AuditLogAction.integration_create:  AuditLogActionCategory.create,
             AuditLogAction.integration_update:  AuditLogActionCategory.update,
             AuditLogAction.integration_delete:  AuditLogActionCategory.delete,
+            AuditLogAction.stage_instance_create: AuditLogActionCategory.create,
+            AuditLogAction.stage_instance_update: AuditLogActionCategory.update,
+            AuditLogAction.stage_instance_delete: AuditLogActionCategory.delete,
+            AuditLogAction.sticker_create:      AuditLogActionCategory.create,
+            AuditLogAction.sticker_update:      AuditLogActionCategory.update,
+            AuditLogAction.sticker_delete:      AuditLogActionCategory.delete,
+            AuditLogAction.scheduled_event_create: AuditLogActionCategory.create,
+            AuditLogAction.scheduled_event_update: AuditLogActionCategory.update,
+            AuditLogAction.scheduled_event_delete: AuditLogActionCategory.delete,
+            AuditLogAction.thread_create:           AuditLogActionCategory.create,
+            AuditLogAction.thread_update:           AuditLogActionCategory.update,
+            AuditLogAction.thread_delete:           AuditLogActionCategory.delete,
+            AuditLogAction.application_command_permission_update: AuditLogActionCategory.update
         }
         return lookup[self]
 
@@ -776,8 +819,19 @@ class AuditLogAction(Enum):
             return 'emoji'
         elif v < 80:
             return 'message'
-        elif v < 90:
+        elif v < 83:
             return 'integration'
+        elif v < 90:
+            return 'stage'
+        elif v < 100:
+            return 'sticker'
+        elif v < 110:
+            return 'scheduled_event'
+        elif v < 121:
+            return 'thread'
+        elif v == 121:
+            return 'application_command'
+
 
 class UserFlags(Enum):
     staff = 1
@@ -799,6 +853,7 @@ class UserFlags(Enum):
     certified_moderator = 262144
     bot_http_interactions = 524288
 
+
 class ActivityType(Enum):
     unknown = -1
     playing = 0
@@ -811,22 +866,27 @@ class ActivityType(Enum):
     def __int__(self):
         return self.value
 
+
 class HypeSquadHouse(Enum):
     bravery = 1
     brilliance = 2
     balance = 3
 
+
 class PremiumType(Enum):
     nitro_classic = 1
     nitro = 2
+
 
 class TeamMembershipState(Enum):
     invited = 1
     accepted = 2
 
+
 class WebhookType(Enum):
     incoming = 1
     channel_follower = 2
+
 
 class ExpireBehaviour(Enum):
     remove_role = 0
@@ -834,15 +894,17 @@ class ExpireBehaviour(Enum):
 
 ExpireBehavior = ExpireBehaviour
 
+
 class StickerType(Enum):
-    png = 1
-    apng = 2
-    lottie = 3
+    png     = 1
+    apng    = 2
+    lottie  = 3
 
     def __str__(self):
         return getattr(self, 'name', None)
 
-def try_enum(cls, val):
+
+def try_enum(cls: Enum, val: Any):
     """A function that tries to turn the value into enum ``cls``.
 
     If it fails it returns the value instead.

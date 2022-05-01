@@ -4,7 +4,7 @@
 The MIT License (MIT)
 
 Copyright (c) 2015-present Rapptz
-Copyright (c) 2021-present mccoderpy
+Copyright (c) 2022-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -33,7 +33,7 @@ from typing import Union, Optional, List, Tuple, Dict, Any, Awaitable, TYPE_CHEC
 if TYPE_CHECKING:
     from os import PathLike
     from .ext.commands import Cog
-    from .application_commands import SlashCommandOption, SubCommandGroup, SubCommand, ApplicationCommand
+    from .application_commands import SlashCommandOption, SubCommandGroup, SubCommand
 
 from . import utils
 from .file import UploadFile
@@ -41,7 +41,7 @@ from .role import Role
 from .member import Member, VoiceState
 from .emoji import Emoji
 from .errors import InvalidData
-from .permissions import PermissionOverwrite
+from .permissions import PermissionOverwrite, Permissions
 from .colour import Colour
 from .errors import InvalidArgument, ClientException
 from .channel import *
@@ -57,14 +57,16 @@ from .asset import Asset
 from .flags import SystemChannelFlags
 from .integrations import _integration_factory
 from .sticker import GuildSticker
-from .application_commands import SlashCommand, MessageCommand, UserCommand
+from .application_commands import SlashCommand, MessageCommand, UserCommand, Localizations
 
 BanEntry = namedtuple('BanEntry', 'reason user')
 _GuildLimit = namedtuple('_GuildLimit', 'emoji sticker bitrate filesize')
 
 
 async def default_callback(interaction, *args, **kwargs):
-    await interaction.respond('This command has no callback set.', hidden=True)
+    await interaction.respond('This command has no callback set.'
+                              'Probably something is being tested with him and he is not yet fully developed.',
+                              hidden=True)
 
 
 class Guild(Hashable):
@@ -206,7 +208,7 @@ class Guild(Hashable):
         self._events = {}
         self._voice_states = {}
         self._state = state
-        self._application_commands = {}
+        self._application_commands = {'chat_input': {}, 'message': {}, 'user': {}}
         self._from_data(data)
 
     def _add_channel(self, channel):
@@ -322,7 +324,7 @@ class Guild(Hashable):
             role = Role(guild=self, data=r, state=state)
             self._roles[role.id] = role
         for e in guild.get('scheduled_events', []):
-            event = state.store_event(guild=self, data=e)
+            state.store_event(guild=self, data=e)
         self.mfa_level = guild.get('mfa_level')
         self.emojis = tuple(map(lambda d: state.store_emoji(self, d), guild.get('emojis', [])))
         self.features = guild.get('features', [])
@@ -1556,7 +1558,7 @@ class Guild(Hashable):
         List[:class:`BanEntry`]
             A list of :class:`BanEntry` objects.
         """
-
+        # TODO: Add pagination via AsyncIterator class
         data = await self._state.http.get_bans(self.id)
         return [BanEntry(user=User(state=self._state, data=e['user']),
                          reason=e['reason'])
@@ -2674,50 +2676,67 @@ class Guild(Hashable):
 
     async def add_slash_command(self,
                                 name: str,
+                                name_localizations: Optional[Localizations] = Localizations(),
                                 description: str = 'No description',
-                                default_permission: bool = True,
-                                options: List[Union['SubCommandGroup', 'SubCommand', 'SlashCommandOption']] = [],
-                                connector: Dict[str, str] = {},
+                                description_localizations: Optional[Localizations] = Localizations(),
+                                default_required_permissions: Optional['Permissions'] = None,
+                                options: Optional[List[Union['SubCommandGroup', 'SubCommand', 'SlashCommandOption']]] = [],
+                                connector: Optional[Dict[str, str]] = {},
                                 func: Awaitable = default_callback,
                                 cog: Optional['Cog'] = None) -> SlashCommand:
-        command = SlashCommand(name=name,
-                               description=description,
-                               default_permission=default_permission,
-                               options=options,
-                               connector=connector,
-                               func=func,
-                               guild_id=self.id,
-                               state=self._state,
-                               cog=cog)
+        command = SlashCommand(
+            name=name,
+            name_localizations=name_localizations,
+            description=description,
+            description_localizations=description_localizations,
+            default_member_permissions=default_required_permissions,
+            options=options,
+            connector=connector,
+            func=func,
+            guild_id=self.id,
+            state=self._state,
+            cog=cog)
         return await self._register_application_command(command)
 
     async def add_message_command(self,
-                                name: str,
-                                description: str = 'No description',
-                                default_permission: bool = True,
-                                func: Awaitable = default_callback,
-                                cog: Optional['Cog'] = None) -> MessageCommand:
-        command = MessageCommand(name=name,
-                               description=description,
-                               default_permission=default_permission,
-                               func=func,
-                               guild_id=self.id,
-                               state=self._state,
-                               cog=cog)
+                                  name: str,
+                                  name_localizations: Optional[Localizations] = Localizations(),
+                                  description: str = 'No description',
+                                  description_localizations: Optional[Localizations] = Localizations(),
+                                  default_required_permissions: Optional['Permissions'] = None,
+                                  func: Awaitable = default_callback,
+                                  cog: Optional['Cog'] = None) -> MessageCommand:
+        command = MessageCommand(
+            name=name,
+            name_localizations=name_localizations,
+            description=description,
+            description_localizations=description_localizations,
+            default_member_permissions=default_required_permissions,
+            func=func,
+            guild_id=self.id,
+            state=self._state,
+            cog=cog
+        )
         return await self._register_application_command(command)
 
     async def add_user_command(self,
-                                name: str,
-                                description: str = 'No description',
-                                default_permission: bool = True,
-                                func: Awaitable = default_callback,
-                                cog: Optional['Cog'] = None) -> UserCommand:
-        command = UserCommand(name=name,
-                               description=description,
-                               default_permission=default_permission,
-                               func=func,
-                               guild_id=self.id,
-                               state=self._state,
-                               cog=cog)
+                               name: str,
+                               name_localizations: Optional[Localizations] = Localizations(),
+                               description: str = 'No description',
+                               description_localizations: Optional[Localizations] = Localizations(),
+                               default_required_permissions: Optional['Permissions'] = None,
+                               func: Awaitable = default_callback,
+                               cog: Optional['Cog'] = None) -> UserCommand:
+        command = UserCommand(
+            name=name,
+            name_localizations=name_localizations,
+            description=description,
+            description_localizations=description_localizations,
+            default_member_permissions=default_required_permissions,
+            func=func,
+            guild_id=self.id,
+            state=self._state,
+            cog=cog
+        )
         return await self._register_application_command(command)
 
