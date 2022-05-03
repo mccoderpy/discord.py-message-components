@@ -733,6 +733,14 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
     def parent_channel(self):
         return self.guild.get_channel(self.parent_id)
 
+    @property
+    def created_at(self) -> Optional[datetime]:
+        """An aware timestamp of when the thread was created in UTC.
+        .. note::
+            This timestamp only exists for threads created after 9 January 2022, otherwise returns ``None``.
+        """
+        return datetime.datetime.fromisoformat(self._thread_meta.get('create_timestamp'))
+
     def get_member(self, user_id):
         return self._members.get(user_id, None)
 
@@ -1372,133 +1380,6 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         """
         return await self.guild.create_stage_channel(name, overwrites=overwrites, category=self, reason=reason, **options)
 
-class StoreChannel(abc.GuildChannel, Hashable):
-    """Represents a Discord guild store channel.
-
-    .. container:: operations
-
-        .. describe:: x == y
-
-            Checks if two channels are equal.
-
-        .. describe:: x != y
-
-            Checks if two channels are not equal.
-
-        .. describe:: hash(x)
-
-            Returns the channel's hash.
-
-        .. describe:: str(x)
-
-            Returns the channel's name.
-
-    Attributes
-    -----------
-    name: :class:`str`
-        The channel name.
-    guild: :class:`Guild`
-        The guild the channel belongs to.
-    id: :class:`int`
-        The channel ID.
-    category_id: :class:`int`
-        The category channel ID this channel belongs to.
-    position: :class:`int`
-        The position in the channel list. This is a number that starts at 0. e.g. the
-        top channel is position 0.
-    """
-    __slots__ = ('name', 'id', 'guild', '_state', 'nsfw',
-                 'category_id', 'position', '_overwrites',)
-
-    def __init__(self, *, state, guild, data):
-        self._state = state
-        self.id = int(data['id'])
-        self._update(guild, data)
-
-    def __repr__(self):
-        return '<StoreChannel id={0.id} name={0.name!r} position={0.position} nsfw={0.nsfw}>'.format(self)
-
-    def _update(self, guild, data):
-        self.guild = guild
-        self.name = data['name']
-        self.category_id = utils._get_as_snowflake(data, 'parent_id')
-        self.position = data['position']
-        self.nsfw = data.get('nsfw', False)
-        self._fill_overwrites(data)
-
-    @staticmethod
-    def channel_type():
-        return ChannelType.store
-
-    @property
-    def _sorting_bucket(self):
-        return ChannelType.text.value
-
-    @property
-    def type(self):
-        """:class:`ChannelType`: The channel's Discord type."""
-        return ChannelType.store
-
-    @utils.copy_doc(abc.GuildChannel.permissions_for)
-    def permissions_for(self, member):
-        base = super().permissions_for(member)
-
-        # store channels do not have voice related permissions
-        denied = Permissions.voice()
-        base.value &= ~denied.value
-        return base
-
-    def is_nsfw(self):
-        """:class:`bool`: Checks if the channel is NSFW."""
-        return self.nsfw
-
-    @utils.copy_doc(abc.GuildChannel.clone)
-    async def clone(self, *, name=None, reason=None):
-        return await self._clone_impl({
-            'nsfw': self.nsfw
-        }, name=name, reason=reason)
-
-    async def edit(self, *, reason=None, **options):
-        """|coro|
-
-        Edits the channel.
-
-        You must have the :attr:`~Permissions.manage_channels` permission to
-        use this.
-
-        Parameters
-        ----------
-        name: :class:`str`
-            The new channel name.
-        position: :class:`int`
-            The new channel's position.
-        nsfw: :class:`bool`
-            To mark the channel as NSFW or not.
-        sync_permissions: :class:`bool`
-            Whether to sync permissions with the channel's new or pre-existing
-            category. Defaults to ``False``.
-        category: Optional[:class:`CategoryChannel`]
-            The new category for this channel. Can be ``None`` to remove the
-            category.
-        reason: Optional[:class:`str`]
-            The reason for editing this channel. Shows up on the audit log.
-        overwrites: :class:`dict`
-            A :class:`dict` of target (either a role or a member) to
-            :class:`PermissionOverwrite` to apply to the channel.
-
-            .. versionadded:: 1.3
-
-        Raises
-        ------
-        InvalidArgument
-            If position is less than 0 or greater than the number of channels, or if
-            the permission overwrite information is not in proper form.
-        Forbidden
-            You do not have permissions to edit the channel.
-        HTTPException
-            Editing the channel failed.
-        """
-        await self._edit(options, reason=reason)
 
 class DMChannel(abc.Messageable, Hashable):
     """Represents a Discord direct message channel.
@@ -1612,6 +1493,7 @@ class DMChannel(abc.Messageable, Hashable):
 
         from .message import PartialMessage
         return PartialMessage(channel=self, id=message_id)
+
 
 class GroupChannel(abc.Messageable, Hashable):
     """Represents a Discord group channel.

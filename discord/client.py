@@ -247,7 +247,7 @@ class Client:
             For testing purposes it is recommended to use guild-only commands because they are available immediately.
 
     delete_not_existing_commands: :class:`bool`
-        Whether to remove global and guild application-commands that are not in the code anymore, default ``True``.
+        Whether to remove global and guild-only application-commands that are not in the code anymore, default ``True``.
 
     Attributes
     -----------
