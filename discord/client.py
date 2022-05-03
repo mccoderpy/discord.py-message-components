@@ -33,12 +33,15 @@ import sys
 import re
 import traceback
 import warnings
-from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable
+from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .permissions import Permissions
 
 import aiohttp
-
 from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
-    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType
+    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType, \
+    Localizations
 from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
@@ -1311,17 +1314,33 @@ class Client:
 
         return decorator
 
-    def slash_command(self, name: str = None, description: str = None, default_permission: bool = True,
-                      options: list = [], guild_ids: List[int] = None, connector: dict = {},
-                      option_descriptions: dict = {}, base_name: str = None, base_desc: str = None,
-                      group_name: str = None, group_desc: str = None) -> Callable[
-                                                                         [Awaitable[Any]],
-                                                                         Union[
-                                                                             SlashCommand,
-                                                                             GuildOnlySlashCommand,
-                                                                             SubCommand,
-                                                                             GuildOnlySubCommand
-                                                                         ]]:
+    def slash_command(self,
+                      name: str = None,
+                      name_localizations: Optional[Localizations] = Localizations(),
+                      description: str = None,
+                      description_localizations: Optional[Localizations] = Localizations(),
+                      allow_dm: bool = True,
+                      default_required_permissions: Optional['Permissions'] = None,
+                      options: Optional[List] = [],
+                      guild_ids: Optional[List[int]] = None,
+                      connector: Optional[dict] = {},
+                      option_descriptions: Optional[dict] = {},
+                      option_descriptions_localizations: Optional[Dict[str, Localizations]] = {},
+                      base_name: Optional[str] = None,
+                      base_name_localizations: Optional[Localizations] = Localizations(),
+                      base_desc: Optional[str] = None,
+                      base_desc_localizations: Optional[Localizations] = Localizations(),
+                      group_name: Optional[str] = None,
+                      group_name_localizations: Optional[Localizations] = Localizations(),
+                      group_desc: Optional[str] = None,
+                      group_desc_localizations: Optional[Localizations] = Localizations()
+                      ) -> Callable[[Awaitable[Any]],
+                                    Union[
+                                          SlashCommand,
+                                          GuildOnlySlashCommand,
+                                          SubCommand,
+                                          GuildOnlySubCommand
+                                    ]]:
         """
         A decorator that adds a slash-command to the client.
 
@@ -1416,7 +1435,12 @@ class Client:
                 raise TypeError('The slash-command registered  must be a coroutine.')
             _name = (name or func.__name__).lower()
             _description = description if description else (inspect.cleandoc(func.__doc__)[:100] if func.__doc__ else 'No Description')
-            _options = options or generate_options(func, descriptions=option_descriptions, connector=connector)
+            _options = options or generate_options(
+                func,
+                descriptions=option_descriptions,
+                descriptions_localizations=option_descriptions_localizations,
+                connector=connector
+            )
             if group_name and not base_name:
                 raise InvalidArgument(
                     'You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.'
@@ -1434,13 +1458,18 @@ class Client:
                             base_command = self._guild_specific_application_commands[guild_id]['chat_input'][base_name]
                         except KeyError:
                             base_command = self._guild_specific_application_commands[guild_id]['chat_input'][base_name] =\
-                                SlashCommand(name=base_name,
-                                             description=base_desc or 'No Description',
-                                             default_permission=default_permission,
-                                             guild_id=guild_id)
+                                SlashCommand(
+                                    name=base_name,
+                                    name_localizations=base_name_localizations,
+                                    description=base_desc or 'No Description',
+                                    description_localizations=base_desc_localizations,
+                                    default_member_permissions=default_required_permissions,
+                                    guild_id=guild_id
+                                )
                         else:
+                            base_command.name_localizations.update(base_name_localizations)
                             base_command.description = base_desc or base_command.description
-                            base_command.default_permission = default_permission
+                            base_command.description_localizations.update(base_desc_localizations)
                         base = base_command
                     if group_name:
                         try:
@@ -1453,51 +1482,65 @@ class Client:
                             self._guild_specific_application_commands[guild_id]['chat_input'][base_name]._sub_commands[
                                 group_name] = SubCommandGroup(parent=base_command,
                                                               name=group_name,
+                                                              name_localizations=group_name_localizations,
                                                               description=group_desc or 'No Description',
+                                                              description_localizations=group_desc_localizations,
                                                               guild_id=guild_id)
                         else:
+                            sub_command_group.name_localizations.update(group_name_localizations)
                             sub_command_group.description = group_desc or sub_command_group.description
+                            sub_command_group.description_localizations.update(group_desc_localizations)
                         base = sub_command_group
                     if base:
                         base._sub_commands[_name] = SubCommand(parent=base, name=_name,
-                                                               description=_description, options=_options,
-                                                               connector=connector, func=func)
+                                                               name_localizations=name_localizations,
+                                                               description=_description,
+                                                               description_localizations=description_localizations,
+                                                               options=_options,
+                                                               connector=connector,
+                                                               func=func)
                         guild_cmds.append(base._sub_commands[_name])
                     else:
                         self._guild_specific_application_commands[guild_id]['chat_input'][_name] =\
-                            SlashCommand(name=_name, description=_description,
-                                         default_permission=default_permission, options=_options,
-                                         func=func, guild_id=guild_id, connector=connector)
+                            SlashCommand(name=_name, name_localizations=name_localizations,
+                                         description=_description, description_localizations=description_localizations,
+                                         default_member_permissions=default_required_permissions,
+                                         options=_options, func=func, guild_id=guild_id, connector=connector)
                         guild_cmds.append(self._guild_specific_application_commands[guild_id]['chat_input'][_name])
                 if base_name:
                     base = GuildOnlySlashCommand(client=self, name=_name, description=_description,
-                                                 default_permission=default_permission, options=_options,
-                                                 guild_ids=guild_ids, connector=connector,
+                                                 default_member_permissions=default_required_permissions,
+                                                 options=_options, guild_ids=guild_ids, connector=connector,
                                                  commands=guild_cmds)
                     if group_name:
                         base = GuildOnlySubCommandGroup(parent=base, client=self, name=_name, description=_description,
-                                                        default_permission=default_permission, options=_options,
-                                                        guild_ids=guild_ids, connector=connector)
+                                                        default_member_permissions=default_required_permissions,
+                                                        options=_options, guild_ids=guild_ids, connector=connector)
                     return GuildOnlySubCommand(parent=base, client=self, name=_name, description=_description,
                                                options=_options, func=func, guild_ids=guild_ids, connector=connector)
                 return GuildOnlySlashCommand(client=self, name=_name, description=_description,
-                                             default_permission=default_permission, options=_options,
-                                             func=func, guild_ids=guild_ids, connector=connector,
-                                             commands=guild_cmds)
+                                             default_member_permission=default_required_permissions, options=_options,
+                                             func=func, guild_ids=guild_ids, connector=connector, commands=guild_cmds)
             else:
                 base, base_command, sub_command_group = None, None, None
                 if base_name:
                     try:
                         base_command = self._application_commands_by_type['chat_input'][base_name]
                     except KeyError:
-                        base_command = self._application_commands_by_type['chat_input'][base_name] =\
-                            SlashCommand(name=base_name,
-                                         description=base_desc or 'No Description',
-                                         default_permission=default_permission,
-                                         func=func)
+                        base_command = self._application_commands_by_type['chat_input'][base_name] = \
+                            SlashCommand(
+                                name=base_name,
+                                name_localizations=base_name_localizations,
+                                description=base_desc or 'No Description',
+                                description_localizations=base_desc_localizations,
+                                default_member_permissions=default_required_permissions,
+                                allow_dm=allow_dm
+                            )
                     else:
+                        base_command.name_localizations.update(base_name_localizations)
                         base_command.description = base_desc or base_command.description
-                        base_command.default_permission = default_permission
+                        base_command.description_localizations.update(base_desc_localizations)
+                        base_command.allow_dm = allow_dm
                     base = base_command
                 if group_name:
                     try:
@@ -1508,28 +1551,42 @@ class Client:
                             group_name] = SubCommandGroup(
                             parent=base_command,
                             name=group_name,
-                            description=group_desc or 'No Description'
+                            name_localizations=group_name_localizations,
+                            description=group_desc or 'No Description',
+                            description_localizations=group_desc_localizations
                         )
                     else:
+                        sub_command_group.name_localizations.update(group_name_localizations)
                         sub_command_group.description = group_desc or sub_command_group.description
+                        sub_command_group.description_localizations.update(group_desc_localizations)
                     base = sub_command_group
                 if base:
-                    command = base._sub_commands[_name] = SubCommand(parent=base, name=_name,
-                                                                     description=_description, options=_options,
-                                                                     func=func, connector=connector)
+                    command = base._sub_commands[_name] = SubCommand(
+                        parent=base, name=_name,
+                        name_localizations=name_localizations,
+                        description=_description,
+                        description_localizations=description_localizations,
+                        options=_options,connector=connector,
+                        func=func)
                 else:
                     command = self._application_commands_by_type['chat_input'][_name] = SlashCommand(
-                        name=_name, description=_description,
-                        default_permission=default_permission,
-                        options=_options, func=func,
-                        connector=connector)
+                        name=_name,
+                        name_localizations=name_localizations,
+                        description=_description or 'No Description',
+                        description_localizations=description_localizations,
+                        default_member_permissions=default_required_permissions,
+                        allow_dm=allow_dm,
+                        func=func
+                    )
                 return command
         return decorator
 
     def message_command(self,
-                        name: str = None,
-                        default_permission: bool = True,
-                        guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], MessageCommand]:
+                        name: Optional[str] = None,
+                        name_localizations: Optional[Localizations] = Localizations(),
+                        default_required_permissions: Optional['Permissions'] = None,
+                        allow_dm: Optional[bool] = True,
+                        guild_ids: Optional[List[int]] = None) -> Callable[[Awaitable[Any]], MessageCommand]:
         """
         A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
         to the client.
@@ -1547,8 +1604,10 @@ class Client:
         default_permission: Optional[:class:`bool`]
             Whether the command should be usable by any user by default, default ``True``.
             If set to ``False`` the command will not be available in Direct Messages.
+        allow_dm: Optional[:class:`bool`]
+           Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
         guild_ids: Optional[List[:class:`int`]]
-            ID's of guilds this command should be registered in. If empty, the command will be global.
+           ID's of guilds this command should be registered in. If empty, the command will be global.
 
         Returns
         -------
@@ -1564,15 +1623,22 @@ class Client:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('The message-command function registered  must be a coroutine.')
             _name = name or func.__name__
-            cmd = MessageCommand(name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            cmd = MessageCommand(
+                name=_name,
+                name_localizations=name_localizations,
+                default_member_permissions=default_required_permissions,
+                allow_dm=allow_dm,
+                func=func,
+                guild_ids=guild_ids
+            )
             if guild_ids:
                 for guild_id in guild_ids:
                     try:
-                        self._guild_specific_application_commands[guild_id]['message'][cmd.name] = cmd
+                        self._guild_specific_application_commands[guild_id]['message'][cmd.name] = copy.copy(cmd)
                     except KeyError:
                         self._guild_specific_application_commands[guild_id] = {
                             'chat_input': {},
-                            'message': {cmd.name: cmd},
+                            'message': {cmd.name: copy.copy(cmd)},
                             'user': {}
                         }
             else:
@@ -1581,9 +1647,11 @@ class Client:
         return decorator
 
     def user_command(self,
-                     name: str = None,
-                     default_permission: bool = True,
-                     guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], UserCommand]:
+                     name: Optional[str] = None,
+                     name_localizations: Optional[Localizations] = Localizations(),
+                     default_required_permissions: Optional['Permissions'] = None,
+                     allow_dm: Optional[bool] = True,
+                     guild_ids: Optional[List[int]] = None) -> Callable[[Awaitable[Any]], UserCommand]:
         """
        A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
        to the client.
@@ -1600,7 +1668,9 @@ class Client:
            Must be between 1-32 characters long.
        default_permission: Optional[:class:`bool`]
            Whether the command should be usable by any user by default, default ``True``.
-           If set to ``False`` the command will not be available in Direct Messages.
+           If set to ``False`` the command will not be available in Direct Messages
+       allow_dm: Optional[:class:`bool`]
+           Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
        guild_ids: Optional[List[:class:`int`]]
            ID's of guilds this command should be registered in. If empty, the command will be global.
 
@@ -1618,16 +1688,23 @@ class Client:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('The user-command function registered  must be a coroutine.')
             _name = name or func.__name__
-            cmd = UserCommand(name=_name, default_permission=default_permission, func=func, guild_ids=guild_ids)
+            cmd = UserCommand(
+                name=_name,
+                name_localizations=name_localizations,
+                default_member_permissions=default_required_permissions,
+                allow_dm=allow_dm,
+                func=func,
+                guild_ids=guild_ids
+            )
             if guild_ids:
                 for guild_id in guild_ids:
                     try:
-                        self._guild_specific_application_commands[guild_id]['user'][cmd.name] = cmd
+                        self._guild_specific_application_commands[guild_id]['user'][cmd.name] = copy.copy(cmd)
                     except KeyError:
                         self._guild_specific_application_commands[guild_id] = {
                             'chat_input': {},
                             'message': {},
-                            'user': {cmd.name: cmd}
+                            'user': {cmd.name: copy.copy(cmd)}
                         }
             else:
                 self._application_commands_by_type['user'][cmd.name] = cmd

@@ -30,6 +30,8 @@ from collections import namedtuple
 from datetime import datetime
 from typing import Union, Optional, List, Tuple, Dict, Any, Awaitable, TYPE_CHECKING
 
+from discord.utils import _bytes_to_base64_data
+
 if TYPE_CHECKING:
     from os import PathLike
     from .ext.commands import Cog
@@ -2534,6 +2536,7 @@ class Guild(Hashable):
                                      channel: Optional[Union[StageChannel, VoiceChannel]] = None,
                                      description: Optional[str] = None,
                                      location: Optional[str] = None,
+                                     cover_image: Optional[bytes] = None,
                                      *, reason: Optional[str] = None
                                      ) -> GuildScheduledEvent:
         """|coro|
@@ -2564,6 +2567,8 @@ class Guild(Hashable):
         location: Optional[:class:`str`]
             The location where the event will take place. 1-100 characters long.
             **Must be provided if :param:`entity_type` is :class:`EventEntityType.external`**
+        cover_image: Optional[:class:`bytes`]:
+            The cover image of the scheduled event.
         reason: Optional[:class:`str`]
             The reason for scheduling the event, shows up in the audit-log.
 
@@ -2621,7 +2626,7 @@ class Guild(Hashable):
                 )
             fields['description'] = description
 
-        if location is not None and entity_type.external:
+        if location is not None:
             if 1 > len(location) > 100:
                 raise ValueError(
                     f'The length of the location must be between 1 and 100 characters long; got {len(location)}.'
@@ -2651,6 +2656,12 @@ class Guild(Hashable):
             fields['scheduled_end_time'] = end_time.isoformat()
 
         fields['privacy_level'] = 2
+
+        if cover_image:
+            if not isinstance(cover_image, bytes):
+                raise ValueError(f'cover_image must be of type bytes, not {cover_image.__class__.__name__}')
+            as_base64 = _bytes_to_base64_data(cover_image)
+            fields['image'] = as_base64
 
         data = await self._state.http.create_guild_event(guild_id=self.id, fields=fields, reason=reason)
         event = GuildScheduledEvent(state=self._state, guild=self, data=data)

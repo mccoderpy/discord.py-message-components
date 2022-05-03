@@ -58,8 +58,9 @@ __all__ = (
     'generate_options'
 )
 
+api_docs = 'https://discord.com/developers/docs'
 
-# TODO: Add a (optional) feature for automatic generated name_localizations & description_localizations by a translator
+# TODO: Add a (optional) feature for auto generated name_localizations & description_localizations by a translator
 class Localizations:
     __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])
 
@@ -91,6 +92,7 @@ class Localizations:
 
     @classmethod
     def from_dict(cls, data: Dict[str, str]) -> 'Localizations':
+        data = data or {}
         return cls(**{try_enum(cls, key): value for key, value in data.items()})
 
     def update(self, __m: 'Localizations'):
@@ -419,8 +421,13 @@ class SlashCommandOption:
                 print(type(option_type), option_type)
                 raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__}.')
         self.type = option_type
-        if (not re.match(r'^[-_\d\w\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE)) or 32 < len(name) < 1:
-            raise ValueError('The name of the option has to be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
+
+        if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE):
+            raise ValueError(
+                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
+                f'Got "{name}" with length {len(name)}.'
+            )
         self.name = name
         self.name_localizations: Localizations = name_localizations
         if 100 < len(description) < 1:
@@ -604,10 +611,12 @@ class SubCommand(SlashCommandOption):
                  options: List[SlashCommandOption] = [],
                  **kwargs):
         self.parent: Union[SubCommandGroup, SubCommand] = parent
-        if (not re.match('^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
+        if not re.match('^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
-                'The name of the Sub-Command must be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.'
-                % (name, len(name)))
+                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
+                f'Got "{name}" with length {len(name)}.'
+            )
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError('The description of the Sub-Command must be 1-100 characters long, got %s.' % len(description))
@@ -788,8 +797,12 @@ class SlashCommand(ApplicationCommand):
                          options=options,
                          connector=connector,
                          **kwargs)
-        if (not re.match(r'^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
-            raise ValueError('The name of the Slash-Command has to be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
+        if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+            raise ValueError(
+                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
+                f'Got "{name}" with length {len(name)}.'
+            )
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError('The description must be between 1 and 100 characters long, got %s.' % len(description))
@@ -1081,8 +1094,12 @@ class SubCommandGroup(SlashCommandOption):
                  commands: List[SubCommand] = [],
                  **kwargs):
         self.cog = kwargs.get('cog', None)
-        if (not re.match(r'^[\w-]{1,32}$', name)) or 32 < len(name) < 1:
-            raise ValueError('The name of the Sub-Command-Group must be 1-32 characters long and only contain lowercase a-z, _ and -. Got %s with length %s.' % (name, len(name)))
+        if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+            raise ValueError(
+                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
+                f'Got "{name}" with length {len(name)}.'
+            )
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError('The description of the Sub-Command-Group must be 1-100 characters long, got %s.' % len(description))

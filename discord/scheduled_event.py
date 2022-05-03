@@ -23,14 +23,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
+from typing_extensions import Literal
 from typing import Optional, Union, TYPE_CHECKING
-from datetime import datetime
 
+from datetime import datetime
 
 from .mixins import Hashable
 from .errors import InvalidArgument
-from .utils import _get_as_snowflake, cached_slot_property
+from .utils import _get_as_snowflake, cached_slot_property, _bytes_to_base64_data
 from .enums import PrivacyLevel, EventEntityType, EventStatus, try_enum
 from .iterators import EventUsersIterator
 
@@ -64,6 +64,7 @@ class GuildScheduledEvent(Hashable):
         self.entity_type: EventEntityType = try_enum(EventEntityType, data['entity_type'])
         self.entity_id: Optional[int] = _get_as_snowflake(data, 'entity_id')
         self._entity_meta: Optional[dict] = data.get('entity_metadata', None)
+        self.image: Optional[str] = data.get('image', None)
         creator = data.pop('creator', None)
         if creator:
             self.creator: Optional['User'] = state.store_user(data=creator)
@@ -87,6 +88,37 @@ class GuildScheduledEvent(Hashable):
         """The channel the event is scheduled in if :attr:`.entity_type` is ``stage`` or ``voice``."""
         if self.creator_id:
             return self.guild.get_channel(self.channel_id)
+
+    @property
+    def icon_url(self):
+        """:class:`Asset`: Returns the role icon asset."""
+        return self.icon_url_as()
+
+    def icon_url_as(self, *, format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp', size=1024):
+        """Returns an :class:`Asset` for the role icon.
+
+        The format must be one of 'webp', 'jpeg', or 'png'. The
+        size must be a power of 2 between 16 and 4096.
+
+        Parameters
+        -----------
+        format: :class:`str`
+            The format to attempt to convert the icon to.
+        size: :class:`int`
+            The size of the image to display.
+
+        Raises
+        ------
+        InvalidArgument
+            Bad image format passed to ``format`` or invalid ``size``.
+
+        Returns
+        --------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
+        from discord import Asset
+        return Asset._from_guild_event(self._state, self, format=format, size=size)
 
     async def edit(self, reason=None, **fields) -> 'GuildScheduledEvent':
         """|coro|
@@ -170,11 +202,12 @@ class GuildScheduledEvent(Hashable):
         except KeyError:
             end_time = self.end_time
         else:
-            if not isinstance(end_time, datetime):
-                raise TypeError(f'The end_time must be a datetime.datetime object, not {end_time.__class__.__name__}.')
-            elif end_time < datetime.utcnow():
-                raise ValueError(f'The end_time could not be in the past.')
-            fields['scheduled_end_time'] = end_time.isoformat()
+            if end_time is not None:
+                if not isinstance(end_time, datetime):
+                    raise TypeError(f'The end_time must be a datetime.datetime object, not {end_time.__class__.__name__}.')
+                elif end_time < datetime.utcnow():
+                    raise ValueError(f'The end_time could not be in the past.')
+                fields['scheduled_end_time'] = end_time.isoformat()
 
         if entity_type == 3 and not end_time:
             raise ValueError('end_time is required for external events.')
@@ -184,11 +217,12 @@ class GuildScheduledEvent(Hashable):
         except KeyError:
             start_time = self.start_time
         else:
-            if not isinstance(start_time, datetime):
-                raise TypeError(f'The start_time must be a datetime.datetime object, not {start_time.__class__.__name__}.')
-            elif start_time < datetime.utcnow():
-                raise ValueError(f'The start_time could not be in the past.')
-            fields['scheduled_start_time'] = start_time.isoformat()
+            if start_time is not None:
+                if not isinstance(start_time, datetime):
+                    raise TypeError(f'The start_time must be a datetime.datetime object, not {start_time.__class__.__name__}.')
+                elif start_time < datetime.utcnow():
+                    raise ValueError(f'The start_time could not be in the past.')
+                fields['scheduled_start_time'] = start_time.isoformat()
 
         if end_time and start_time > end_time:
             raise ValueError(f'The start_time could not be before the end_time.')
@@ -209,14 +243,25 @@ class GuildScheduledEvent(Hashable):
                 raise ValueError('The status of an scheduled event could only be changed to active or canceled.')
             fields['status']: int = status.value
 
+        try:
+            cover_image: bytes = fields.pop('cover_image')
+        except KeyError:
+            pass
+        else:
+            if cover_image is not None:
+                if not isinstance(cover_image, bytes):
+                    raise ValueError(f'cover_image must be of type bytes, not {cover_image.__class__.__name__}')
+                cover_image = _bytes_to_base64_data(cover_image)
+            fields['image'] = cover_image
+
         data = await self._state.http.edit_guild_event(guild_id=self.guild_id, event_id=self.id, reason=reason, **fields)
         self._update(data)
         return self
 
     async def users(self,
                     limit: int = 100,
-                    before: 'User' = None,
-                    after: 'User' = None,
+                    before: Union['User', datetime] = None,
+                    after: Union['User', datetime] = None,
                     with_member: bool = False) -> EventUsersIterator:
         """Returns an :class:`~discord.AsyncIterator` that enables receiving the interest users of the event.
 

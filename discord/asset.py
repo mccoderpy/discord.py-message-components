@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-2021 Rapptz & (c) 2022-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -232,6 +232,16 @@ class Asset:
             format = 'gif' if emoji.animated else static_format
 
         return cls(state, '/emojis/{0.id}.{1}'.format(emoji, format))
+
+    @classmethod
+    def _from_guild_event(cls, state, event, *, format=None, static_format='png', size=1024):
+        if not utils.valid_icon_size(size):
+            raise InvalidArgument("size must be a power of 2 between 16 and 4096")
+        if format is not None and format not in VALID_AVATAR_FORMATS:
+            raise InvalidArgument("format must be None or one of {}".format(VALID_AVATAR_FORMATS))
+        if static_format not in VALID_STATIC_FORMATS:
+            raise InvalidArgument("static_format must be one of {}".format(VALID_STATIC_FORMATS))
+        return cls(state, '/guild-events/{0.id}/{0.image}.{1}?size={2}'.format(event, format, size))
 
     def __str__(self):
         return self.BASE + self._url if self._url is not None else ''

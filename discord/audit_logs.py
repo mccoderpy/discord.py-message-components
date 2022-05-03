@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-present Rapptz & 2022 mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -97,6 +97,8 @@ class AuditLogDiff:
         return '<AuditLogDiff %s>' % values
 
 class AuditLogChanges:
+    # TODO: Add ad transformers for all the other keys
+    #  See: https://discord.com/developers/docs/resources/audit-log#audit-log-change-object-audit-log-change-key
     TRANSFORMERS = {
         'verification_level':            (None, _transform_verification_level),
         'explicit_content_filter':       (None, _transform_explicit_content_filter),
@@ -380,3 +382,37 @@ class AuditLogEntry(Hashable):
 
     def _convert_target_message(self, target_id):
         return self._get_member(target_id)
+
+    def _convert_target_stage(self, target_id):
+        stage = self.guild.get_channel(target_id)
+        if stage is None:
+            return Object(id=target_id)
+        return stage
+
+    def _convert_target_sticker(self, target_id):
+        sticker = self.guild.get_sticker(target_id)
+        if sticker is None:
+            return Object(id=target_id)
+        return sticker
+
+    def _convert_target_scheduled_event(self, target_id):
+        event = self.guild.get_event(target_id)
+        if event is None:
+            return Object(id=target_id)
+        return event
+
+    def _convert_target_thread(self, target_id):
+        thread = self.guild.get_channel(target_id)
+        if thread is None:
+            return Object(id=target_id)
+        return thread
+
+    def _convert_target_application_command(self, target_id):
+        cmd = self.guild.get_application_command(target_id)
+        if cmd is None:
+            cmd = self._state._get_client().get_application_command(target_id)
+            if not cmd:
+                return Object(id=target_id)
+        return cmd
+
+

@@ -3,7 +3,9 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
+
+Implementation of voice-receiving was taken from PyCord
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -45,6 +47,8 @@ import logging
 import struct
 import threading
 
+from typing import Any, Callable, List, Optional, TYPE_CHECKING, Tuple
+
 from . import opus, utils
 from .backoff import ExponentialBackoff
 from .gateway import *
@@ -58,6 +62,7 @@ except ImportError:
     has_nacl = False
 
 log = logging.getLogger(__name__)
+
 
 class VoiceProtocol:
     """A class that represents the Discord voice protocol.
@@ -522,7 +527,47 @@ class VoiceClient(VoiceProtocol):
 
         return header + box.encrypt(bytes(data), bytes(nonce)).ciphertext + nonce[:4]
 
-    def play(self, source, *, after=None):
+    def _decrypt_xsalsa20_poly1305(self, header, data):
+        box = nacl.secret.SecretBox(bytes(self.secret_key))
+
+        nonce = bytearray(24)
+        nonce[:12] = header
+
+        return self.strip_header_ext(box.decrypt(bytes(data), bytes(nonce)))
+
+    def _decrypt_xsalsa20_poly1305_suffix(self, header, data):
+        box = nacl.secret.SecretBox(bytes(self.secret_key))
+
+        nonce_size = nacl.secret.SecretBox.NONCE_SIZE
+        nonce = data[-nonce_size:]
+
+        return self.strip_header_ext(box.decrypt(bytes(data[:-nonce_size]), nonce))
+
+    def _decrypt_xsalsa20_poly1305_lite(self, header, data):
+        box = nacl.secret.SecretBox(bytes(self.secret_key))
+
+        nonce = bytearray(24)
+        nonce[:4] = data[-4:]
+        data = data[:-4]
+
+        return self.strip_header_ext(box.decrypt(bytes(data), bytes(nonce)))
+
+    @staticmethod
+    def strip_header_ext(data):
+        if data[0] == 0xBE and data[1] == 0xDE and len(data) > 4:
+            _, length = struct.unpack_from(">HH", data)
+            offset = 4 + length * 4
+            data = data[offset:]
+        return data
+
+    def get_ssrc(self, user_id):
+        return {info["user_id"]: ssrc for ssrc, info in self.ws.ssrc_map.items()}[
+            user_id
+        ]
+
+    def play(
+            self, source: AudioSource, *, after: Callable[[Optional[Exception]], Any] = None
+    ) -> None:
         """Plays an :class:`AudioSource`.
 
         The finalizer, ``after`` is called after the source has been exhausted
