@@ -100,6 +100,210 @@ ________
 
 **ℹFor more examples take a look in** `here <https://github.com/mccoderpy/discord.py-message-components/edit/developer/examples>`_
 
+
+.. note::
+
+   All of these examples are not inside `Cogs <https://discordpy.readthedocs.io/en/v1.7.3/ext/commands/cogs.html>`_.
+   To use them inside of Cogs you must replace the ``client`` in the `decorators <https://wiki.python.org/moin/PythonDecorators#What_is_a_Decorator>`_ with ``commands.Cog``, set ``self`` as the first argument inside the functions and replace any use of ``client`` (except inside the decorators) with your bot variable.(e.g. ``self.bot`` or ``self.client``)
+
+Application Command Examples
+++++++++++++++++++++++++++++
+
+
++---------------------------------------------------------------------------------------------------+
+|   `sync_commands` of your `discord.Client` instance must bee set to `True`                        |
+|   Otherwise these commands will not be registered to discord and so not usable.                   |
++---------------------------------------------------------------------------------------------------+
+
+A Slash-Command(Chat-Input) wich with that you can see the welcome screen of your guild and add new channels to it.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    import discord
+    from discord import SlashCommandOption as CommandOption, Permissions
+
+    client = discord.Client(sync_commands=True)
+
+    @client.slash_command(
+        base_name='welcome-screen',
+        base_desc='Shows or edit the welcome-screen of this guild.',
+        name='show',
+        guild_ids=[852871920411475968],
+        default_required_permissions=Permissions(manage_guild=True) # Only Members with Manage Guild Permission can use (see) this command and it sub-commands
+    )
+    async def show_welcome_screen(interaction: discord.ApplicationCommandInteraction):
+        """Shows the welcome-screen of this guild."""
+        w_c = await interaction.guild.welcome_screen()
+        if w_c:
+            wc_embed = discord.Embed(title=f'Welcome screen for {interaction.guild}',
+                                     description=f'```\n'
+                                                 f'{w_c.description or "No Description set"}\n'
+                                                 f'```')
+            for channel in w_c.welcome_channels:
+                wc_embed.add_field(name=channel.description,
+                                   value=f'{str(channel.emoji) if channel.emoji else ""} {channel.channel.mention}',
+                                   inline=False)
+            await interaction.respond(embed=wc_embed)
+        else:
+            await interaction.respond('This guild has no welcome-screen set.', hidden=True)
+
+    @client.slash_command(
+        base_name='welcome-screen',
+        base_desc='Shows or edit the welcome-screen of this guild.',
+        group_name='edit',
+        group_desc='Edit the welcome-screen of this guild.',
+        name='add-channel',
+        options=[
+            CommandOption(
+                option_type=discord.OptionType.channel,
+                name='channel',
+                description='The channel wich the the welcome screen field goes to.',
+                channel_types=[discord.TextChannel]),
+            CommandOption(
+                option_type=str,
+                name='description',
+                description='The description for the welcome screen field.'
+            ),
+            CommandOption(
+                option_type=str,
+                name='emoji',
+                description='The emoji wich shows in front of the channel.',
+                required=False
+            )
+        ],
+        guild_ids=[852871920411475968]
+    )
+    async def add_welcome_screen_channel(i: discord.ApplicationCommandInteraction, channel: discord.TextChannel, description: str, emoji: str = None):
+        """Add a channel to the welcome-screen of this guild."""
+        welcome_screen = await i.guild.welcome_screen()
+        if emoji:
+            try:
+                emoji = discord.PartialEmoji.from_string(emoji)
+            except ValueError:
+                pass
+
+        if len(welcome_screen.welcome_channels) == 5:
+            return await i.respond('The maximum of welcome-screen channels is reached, you can\'t add more.')
+        channels = welcome_screen.welcome_channels.copy()
+        channels.append(discord.WelcomeScreenChannel(channel=channel, description=description, emoji=emoji))
+        edited = await welcome_screen.edit(welcome_channels=channels, reason=f'{i.author} used the add-channel command')
+        wc_embed = discord.Embed(
+            title=f'The welcome-screen of {i.guild} is now:',
+            description=f'```\n'
+                        f'{emoji} {edited.description or "No Description set"}\n'
+                        f'```'
+        )
+
+        for w_channel in edited.welcome_channels:
+            wc_embed.add_field(
+                name=w_channel.description,
+                value=f'{str(w_channel.emoji) if w_channel.emoji else ""} {w_channel.channel.mention}',
+                inline=False
+            )
+
+        await i.respond(embed=wc_embed)
+
+    client.run('Y)
+
+A Message Command that translate the corresponding Message in to the invokers locale language
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    import discord
+    import asyncio
+    import translators # need to be installed using "py -m pip install translators" (Win) or "python3 -m pip install translators" (Linux/macOS)
+    from io import BytesIO
+
+    client = discord.Client(sync_commands=True)
+
+
+    @client.message_command(guild_ids=[852871920411475968]) # replace the guild id with your own or remove the parameter to make the command global
+    async def translate(self, interaction: discord.ApplicationCommandInteraction, message):
+       await interaction.defer(hidden=True)
+       translated = await asyncio.to_thread(
+           translators.google,
+           query_text=message.content,
+           to_language=interaction.author_locale.value,
+           sleep_seconds=4
+       )
+       if len(translated) > 2000:
+           # Message was send by a Nitro user wich can send messages with up to 4000 characters.
+           # As we can't do this sent it as a file instead.
+           new_file = io.BytesIO()
+           file = new_file.write(translated)
+           return await interaction.respond(file=discord.File(file, filename=f'{interaction.id}_translated.txt'), hidden=True)
+
+    client.run('You Bot-Token here')
+
+A User context-menu command wich shows you information about the corresponding user
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: python
+   
+    import discord
+
+    client = discord.Client(sync_commands=True)
+   
+    @client.user_command(guild_ids=[852871920411475968])
+    async def userinfo(interaction: discord.ApplicationCommandInteraction, member: discord.Member):
+        _roles = member.roles.copy()
+        _roles.remove(member.guild.default_role) # skipp @everyone
+        _roles.reverse()
+
+        embed = discord.Embed(
+            title=f'Userinfo for {member}',
+            description=f'This is a Userinfo for {member.mention}.',
+            timestamp=datetime.utcnow(),
+            color=member.color
+            )
+
+        to_add = [
+            ('Name:', member.name, True),
+            ('Tag:', member.discriminator, True),
+            ('User-ID:', member.id, True),
+            ('Nitro:', '✅ Yes' if member.premium_since else '❔ Unknown', True),
+            ('Nick:', member.nick, True),
+            ('Created-at:', discord.utils.styled_timestamp(member.created_at, 'R'), True),
+            ('Joined at', discord.utils.styled_timestamp(member.joined_at, 'R'), True)
+        ]
+        if member.premium_since:
+            to_add.append(('Premium since:', discord.utils.styled_timestamp(member.premium_since, 'R'), True))
+        try:
+            roles_list = f'{_roles.pop(0)}'
+        except IndexError: # The Member don't has any roles
+            roles_list = '`None`'
+        else:
+            for role in _roles:
+                updated = f'{roles_list}, {role.mention}'
+                if updated > 1024:
+                    roles_list = updated
+                else:
+                    break
+        to_add.append((f'Roles: {len(member.roles) - 1}', roles_list, True))
+
+        for name, value, inline in to_add:
+            embed.add_field(name=name, value=value, inline=inline)
+
+        embed.set_author(name=member.display_name, icon_url=member.display_avatar_url, url=f'https://discord.com/users/{member.id}')
+        embed.set_footer(text=f'Requested by {interaction.author}', icon_url=interaction.author.display_avatar_url)
+        if not member.bot:
+            user = await client.fetch_user(member.id) # to get the banner data we need to fetch the user
+            if user.banner:
+                embed.add_field(name='Banner', value=f'See the [banner]({user.banner_url}) below', inline=False)
+            else:
+                embed.add_field(name='Banner Color', value=f'See the [banner-color](https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}?width=500) below', inline=False)
+            if user.banner:
+                embed.set_image(url=user.banner_url)
+            else:
+                embed.set_image(url=f'https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}&width=500')
+        await interaction.respond(embed=embed, hidden=True)
+
+    client.run('You Bot-Token here')
+
+Buttons
++++++++
+
 A Command that sends you a Message and edit it when you click a Button:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -292,6 +496,137 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                                              arrow_button().set_label('↓').set_custom_id('down'),
                                                              arrow_button().set_label('→').set_custom_id('right'))]
                                )
+
+Select Menu & Modal (TextInput)
++++++++++++++++++++++++++++++++
+
+Sending-SelectMenu's and respond to them
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: python
+
+   import discord
+   from discord.ext import commands
+   from discord import Button, SelectMenu, SelectOption
+
+
+   client = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
+
+
+   @client.command()
+   async def select(ctx):
+      msg_with_selects = await ctx.send('Hey here is an nice Select-Menu', components=[
+         [
+               SelectMenu(custom_id='_select_it', options=[
+                  SelectOption(emoji='1️⃣', label='Option Nr° 1', value='1', description='The first option'),
+                  SelectOption(emoji='2️⃣', label='Option Nr° 2', value='2', description='The second option'),
+                  SelectOption(emoji='3️⃣', label='Option Nr° 3', value='3', description='The third option'),
+                  SelectOption(emoji='4️⃣', label='Option Nr° 4', value='4', description='The fourth option')],
+                        placeholder='Select some Options', max_values=3)
+            ]])
+
+      def check_selection(i: discord.Interaction, select_menu):
+         return i.author == ctx.author and i.message == msg_with_selects
+
+      interaction, select_menu = await client.wait_for('selection_select', check=check_selection)
+
+      embed = discord.Embed(title='You have chosen:',
+                           description=f"You have chosen "+'\n'.join([f'\nOption Nr° {o}' for o in select_menu.values]),
+                           color=discord.Color.random())
+      await interaction.respond(embed=embed)
+
+   client.run('Your Bot-Token')
+
+A Select Menu that shows you the different response-types for an interaction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    import asyncio
+    import discord
+    from discord.ext import commands
+    from discord import Modal, TextInput
+    from discord import ActionRow, SelectMenu, SelectOption, Modal, TextInput
+
+    client = commands.Bot'!')
+
+
+    @client.command()
+    async def interaction_types(ctx):
+        components = [ActionRow(
+            SelectMenu(
+                custom_id='interaction_types_example',
+                placeholder='Select a interaction response type to show.',
+                options=
+                [
+                    SelectOption('msg_with_source', '4', 'Respond with a message', '4️⃣'),
+                    SelectOption('deferred_msg_with_source', '5', 'ACK an interaction[...]; user sees a loading state', '5️⃣'),
+                    SelectOption('deferred_update_msg', '6', 'ACK an interaction[...]; no loading state', '6️⃣'),
+                    SelectOption('update_msg', '7', 'Edit the message the component was attached to', '7️⃣'),
+                    SelectOption('show_modal', '9', 'Respond to the interaction by sending a popup modal', '9️⃣')
+                ]
+            )
+        )]
+
+        embed = discord.Embed(title='Interaction Callback Type', description='These are all interaction-callback-types you could use for slash-commands and message-components:', color=discord.Color.green())
+        await ctx.send(embed=embed, components=components)
+
+    @client.on_select()
+    async def interaction_types_example(i: discord.ComponentInteraction, s):
+        _type = s.values[0]
+        if _type == 4:
+            await i.respond('This is of type `4`')
+        elif _type == 5:
+            await i.defer(5)
+            await asyncio.sleep(5)
+            await i.respond('Yes this is of type `5`')
+        elif _type == 6:
+            await i.defer()
+            await asyncio.sleep(5)
+            await i.edit(embeds=[i.message.embeds[0], discord.Embed(title='This is of type `6`')])
+        elif _type == 7:
+            msg = await i.edit(embed=i.message.embeds[0].add_field(name=i.author, value='This is of type `7`'))
+            await asyncio.sleep(5)
+            msg.embeds[0].clear_fields()
+            await i.message.edit(embed=msg.embeds[0])
+        elif _type == 9:
+            await i.respond_with_modal(
+                Modal(
+                title='This is of type 9',
+                custom_id='response_types_example_modal',
+                components=[
+                    TextInput(
+                        style=1,
+                        label='This is a short(single-line) input',
+                        placeholder='Enter something in here.',
+                        custom_id='short_input'
+                    ),
+                    TextInput(
+                        style=2,
+                        label='This is a long(multi-line) input',
+                        placeholder='Enter something longer in here.',
+                        custom_id='long_input'
+                    )
+                ]
+            )
+        )
+        modal_interaction: discord.ModalSubmitInteraction = await client.wait_for('modal_submit', check=lambda mi: mi.author == i.author)
+        embed = discord.Embed(title='This was response type 9', color=discord.Color.green())
+        embed.add_field(
+            name='Content of short input:',
+            value=modal_interaction.get_field('short_input').value,
+            inline=False
+        )
+        embed.add_field(
+            name='Content of long input:',
+            value=modal_interaction.get_field('long_input').value,
+            inline=False
+        )
+
+        await modal_interaction.respond(embed=embed)
+
+
+    client.run('You Bot-Token here')
+
 
 Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/developer/>`_ to see more examples.
 
