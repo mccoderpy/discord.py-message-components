@@ -26,7 +26,7 @@ copyright = '2021, Mathieu Corsham aka. mccoder.py'
 author = 'Mathieu Corsham aka. mccoder.py'
 
 # The full version, including alpha/beta/rc tags
-release = '1.7.5.4'
+release = '1.8a'
 
 
 # -- General configuration ---------------------------------------------------
