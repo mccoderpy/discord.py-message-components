@@ -49,7 +49,6 @@ __all__ = (
     'StageChannel',
     'DMChannel',
     'CategoryChannel',
-    'StoreChannel',
     'GroupChannel',
     'PartialMessageable',
     '_channel_factory',
@@ -734,7 +733,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
         return self.guild.get_channel(self.parent_id)
 
     @property
-    def created_at(self) -> Optional[datetime]:
+    def created_at(self) -> Optional[datetime.datetime]:
         """An aware timestamp of when the thread was created in UTC.
         .. note::
             This timestamp only exists for threads created after 9 January 2022, otherwise returns ``None``.
@@ -1822,8 +1821,6 @@ def _channel_factory(channel_type):
         return GroupChannel, value
     elif value is ChannelType.news:
         return TextChannel, value
-    elif value is ChannelType.store:
-        return StoreChannel, value
     elif value is ChannelType.stage_voice:
         return StageChannel, value
     elif value is ChannelType.public_thread:
