@@ -240,6 +240,10 @@ A User context-menu command wich shows you information about the corresponding u
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: python
 
+    import discord
+
+    client = discord.Client(sync_commands=True)
+
     @client.user_command(guild_ids=[852871920411475968])
     async def userinfo(interaction: discord.ApplicationCommandInteraction, member: discord.Member):
         _roles = member.roles.copy()
