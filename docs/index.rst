@@ -45,7 +45,6 @@
    :name: discord.py-message-components documentation
    :alt: Link to the documentation of discord.py-message-components
    :align: center
-   :scale: 20%
    :target: https://discordpy-message-components.readthedocs.io/en/developer/
 
    **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/developer/>`_
@@ -300,8 +299,8 @@ A User context-menu command wich shows you information about the corresponding u
 
     client.run('You Bot-Token here')
 
-Buttons
-+++++++
+Button Examples
++++++++++++++++
 
 A Command that sends you a Message and edit it when you click a Button:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -638,16 +637,19 @@ This allows for your program to be doing multiple things at the same time withou
 
 
 .. figure:: https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fmccoderpy%2Fdiscord.py-message-components%2Ftree%2Fdeveloper%2F&countColor=%23263759&style=flat
-      :alt: Number(As image) how often this WebSite was visited
-      :align: center
-      :name: Visitor count
+    :alt: Number(As image) how often this WebSite was visited
+    :align: center
+    :name: Visitor count
 
+Files
+-----
 .. toctree::
-   :maxdepth: 3
-   :caption: Contents:
-       ./additions.rst
-       ./components.rst
-       ./interaction.rst
+    :maxdepth: 1
+    :caption: Table of Contents:
+
+        additions <additions.rst>
+        components <components.rst>
+        interaction <interaction.rst>
 
 Indices and tables
 ~~~~~~~~~~~~~~~~~~
