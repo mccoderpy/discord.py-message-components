@@ -1,7 +1,7 @@
 .. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
 
-|flag_ua| Welcome to discord\.py-message-components'! documentation|flag_ua|
-============================================================================
+|flag_ua| Welcome to discord\.py-message-components'! documentation |flag_ua|
+=============================================================================
 
 .. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
    :name: discord.py-message-components
