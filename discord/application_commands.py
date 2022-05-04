@@ -88,7 +88,7 @@ class Localizations:
         return bool(self.__languages_dict__)
 
     def to_dict(self) -> Dict[str, str]:
-        return self.__languages_dict__
+        return self.__languages_dict__ if self.__languages_dict__ else None
 
     @classmethod
     def from_dict(cls, data: Dict[str, str]) -> 'Localizations':
@@ -187,9 +187,9 @@ class ApplicationCommand:
                 options = []
             dmp = str(self.default_member_permissions.value) if self.default_member_permissions else None
             return bool(int(self.type) == other.get('type') and self.name == other.get('name', None)
-                        and self.name_localizations.to_dict() == other.get('name_localizations', {})
+                        and self.name_localizations.to_dict() == other.get('name_localizations', None)
                         and getattr(self, 'description', '') == other.get('description', '')
-                        and self.description_localizations.to_dict() == other.get('description_localizations', {})
+                        and self.description_localizations.to_dict() == other.get('description_localizations', None)
                         and dmp == other.get('default_member_permissions', None)
                         and self.allow_dm == other.get('dm_permission', True)
                         and check_options(options, other.get('options', [])))

@@ -320,15 +320,19 @@ class BaseInteraction:
              and send new messages with the :meth:`send` Methode of :attr:`channel`
             (you could not do this hidden as it isn't a response anymore).
         """
+        if isinstance(response_type, int):
+            response_type = InteractionCallbackType.from_value(response_type)
         if self.deferred:
             return warnings.warn("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": int(response_type), "data": {'flags': 64 if hidden else None}}
         try:
-            data = await self._http.post_initial_response(_resp=base,
-                                                          use_webhook=False,
-                                                          interaction_id=self.id,
-                                                          token=self._token,
-                                                          application_id=self._application_id)
+            data = await self._http.post_initial_response(
+                _resp=base,
+                use_webhook=False,
+                token=self._token,
+                application_id=self._application_id,
+                interaction_id=self.id
+            )
         except NotFound:
             log.warning(f'Unknown Interaction {self.id}')
         else:
@@ -544,7 +548,7 @@ class BaseInteraction:
             else:
                 msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
         if not hidden and delete_after is not None:
-            # TODO: Fix delting wrong message
+            # TODO: Fix deleting wrong message
             await msg.delete(delay=delete_after)
         if hidden is True and not self.deferred:
             self.deferred_hidden = True
@@ -554,16 +558,28 @@ class BaseInteraction:
         return msg
 
     async def respond_with_modal(self, modal: 'Modal'):
-        data = await self._state.http.send_interaction_response(
-            token=self._token,
-            interaction_id=self.id,
-            application_id=self._application_id,
-            deferred=self.deferred,
-            use_webhook=False,
-            followup=False,
-            data=modal.to_dict(),
-            type=9
-        )
+        if not self.deferred:
+            data = await self._state.http.send_interaction_response(
+                token=self._token,
+                interaction_id=self.id,
+                application_id=self._application_id,
+                deferred=self.deferred,
+                use_webhook=False,
+                followup=False,
+                data=modal.to_dict(),
+                type=9
+            )
+        else:
+            data = await self._state.http.edit_interaction_response(
+                token=self._token,
+                interaction_id=self.id,
+                application_id=self._application_id,
+                deferred=self.deferred,
+                use_webhook=False,
+                followup=False,
+                data=modal.to_dict(),
+                type=9)
+
         self.deferred = True
         self.deferred_modal = True
         return data
