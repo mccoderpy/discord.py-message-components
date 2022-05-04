@@ -1,7 +1,7 @@
 .. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
 
-|flag_ua| Welcome to discord.py-message-components'! |flag_ua|
-==============================================================
+|flag_ua| Welcome to discord\.py-message-components'! documentation|flag_ua|
+============================================================================
 
 .. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
    :name: discord.py-message-components
@@ -104,12 +104,12 @@ ________
 .. note::
 
    All of these examples are not inside `Cogs <https://discordpy.readthedocs.io/en/v1.7.3/ext/commands/cogs.html>`_.
-   To use them inside of Cogs you must replace the ``client`` in the `decorators <https://wiki.python.org/moin/PythonDecorators#What_is_a_Decorator>`_ with ``commands.Cog``, set ``self`` as the first argument inside the functions and replace any use of ``client``(except inside the decorators) with your bot variable.(e.g. ``self.bot`` or ``self.client``)
+   To use them inside of Cogs you must replace the ``client`` in the `decorators <https://wiki.python.org/moin/PythonDecorators#What_is_a_Decorator>`_ with ``commands.Cog``, set ``self`` as the first argument inside the functions and replace any use of ``client`` (except inside the decorators) with your bot variable.(e.g. ``self.bot`` or ``self.client``)
 
 Application Command Examples
 ++++++++++++++++++++++++++++
 
-.. INFO::
+.. warning::
 
     :attr:`sync_commands` of your :class:`discord.Client` instance must bee set to True.
     Otherwise these commands will not be registered to discord and so not usable.
@@ -495,6 +495,42 @@ Another (complex) Example where a small Embed will be send; you can move a small
 Select Menu & Modal (TextInput)
 +++++++++++++++++++++++++++++++
 
+Sending-SelectMenu's and respond to them
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: python
+
+   import discord
+   from discord.ext import commands
+   from discord import Button, SelectMenu, SelectOption
+
+
+   client = commands.Bot(command_prefix=commands.when_mentioned_or('!'))
+
+
+   @client.command()
+   async def select(ctx):
+      msg_with_selects = await ctx.send('Hey here is an nice Select-Menu', components=[
+         [
+               SelectMenu(custom_id='_select_it', options=[
+                  SelectOption(emoji='1️⃣', label='Option Nr° 1', value='1', description='The first option'),
+                  SelectOption(emoji='2️⃣', label='Option Nr° 2', value='2', description='The second option'),
+                  SelectOption(emoji='3️⃣', label='Option Nr° 3', value='3', description='The third option'),
+                  SelectOption(emoji='4️⃣', label='Option Nr° 4', value='4', description='The fourth option')],
+                        placeholder='Select some Options', max_values=3)
+            ]])
+
+      def check_selection(i: discord.Interaction, select_menu):
+         return i.author == ctx.author and i.message == msg_with_selects
+
+      interaction, select_menu = await client.wait_for('selection_select', check=check_selection)
+
+      embed = discord.Embed(title='You have chosen:',
+                           description=f"You have chosen "+'\n'.join([f'\nOption Nr° {o}' for o in select_menu.values]),
+                           color=discord.Color.random())
+      await interaction.respond(embed=embed)
+
+   client.run('Your Bot-Token')
+
 A Select Menu that shows you the different response-types for an interaction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -589,7 +625,28 @@ A Select Menu that shows you the different response-types for an interaction
 
 For some mote examples take a look at `GitHub <https://github.com/mccoderpy/discord.py-message-components/tree/developer/examples>`_
 
+coro
+~~~~
+A `coroutine <https://docs.python.org/3/library/asyncio-task.html#coroutine>`_ is a function that must be invoked with ``await`` or ``yield from``.
+When Python encounters an ``await`` it stops the function’s execution at that point and works on other things until it comes back to that point and finishes off its work.
+This allows for your program to be doing multiple things at the same time without using threads or complicated multiprocessing.
+**If you forget to await a coroutine then the coroutine will not run. Never forget to await a coroutine.**
+
+
 .. figure:: https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fmccoderpy%2Fdiscord.py-message-components%2Ftree%2Fdeveloper%2F&countColor=%23263759&style=flat
       :alt: Number(As image) how often this WebSite was visited
       :align: center
       :name: Visitor count
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+       ./additions.rst
+       ./components.rst
+       ./interaction.rst
+
+Indices and tables
+~~~~~~~~~~~~~~~~~~
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
