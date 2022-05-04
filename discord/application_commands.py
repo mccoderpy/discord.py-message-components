@@ -937,6 +937,8 @@ class SlashCommand(ApplicationCommand):
         return int(argument.strip('<!@&#>'))
 
     async def invoke(self, interaction, *args, **kwargs):
+        if not self.func:
+            return
         if self.cog is not None:
             args = (self.cog, interaction, *args)
         else:
