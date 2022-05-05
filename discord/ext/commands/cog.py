@@ -484,7 +484,7 @@ class Cog(metaclass=CogMeta):
 
             # function that's called when the Modal is submitted
             @client.on_submit(custom_id='suggestions_modal')
-            async def suggestions_modal_callback(i: discord.ModalSubmitInteraction, modal):
+            async def suggestions_modal_callback(i: discord.ModalSubmitInteraction):
                 ...
 
         Raises
@@ -707,6 +707,7 @@ class Cog(metaclass=CogMeta):
                             SlashCommand(
                                 cog=cls,
                                 name=_name,
+                                func=actual,
                                 name_localizations=name_localizations,
                                 description=_description,
                                 description_localizations=description_localizations,
@@ -718,7 +719,7 @@ class Cog(metaclass=CogMeta):
                         guild_cmds.append(cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name])
 
                 if base_name:
-                    base = GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
+                    base = GuildOnlySlashCommand(cog=cls, func=actual, name=_name, description=_description,
                                                  default_member_permissions=default_required_permissions,
                                                  options=_options, guild_ids=guild_ids, connector=connector,
                                                  commands=guild_cmds)
@@ -745,8 +746,8 @@ class Cog(metaclass=CogMeta):
                             description=base_desc or 'No Description',
                             description_localizations=base_desc_localizations,
                             default_member_permissions=default_required_permissions,
-                            allow_dm=allow_dm,
-                            func=actual)
+                            allow_dm=allow_dm
+                        )
                     else:
                         base_command.name_localizations.update(base_name_localizations)
                         base_command.description = base_desc or base_command.description
@@ -789,6 +790,7 @@ class Cog(metaclass=CogMeta):
                         default_member_permissions=default_required_permissions,
                         allow_dm=allow_dm,
                         func=actual,
+                        options=_options,
                         connector=connector
                     )
                 return command
