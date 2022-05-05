@@ -1441,7 +1441,6 @@ class Client:
                 descriptions_localizations=option_descriptions_localizations,
                 connector=connector
             )
-            print(_options)
             if group_name and not base_name:
                 raise InvalidArgument(
                     'You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.'
