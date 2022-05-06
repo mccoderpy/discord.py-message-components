@@ -235,8 +235,7 @@ class EphemeralMessage:
         else:
             if not isinstance(data, dict):
                 data = await self.__interaction__.get_original_callback()
-            else:
-                self._update(data)
+            self._update(data)
             if not self.__interaction__.callback_message:
                 self.__interaction__.callback_message = self
         return self
@@ -576,7 +575,6 @@ class BaseInteraction:
                 application_id=self._application_id,
                 deferred=self.deferred,
                 use_webhook=False,
-                followup=False,
                 data=modal.to_dict(),
                 type=9)
 
