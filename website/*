@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+        <meta name="description" content="discord.py-message-components is a maintained fork of discord.py by mccoder.py(mccuber04#2960)">
+        <meta name="keywords" content="Discord Bot, Discord, discord.py-message-components, message-components, discord.py, discord-api, discord-api-wrapper, api-wrapper, python, python3, Bot, programming, mccuber04#2960">
+        <base href="https://mccoderpy.github.io/discord.py-message-components/">
+        <title>discord.py-message-components</title>
+        <link rel="icon" href="./img/Banner-Konturen.ico">
+        <style type="text/css">
+        .gradient {
+            background: linear-gradient(90deg, #532020 0%, #ff0000 100%);
+        }
+        p {
+        font-family: Paladino, serif;
+        font-size: 3em;
+        font-style: italic;
+        font-weight: bold;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        }
+        .main_page {
+        color: #04047B;
+        text-decoration:none;
+        color: #FFFFFF;
+        }
+        .button_center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        }
+        .button {
+        background-color: #010164;
+        border:4px solid red;
+        border-radius: 50px;
+        color: #FFFFFF;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s;
+        }
+        .button:hover {
+        ease-in-out;
+        background-color: #0F0F8E;
+        border-radius: 50px;
+        border: 4px solid #E08F04;
+        color: #E1B1B1;
+
+        }
+        </style>
+    </head>
+    <body>
+        <header>
+            <p>What are you doing here??? Nothing happens here yet.</p>
+        </header>
+    <span class="button_center">
+        <button class="button">
+            <a href="." style="text-decoration:none;">
+                <h1 class="main_page">Back to the main Page</h1>
+            </a>
+        </button>
+		<button class="button">
+            <a href="https://github.com/mccoderpy/discord.py-message-components/tree/developer" style="text-decoration:none;">
+                <h1 class="main_page">Visit repository</h1>
+            </a>
+        </button>
+    </span>
+    </body>
+</html>
