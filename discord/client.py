@@ -592,30 +592,19 @@ class Client:
 
     # login state management
 
-    async def login(self, token, *, bot=True):
+    async def login(self, token):
         """|coro|
 
         Logs in the client with the specified credentials.
 
         This function can be used in two different ways.
 
-        .. warning::
-
-            Logging on with a user token is against the Discord
-            `Terms of Service <https://support.discord.com/hc/en-us/articles/115002192352>`_
-            and doing so might potentially get your account banned.
-            Use this at your own risk.
 
         Parameters
         -----------
         token: :class:`str`
             The authentication token. Do not prefix this token with
             anything as the library will do it for you.
-        bot: :class:`bool`
-            Keyword argument that specifies if the account logging on is a bot
-            token or not.
-
-            .. deprecated:: 1.7
 
         Raises
         ------
@@ -628,8 +617,7 @@ class Client:
         """
 
         log.info('logging in using static token')
-        await self.http.static_login(token.strip(), bot=bot)
-        self._connection.is_bot = bot
+        await self.http.static_login(token.strip())
 
     @utils.deprecated('Client.close')
     async def logout(self):
@@ -776,13 +764,13 @@ class Client:
         TypeError
             An unexpected keyword argument was received.
         """
-        bot = kwargs.pop('bot', True)
+
         reconnect = kwargs.pop('reconnect', True)
 
         if kwargs:
             raise TypeError("unexpected keyword argument(s) %s" % list(kwargs.keys()))
 
-        await self.login(*args, bot=bot)
+        await self.login(*args)
         await self.connect(reconnect=reconnect)
 
     def run(self, *args, **kwargs):

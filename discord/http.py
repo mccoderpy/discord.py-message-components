@@ -3,9 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
-
-Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -115,7 +113,6 @@ class HTTPClient:
         self._global_over = asyncio.Event()
         self._global_over.set()
         self.token = None
-        self.bot_token = False
         self.proxy = proxy
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
@@ -159,7 +156,7 @@ class HTTPClient:
         }
 
         if self.token is not None:
-            headers['Authorization'] = 'Bot ' + self.token if self.bot_token else self.token
+            headers['Authorization'] = 'Bot ' + self.token
         # some checking if it's a JSON request
         if 'json' in kwargs:
             headers['Content-Type'] = 'application/json'
@@ -297,23 +294,22 @@ class HTTPClient:
         if self.__session:
             await self.__session.close()
 
-    def _token(self, token, *, bot=True):
+    def _token(self, token):
         self.token = token
-        self.bot_token = bot
         self._ack_token = None
 
     # login management
 
-    async def static_login(self, token, *, bot):
+    async def static_login(self, token):
         # Necessary to get aiohttp to stop complaining about _session creation
         self.__session = aiohttp.ClientSession(connector=self.connector, ws_response_class=DiscordClientWebSocketResponse)
-        old_token, old_bot = self.token, self.bot_token
-        self._token(token, bot=bot)
+        old_token = self.token
+        self._token(token)
 
         try:
             data = await self.request(Route('GET', '/users/@me'))
         except HTTPException as exc:
-            self._token(old_token, bot=old_bot)
+            self._token(old_token)
             if exc.response.status == 401:
                 raise LoginFailure('Improper token has been passed.') from exc
             raise
@@ -1217,7 +1213,7 @@ class HTTPClient:
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
 
-    async def get_gateway(self, *, encoding='json', v=9, zlib=True):
+    async def get_gateway(self, *, encoding='json', v=10, zlib=True):
         try:
             data = await self.request(Route('GET', '/gateway'))
         except HTTPException as exc:
@@ -1228,7 +1224,7 @@ class HTTPClient:
             value = '{0}?encoding={1}&v={2}'
         return value.format(data['url'], encoding, v)
 
-    async def get_bot_gateway(self, *, encoding='json', v=9, zlib=True):
+    async def get_bot_gateway(self, *, encoding='json', v=10, zlib=True):
         try:
             data = await self.request(Route('GET', '/gateway/bot'))
         except HTTPException as exc:

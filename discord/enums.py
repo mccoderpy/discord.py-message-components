@@ -318,6 +318,7 @@ class ButtonStyle(Enum):
     url         = 5
     link        = 5
     grey_url    = 5
+    gray_url
     Link_Button = 5
 
     @classmethod
