@@ -547,7 +547,7 @@ A Select Menu that shows you the different response-types for an interaction
     from discord import Modal, TextInput
     from discord import ActionRow, SelectMenu, SelectOption, Modal, TextInput
 
-    client = commands.Bot'!')
+    client = commands.Bot('!')
 
 
     @client.command()
