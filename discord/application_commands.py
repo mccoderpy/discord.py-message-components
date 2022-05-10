@@ -62,9 +62,62 @@ api_docs = 'https://discord.com/developers/docs'
 
 # TODO: Add a (optional) feature for auto generated name_localizations & description_localizations by a translator
 class Localizations:
+    """
+    Represents a dict with localizated values for application-command names, descriptions, option-names, choice-names, etc.
+
+    +--------+-------------------------+---------------------+
+    | Locale |      Language Name      |     Native Name     |
+    |        | (lowercase also usable) |                     |
+    +--------+-------------------------+---------------------+
+    | da     | Danish                  | Dansk               |
+    | de     | German                  | Deutsch             |
+    | en_GB  | English, UK             | English, UK         |
+    | en_US  | English, US             | English, US         |
+    | es_ES  | Spanish                 | Español             |
+    | fr     | French                  | Français            |
+    | hr     | Croatian                | Hrvatski            |
+    | it     | Italian                 | Italiano            |
+    | lt     | Lithuanian              | Lietuviškai         |
+    | hu     | Hungarian               | Magyar              |
+    | nl     | Dutch                   | Nederlands          |
+    | no     | Norwegian               | Norsk               |
+    | pl     | Polish                  | Polski              |
+    | pt_BR  | Portuguese, Brazilian   | Português do Brasil |
+    | ro     | Romanian, Romania       | Română              |
+    | fi     | Finnish                 | Suomi               |
+    | sv_SE  | Swedish                 | Svenska             |
+    | vi     | Vietnamese              | Tiếng Việt          |
+    | tr     | Turkish                 | Türkçe              |
+    | cs     | Czech                   | Čeština             |
+    | el     | Greek                   | Ελληνικά            |
+    | bg     | Bulgarian               | български           |
+    | ru     | Russian                 | Pусский             |
+    | uk     | Ukrainian               | Українська          |
+    | hi     | Hindi                   | हिन्दी                 |
+    | th     | Thai                    | ไทย                 |
+    | zh_CN  | Chinese, China          | 中文                 |
+    | ja     | Japanese                | 日本語               |
+    | zh_TW  | Chinese, Taiwan         | 繁體中文             |
+    | ko     | Korean                  | 한국어               |
+    +--------+-------------------------+---------------------+
+
+    Parameters
+    ----------
+    kwargs: Any
+
+        Keyword only arguments in format ``language='Value'``
+        As `language` you could use any of :class:`discord.Locale` s members. See table above.
+
+        .. note::
+
+            Values follow the same restrictions as the targed they are used for. e.g. description, name, etc.
+
+    """
+
     __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])
 
     def __init__(self, **kwargs) -> None:
+
         self.__languages_dict__ = {}
         for locale in self.__slots__:
             try:
@@ -557,7 +610,7 @@ class SlashCommandOption:
                 if not isinstance(c, ChannelType):
                     value[index] = ChannelType.from_type(c)
             if not any([isinstance(c, ChannelType) for c in value]):
-                raise
+                raise ValueError('Only ChannelType Enums, intgers or Channel classes allowed.')
         self._channel_types = value
 
     def to_dict(self) -> dict:
