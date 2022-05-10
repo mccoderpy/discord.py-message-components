@@ -617,7 +617,9 @@ class SlashCommandOption:
         base = {
             'type': int(self.type),
             'name': str(self.name),
-            'description': str(self.description)
+            'name_localizations': self.name_localizations.to_dict(),
+            'description': str(self.description),
+            'description_localizations': self.description_localizations.to_dict()
         }
         if bool(self.required) is True:
             base['required'] = bool(self.required)
@@ -645,7 +647,9 @@ class SlashCommandOption:
         return cls(
             option_type=try_enum(OptionType, data['type']),
             name=data['name'],
+            name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
             description=data.get('description', 'No description'),
+            description_localizations=Localizations.from_dict(data.get('description_localizations', {})),
             required=data.get('required', False),
             choices=[SlashCommandOptionChoice.from_dict(c) for c in data.get('choices', [])],
             autocomplete=data.get('autocomplete', False),
