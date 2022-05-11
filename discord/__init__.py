@@ -32,7 +32,6 @@ from .channel import *
 from .components import ActionRow, Button, SelectMenu, SelectOption, TextInput, Modal
 from .guild import Guild
 from .flags import *
-from .relationship import Relationship
 from .member import Member, VoiceState
 from .message import *
 from .asset import Asset

@@ -30,7 +30,7 @@ from typing_extensions import  Literal
 import discord.abc
 from .flags import PublicUserFlags
 from .utils import snowflake_time, _bytes_to_base64_data, parse_time
-from .enums import DefaultAvatar, RelationshipType, UserFlags, HypeSquadHouse, PremiumType, try_enum
+from .enums import DefaultAvatar, UserFlags, HypeSquadHouse, PremiumType, try_enum
 from .errors import ClientException
 from .colour import Colour
 from .asset import Asset
@@ -363,110 +363,26 @@ class ClientUser(BaseUser):
         Specifies if the user is a bot account.
     system: :class:`bool`
         Specifies if the user is a system user (i.e. represents Discord officially).
-
-        .. versionadded:: 1.3
-
-    verified: :class:`bool`
-        Specifies if the user's email is verified.
-    email: Optional[:class:`str`]
-        The email the user used when registering.
-
-        .. deprecated:: 1.7
-
     locale: Optional[:class:`str`]
         The IETF language tag used to identify the language the user is using.
     mfa_enabled: :class:`bool`
         Specifies if the user has MFA turned on and working.
-    premium: :class:`bool`
-        Specifies if the user is a premium user (e.g. has Discord Nitro).
-
-        .. deprecated:: 1.7
-
-    premium_type: Optional[:class:`PremiumType`]
-        Specifies the type of premium a user has (e.g. Nitro or Nitro Classic). Could be None if the user is not premium.
-
-        .. deprecated:: 1.7
     """
     __slots__ = BaseUser.__slots__ + \
-                ('email', 'locale', '_flags', 'verified', 'mfa_enabled',
-                 'premium', 'premium_type', '_relationships', '__weakref__')
+                ('locale', '_flags', 'verified', 'mfa_enabled', '__weakref__')
 
     def __init__(self, *, state, data):
         super().__init__(state=state, data=data)
-        self._relationships = {}
 
     def __repr__(self):
         return '<ClientUser id={0.id} name={0.name!r} discriminator={0.discriminator!r}' \
-               ' bot={0.bot} verified={0.verified} mfa_enabled={0.mfa_enabled}>'.format(self)
+               ' bot={0.bot} mfa_enabled={0.mfa_enabled}>'.format(self)
 
     def _update(self, data):
         super()._update(data)
-        # There's actually an Optional[str] phone field as well but I won't use it
-        self.verified = data.get('verified', False)
-        self.email = data.get('email')
         self.locale = data.get('locale')
         self._flags = data.get('flags', 0)
         self.mfa_enabled = data.get('mfa_enabled', False)
-        self.premium = data.get('premium', False)
-        self.premium_type = try_enum(PremiumType, data.get('premium_type', None))
-
-    @deprecated()
-    def get_relationship(self, user_id):
-        """Retrieves the :class:`Relationship` if applicable.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Parameters
-        -----------
-        user_id: :class:`int`
-            The user ID to check if we have a relationship with them.
-
-        Returns
-        --------
-        Optional[:class:`Relationship`]
-            The relationship if available or ``None``.
-        """
-        return self._relationships.get(user_id)
-
-    @property
-    def relationships(self):
-        """List[:class:`User`]: Returns all the relationships that the user has.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-        """
-        return list(self._relationships.values())
-
-    @property
-    def friends(self):
-        r"""List[:class:`User`]: Returns all the users that the user is friends with.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-        """
-        return [r.user for r in self._relationships.values() if r.type is RelationshipType.friend]
-
-    @property
-    def blocked(self):
-        r"""List[:class:`User`]: Returns all the users that the user has blocked.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-        """
-        return [r.user for r in self._relationships.values() if r.type is RelationshipType.blocked]
 
     async def edit(self, **fields):
         """|coro|
@@ -649,161 +565,6 @@ class User(BaseUser, discord.abc.Messageable):
         state = self._state
         data = await state.http.start_private_message(self.id)
         return state.add_dm_channel(data)
-
-    @property
-    def relationship(self):
-        """Optional[:class:`Relationship`]: Returns the :class:`Relationship` with this user if applicable, ``None`` otherwise.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-        """
-        return self._state.user.get_relationship(self.id)
-
-    @deprecated()
-    async def mutual_friends(self):
-        """|coro|
-
-        Gets all mutual friends of this user.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Raises
-        -------
-        Forbidden
-            Not allowed to get mutual friends of this user.
-        HTTPException
-            Getting mutual friends failed.
-
-        Returns
-        -------
-        List[:class:`User`]
-            The users that are mutual friends.
-        """
-        state = self._state
-        mutuals = await state.http.get_mutual_friends(self.id)
-        return [User(state=state, data=friend) for friend in mutuals]
-
-    @deprecated()
-    def is_friend(self):
-        """:class:`bool`: Checks if the user is your friend.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-        """
-        r = self.relationship
-        if r is None:
-            return False
-        return r.type is RelationshipType.friend
-
-    @deprecated()
-    def is_blocked(self):
-        """:class:`bool`: Checks if the user is blocked.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-        """
-        r = self.relationship
-        if r is None:
-            return False
-        return r.type is RelationshipType.blocked
-
-    @deprecated()
-    async def block(self):
-        """|coro|
-
-        Blocks the user.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Raises
-        -------
-        Forbidden
-            Not allowed to block this user.
-        HTTPException
-            Blocking the user failed.
-        """
-
-        await self._state.http.add_relationship(self.id, type=RelationshipType.blocked.value)
-
-    @deprecated()
-    async def unblock(self):
-        """|coro|
-
-        Unblocks the user.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Raises
-        -------
-        Forbidden
-            Not allowed to unblock this user.
-        HTTPException
-            Unblocking the user failed.
-        """
-        await self._state.http.remove_relationship(self.id)
-
-    @deprecated()
-    async def remove_friend(self):
-        """|coro|
-
-        Removes the user as a friend.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Raises
-        -------
-        Forbidden
-            Not allowed to remove this user as a friend.
-        HTTPException
-            Removing the user as a friend failed.
-        """
-        await self._state.http.remove_relationship(self.id)
-
-    @deprecated()
-    async def send_friend_request(self):
-        """|coro|
-
-        Sends the user a friend request.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Raises
-        -------
-        Forbidden
-            Not allowed to send a friend request to the user.
-        HTTPException
-            Sending the friend request failed.
-        """
-        await self._state.http.send_friend_request(username=self.name, discriminator=self.discriminator)
 
     @deprecated()
     async def profile(self):

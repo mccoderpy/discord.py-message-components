@@ -47,7 +47,6 @@ from .sticker import Sticker, GuildSticker
 from .mentions import AllowedMentions
 from .partial_emoji import PartialEmoji
 from .message import Message
-from .relationship import Relationship
 from .channel import *
 from .raw_models import *
 from .member import Member
@@ -1242,25 +1241,6 @@ class ConnectionState:
             if member is not None:
                 timestamp = datetime.datetime.utcfromtimestamp(data.get('timestamp'))
                 self.dispatch('typing', channel, member, timestamp)
-
-    def parse_relationship_add(self, data):
-        key = int(data['id'])
-        old = self.user.get_relationship(key)
-        new = Relationship(state=self, data=data)
-        self.user._relationships[key] = new
-        if old is not None:
-            self.dispatch('relationship_update', old, new)
-        else:
-            self.dispatch('relationship_add', new)
-
-    def parse_relationship_remove(self, data):
-        key = int(data['id'])
-        try:
-            old = self.user._relationships.pop(key)
-        except KeyError:
-            pass
-        else:
-            self.dispatch('relationship_remove', old)
 
     def _get_reaction_user(self, channel, user_id):
         if isinstance(channel, TextChannel):
