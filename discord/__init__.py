@@ -6,7 +6,7 @@ Discord API Wrapper
 
 A basic wrapper for the Discord API.
 
-:copyright: (c) 2015 Rapptz & 2022-present mccoderpy
+:copyright: (c) 2015-2021 Rapptz & 2021-present mccoderpy
 :license: MIT, see LICENSE for more details.
 
 """
@@ -37,7 +37,6 @@ from .member import Member, VoiceState
 from .message import *
 from .asset import Asset
 from .errors import *
-from .calls import CallMessage, GroupCall
 from .permissions import Permissions, PermissionOverwrite
 from .role import Role, RoleTags
 from .file import File, UploadFile

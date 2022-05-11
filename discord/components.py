@@ -3,9 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
-
-Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+Copyright (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -26,10 +24,9 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-import typing
 from .enums import ComponentType, ButtonStyle, TextInputStyle
 from .emoji import Emoji
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Callable
 from typing_extensions import Literal
 from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, EmptyActionRow
@@ -166,7 +163,7 @@ class Button:
             self.custom_id = custom_id
         return self
 
-    def disable_if(self, check: typing.Union[bool, typing.Callable], *args):
+    def disable_if(self, check: Union[bool, Callable], *args):
         """
         Disables the :class:`discord.Button` if the passed :attr:`check` returns :bool:`True`.
 
@@ -187,7 +184,7 @@ class Button:
             self.disabled = True
         return self
 
-    def set_style_if(self, check: Union[bool, typing.Callable], style: ButtonStyle, *args):
+    def set_style_if(self, check: Union[bool, Callable], style: ButtonStyle, *args):
         """
         Sets the style of the :class:`Button` to the specified one if the specified check returns True.
 
@@ -337,7 +334,7 @@ class SelectMenu:
     """
 
     def __init__(self, custom_id: Union[str, int],
-                 options: typing.List[SelectOption],
+                 options: List[SelectOption],
                  placeholder: str = None,
                  min_values: int = 1,
                  max_values: int = 1,
@@ -467,7 +464,7 @@ class SelectMenu:
             self.custom_id = custom_id
         return self
 
-    def disable_if(self, check: typing.Union[bool, typing.Callable], *args):
+    def disable_if(self, check: Union[bool, Callable], *args):
         """
         Disables the :class:`discord.SelectMenu` if the passed :attr:`check` returns :bool:`True`.
 
@@ -513,7 +510,7 @@ class Modal:
     def __init__(self,
                  custom_id: str,
                  title: str,
-                 components: typing.List[Union['ActionRow', List['TextInput']]]) -> None:
+                 components: List[Union['ActionRow', List['TextInput']]]) -> None:
         # TODO: Add Error handling
         self.custom_id = custom_id
         self.title = title
@@ -778,7 +775,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_components_if(self, check: Union[bool, typing.Callable], *args: typing.Any):
+    def disable_all_components_if(self, check: Union[bool, Callable], *args: typing.Any):
         """
         Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
 
@@ -791,7 +788,7 @@ class ActionRow:
 
         :return: discord.ActionRow
         """
-        if not isinstance(check, (bool, typing.Callable)):
+        if not isinstance(check, (bool, Callable)):
             raise AttributeError(
                 'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
         try:
@@ -811,7 +808,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_buttons_if(self, check: Union[bool, typing.Callable], *args: typing.Any):
+    def disable_all_buttons_if(self, check: Union[bool, Callable], *args: typing.Any):
         """
         Disables all :class:`discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
     
@@ -824,7 +821,7 @@ class ActionRow:
 
         :return: discord.ActionRow
         """
-        if not isinstance(check, (bool, typing.Callable)):
+        if not isinstance(check, (bool, Callable)):
             raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
         try:
             check = check(*args)
@@ -843,7 +840,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, SelectMenu)]
         return self
 
-    def disable_all_select_menus_if(self, check: Union[bool, typing.Callable], *args: typing.Any):
+    def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: typing.Any):
         """
         Disables all :class:`SelectMenu`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
 
@@ -856,7 +853,7 @@ class ActionRow:
 
         :return: discord.ActionRow
         """
-        if not isinstance(check, (bool, typing.Callable)):
+        if not isinstance(check, (bool, Callable)):
             raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
         try:
             check = check(*args)
