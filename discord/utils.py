@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-2021 Rapptz & (c) 2021.present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -118,7 +118,6 @@ class SequenceProxy(collections.abc.Sequence):
 
 def parse_time(timestamp):
     if timestamp:
-
         return datetime.datetime(*map(int, re.split(r'[^\d]', timestamp.replace('+00:00', ''))))
     return None
 
@@ -174,7 +173,7 @@ def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None, scopes
         The OAuth2 URL for inviting the bot into guilds.
     """
     url = 'https://discord.com/oauth2/authorize?client_id={}'.format(client_id)
-    url = url + '&scope=' + '+'.join(scopes or ('bot',))
+    url = url + '&scope=' + '+'.join(scopes or ('bot', 'application.commands'))
     if permissions is not None:
         url = url + '&permissions=' + str(permissions.value)
     if guild is not None:

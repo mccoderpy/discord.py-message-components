@@ -325,7 +325,7 @@ class Guild(Hashable):
         for r in guild.get('roles', []):
             role = Role(guild=self, data=r, state=state)
             self._roles[role.id] = role
-        for e in guild.get('scheduled_events', []):
+        for e in guild.get('guild_scheduled_events', []):
             state.store_event(guild=self, data=e)
         self.mfa_level = guild.get('mfa_level')
         self.emojis = tuple(map(lambda d: state.store_emoji(self, d), guild.get('emojis', [])))

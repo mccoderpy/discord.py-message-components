@@ -39,9 +39,6 @@ if TYPE_CHECKING:
     from .permissions import Permissions
 
 import aiohttp
-from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
-    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType, \
-    Localizations
 from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
@@ -66,6 +63,9 @@ from .iterators import GuildIterator
 from .appinfo import AppInfo
 
 from .interactions import ApplicationCommandInteraction
+from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
+    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType, \
+    Localizations
 
 log = logging.getLogger(__name__)
 

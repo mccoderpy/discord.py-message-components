@@ -6,7 +6,7 @@ Discord API Wrapper
 
 A basic wrapper for the Discord API.
 
-:copyright: (c) 2015-present Rapptz & 2022 mccoderpy
+:copyright: (c) 2015 Rapptz & 2022-present mccoderpy
 :license: MIT, see LICENSE for more details.
 
 """
@@ -14,7 +14,7 @@ A basic wrapper for the Discord API.
 __title__ = 'discord'
 __author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2015-present Rapptz & 2022 mccoderpy'
+__copyright__ = 'Copyright 2015-2021 Rapptz & 2021-present mccoderpy'
 __version__ = '1.8a'
 
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)

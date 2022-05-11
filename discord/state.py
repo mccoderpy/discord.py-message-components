@@ -3,9 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
-
-Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -56,7 +54,7 @@ from .member import Member
 from .role import Role
 from .enums import ChannelType, try_enum, Status, MessageType, ComponentType
 from . import utils
-from .flags import Intents, MemberCacheFlags
+from .flags import Intents, MemberCacheFlags, ApplicationFlags
 from .object import Object
 from .invite import Invite
 from .interactions import BaseInteraction, InteractionType
@@ -319,11 +317,10 @@ class ConnectionState:
             event = self._events[event_id]
         except KeyError:
             self._events[event_id] = event = GuildScheduledEvent(state=self, guild=guild, data=data)
-        else:
-            try:
-                guild._add_event(event)
-            except AttributeError: # If it is a PartialInviteGuild
-                pass
+        try:
+            guild._add_event(event)
+        except AttributeError: # If it is a PartialInviteGuild
+            pass
         return event
 
     @property
@@ -491,7 +488,7 @@ class ConnectionState:
         except asyncio.CancelledError:
             pass
         else:
-            # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
+            # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch ready event
             await self._get_client()._request_sync_commands()
             self.call_handlers('ready')
             self.dispatch('ready')
@@ -513,14 +510,6 @@ class ConnectionState:
         for guild_data in data['guilds']:
             self._add_guild_from_data(guild_data)
 
-        for relationship in data.get('relationships', []):
-            try:
-                r_id = int(relationship['id'])
-            except KeyError:
-                continue
-            else:
-                user._relationships[r_id] = Relationship(state=self, data=relationship)
-
         for pm in data.get('private_channels', []):
             factory, _ = _channel_factory(pm['type'])
             self._add_private_channel(factory(me=user, data=pm, state=self))
@@ -533,7 +522,7 @@ class ConnectionState:
                 pass
             else:
                 # flags will always be present here
-                # self.application_flags = ApplicationFlags._from_value(application['flags'])  # type: ignore
+                self.application_flags = ApplicationFlags._from_value(application['flags'])  # type: ignore
                 self.application_id = utils._get_as_snowflake(application, 'id')
 
         self.dispatch('connect')
@@ -688,20 +677,23 @@ class ConnectionState:
     def parse_guild_scheduled_event_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
         event = self.store_event(guild, data)
-        self.dispatch('guild_scheduled_event_create', guild, event)
+        self.dispatch('scheduled_event_create', guild, event)
 
     def parse_guild_scheduled_event_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
         event = guild.get_event(int(data['id']))
+        if not event:
+            log.debug('GUILD_SCHEDULED_EVENT_UPDATE referencing an unknown event ID: %s. Discarding.', data['id'])
+            return
         before = copy.copy(event)
         event._update(data)
-        self.dispatch('guild_scheduled_event_update', guild, before, event)
+        self.dispatch('scheduled_event_update', guild, before, event)
 
-    def parse_scheduled_event_delete(self, data):
+    def parse_guild_scheduled_event_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
         event = guild.get_event(int(data['id']))
         event._update(data)
-        self.dispatch('guild_scheduled_event_delete', guild, event)
+        self.dispatch('scheduled_event_delete', guild, event)
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']
@@ -801,7 +793,7 @@ class ConnectionState:
 
             if member.id != self.self_id and flags._online_only and member.raw_status == 'offline':
                 guild._remove_member(member)
-
+        self.dispatch('presence_update', old_member, member)
         self.dispatch('member_update', old_member, member)
 
     def parse_user_update(self, data):

@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2022-present mccoderpy
+Copyright (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -30,15 +30,17 @@ import copy
 import asyncio
 import inspect
 import warnings
+from types import FunctionType
+
 from .utils import async_all, find, get, snowflake_time
 from typing_extensions import Literal
-from .abc import User, GuildChannel, Role
-from typing import Union, Optional, List, Dict, Any, Awaitable, TYPE_CHECKING
-from .enums import Enum, ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
+from .abc import GuildChannel
+from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING
+from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
 
 if TYPE_CHECKING:
-    from .ext.commands import Cog
+    from .ext.commands import Cog, Converter
     from datetime import datetime
 
 
@@ -60,10 +62,12 @@ __all__ = (
 
 api_docs = 'https://discord.com/developers/docs'
 
+
 # TODO: Add a (optional) feature for auto generated name_localizations & description_localizations by a translator
+
 class Localizations:
     """
-    Represents a dict with localizated values for application-command names, descriptions, option-names, choice-names, etc.
+    Represents a dict with localized values for application-command names, descriptions, option-names, choice-names, etc.
 
     +--------+-------------------------+---------------------+
     | Locale |      Language Name      |     Native Name     |
@@ -110,32 +114,31 @@ class Localizations:
 
         .. note::
 
-            Values follow the same restrictions as the targed they are used for. e.g. description, name, etc.
+            Values follow the same restrictions as the target they are used for. e.g. description, name, etc.
 
     """
 
     __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **localizations) -> None:
 
         self.__languages_dict__ = {}
-        for locale in self.__slots__:
+        for locale, localized_text in localizations.items():
             try:
-                text = kwargs[locale]
-            except KeyError:
-                continue
+                setattr(self, locale, localized_text)
+            except AttributeError:
+                raise ValueError(f'Unknown locale "{locale}". See {api_docs}reference#locales for a list of locales.')
             else:
-                self.__languages_dict__[Locale[locale].value] = text
-                setattr(self, locale, text)
+                self.__languages_dict__[Locale[locale].value] = localized_text
 
     def __repr__(self) -> str:
         return '<Localizations specified languages: %s>' % ", ".join([Locale.try_value(l) for l in self.__languages_dict__])
 
     def __getitem__(self, item) -> Optional[str]:
-        return self.__languages_dict__.__getitem__(Locale[locale].value)
+        return self.__languages_dict__.__getitem__(Locale[item].value)
 
     def __setitem__(self, key, value):
-        self__languages_dict__[Locale[key].value] = value
+        self.__languages_dict__[Locale[key].value] = value
 
     def __bool__(self) -> bool:
         return bool(self.__languages_dict__)
@@ -146,7 +149,7 @@ class Localizations:
     @classmethod
     def from_dict(cls, data: Dict[str, str]) -> 'Localizations':
         data = data or {}
-        return cls(**{try_enum(cls, key): value for key, value in data.items()})
+        return cls(**{try_enum(Locale, key): value for key, value in data.items()})
 
     def update(self, __m: 'Localizations'):
         self.__languages_dict__.update(__m.__languages_dict__)
@@ -311,7 +314,7 @@ class ApplicationCommand:
         return getattr(self, '_id', None)
 
     @property
-    def created_at(self) -> Optional['datetime.datetime']:
+    def created_at(self) -> Optional['datetime']:
         if self.id:
             return snowflake_time(self.id)
 
@@ -376,7 +379,8 @@ class SlashCommandOptionChoice:
         value: Union[:class:`str`, :class:`int`, :class:`float`]
             The value that will send as the options value.
             Must be of the type the option is of (:class:`str`, :class:`int` or :class:`float`).
-        name_localisations: Dict[:class:`str`, :class:`glas`]
+        name_localizations: Optional[:class:`Localizations`]
+            Localized names for the choice.
         """
         if 100 < len(name) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
@@ -401,9 +405,6 @@ class SlashCommandOptionChoice:
 
 
 class SlashCommandOption:
-    __slots__ = ('type', 'name', 'name_localizations', 'description', 'description_localizations',
-                 'required', 'default', '_choices', 'options', '_autocomplete',
-                 '_min_value', '_max_value', '_channel_types')
 
     def __init__(self,
                  option_type: Union[OptionType, int, type],
@@ -418,6 +419,8 @@ class SlashCommandOption:
                  max_value: Optional[Union[int, float]] = None,
                  channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
                  default: Optional[Any] = None,
+                 converter: Optional['Converter'] = None,
+                 ignore_conversion_failures: Optional[bool] = False,
                  **kwargs) -> None:
         """
         Representing an option for a :class:`SlashCommand`/:class:`SubCommand`.
@@ -428,7 +431,7 @@ class SlashCommandOption:
             Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :type:`type` like
             ``discord.Member``, ``discord.TextChannel`` or ``str``.
             If the :param:`option_type` is a :class:`type`, that subclasses :class:`abc.GuildChannel` the type of the
-            channel would set as the defualt :param:`channel_types`.
+            channel would set as the default :param:`channel_types`.
         name: :class:`str`
             The 1-32 characters long name of the option shows up in discord.
             The name must be the same as the one of the parameter for the slash-command
@@ -437,7 +440,7 @@ class SlashCommandOption:
         description: :class:`str`
             The 1-100 characters long description of the option shows up in discord.
         required: Optional[:class:`bool`]
-            Wheater this option must be provided by the user, default ``True``.
+            Weather this option must be provided by the user, default ``True``.
             If ``False``, the parameter of the slash-command that takes this option needs a default value.
         choices: Optional[List[:class:`SlashCommandOptionChoice`]]
             A list of up to 25 choices the user could select. Only valid if the :param:`option_type` is one of
@@ -462,17 +465,25 @@ class SlashCommandOption:
             A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
             Only valid if :param:`option_type` is :class:`OptionType.channel`.
         default: Optional[Any]
-            The default value that should be passed to the function if the option is not providet, default ``None``.
-            Usuly used for autocomplete callback.
+            The default value that should be passed to the function if the option is not provided, default ``None``.
+            Usually used for autocomplete callback.
+        converter: Optional[Union[:class:`discord.ext.commands.Greedy`, :class:`discord.ext.commands.Converter`]]
+            A subclass of :class:`discord.ext.commands.Converter` to use for converting the value.
+            Only valid for :class:`OptionType.string` or :class:`OptionType.integer`
+        ignore_conversion_failures: Optional[:class:`bool`]
+            Whether conversion failures should be ignored and the value should be passed without conversion instead.
+            Default :bool:`False`
         """
-        #print(name, option_type)
+        from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
+            if issubclass(option_type, Converter) or converter is Greedy:
+                converter = copy.copy(option_type)
+                option_type = str
             option_type, channel_type = OptionType.from_type(option_type)
+            if not isinstance(option_type, OptionType):
+                raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__}.')
             if channel_type and not channel_types:
                 channel_types = channel_type
-            if not isinstance(option_type, OptionType):
-                print(type(option_type), option_type)
-                raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__}.')
         self.type = option_type
 
         if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE):
@@ -488,16 +499,18 @@ class SlashCommandOption:
         self.description = description
         self.description_localizations: Localizations = description_localizations
         self.required = required
-        options = kwargs.get('options', [])
+        options = kwargs.get('__options', [])
         if self.type == 2 and (not options):
-            raise ValueError('You need to pass options if the option_type is subcommand_group.')
-        self.options = options
+            raise ValueError('You need to pass __options if the option_type is subcommand_group.')
+        self._options = options
         self.autocomplete: bool = autocomplete
         self.min_value: Optional[Union[int, float]] = min_value
         self.max_value: Optional[Union[int, float]] = max_value
         self.choices: Optional[List[SlashCommandOptionChoice]] = choices
         self.channel_types: Optional[List[Union[GuildChannel, ChannelType, int]]] = channel_types
         self.default = default
+        self.converter = converter
+        self.ignore_conversion_failures = ignore_conversion_failures
 
     def __repr__(self):
         return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>'\
@@ -534,7 +547,7 @@ class SlashCommandOption:
     @property
     def choices(self) -> Optional[List[SlashCommandOptionChoice]]:
         """
-        The coices that are set for this option
+        The choices that are set for this option
 
         Returns
         -------
@@ -546,12 +559,12 @@ class SlashCommandOption:
     def choices(self, value: Optional[List[SlashCommandOptionChoice]]) -> None:
         if value:
             if self.type not in (OptionType.string, OptionType.integer, OptionType.number):
-               raise TypeError('Only Options of type string, integer or number could have choices.')
+                raise TypeError('Only Options of type string, integer or number could have choices.')
             elif self.autocomplete:
                 raise TypeError('Options with autocomplete could not have choices.')
         if len(value) > 25:
             raise ValueError('The maximum of choices per Option is 25, got %s.'
-                             'It is recommended to use autocomplete if you have more than 25 options.' % len(choices))
+                             'It is recommended to use autocomplete if you have more than 25 options.' % len(value))
         self._choices = value
 
     @property
@@ -610,7 +623,7 @@ class SlashCommandOption:
                 if not isinstance(c, ChannelType):
                     value[index] = ChannelType.from_type(c)
             if not any([isinstance(c, ChannelType) for c in value]):
-                raise ValueError('Only ChannelType Enums, intgers or Channel classes allowed.')
+                raise ValueError('Only ChannelType Enums, integers or Channel classes allowed.')
         self._channel_types = value
 
     def to_dict(self) -> dict:
@@ -627,8 +640,8 @@ class SlashCommandOption:
             base['choices'] = [c.to_dict() for c in self.choices]
         elif self.autocomplete:
             base['autocomplete'] = True
-        elif self.options:
-            base['options'] = [o.to_dict() for o in self.options]
+        elif self._options:
+            base['options'] = [o.to_dict() for o in self._options]
         if self.min_value is not None:
             base['min_value'] = self.min_value
         if self.max_value is not None:
@@ -686,7 +699,7 @@ class SubCommand(SlashCommandOption):
         self.guild_id = kwargs.get('guild_id', parent.guild_id)
         super().__init__(OptionType.sub_command, name=name, description=description,
                          name_localizations=name_localizations, description_localizations=description_localizations,
-                         options=options)
+                         __options=options)
 
     def __repr__(self):
         return '<SubCommand parent=%s, name=%s, description=%s, options=%s>' \
@@ -734,12 +747,12 @@ class SubCommand(SlashCommandOption):
 
     def autocomplete_callback(self, coro):
         """
-        A decortator that sets a coroutine function as the function that will be called
+        A decorator that sets a coroutine function as the function that will be called
         when discord sends an autocomplete interaction for this command.
 
         Parameters
         ----------
-        coro: Awaitable
+        coro: Callable[Any, Any, Coroutine]
             The function that should be set as autocomplete_func for this command.
             Must take the same amount of params the command itself takes.
         """
@@ -784,6 +797,7 @@ class SubCommand(SlashCommandOption):
             description_localizations=Localizations.from_dict(data.get('description_localizations', {})),
             options=[SlashCommandOption.from_dict(c) for c in data.get('options', [])],
         )
+
 
 class GuildOnlySubCommand(SubCommand):
     """Represents a :class:`SubCommand` for multiple guilds with the same function."""
@@ -831,9 +845,11 @@ class SlashCommand(ApplicationCommand):
             The name of the slash-command. Must be between 1 and 32 characters long and oly contain a-z, _ and -.
         description: :class:`str`
             The description of the command shows up in discord. Between 1 and 100 characters long.
-        default_permission: Optional[:class:`bool`]
-            Wheater user could use this command by default, default ``True``.
-            If ``False`` the command will no longe be avaible in direct messages.
+        allow_dm: Optional[:class:`bool`]
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+            By default, commands are visible.
+        default_member_permissions: Optional[Union[:class:`discord.Permissions`, :class:`int`]]
+             Permissions that a Member needs by default to execute(see) the command.
         options: Optional[List[:class:`SlashCommandOption`]]
             A list of max. 25 options for the command.
             Required options **must** be listed before optional ones.
@@ -841,7 +857,7 @@ class SlashCommand(ApplicationCommand):
             A dictionary containing the name of function-parameters as keys and the name of the option as values.
             Useful for using non-ascii Letters in your option names without getting ide-errors.
         kwargs:
-            Keyword arguments used for internal handlig.
+            Keyword arguments used for internal handling.
         """
         self.autocomplete_func = None
         super().__init__(1,
@@ -920,12 +936,12 @@ class SlashCommand(ApplicationCommand):
 
     def autocomplete_callback(self, coro):
         """
-        A decortator that sets a coroutine function as the function that will be called
+        A decorator that sets a coroutine function as the function that will be called
         when discord sends an autocomplete interaction for this command.
 
         Parameters
         ----------
-        coro: Awaitable
+        coro: Callable[Any, Any, Awaitable]
             The function that should be set as autocomplete_func for this command.
             Must take the same amount of params the command itself takes.
 
@@ -956,7 +972,7 @@ class SlashCommand(ApplicationCommand):
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
     @property
-    def sub_commands(self) -> Optional[List[Union['SubCommandGroup[SubCommand]', SubCommand]]]:
+    def sub_commands(self) -> Optional[List[Union['SubCommandGroup', SubCommand]]]:
         """A :class:`list` of :class:`SubCommand` and :class:`SubCommandGroup` the command has."""
         return list(self._sub_commands.values())
 
@@ -983,8 +999,8 @@ class SlashCommand(ApplicationCommand):
         for opt in data.get('options', []):
             opt['parent'] = self
         options = [SlashCommandOption.from_dict(opt) for opt in data.pop('options', [])]
-        self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in (
-        OptionType.sub_command, OptionType.sub_command_group)}
+        self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in
+                              (OptionType.sub_command, OptionType.sub_command_group)}
         if not self._sub_commands:
             self._options = {option.name: option for option in options}
         return self
@@ -1032,7 +1048,18 @@ class SlashCommand(ApplicationCommand):
             for option in options:
                 name = connector.get(option.name) or option.name
                 if option.type in (OptionType.string, OptionType.integer, OptionType.boolean, OptionType.number):
-                    params[name] = option.value
+                    orgin_option = get(to_invoke.options, name=option.name)
+                    converter = orgin_option.converter
+                    if converter:
+                        try:
+                            params[name] = await transform(interaction, orgin_option, converter, str(option.value))
+                        except Exception as exc:
+                            if orgin_option.ignore_conversion_failures:
+                                params[name] = option.value
+                            else:
+                                raise exc from exc
+                    else:
+                        params[name] = option.value
                 elif option.type == OptionType.user:
                     _id = self._filter_id_out(option.value)
                     params[name] = interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
@@ -1052,7 +1079,7 @@ class SlashCommand(ApplicationCommand):
                     _id = self._filter_id_out(option.value)
                     params[name] = interaction.data.resolved.attachments[_id] or option.value
 
-        # pass the default values of the options to the params if they are not providet (usaly used for autocomplete)
+        # pass the default values of the options to the params if they are not provided (usually used for autocomplete)
         connector = to_invoke.connector
         for o in to_invoke.options:
             name = connector.get(o.name, o.name)
@@ -1062,9 +1089,123 @@ class SlashCommand(ApplicationCommand):
         interaction._command = self
         interaction.params = params
         if interaction.type == InteractionType.ApplicationCommandAutocomplete:
-            interaction.focused = find(lambda o: (o.__getattribute__('focused') or None == True), options)
+            interaction.focused = find(lambda o: (o.__getattribute__('focused') or None) is True, options)
             return await to_invoke.invoke_autocomplete(interaction, **params)
         return await to_invoke.invoke(interaction, **params)
+
+
+# TODO: Optimise and finish the conversion handling
+
+async def _actual_conversion(ctx, converter, argument, param):
+    from .ext.commands import CommandError, ConversionError, BadArgument, converter as converters
+    from .ext.commands.core import _convert_to_bool
+    if converter is bool:
+        return _convert_to_bool(argument)
+
+    try:
+        module = converter.__module__
+    except AttributeError:
+        pass
+    else:
+        if module is not None:
+            if module.startswith('discord.') and module.endswith('converter'):
+                pass
+            else:
+                converter = getattr(converters, converter.__name__ + 'Converter', converter)
+
+    try:
+        if inspect.isclass(converter):
+            if issubclass(converter, converters.Converter):
+                instance = converter()
+                ret = await instance.convert(ctx, argument)
+                return ret
+            else:
+                method = getattr(converter, 'convert', None)
+                if method is not None and inspect.ismethod(method):
+                    ret = await method(ctx, argument)
+                    return ret
+        elif isinstance(converter, converters.Converter):
+            ret = await converter.convert(ctx, argument)
+            return ret
+    except CommandError:
+        raise
+    except Exception as exc:
+        raise ConversionError(converter, exc) from exc
+
+    try:
+        return converter(argument)
+    except CommandError:
+        raise
+    except Exception as exc:
+        try:
+            name = converter.__name__
+        except AttributeError:
+            name = converter.__class__.__name__
+
+        raise BadArgument('Converting to "{}" failed for parameter "{}".'.format(name, param.name)) from exc
+
+
+async def do_conversion(interaction, converter, argument, param):
+    from .ext.commands import CommandError, BadUnionArgument
+    try:
+        origin = converter.__origin__
+    except AttributeError:
+        pass
+    else:
+        if origin is Union:
+            errors = []
+            _NoneType = type(None)
+            for conv in converter.__args__:
+                # if we got to this part in the code, then the previous conversions have failed
+                # so we should just undo the view, return the default, and allow parsing to continue
+                # with the other parameters
+                if conv is _NoneType:
+                    return param.default or argument
+
+                try:
+                    value = await conv().convert(interaction, argument)
+                except CommandError as exc:
+                    errors.append(exc)
+                else:
+                    return value
+
+            # if we're  here, then we failed all the converters
+            raise BadUnionArgument(param, converter.__args__, errors)
+
+    return await _actual_conversion(interaction, converter, argument, param)
+
+
+async def _transform_greedy_pos(ctx, param, required, converter, value):
+    from .ext.commands import CommandError, ArgumentParsingError
+    from .ext.commands.view import StringView
+    view = StringView(value)
+    result = []
+    print(value)
+    while not view.eof:
+        # for use with a manual undo
+        previous = view.index
+
+        view.skip_ws()
+        try:
+            argument = view.get_quoted_word()
+            value = await do_conversion(ctx, converter, argument, param)
+        except (CommandError, ArgumentParsingError):
+            view.index = previous
+            break
+        else:
+            result.append(value)
+            print(value)
+
+    if not result and not required:
+        return param.default
+    return result
+
+
+async def transform(interaction, param, converter, value) -> Any:
+    from .ext.commands.converter import _Greedy
+    if type(converter) is _Greedy:
+        return await _transform_greedy_pos(interaction, param, param.required, converter.converter, value)
+    return await do_conversion(interaction, converter, value, param)
 
 
 class GuildOnlySlashCommand(SlashCommand):
@@ -1169,7 +1310,7 @@ class SubCommandGroup(SlashCommandOption):
         self.func = kwargs.get('func', None)
         super().__init__(OptionType.sub_command_group, name=name, name_localizations=name_localizations,
                          description=description, description_localizations=description_localizations,
-                         options=commands)
+                         __options=commands)
         self._sub_commands = {command.name: command for command in commands}
         for sub_command in self.sub_commands:
             sub_command.parent = self
@@ -1215,9 +1356,9 @@ class SubCommandGroup(SlashCommandOption):
         return cls(
             parent=data.get('parent', None),
             name=data['name'],
-            name_localizations=Localizations(data.get('name_localizations', {})),
+            name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
             description=data.get('description', 'No description'),
-            description_localizations=Localizations(data.get('description_localizations', {})),
+            description_localizations=Localizations.from_dict(data.get('description_localizations', {})),
             options=[SubCommand.from_dict(c) for c in data.get('options', [])]
         )
 
@@ -1237,17 +1378,17 @@ class GuildOnlySubCommandGroup(SubCommandGroup):
 
 
 def generate_options(
-        func: Awaitable[Any],
+        func: FunctionType,
         descriptions: dict = {},
         descriptions_localizations: Dict[str, Localizations] = {},
         connector: dict = {},
         is_cog: bool = False):
     """
     This function is used to create the options for a :class:`SlashCommand`/:class:`SubCommand`
-    out of the parameters of a functionn if no options are providet in the decorator.
+    out of the parameters of a function if no options are provided in the decorator.
 
     .. warning::
-        It is recomered to specifiy the options for the slash-command in the decorator.
+        It is recommended to specify the options for the slash-command in the decorator.
 
     Parameters
     ----------
@@ -1256,22 +1397,27 @@ def generate_options(
     descriptions:  Optional[Dict[:class:`str`, :class:`str`]]
         A dictionary with the name of the parameter as key and the description as value.
         The default description would be "No Description".
+    descriptions_localizations: Optional[Dict[:class:`str`, :class:`Localizations`]]
+        A dictionary containing the parameter name as key and the localized descriptions as value.
     connector: Optional[Dict[:class:`str`, :class:`str`]]
         A dictionary containing the name of function-parameters as keys and the name of the option as values.
         Useful for using non-ascii letters in your option names without getting (IDE-)errors.
     is_cog: Optional[:class:`bool`]
-        Wheater the :param:`func` is inside a :class:`discord.exc.commands.Cog`. Used for Error handling.
+        Whether the :param:`func` is inside a :class:`discord.exc.commands.Cog`. Used for Error handling.
 
     Returns
     -------
     List[:class:`SlashCommandOption`]
-        The options that where createt.
+        The options that where created.
 
     Raises
     ------
     TypeError:
         The function/method specified at :param:`func` is missing a parameter to which the interaction object is passed.
     """
+    from .ext.commands import Converter, Greedy, converter as converters
+    from .ext.commands.converter import _Greedy
+    _NoneType = type(None)
     options = []
     parameters = inspect.signature(func).parameters.values()
     if (not parameters) or is_cog and len(parameters) < 2:
@@ -1291,15 +1437,22 @@ def generate_options(
         required = True
         is_channel = False
         default = None
+        converter = None
 
-        if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD): # Skip parameters like *args and **kwargs
+        if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):  # Skip parameters like *args and **kwargs
             continue
         if param.default is not inspect._empty:
-            # If a default value for the parameter is set, then the option is not requiered.
+            # If a default value for the parameter is set, then the option is not required.
             required = False
             default = param.default
-        if param.annotation is inspect._empty:
-            # The parameter is not anotated.
+        # PEP-563 allows postponing evaluation of annotations with a __future__
+        # import. When postponed, Parameter.annotation will be a string and must
+        # be replaced with the real value for using them
+        if isinstance(param.annotation, str):
+            param: inspect.Parameter = param.replace(annotation=eval(param.annotation, func.__globals__))
+        annotation = param.annotation
+        if annotation is inspect._empty:
+            # The parameter is not annotated.
             # Since we can't know what the person wants, we assume it's a string, add the option and continue.
             options.append(
                 SlashCommandOption(option_type=OptionType.string,
@@ -1310,29 +1463,53 @@ def generate_options(
                                    default=default)
             )
             continue
-        if isinstance(param.annotation, SlashCommandOption):
-            # If you annotate a parameter with an instance of SlashCommandOption (not recomered)
-            # yust add to the options and continue.
-            param.annotation.name = name
-            options.append(param.annotation)
+        if annotation is Greedy:
+            raise TypeError('Unparameterized Greedy[...] is disallowed in signature.')
+        if isinstance(annotation, SlashCommandOption):
+            # If you annotate a parameter with an instance of SlashCommandOption (not recommended)
+            # just add to the options and continue.
+            annotation.name = name
+            options.append(annotation)
             continue
-        elif getattr(param.annotation, '__origin__', None) is Union:
+        if type(annotation) is _Greedy:
+            converter = annotation
+        elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
-            args = getattr(param.annotation, '__args__', [])
+            args = getattr(annotation, '__args__', [])
+            union = []
             _remove_none = []
-            for arg in args:
-                if arg is type(None): # If one of the types is NoneType, then the option is also not requiered.
-                    if isinstance(args, tuple):
-                        del arg
-                    else:
-                        _remove_none.append(arg)
+            if isinstance(args, tuple):
+                args = list(args)
+            for index, arg in enumerate(args):
+                if isinstance(arg, _NoneType):  # If one of the types is NoneType, then the option is also not required.
+                    _remove_none.append(arg)
                     required = False
-                elif isinstance(arg, (GuildChannel, ChannelType)):
+                elif issubclass(arg, GuildChannel) or isinstance(arg, ChannelType):
                     # If you use Union to define the types of channels you can choose from.
                     # For example only voice- and stage-channels.
-                    channel_types.append(ChannelType.from_type(arg))
-                    is_channel = True
+                    _type = ChannelType.from_type(arg)
+                    args[index] = _type
+                    channel_types.append(_type)
+                else:
+                    if issubclass(arg, Converter):
+                        union.append(arg)
+                        continue
+                    try:
+                        module = arg.__module__
+                    except AttributeError:
+                        pass
+                    else:
+                        if module is not None:
+                            if module.startswith('discord.') and module.endswith('converter'):
+                                pass
+                            else:
+                                conv = getattr(converters, arg.__name__ + 'Converter', arg)
+                                if conv:
+                                    union.append(conv)
+            # remove NoneType's
             [args.remove(rn) for rn in _remove_none]
+            if all([isinstance(a, ChannelType) for a in args]):
+                is_channel = True
             if is_channel:
                 options.append(
                     SlashCommandOption(option_type=OptionType.channel,
@@ -1345,10 +1522,21 @@ def generate_options(
                 )
                 continue
             else:
-                param = param.replace(annotation=args[0])
-        elif getattr(param.annotation, '__origin__', None) is Literal:
-            # Use Literal to specifiy choices in the annotation.
-            args = getattr(param.annotation, '__args__', [])
+                converter = Union.__getitem__(*union)
+                options.append(
+                    SlashCommandOption(option_type=str,
+                                       name=name,
+                                       description=description,
+                                       description_localizations=description_localizations,
+                                       required=required,
+                                       choices=choices,
+                                       default=default,
+                                       converter=converter)
+                )
+                continue
+        elif getattr(annotation, '__origin__', None) is Literal:
+            # Use Literal to specify choices in the annotation.
+            args = getattr(annotation, '__args__', [])
             try:
                 # Get all the values for the choices
                 values = []
@@ -1361,11 +1549,11 @@ def generate_options(
                         values.append(a)
             except Exception:
                 raise ValueError(
-                    'If you use Literal to declare choices for the Option you could only use the folowing shemas:'
+                    'If you use Literal to declare choices for the Option you could only use the following schemas:'
                     '[name, value], (name, value) or {one_name: one_value, other_name: other_value, ...}'
                     'The way you do it is not supportet.'
                 )
-            if all([type(c) == type(values[0]) for c in values]):
+            if all([isinstance(c, type(values[0])) for c in values]):
                 # Find out what type of option it is; string, integer or number. Default to string.
                 option_type: Union[str, int, float] = type(values[0]) if isinstance(values[0], (str, int, float)) else str
             else:
@@ -1389,15 +1577,15 @@ def generate_options(
                     default=default)
             )
             continue
-        elif isinstance(param.annotation, dict):
+        elif isinstance(annotation, dict):
             # Use a dictionary as annotation to declare choices for a option.
-            values = list(param.annotation.values())
-            if all([type(v) == type(values[0]) for v in values]):
+            values = list(annotation.values())
+            if all([isinstance(v, type(values[0])) for v in values]):
                 # Find out what type of option it is; string, integer or number. Default to string.
                 option_type = type(values[0]) if isinstance(values[0], (str, int, float)) else str
             else:
                 option_type = str
-            for k, v in param.annotation.items():
+            for k, v in annotation.items():
                 choices.append(SlashCommandOptionChoice(str(k), option_type(v)))
             options.append(
                 SlashCommandOption(option_type=option_type,
@@ -1409,7 +1597,7 @@ def generate_options(
                                    default=default)
             )
             continue
-        _type, channel_types = OptionType.from_type(param.annotation) or (OptionType.string, None)
+        _type, channel_types = OptionType.from_type(annotation) or (OptionType.string, None)
         options.append(
             SlashCommandOption(option_type=_type,
                                name=name,
@@ -1418,6 +1606,7 @@ def generate_options(
                                required=required,
                                choices=choices,
                                channel_types=channel_types,
-                               default=default)
+                               default=default,
+                               converter=converter)
         )
     return options

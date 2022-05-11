@@ -3,9 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
-
-Implementing of the Discord-Message-components made by mccoderpy (Discord-User mccuber04#2960)
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -57,7 +55,9 @@ class _Undefined:
     def __repr__(self):
         return 'see-below'
 
+
 _undefined = _Undefined()
+
 
 class Snowflake(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a Discord model.
@@ -93,6 +93,7 @@ class Snowflake(metaclass=abc.ABCMeta):
                     return NotImplemented
             return True
         return NotImplemented
+
 
 class User(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a Discord user.
@@ -176,6 +177,7 @@ class PrivateChannel(metaclass=abc.ABCMeta):
             return NotImplemented
         return NotImplemented
 
+
 class _Overwrites:
     __slots__ = ('id', 'allow', 'deny', 'type')
 
@@ -192,6 +194,7 @@ class _Overwrites:
             'deny': str(self.deny),
             'type': self.type,
         }
+
 
 class GuildChannel:
     """An ABC that details the common operations on a Discord guild channel.
@@ -384,7 +387,7 @@ class GuildChannel:
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
-    def overwrites_for(self, obj):
+    def overwrites_for(self, obj: Union[Role, User]):
         """Returns the channel-specific overwrites for a member or a role.
 
         Parameters
@@ -844,13 +847,12 @@ class GuildChannel:
         lock_permissions = kwargs.get('sync_permissions', False)
         reason = kwargs.get('reason')
         for index, channel in enumerate(channels):
-            d = { 'id': channel.id, 'position': index }
+            d = {'id': channel.id, 'position': index}
             if parent_id is not ... and channel.id == self.id:
                 d.update(parent_id=parent_id, lock_permissions=lock_permissions)
             payload.append(d)
 
         await self._state.http.bulk_channel_update(self.guild.id, payload, reason=reason)
-
 
     async def create_invite(self, *, reason=None, **fields):
         """|coro|
@@ -925,6 +927,7 @@ class GuildChannel:
             result.append(Invite(state=state, data=invite))
 
         return result
+
 
 class Messageable(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a model that can send messages.
@@ -1176,12 +1179,12 @@ class Messageable(metaclass=abc.ABCMeta):
                 data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
                                                                           nonce=nonce, allowed_mentions=allowed_mentions,
                                                                           message_reference=reference, stickers=stickers)
-        if not hidden is True:
-            if not isinstance(data, dict) and not hidden is None:
+        if hidden is not True:
+            if not isinstance(data, dict) and hidden is not None:
                 # Thanks Discord that they don't return the message when we send the interaction callback
                 data = await state.http.get_original_interaction_response(application_id=application_id, interaction_token=interaction_token)
             ret = state.create_message(channel=channel, data=data)
-            if (delete_after is not None) and (not hidden is True):
+            if (delete_after is not None) and (hidden is not True):
                 await ret.delete(delay=delete_after)
             return ret
 
@@ -1335,6 +1338,7 @@ class Messageable(metaclass=abc.ABCMeta):
             The message with the message data parsed.
         """
         return HistoryIterator(self, limit=limit, before=before, after=after, around=around, oldest_first=oldest_first)
+
 
 class Connectable(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a channel that can
