@@ -3,8 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
-Copyright (c) 2021-present mccoderpy
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -540,71 +539,59 @@ class Cog(metaclass=CogMeta):
         .. note::
 
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
-        :param name:
+        name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
-        :type name: Optional[:class:`str`]
-        :param name_localizations:
+        name_localizations: Optional[:class:`discord.Localizations`]
             Localizations object for name field. Values follow the same restrictions as :param:`name
-        :type name_localizations: Optional[:class:`discord.Localizations`]`
-        :param description:
+        description: Optional[:class:`str`]
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
-        :type description: Optional[:class:`str`]
-        :param description_localizations:
+        description_localizations: Optional[:class:`discord.Localizations`]
             Localizations object for description field. Values follow the same restrictions as :param:`description`
-        :type description_localizations: Optional[:class:`discord.Localizations`]
-        :param allow_dm: Optional[:class:`bool`]
+        allow_dm: Optional[:class:`bool`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
             By default, commands are visible.
-        :type allow_dm: Optional[:class:`bool`]
-        :param default_required_permissions:
+        default_required_permissions: Optional[:class:`discord.Permissions`]
              Permissions that a Member needs by default to execute(see) the command.
-        :type default_required_permissions: Optional[:class:`discord.Permissions`]
-        :param options:
+        options: Optional[List[:class:`SlashCommandOption`]]
             A list of max. 25 options for the command. If not provided the options will be generated
             using :meth:`generate_options` that creates the options out of the function parameters.
             Required options **must** be listed before optional ones.
             Use :param:`options` to connect non-ascii option names with the parameter of the function.
-        :type options: Optional[List[:class:`SlashCommandOption`]]
-        :param guild_ids:
+        guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
-        :type guild_ids: Optional[List[:class:`int`]]
-        :param connector:
+        connector: Optional[Dict[:class:`str`, :class:`str`]]
             A dictionary containing the name of function-parameters as keys and the name of the option as values.
             Useful for using non-ascii Letters in your option names without getting ide-errors.
-        :type connector: Optional[Dict[:class:`str`, :class:`str`]]
-        :param option_descriptions:
+        option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
             Descriptions the :func:`generate_options` should take for the Options that will be generated.
             The keys are the name of the option and the value the description.
-        :type option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
-        :param base_name:
+        base_name: Optional[:class:`str`]
             The name of the base-command(a-z, _ and -, 1-32 characters) if you want the command
             to be in a command-/sub-command-group.
             If the base-command not exists yet, he will be addet.
-        :type base_name: Optional[:class:`str`]
-        :param base_desc:
+        base_desc: Optional[:class:`str`]
             The description of the base-command(1-100 characters), only needed if the :param:`base_name` was not used before
             otherwise it will replace the one before.
-        :type base_desc: Optional[:class:`str`]
-        :param group_name:
+        group_name: Optional[:class:`str`]
             The name of the command-group(a-z, _ and -, 1-32 characters) if you want the command
             to be in a sub-command-group.
-        :type group_name: Optional[:class:`str`]
-        :param group_desc:
+        group_desc: Optional[:class:`str`]
             The description of the sub-command-group(1-100 characters), only needed if the :param:`group_name` was not used before
             otherwise it will replace the one before.
-        :type group_desc: Optional[:class:`str`]
 
-        :raise TypeError:
+        Raises
+        ------
+        class:`TypeError`:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
             or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
             itself is invalid.
-        :raise InvalidArgument:
+        :class:`InvalidArgument`:
             You passed :param:`group_name` but no :param:`base_name`.
-        :raise ValueError:
+        :class:`ValueError`:
             Any of :param:`name`, :param:`description`, :param:`options`, :param:`base_name`, :param:`base_desc`, :param:`group_name` or :param:`group_desc` is not valid.
 
         Returns
@@ -881,7 +868,7 @@ class Cog(metaclass=CogMeta):
        .. note::
 
            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-           must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+           must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
        Parameters
        ----------
@@ -890,10 +877,10 @@ class Cog(metaclass=CogMeta):
            Must be between 1-32 characters long.
        default_member_permission: Optional[:class:`discord.Permissions`]
            Permissions that a Member needs by default to execute(see) the command.
-    allow_dm:  :class:`bool`
-        Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
-    guild_ids: Optional[List[:class:`int`]]
-        ID's of guilds this command should be registered in. If empty, the command will be global.
+       allow_dm:  :class:`bool`
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+       guild_ids: Optional[List[:class:`int`]]
+            ID's of guilds this command should be registered in. If empty, the command will be global.
 
        Returns
        -------
