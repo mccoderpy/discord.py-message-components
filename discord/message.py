@@ -550,7 +550,7 @@ class Message(Hashable):
                  'mention_everyone', 'embeds', 'components', 'id', 'mentions', 'author',
                  '_cs_channel_mentions', '_cs_raw_mentions', 'attachments',
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
-                 'role_mentions', '_cs_raw_role_mentions', 'type', 'call', 'flags',
+                 'role_mentions', '_cs_raw_role_mentions', 'type', 'flags',
                  '_cs_system_content', '_cs_guild', '_state', 'reactions', 'reference',
                  'application', 'activity', 'stickers', '_thread', 'interaction')
 
@@ -565,7 +565,6 @@ class Message(Hashable):
         self.application = data.get('application')
         self.activity = data.get('activity')
         self.channel = channel
-        self.call = None
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
         self._thread = data.get('thread', None)
@@ -600,7 +599,7 @@ class Message(Hashable):
 
                     ref.resolved = self.__class__(channel=chan, data=resolved, state=state)
 
-        for handler in ('author', 'member', 'mentions', 'mention_roles', 'call', 'flags', 'interaction', 'thread'):
+        for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'interaction', 'thread'):
             try:
                 getattr(self, '_handle_%s' % handler)(data[handler])
             except KeyError:

@@ -1,6 +1,8 @@
 """
 The MIT License (MIT)
-Copyright (c) 2015-present Rapptz
+
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation
@@ -37,12 +39,12 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
-    from .types.integration import (
+    """from .types.integration import (
         IntegrationAccount as IntegrationAccountPayload,
         Integration as IntegrationPayload,
         IntegrationType,
         IntegrationApplication as IntegrationApplicationPayload,
-    )
+    )"""
     from .guild import Guild
 
 

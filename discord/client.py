@@ -1069,7 +1069,7 @@ class Client:
         Raises
         -------
         asyncio.TimeoutError
-            If a timeout is provided and it was reached.
+            If a timeout is provided, and it was reached.
 
         Returns
         --------
@@ -1130,7 +1130,7 @@ class Client:
     ]:
         """
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
-         if so, the :func:`func` is called..
+         if so, the :func:`func` is called.
 
         The function this is attached to must take the same parameters as a
         `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_button_click>`_.
@@ -1141,7 +1141,7 @@ class Client:
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.Button` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -1156,8 +1156,12 @@ class Client:
 
             # function that's called when the Button pressed
             @client.on_click(custom_id='cool blue Button')
-            async def cool_blue_button(i: discord.Interaction, button):
+            async def cool_blue_button(i: discord.ComponentInteraction, button: Button):
                 await i.respond(f'Hey you pressed a {button.custom_id}!', hidden=True)
+
+        Returns
+        -------
+        The decorator for the function called when the Button clicked
 
         Raises
         ------
@@ -1198,7 +1202,7 @@ class Client:
         Parameters
         -----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
-            If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -1220,8 +1224,8 @@ class Client:
             async def choose_your_gender(i: discord.Interaction, select_menu):
                 await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
-        Raises
-        --------
+        Raise
+        ------
         TypeError
             The coroutine passed is not actually a coroutine.
         """
@@ -1248,8 +1252,8 @@ class Client:
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-        A decorator that registers a on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
-         if so, the :func:`func` is called..
+        A decorator that registers an on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
+         if so, the :func:`func` is called.
 
         The function this is attached to must take the same parameters as a
         `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
@@ -1330,69 +1334,65 @@ class Client:
                                           GuildOnlySubCommand
                                     ]]:
         """
-        A decorator that adds a slash-command to the client.
+       A decorator that adds a slash-command to the client.
 
         .. note::
 
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
             must be set to ``True`` to register a command if he not already exist and update him if changes where made.
 
-        :param name:
+        name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
-        :type name: Optional[:class:`str`]
-        :param description:
+        name_localizations: Optional[:class:`discord.Localizations`]
+            Localizations object for name field. Values follow the same restrictions as :attr:`name
+        description: Optional[:class:`str`]
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
-        :type description: Optional[:class:`str`]
-        :param default_permission: Optional[:class:`bool`]
-            Whether the command should be usable by any user by default, default ``True``.
-            If set to ``False`` the command will not be available in Direct Messages.
-        :type default_permission: Optional[:class:`bool`]
-        :param options:
+        description_localizations: Optional[:class:`discord.Localizations`]
+            Localizations object for description field. Values follow the same restrictions as :attr:`description`
+        allow_dm: Optional[:class:`bool`]
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+            By default, commands are visible.
+        default_required_permissions: Optional[:class:`discord.Permissions`]
+             Permissions that a Member needs by default to execute(see) the command.
+        options: Optional[List[:class:`SlashCommandOption`]]
             A list of max. 25 options for the command. If not provided the options will be generated
             using :meth:`generate_options` that creates the options out of the function parameters.
             Required options **must** be listed before optional ones.
-            Use :param:`options` to connect non-ascii option names with the parameter of the function.
-        :type options: Optional[List[:class:`SlashCommandOption`]]
-        :param guild_ids:
+            Use :attr:`options` to connect non-ascii option names with the parameter of the function.
+        guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
-        :type guild_ids: Optional[List[:class:`int`]]
-        :param connector:
+        connector: Optional[Dict[:class:`str`, :class:`str`]]
             A dictionary containing the name of function-parameters as keys and the name of the option as values.
             Useful for using non-ascii Letters in your option names without getting ide-errors.
-        :type connector: Optional[Dict[:class:`str`, :class:`str`]]
-        :param option_descriptions:
+        option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
             Descriptions the :func:`generate_options` should take for the Options that will be generated.
             The keys are the name of the option and the value the description.
-        :type option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
-        :param base_name:
+        base_name: Optional[:class:`str`]
             The name of the base-command(a-z, _ and -, 1-32 characters) if you want the command
             to be in a command-/sub-command-group.
             If the base-command not exists yet, he will be addet.
-        :type base_name: Optional[:class:`str`]
-        :param base_desc:
-            The description of the base-command(1-100 characters), only needed if the :param:`base_name` was not used before
+        base_desc: Optional[:class:`str`]
+            The description of the base-command(1-100 characters), only needed if the :attr:`base_name` was not used before
             otherwise it will replace the one before.
-        :type base_desc: Optional[:class:`str`]
-        :param group_name:
+        group_name: Optional[:class:`str`]
             The name of the command-group(a-z, _ and -, 1-32 characters) if you want the command
             to be in a sub-command-group.
-        :type group_name: Optional[:class:`str`]
-        :param group_desc:
-            The description of the sub-command-group(1-100 characters), only needed if the :param:`group_name` was not used before
+        group_desc: Optional[:class:`str`]
+            The description of the sub-command-group(1-100 characters), only needed if the :attr:`group_name` was not used before
             otherwise it will replace the one before.
-        :type group_desc: Optional[:class:`str`]
 
-        :raise TypeError:
+        Raises
+        ------
+        class:`TypeError`:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
             or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
             itself is invalid.
-        :raise InvalidArgument:
-            You passed :param:`group_name` but no :param:`base_name`.
-        :raise ValueError:
-            Any of :param:`name`, :param:`description`, :param:`options`, :param:`base_name`, :param:`base_desc`,
-             :param:`group_name` or :param:`group_desc` is not valid.
+        :class:`InvalidArgument`:
+            You passed :attr:`group_name` but no :attr:`base_name`.
+        :class:`ValueError`:
+            Any of :attr:`name`, :attr:`description`, :attr:`options`, :attr:`base_name`, :attr:`base_desc`, :attr:`group_name` or :attr:`group_desc` is not valid.
 
         Returns
         -------
@@ -1412,11 +1412,11 @@ class Client:
             -------
             Union[:class:`SlashCommand`, :class:`GuildOnlySlashCommand`, :class:`SubCommand`, :class:`GuildOnlySubCommand`]:
                 The slash-command registered.
-                If neither :param:`guild_ids` or :param:`base_name` passed: An object of :class:`SlashCommand`.
-                If :param:`guild_ids` and no :param:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
+                If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`SlashCommand`.
+                If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
                 representing the guild-only slash-commands.
-                If :param:`base_name` and no :param:`guild_ids` where passed: An object of class:`SubCommand`.
-                if :param:`base_name` and :param:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
+                If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of class:`SubCommand`.
+                if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
                 representing the guild-only sub-commands.
             """
             if not asyncio.iscoroutinefunction(func):
@@ -1590,13 +1590,13 @@ class Client:
         name: Optional[:class:`str`]
             The name of the message-command, default to the functions name.
             Must be between 1-32 characters long.
-        default_permission: Optional[:class:`bool`]
-            Whether the command should be usable by any user by default, default ``True``.
-            If set to ``False`` the command will not be available in Direct Messages.
-        allow_dm: Optional[:class:`bool`]
-           Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+        default_required_permission: Optional[:class:`Permissions`]
+            Permissions that a Member needs by default to execute(see) the command.
+        allow_dm: Optional[:class:`discord.Permissions`]
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+            By default, commands are visible.
         guild_ids: Optional[List[:class:`int`]]
-           ID's of guilds this command should be registered in. If empty, the command will be global.
+            ID's of guilds this command should be registered in. If empty, the command will be global.
 
         Returns
         -------
@@ -1655,13 +1655,12 @@ class Client:
        name: Optional[:class:`str`]
            The name of the user-command, default to the functions name.
            Must be between 1-32 characters long.
-       default_permission: Optional[:class:`bool`]
-           Whether the command should be usable by any user by default, default ``True``.
-           If set to ``False`` the command will not be available in Direct Messages
-       allow_dm: Optional[:class:`bool`]
-           Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+       default_member_permission: Optional[:class:`discord.Permissions`]
+           Permissions that a Member needs by default to execute(see) the command.
+       allow_dm:  :class:`bool`
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
        guild_ids: Optional[List[:class:`int`]]
-           ID's of guilds this command should be registered in. If empty, the command will be global.
+            ID's of guilds this command should be registered in. If empty, the command will be global.
 
        Returns
        -------
