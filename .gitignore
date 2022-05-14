@@ -1,0 +1,9 @@
+./TODO.py
+./examples.py
+./cogs
+./exportToHTML
+./dist
+./discord.py_message_components.egg-info
+.idea
+__pycache__
+*.pyc

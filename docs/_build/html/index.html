@@ -1,0 +1,842 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Welcome to discord.py-message-components’! documentation &mdash; discord.py-message-components 1.8a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/contentui.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/contentui.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> discord.py-message-components
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"> Welcome to discord.py-message-components’! documentation </a><ul>
+<li><a class="reference internal" href="#you-need-help-or-have-ideas-feedback">You need help? Or have ideas/feedback?</a></li>
+<li><a class="reference internal" href="#installing">Installing</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#application-command-examples">Application Command Examples</a><ul>
+<li><a class="reference internal" href="#a-slash-command-chat-input-wich-with-that-you-can-see-the-welcome-screen-of-your-guild-and-add-new-channels-to-it">A Slash-Command(Chat-Input) wich with that you can see the welcome screen of your guild and add new channels to it.</a></li>
+<li><a class="reference internal" href="#a-message-command-that-translate-the-corresponding-message-in-to-the-invokers-locale-language">A Message Command that translate the corresponding Message in to the invokers locale language</a></li>
+<li><a class="reference internal" href="#a-user-context-menu-command-wich-shows-you-information-about-the-corresponding-user">A User context-menu command wich shows you information about the corresponding user</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#button-examples">Button Examples</a><ul>
+<li><a class="reference internal" href="#a-command-that-sends-you-a-message-and-edit-it-when-you-click-a-button">A Command that sends you a Message and edit it when you click a Button:</a></li>
+<li><a class="reference internal" href="#another-complex-example-where-a-small-embed-will-be-send-you-can-move-a-small-white-with-the-buttons">Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#select-menu-modal-textinput">Select Menu &amp; Modal (TextInput)</a><ul>
+<li><a class="reference internal" href="#sending-selectmenu-s-and-respond-to-them">Sending-SelectMenu’s and respond to them</a></li>
+<li><a class="reference internal" href="#a-select-menu-that-shows-you-the-different-response-types-for-an-interaction">A Select Menu that shows you the different response-types for an interaction</a></li>
+<li><a class="reference internal" href="#coro">coro</a><ul>
+<li><a class="reference internal" href="#files">Files</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">discord.py-message-components</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li> Welcome to discord.py-message-components’! documentation </li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="flag-ua-welcome-to-discord-py-message-components-documentation-flag-ua">
+<h1><img alt="flag_ua" src="https://mccoder-py-needs.to-sleep.xyz/r/ua.png" /> Welcome to discord.py-message-components’! documentation <img alt="flag_ua" src="https://mccoder-py-needs.to-sleep.xyz/r/ua.png" /><a class="headerlink" href="#flag-ua-welcome-to-discord-py-message-components-documentation-flag-ua" title="Permalink to this headline">¶</a></h1>
+<div class="figure align-center" id="discord-py-message-components">
+<img alt="Name of the Project (discord.py-message-components)" src="https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png" />
+<div class="legend">
+<a class="reference external image-reference" href="https://discord.gg/sb69muSqsg"><img alt="Discord Server Invite" src="https://discord.com/api/guilds/852871920411475968/embed.png" /></a>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/discord.py-message-components"><img alt="PyPI version info" src="https://img.shields.io/pypi/v/discord.py-message-components.svg" /></a>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/discord.py-message-components"><img alt="PyPI supported Python versions" src="https://img.shields.io/pypi/pyversions/discord.py-message-components.svg" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/project/discord.py-message-components"><img alt="Total downloads for the project" src="https://static.pepy.tech/personalized-badge/discord-py-message-components?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=green&amp;left_text=Downloads" /></a>
+<a class="reference external image-reference" href="https://discordpy-message-components.readthedocs.io/en/developer/"><img alt="Documentation Status" src="https://readthedocs.org/projects/discordpy-message-components/badge/?version=developer" /></a>
+<p>A “fork” of <a class="reference external" href="https://pypi.org/project/discord.py/1.7.3">discord.py</a> library made by <a class="reference external" href="https://github.com/Rapptz">Rapptz</a> with implementation of the <a class="reference external" href="https://discord.com/developers/docs/interactions/message-components">Discord-Message-Components</a> &amp; many other features by <a class="reference external" href="https://github.com/mccoderpy/">mccoderpy</a></p>
+</div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>This library will be further developed independently of discord.py.
+New features are also implemented. It’s not an extension!
+The name only comes from the fact that the original purpose of the library was to add support for message components and we haven’t found a better one yet.</p>
+<p><strong>❗Also important to know❗:</strong> <a class="reference external" href="https://github.com/mccoderpy/discord.py-message-components/discussions/17#">Why is this library so inactive at the moment?</a></p>
+</div>
+<p><strong>❗The most (new) features are only documented in Code currently❗</strong></p>
+<div class="figure align-center" id="discord-py-message-components-documentation">
+<a class="reference external image-reference" href="https://discordpy-message-components.readthedocs.io/en/developer/"><img alt="Link to the documentation of discord.py-message-components" src="https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png" /></a>
+<p class="caption"><span class="caption-text"><strong>Read the Documentation</strong> <a class="reference external" href="https://discordpy-message-components.readthedocs.io/en/developer/">here</a></span><a class="headerlink" href="#discord-py-message-components-documentation" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="you-need-help-or-have-ideas-feedback">
+<h2>You need help? Or have ideas/feedback?<a class="headerlink" href="#you-need-help-or-have-ideas-feedback" title="Permalink to this headline">¶</a></h2>
+<p>Open a Issue/Pull request on <a class="reference external" href="https://github.com/mccoderpy/discord.py-message-components/pulls">GitHub</a>, join the <a class="reference external" href="https://discord.gg/sb69muSqsg">support-server</a> or send me a direct-message on <a class="reference external" href="https://discord.com/channels/&#64;me">Discord</a>: <code class="docutils literal notranslate"><span class="pre">mccuber04#2960</span></code></p>
+</div>
+<div class="section" id="installing">
+<h2>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h2>
+<p><strong>Python 3.5.3 or higher is required</strong></p>
+<p>This library overwrite the original discord.py library (or any other that would be imported using <cite>import discord</cite>) so to be sure all will work fine
+first uninstall the original <a class="reference external" href="https://pypi.org/project/discord.py/1.7.3">discord.py</a> Library if it is installed:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux/macOS</span>
+python3 -m pip uninstall discord.py
+
+<span class="c1"># Windows</span>
+py -3 -m pip uninstall discord.py
+<span class="c1"># Replace discord.py with any other package that you have installed and that is imported with &quot;discord</span>
+</pre></div>
+</div>
+<p>Then install it from the <a class="reference external" href="https://github.com/mccoderpy/discord.py-message-components/tree/developer">developer-branch</a> of this library which is the <strong>most up to date</strong> and has <strong>fewer bugs</strong> using:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux/macOS</span>
+python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+
+<span class="c1"># Windows</span>
+py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+</pre></div>
+</div>
+<p><strong>Of curse you nead to have git installed on your device. If you need help with this take a look</strong> <a class="reference external" href="https://github.com/git-guides/install-git">here</a></p>
+<hr class="docutils" />
+<p>To install <a class="reference external" href="https://pypi.org/project/discord.py-message-components">this library</a> from <a class="reference external" href="https://pypi.org">PyPi</a> use: ❗not up to date❗</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux/macOS</span>
+python3 -m pip install -U discord.py-message-components
+
+<span class="c1"># Windows</span>
+py -3 -m pip install -U discord.py-message-components
+</pre></div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p><strong>ℹFor more examples take a look in</strong> <a class="reference external" href="https://github.com/mccoderpy/discord.py-message-components/edit/developer/examples">here</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All of these examples are not inside <a class="reference external" href="https://discordpy.readthedocs.io/en/v1.7.3/ext/commands/cogs.html">Cogs</a>.
+To use them inside of Cogs you must replace the <code class="docutils literal notranslate"><span class="pre">client</span></code> in the <a class="reference external" href="https://wiki.python.org/moin/PythonDecorators#What_is_a_Decorator">decorators</a> with <code class="docutils literal notranslate"><span class="pre">commands.Cog</span></code>, set <code class="docutils literal notranslate"><span class="pre">self</span></code> as the first argument inside the functions and replace any use of <code class="docutils literal notranslate"><span class="pre">client</span></code> (except inside the decorators) with your bot variable.(e.g. <code class="docutils literal notranslate"><span class="pre">self.bot</span></code> or <code class="docutils literal notranslate"><span class="pre">self.client</span></code>)</p>
+</div>
+<div class="section" id="application-command-examples">
+<h3>Application Command Examples<a class="headerlink" href="#application-command-examples" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="xref py py-attr docutils literal notranslate"><span class="pre">sync_commands</span></code> of your <a class="reference internal" href="additions.html#discord.Client" title="discord.Client"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client</span></code></a> instance must bee set to True.
+Otherwise these commands will not be registered to discord and so not usable.</p>
+</div>
+<div class="section" id="a-slash-command-chat-input-wich-with-that-you-can-see-the-welcome-screen-of-your-guild-and-add-new-channels-to-it">
+<h4>A Slash-Command(Chat-Input) wich with that you can see the welcome screen of your guild and add new channels to it.<a class="headerlink" href="#a-slash-command-chat-input-wich-with-that-you-can-see-the-welcome-screen-of-your-guild-and-add-new-channels-to-it" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
+<span class="kn">from</span> <span class="nn">discord</span> <span class="kn">import</span> <span class="n">SlashCommandOption</span> <span class="k">as</span> <span class="n">CommandOption</span><span class="p">,</span> <span class="n">Permissions</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">sync_commands</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">slash_command</span><span class="p">(</span>
+    <span class="n">base_name</span><span class="o">=</span><span class="s1">&#39;welcome-screen&#39;</span><span class="p">,</span>
+    <span class="n">base_desc</span><span class="o">=</span><span class="s1">&#39;Shows or edit the welcome-screen of this guild.&#39;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;show&#39;</span><span class="p">,</span>
+    <span class="n">guild_ids</span><span class="o">=</span><span class="p">[</span><span class="mi">852871920411475968</span><span class="p">],</span>
+    <span class="n">default_required_permissions</span><span class="o">=</span><span class="n">Permissions</span><span class="p">(</span><span class="n">manage_guild</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># Only Members with Manage Guild Permission can use (see) this command and it sub-commands</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">show_welcome_screen</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ApplicationCommandInteraction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shows the welcome-screen of this guild.&quot;&quot;&quot;</span>
+    <span class="n">w_c</span> <span class="o">=</span> <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">guild</span><span class="o">.</span><span class="n">welcome_screen</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">w_c</span><span class="p">:</span>
+        <span class="n">wc_embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Welcome screen for </span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">guild</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                                 <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;```</span><span class="se">\n</span><span class="s1">&#39;</span>
+                                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">w_c</span><span class="o">.</span><span class="n">description</span> <span class="ow">or</span> <span class="s2">&quot;No Description set&quot;</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                                             <span class="sa">f</span><span class="s1">&#39;```&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">w_c</span><span class="o">.</span><span class="n">welcome_channels</span><span class="p">:</span>
+            <span class="n">wc_embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">channel</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                               <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">emoji</span><span class="p">)</span> <span class="k">if</span> <span class="n">channel</span><span class="o">.</span><span class="n">emoji</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">channel</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                               <span class="n">inline</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">wc_embed</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;This guild has no welcome-screen set.&#39;</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">slash_command</span><span class="p">(</span>
+    <span class="n">base_name</span><span class="o">=</span><span class="s1">&#39;welcome-screen&#39;</span><span class="p">,</span>
+    <span class="n">base_desc</span><span class="o">=</span><span class="s1">&#39;Shows or edit the welcome-screen of this guild.&#39;</span><span class="p">,</span>
+    <span class="n">group_name</span><span class="o">=</span><span class="s1">&#39;edit&#39;</span><span class="p">,</span>
+    <span class="n">group_desc</span><span class="o">=</span><span class="s1">&#39;Edit the welcome-screen of this guild.&#39;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;add-channel&#39;</span><span class="p">,</span>
+    <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">CommandOption</span><span class="p">(</span>
+            <span class="n">option_type</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">OptionType</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The channel wich the the welcome screen field goes to.&#39;</span><span class="p">,</span>
+            <span class="n">channel_types</span><span class="o">=</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">TextChannel</span><span class="p">]),</span>
+        <span class="n">CommandOption</span><span class="p">(</span>
+            <span class="n">option_type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;description&#39;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The description for the welcome screen field.&#39;</span>
+        <span class="p">),</span>
+        <span class="n">CommandOption</span><span class="p">(</span>
+            <span class="n">option_type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;emoji&#39;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The emoji wich shows in front of the channel.&#39;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">guild_ids</span><span class="o">=</span><span class="p">[</span><span class="mi">852871920411475968</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">add_welcome_screen_channel</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ApplicationCommandInteraction</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">TextChannel</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">emoji</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add a channel to the welcome-screen of this guild.&quot;&quot;&quot;</span>
+    <span class="n">welcome_screen</span> <span class="o">=</span> <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">guild</span><span class="o">.</span><span class="n">welcome_screen</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">emoji</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">emoji</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">PartialEmoji</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">emoji</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">welcome_screen</span><span class="o">.</span><span class="n">welcome_channels</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;The maximum of welcome-screen channels is reached, you can</span><span class="se">\&#39;</span><span class="s1">t add more.&#39;</span><span class="p">)</span>
+    <span class="n">channels</span> <span class="o">=</span> <span class="n">welcome_screen</span><span class="o">.</span><span class="n">welcome_channels</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">discord</span><span class="o">.</span><span class="n">WelcomeScreenChannel</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">emoji</span><span class="o">=</span><span class="n">emoji</span><span class="p">))</span>
+    <span class="n">edited</span> <span class="o">=</span> <span class="k">await</span> <span class="n">welcome_screen</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">welcome_channels</span><span class="o">=</span><span class="n">channels</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="o">.</span><span class="n">author</span><span class="si">}</span><span class="s1"> used the add-channel command&#39;</span><span class="p">)</span>
+    <span class="n">wc_embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;The welcome-screen of </span><span class="si">{</span><span class="n">i</span><span class="o">.</span><span class="n">guild</span><span class="si">}</span><span class="s1"> is now:&#39;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;```</span><span class="se">\n</span><span class="s1">&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">emoji</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">edited</span><span class="o">.</span><span class="n">description</span> <span class="ow">or</span> <span class="s2">&quot;No Description set&quot;</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;```&#39;</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">w_channel</span> <span class="ow">in</span> <span class="n">edited</span><span class="o">.</span><span class="n">welcome_channels</span><span class="p">:</span>
+        <span class="n">wc_embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">w_channel</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">w_channel</span><span class="o">.</span><span class="n">emoji</span><span class="p">)</span> <span class="k">if</span> <span class="n">w_channel</span><span class="o">.</span><span class="n">emoji</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">w_channel</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="n">inline</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">wc_embed</span><span class="p">)</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;Y)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-message-command-that-translate-the-corresponding-message-in-to-the-invokers-locale-language">
+<h4>A Message Command that translate the corresponding Message in to the invokers locale language<a class="headerlink" href="#a-message-command-that-translate-the-corresponding-message-in-to-the-invokers-locale-language" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">translators</span> <span class="c1"># need to be installed using &quot;py -m pip install translators&quot; (Win) or &quot;python3 -m pip install translators&quot; (Linux/macOS)</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">sync_commands</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">message_command</span><span class="p">(</span><span class="n">guild_ids</span><span class="o">=</span><span class="p">[</span><span class="mi">852871920411475968</span><span class="p">])</span> <span class="c1"># replace the guild id with your own or remove the parameter to make the command global</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">translate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ApplicationCommandInteraction</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+   <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">defer</span><span class="p">(</span><span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+   <span class="n">translated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span>
+       <span class="n">translators</span><span class="o">.</span><span class="n">google</span><span class="p">,</span>
+       <span class="n">query_text</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+       <span class="n">to_language</span><span class="o">=</span><span class="n">interaction</span><span class="o">.</span><span class="n">author_locale</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+       <span class="n">sleep_seconds</span><span class="o">=</span><span class="mi">4</span>
+   <span class="p">)</span>
+   <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">translated</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2000</span><span class="p">:</span>
+       <span class="c1"># Message was send by a Nitro user wich can send messages with up to 4000 characters.</span>
+       <span class="c1"># As we can&#39;t do this sent it as a file instead.</span>
+       <span class="n">new_file</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+       <span class="n">file</span> <span class="o">=</span> <span class="n">new_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">translated</span><span class="p">)</span>
+       <span class="k">return</span> <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">_translated.txt&#39;</span><span class="p">),</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;You Bot-Token here&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-user-context-menu-command-wich-shows-you-information-about-the-corresponding-user">
+<h4>A User context-menu command wich shows you information about the corresponding user<a class="headerlink" href="#a-user-context-menu-command-wich-shows-you-information-about-the-corresponding-user" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">sync_commands</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">user_command</span><span class="p">(</span><span class="n">guild_ids</span><span class="o">=</span><span class="p">[</span><span class="mi">852871920411475968</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">userinfo</span><span class="p">(</span><span class="n">interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ApplicationCommandInteraction</span><span class="p">,</span> <span class="n">member</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Member</span><span class="p">):</span>
+    <span class="n">_roles</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">_roles</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">member</span><span class="o">.</span><span class="n">guild</span><span class="o">.</span><span class="n">default_role</span><span class="p">)</span> <span class="c1"># skipp @everyone</span>
+    <span class="n">_roles</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+    <span class="n">embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Userinfo for </span><span class="si">{</span><span class="n">member</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;This is a Userinfo for </span><span class="si">{</span><span class="n">member</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+        <span class="n">timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">member</span><span class="o">.</span><span class="n">color</span>
+        <span class="p">)</span>
+
+    <span class="n">to_add</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;Name:&#39;</span><span class="p">,</span> <span class="n">member</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Tag:&#39;</span><span class="p">,</span> <span class="n">member</span><span class="o">.</span><span class="n">discriminator</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;User-ID:&#39;</span><span class="p">,</span> <span class="n">member</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Nitro:&#39;</span><span class="p">,</span> <span class="s1">&#39;✅ Yes&#39;</span> <span class="k">if</span> <span class="n">member</span><span class="o">.</span><span class="n">premium_since</span> <span class="k">else</span> <span class="s1">&#39;❔ Unknown&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Nick:&#39;</span><span class="p">,</span> <span class="n">member</span><span class="o">.</span><span class="n">nick</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Created-at:&#39;</span><span class="p">,</span> <span class="n">discord</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">styled_timestamp</span><span class="p">(</span><span class="n">member</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Joined at&#39;</span><span class="p">,</span> <span class="n">discord</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">styled_timestamp</span><span class="p">(</span><span class="n">member</span><span class="o">.</span><span class="n">joined_at</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">member</span><span class="o">.</span><span class="n">premium_since</span><span class="p">:</span>
+        <span class="n">to_add</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s1">&#39;Premium since:&#39;</span><span class="p">,</span> <span class="n">discord</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">styled_timestamp</span><span class="p">(</span><span class="n">member</span><span class="o">.</span><span class="n">premium_since</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">),</span> <span class="kc">True</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">roles_list</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">_roles</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span> <span class="c1"># The Member don&#39;t has any roles</span>
+        <span class="n">roles_list</span> <span class="o">=</span> <span class="s1">&#39;`None`&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">_roles</span><span class="p">:</span>
+            <span class="n">updated</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">roles_list</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">role</span><span class="o">.</span><span class="n">mention</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="k">if</span> <span class="n">updated</span> <span class="o">&gt;</span> <span class="mi">1024</span><span class="p">:</span>
+                <span class="n">roles_list</span> <span class="o">=</span> <span class="n">updated</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="n">to_add</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="sa">f</span><span class="s1">&#39;Roles: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">member</span><span class="o">.</span><span class="n">roles</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">roles_list</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">inline</span> <span class="ow">in</span> <span class="n">to_add</span><span class="p">:</span>
+        <span class="n">embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">inline</span><span class="o">=</span><span class="n">inline</span><span class="p">)</span>
+
+    <span class="n">embed</span><span class="o">.</span><span class="n">set_author</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">member</span><span class="o">.</span><span class="n">display_name</span><span class="p">,</span> <span class="n">icon_url</span><span class="o">=</span><span class="n">member</span><span class="o">.</span><span class="n">display_avatar_url</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;https://discord.com/users/</span><span class="si">{</span><span class="n">member</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">embed</span><span class="o">.</span><span class="n">set_footer</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Requested by </span><span class="si">{</span><span class="n">interaction</span><span class="o">.</span><span class="n">author</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">icon_url</span><span class="o">=</span><span class="n">interaction</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">display_avatar_url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">member</span><span class="o">.</span><span class="n">bot</span><span class="p">:</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">fetch_user</span><span class="p">(</span><span class="n">member</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="c1"># to get the banner data we need to fetch the user</span>
+        <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">banner</span><span class="p">:</span>
+            <span class="n">embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Banner&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;See the [banner](</span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">banner_url</span><span class="si">}</span><span class="s1">) below&#39;</span><span class="p">,</span> <span class="n">inline</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Banner Color&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;See the [banner-color](https://serux.pro/rendercolour?hex=</span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">banner_color</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0x&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1">?width=500) below&#39;</span><span class="p">,</span> <span class="n">inline</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">banner</span><span class="p">:</span>
+            <span class="n">embed</span><span class="o">.</span><span class="n">set_image</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">banner_url</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">embed</span><span class="o">.</span><span class="n">set_image</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;https://serux.pro/rendercolour?hex=</span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">banner_color</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0x&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1">&amp;width=500&#39;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">embed</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;You Bot-Token here&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="button-examples">
+<h3>Button Examples<a class="headerlink" href="#button-examples" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="a-command-that-sends-you-a-message-and-edit-it-when-you-click-a-button">
+<h4>A Command that sends you a Message and edit it when you click a Button:<a class="headerlink" href="#a-command-that-sends-you-a-message-and-edit-it-when-you-click-a-button" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">import</span> <span class="nn">discord</span>
+<span class="kn">from</span> <span class="nn">discord.ext</span> <span class="kn">import</span> <span class="n">commands</span>
+<span class="kn">from</span> <span class="nn">discord</span> <span class="kn">import</span> <span class="n">ActionRow</span><span class="p">,</span> <span class="n">Button</span><span class="p">,</span> <span class="n">ButtonStyle</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">commands</span><span class="o">.</span><span class="n">Bot</span><span class="p">(</span><span class="n">command_prefix</span><span class="o">=</span><span class="n">commands</span><span class="o">.</span><span class="n">when_mentioned_or</span><span class="p">(</span><span class="s1">&#39;.!&#39;</span><span class="p">),</span> <span class="n">intents</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Intents</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="n">case_insensitive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;buttons&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;sends you some nice Buttons&#39;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">buttons</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">commands</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
+    <span class="n">components</span> <span class="o">=</span> <span class="p">[</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">Button</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr.1&#39;</span><span class="p">,</span>
+                                   <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;option1&#39;</span><span class="p">,</span>
+                                   <span class="n">emoji</span><span class="o">=</span><span class="s2">&quot;🆒&quot;</span><span class="p">,</span>
+                                   <span class="n">style</span><span class="o">=</span><span class="n">ButtonStyle</span><span class="o">.</span><span class="n">green</span>
+                                   <span class="p">),</span>
+                            <span class="n">Button</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr.2&#39;</span><span class="p">,</span>
+                                   <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;option2&#39;</span><span class="p">,</span>
+                                   <span class="n">emoji</span><span class="o">=</span><span class="s2">&quot;🆗&quot;</span><span class="p">,</span>
+                                   <span class="n">style</span><span class="o">=</span><span class="n">ButtonStyle</span><span class="o">.</span><span class="n">blurple</span><span class="p">)),</span>
+                  <span class="n">ActionRow</span><span class="p">(</span><span class="n">Button</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;A Other Row&#39;</span><span class="p">,</span>
+                                   <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;sec_row_1st option&#39;</span><span class="p">,</span>
+                                   <span class="n">style</span><span class="o">=</span><span class="n">ButtonStyle</span><span class="o">.</span><span class="n">red</span><span class="p">,</span>
+                                   <span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;😀&#39;</span><span class="p">),</span>
+                            <span class="n">Button</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s1">&#39;https://www.youtube.com/watch?v=dQw4w9WgXcQ&#39;</span><span class="p">,</span>
+                                   <span class="n">label</span><span class="o">=</span><span class="s2">&quot;This is an Link&quot;</span><span class="p">,</span>
+                                   <span class="n">style</span><span class="o">=</span><span class="n">ButtonStyle</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+                                   <span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;🎬&#39;</span><span class="p">))</span>
+                  <span class="p">]</span>
+    <span class="n">an_embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Here are some Button</span><span class="se">\&#39;</span><span class="s1">s&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Choose an option&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Color</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">an_embed</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">components</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">i</span><span class="o">.</span><span class="n">message</span> <span class="o">==</span> <span class="n">msg</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">member</span> <span class="o">==</span> <span class="n">ctx</span><span class="o">.</span><span class="n">author</span>
+
+    <span class="n">interaction</span><span class="p">,</span> <span class="n">button</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="s1">&#39;button_click&#39;</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="n">_check</span><span class="p">)</span>
+    <span class="n">button_id</span> <span class="o">=</span> <span class="n">button</span><span class="o">.</span><span class="n">custom_id</span>
+
+    <span class="c1"># This sends the Discord-API that the interaction has been received and is being &quot;processed&quot;</span>
+    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">defer</span><span class="p">()</span>
+    <span class="c1"># if this is not used and you also do not edit the message within 3 seconds as described below,</span>
+    <span class="c1"># Discord will indicate that the interaction has failed.</span>
+
+    <span class="c1"># If you use interaction.edit instead of interaction.message.edit, you do not have to defer the interaction,</span>
+    <span class="c1"># if your response does not last longer than 3 seconds.</span>
+    <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">an_embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Choose&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Your Choose was `</span><span class="si">{</span><span class="n">button_id</span><span class="si">}</span><span class="s1">`&#39;</span><span class="p">),</span>
+                           <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="n">components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">disable_all_buttons</span><span class="p">(),</span> <span class="n">components</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">disable_all_buttons</span><span class="p">()])</span>
+
+    <span class="c1"># The Discord API doesn&#39;t send an event when you press a link button so we can&#39;t &quot;receive&quot; that.</span>
+
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;You Bot-Token here&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="another-complex-example-where-a-small-embed-will-be-send-you-can-move-a-small-white-with-the-buttons">
+<h4>Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:<a class="headerlink" href="#another-complex-example-where-a-small-embed-will-be-send-you-can-move-a-small-white-with-the-buttons" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pointers</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<span class="k">class</span> <span class="nc">Pointer</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guild</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Guild</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">guild</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_possition_x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_possition_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">possition_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_possition_x</span>
+
+    <span class="k">def</span> <span class="nf">set_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_possition_x</span> <span class="o">+=</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_possition_x</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">possition_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_possition_y</span>
+
+    <span class="k">def</span> <span class="nf">set_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_possition_y</span> <span class="o">+=</span> <span class="n">y</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_possition_y</span>
+
+
+<span class="k">def</span> <span class="nf">get_pointer</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">Guild</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">discord</span><span class="o">.</span><span class="n">Guild</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pointers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">guild</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">p</span>
+        <span class="n">pointers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Pointer</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pointers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">guild</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">p</span>
+        <span class="n">guild</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_guild</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">guild</span><span class="p">:</span>
+            <span class="n">pointers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Pointer</span><span class="p">(</span><span class="n">guild</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">guild</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">base</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">base</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">w</span><span class="p">])</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="n">i</span><span class="p">]))])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;⬛&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;⬜&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">)))</span>
+
+
+<span class="n">empty_button</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">ButtonStyle</span><span class="o">.</span><span class="n">Secondary</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">custom_id</span><span class="o">=</span><span class="s2">&quot;empty&quot;</span><span class="p">,</span> <span class="n">disabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">arrow_button</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">discord</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">ButtonStyle</span><span class="o">.</span><span class="n">Primary</span><span class="p">)</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;start_game&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">start_game</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">commands</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
+    <span class="n">pointer</span><span class="p">:</span> <span class="n">Pointer</span> <span class="o">=</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">guild</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Little Game&quot;</span><span class="p">,</span>
+                                       <span class="n">description</span><span class="o">=</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">)),</span>
+                   <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">empty_button</span><span class="p">,</span> <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↑&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;up&#39;</span><span class="p">),</span> <span class="n">empty_button</span><span class="p">),</span>
+                               <span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">disabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;←&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                                 <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↓&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;down&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                                 <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;→&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">))</span>
+                               <span class="p">]</span>
+                   <span class="p">)</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">on_click</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">up</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+    <span class="n">pointer</span><span class="p">:</span> <span class="n">Pointer</span> <span class="o">=</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">interaction</span><span class="o">.</span><span class="n">guild</span><span class="p">)</span>
+    <span class="n">pointer</span><span class="o">.</span><span class="n">set_y</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Little Game&quot;</span><span class="p">,</span>
+                                     <span class="n">description</span><span class="o">=</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span><span class="p">)),</span>
+                           <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">empty_button</span><span class="p">,</span> <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↑&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;up&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span> <span class="o">&gt;=</span> <span class="mi">9</span><span class="p">),</span> <span class="n">empty_button</span><span class="p">),</span>
+                                       <span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;←&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↓&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;down&#39;</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;→&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&gt;=</span> <span class="mi">9</span><span class="p">))]</span>
+                           <span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">on_click</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">down</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+    <span class="n">pointer</span><span class="p">:</span> <span class="n">Pointer</span> <span class="o">=</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">interaction</span><span class="o">.</span><span class="n">guild</span><span class="p">)</span>
+    <span class="n">pointer</span><span class="o">.</span><span class="n">set_y</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Little Game&quot;</span><span class="p">,</span>
+                                          <span class="n">description</span><span class="o">=</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span><span class="p">)),</span>
+                           <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">empty_button</span><span class="p">,</span> <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↑&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;up&#39;</span><span class="p">),</span> <span class="n">empty_button</span><span class="p">),</span>
+                                       <span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;←&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↓&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;down&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;→&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&gt;=</span> <span class="mi">9</span><span class="p">))]</span>
+                           <span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">on_click</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">right</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+    <span class="n">pointer</span><span class="p">:</span> <span class="n">Pointer</span> <span class="o">=</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">interaction</span><span class="o">.</span><span class="n">guild</span><span class="p">)</span>
+    <span class="n">pointer</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Little Game&quot;</span><span class="p">,</span>
+                                           <span class="n">description</span><span class="o">=</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span><span class="p">)),</span>
+                           <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">empty_button</span><span class="p">,</span> <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↑&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;up&#39;</span><span class="p">),</span> <span class="n">empty_button</span><span class="p">),</span>
+                                       <span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;←&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↓&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;down&#39;</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;→&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&gt;=</span> <span class="mi">9</span><span class="p">))]</span>
+                           <span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">on_click</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">left</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+    <span class="n">pointer</span><span class="p">:</span> <span class="n">Pointer</span> <span class="o">=</span> <span class="n">get_pointer</span><span class="p">(</span><span class="n">interaction</span><span class="o">.</span><span class="n">guild</span><span class="p">)</span>
+    <span class="n">pointer</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Little Game&quot;</span><span class="p">,</span>
+                                           <span class="n">description</span><span class="o">=</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_y</span><span class="p">)),</span>
+                           <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">empty_button</span><span class="p">,</span> <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↑&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;up&#39;</span><span class="p">),</span> <span class="n">empty_button</span><span class="p">),</span>
+                                       <span class="n">discord</span><span class="o">.</span><span class="n">ActionRow</span><span class="p">(</span><span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;←&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">disable_if</span><span class="p">(</span><span class="n">pointer</span><span class="o">.</span><span class="n">possition_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;↓&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;down&#39;</span><span class="p">),</span>
+                                                         <span class="n">arrow_button</span><span class="p">()</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;→&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_custom_id</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">))]</span>
+                           <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="select-menu-modal-textinput">
+<h3>Select Menu &amp; Modal (TextInput)<a class="headerlink" href="#select-menu-modal-textinput" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="sending-selectmenu-s-and-respond-to-them">
+<h4>Sending-SelectMenu’s and respond to them<a class="headerlink" href="#sending-selectmenu-s-and-respond-to-them" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">discord</span>
+<span class="kn">from</span> <span class="nn">discord.ext</span> <span class="kn">import</span> <span class="n">commands</span>
+<span class="kn">from</span> <span class="nn">discord</span> <span class="kn">import</span> <span class="n">Button</span><span class="p">,</span> <span class="n">SelectMenu</span><span class="p">,</span> <span class="n">SelectOption</span>
+
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">commands</span><span class="o">.</span><span class="n">Bot</span><span class="p">(</span><span class="n">command_prefix</span><span class="o">=</span><span class="n">commands</span><span class="o">.</span><span class="n">when_mentioned_or</span><span class="p">(</span><span class="s1">&#39;!&#39;</span><span class="p">))</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+   <span class="n">msg_with_selects</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Hey here is an nice Select-Menu&#39;</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="p">[</span>
+      <span class="p">[</span>
+            <span class="n">SelectMenu</span><span class="p">(</span><span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;_select_it&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+               <span class="n">SelectOption</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;1️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 1&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The first option&#39;</span><span class="p">),</span>
+               <span class="n">SelectOption</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;2️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 2&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The second option&#39;</span><span class="p">),</span>
+               <span class="n">SelectOption</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;3️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 3&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The third option&#39;</span><span class="p">),</span>
+               <span class="n">SelectOption</span><span class="p">(</span><span class="n">emoji</span><span class="o">=</span><span class="s1">&#39;4️⃣&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Option Nr° 4&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;The fourth option&#39;</span><span class="p">)],</span>
+                     <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Select some Options&#39;</span><span class="p">,</span> <span class="n">max_values</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+         <span class="p">]])</span>
+
+   <span class="k">def</span> <span class="nf">check_selection</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">Interaction</span><span class="p">,</span> <span class="n">select_menu</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">i</span><span class="o">.</span><span class="n">author</span> <span class="o">==</span> <span class="n">ctx</span><span class="o">.</span><span class="n">author</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">message</span> <span class="o">==</span> <span class="n">msg_with_selects</span>
+
+   <span class="n">interaction</span><span class="p">,</span> <span class="n">select_menu</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="s1">&#39;selection_select&#39;</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="n">check_selection</span><span class="p">)</span>
+
+   <span class="n">embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;You have chosen:&#39;</span><span class="p">,</span>
+                        <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You have chosen &quot;</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Option Nr° </span><span class="si">{</span><span class="n">o</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">select_menu</span><span class="o">.</span><span class="n">values</span><span class="p">]),</span>
+                        <span class="n">color</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Color</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+   <span class="k">await</span> <span class="n">interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">embed</span><span class="p">)</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;Your Bot-Token&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-select-menu-that-shows-you-the-different-response-types-for-an-interaction">
+<h4>A Select Menu that shows you the different response-types for an interaction<a class="headerlink" href="#a-select-menu-that-shows-you-the-different-response-types-for-an-interaction" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">discord</span>
+<span class="kn">from</span> <span class="nn">discord.ext</span> <span class="kn">import</span> <span class="n">commands</span>
+<span class="kn">from</span> <span class="nn">discord</span> <span class="kn">import</span> <span class="n">Modal</span><span class="p">,</span> <span class="n">TextInput</span>
+<span class="kn">from</span> <span class="nn">discord</span> <span class="kn">import</span> <span class="n">ActionRow</span><span class="p">,</span> <span class="n">SelectMenu</span><span class="p">,</span> <span class="n">SelectOption</span><span class="p">,</span> <span class="n">Modal</span><span class="p">,</span> <span class="n">TextInput</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">commands</span><span class="o">.</span><span class="n">Bot</span><span class="s1">&#39;!&#39;</span><span class="p">)</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">interaction_types</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+    <span class="n">components</span> <span class="o">=</span> <span class="p">[</span><span class="n">ActionRow</span><span class="p">(</span>
+        <span class="n">SelectMenu</span><span class="p">(</span>
+            <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;interaction_types_example&#39;</span><span class="p">,</span>
+            <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Select a interaction response type to show.&#39;</span><span class="p">,</span>
+            <span class="n">options</span><span class="o">=</span>
+            <span class="p">[</span>
+                <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;msg_with_source&#39;</span><span class="p">,</span> <span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="s1">&#39;Respond with a message&#39;</span><span class="p">,</span> <span class="s1">&#39;4️⃣&#39;</span><span class="p">),</span>
+                <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;deferred_msg_with_source&#39;</span><span class="p">,</span> <span class="s1">&#39;5&#39;</span><span class="p">,</span> <span class="s1">&#39;ACK an interaction[...]; user sees a loading state&#39;</span><span class="p">,</span> <span class="s1">&#39;5️⃣&#39;</span><span class="p">),</span>
+                <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;deferred_update_msg&#39;</span><span class="p">,</span> <span class="s1">&#39;6&#39;</span><span class="p">,</span> <span class="s1">&#39;ACK an interaction[...]; no loading state&#39;</span><span class="p">,</span> <span class="s1">&#39;6️⃣&#39;</span><span class="p">),</span>
+                <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;update_msg&#39;</span><span class="p">,</span> <span class="s1">&#39;7&#39;</span><span class="p">,</span> <span class="s1">&#39;Edit the message the component was attached to&#39;</span><span class="p">,</span> <span class="s1">&#39;7️⃣&#39;</span><span class="p">),</span>
+                <span class="n">SelectOption</span><span class="p">(</span><span class="s1">&#39;show_modal&#39;</span><span class="p">,</span> <span class="s1">&#39;9&#39;</span><span class="p">,</span> <span class="s1">&#39;Respond to the interaction by sending a popup modal&#39;</span><span class="p">,</span> <span class="s1">&#39;9️⃣&#39;</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">)]</span>
+
+    <span class="n">embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Interaction Callback Type&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;These are all interaction-callback-types you could use for slash-commands and message-components:&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Color</span><span class="o">.</span><span class="n">green</span><span class="p">())</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">embed</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">components</span><span class="p">)</span>
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">on_select</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">interaction_types_example</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ComponentInteraction</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="n">_type</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;This is of type `4`&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">defer</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s1">&#39;Yes this is of type `5`&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">defer</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embeds</span><span class="o">=</span><span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">embeds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;This is of type `6`&#39;</span><span class="p">)])</span>
+    <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">i</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">embeds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">i</span><span class="o">.</span><span class="n">author</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;This is of type `7`&#39;</span><span class="p">))</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">embeds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">clear_fields</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">embeds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="mi">9</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">i</span><span class="o">.</span><span class="n">respond_with_modal</span><span class="p">(</span>
+            <span class="n">Modal</span><span class="p">(</span>
+            <span class="n">title</span><span class="o">=</span><span class="s1">&#39;This is of type 9&#39;</span><span class="p">,</span>
+            <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;response_types_example_modal&#39;</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">TextInput</span><span class="p">(</span>
+                    <span class="n">style</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s1">&#39;This is a short(single-line) input&#39;</span><span class="p">,</span>
+                    <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Enter something in here.&#39;</span><span class="p">,</span>
+                    <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;short_input&#39;</span>
+                <span class="p">),</span>
+                <span class="n">TextInput</span><span class="p">(</span>
+                    <span class="n">style</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s1">&#39;This is a long(multi-line) input&#39;</span><span class="p">,</span>
+                    <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Enter something longer in here.&#39;</span><span class="p">,</span>
+                    <span class="n">custom_id</span><span class="o">=</span><span class="s1">&#39;long_input&#39;</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">modal_interaction</span><span class="p">:</span> <span class="n">discord</span><span class="o">.</span><span class="n">ModalSubmitInteraction</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="s1">&#39;modal_submit&#39;</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="k">lambda</span> <span class="n">mi</span><span class="p">:</span> <span class="n">mi</span><span class="o">.</span><span class="n">author</span> <span class="o">==</span> <span class="n">i</span><span class="o">.</span><span class="n">author</span><span class="p">)</span>
+    <span class="n">embed</span> <span class="o">=</span> <span class="n">discord</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;This was response type 9&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">discord</span><span class="o">.</span><span class="n">Color</span><span class="o">.</span><span class="n">green</span><span class="p">())</span>
+    <span class="n">embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Content of short input:&#39;</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">modal_interaction</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="s1">&#39;short_input&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">inline</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="n">embed</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Content of long input:&#39;</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">modal_interaction</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="s1">&#39;long_input&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">inline</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+
+    <span class="k">await</span> <span class="n">modal_interaction</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">embed</span><span class="p">)</span>
+
+
+<span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;You Bot-Token here&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For some mote examples take a look at <a class="reference external" href="https://github.com/mccoderpy/discord.py-message-components/tree/developer/examples">GitHub</a></p>
+</div>
+<div class="section" id="coro">
+<h4>coro<a class="headerlink" href="#coro" title="Permalink to this headline">¶</a></h4>
+<p>A <a class="reference external" href="https://docs.python.org/3/library/asyncio-task.html#coroutine">coroutine</a> is a function that must be invoked with <code class="docutils literal notranslate"><span class="pre">await</span></code> or <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>.
+When Python encounters an <code class="docutils literal notranslate"><span class="pre">await</span></code> it stops the function’s execution at that point and works on other things until it comes back to that point and finishes off its work.
+This allows for your program to be doing multiple things at the same time without using threads or complicated multiprocessing.
+<strong>If you forget to await a coroutine then the coroutine will not run. Never forget to await a coroutine.</strong></p>
+<div class="figure align-center" id="visitor-count">
+<img alt="Number(As image) how often this WebSite was visited" src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fmccoderpy%2Fdiscord.py-message-components%2Ftree%2Fdeveloper%2F&amp;countColor=%23263759&amp;style=flat" />
+</div>
+<div class="section" id="files">
+<h5>Files<a class="headerlink" href="#files" title="Permalink to this headline">¶</a></h5>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h4>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Mathieu Corsham aka. mccoder.py.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
