@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 
 from .enums import ComponentType, ButtonStyle, TextInputStyle
 from .emoji import Emoji
-from typing import Union, List, Optional, Callable
+from typing import Union, List, Optional, Any, Callable
 from typing_extensions import Literal
 from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, EmptyActionRow
@@ -127,7 +127,8 @@ class Button:
         """
         Sets the url of the :class:`Button`
 
-        :param url: str
+
+        url: :class:`str`
             The url to replace the old one with
 
         :return: discord.Button
@@ -172,7 +173,7 @@ class Button:
         check: Union[:class:`bool`, :type:`typing.Callable`]
             The check could be an :class:`bool` or usually any :type:`Callable` that returns an :class:`bool`.
         *args: Any
-            Arguments that should passed in to the :attr:`check` if it is an :type:`Callable`.
+            Arguments that should be passed in to the :attr:`check` if it is an :type:`Callable`.
 
         :return: discord.Button
          """
@@ -195,7 +196,7 @@ class Button:
         style: discord.ButtonStyle
             The style the :class:`Button` should have when the :attr:`check` returns True
         *args: Any
-            Arguments that should passed in to the :attr:`check` if it is an :type:`Callable`.
+            Arguments that should be passed in to the :attr:`check` if it is an :type:`Callable`.
 
         :return: discord.Button
 
@@ -249,7 +250,7 @@ class SelectOption:
     description: Optional[:class:`str`] = None
         an additional description of the option, max 50 characters
     emoji: Union[:class:`PartialEmoji`, :class:`Emoji`, :class:`str`] = None
-        an Emoji that will shown on the left side of the option.
+        an Emoji that will be shown on the left side of the option.
     default: Optional[:class:`bool`] = False
         will render this option as selected by default
 
@@ -450,6 +451,9 @@ class SelectMenu:
         """
         Set the custom_id of the :class:`SelectMenu`
 
+        Parameters
+        ----------
+
         :param custom_id: Union[:class:`str`, :class:`int`]
             The custom_id to replace the old one with
 
@@ -473,7 +477,7 @@ class SelectMenu:
         check: Union[:class:`bool`, :type:`typing.Callable`]
             The check could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`.
         *args: Any
-            Arguments that should passed in to the :param:`check` if it is an :type:`Callable`.
+            Arguments that should be passed in to the :param:`check` if it is an :type:`Callable`.
 
         :return: discord.SelectMenu
          """
@@ -775,16 +779,16 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_components_if(self, check: Union[bool, Callable], *args: typing.Any):
+    def disable_all_components_if(self, check: Union[bool, Callable], *args: Any):
         """
         Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
 
         Parameters
         -----------
         check: Union[:class:`bool`, :type:`typing.Callable`]
-            Could be an bool or usually any Callable that returns a bool.
+            Could be a bool or usually any Callable that returns a bool.
         *args: Any
-            Arguments that should passed in to the check if it is a Callable.
+            Arguments that should be passed in to the check if it is a Callable.
 
         :return: discord.ActionRow
         """
@@ -808,16 +812,16 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_buttons_if(self, check: Union[bool, Callable], *args: typing.Any):
+    def disable_all_buttons_if(self, check: Union[bool, Callable], *args: Any):
         """
         Disables all :class:`discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
     
         Parameters
         -----------
         check: Union[:class:`bool`, :type:`typing.Callable`]
-            Could be an bool or usually any Callable that returns a bool.
+            Could be a bool or usually any Callable that returns a bool.
         *args: Any
-            Arguments that should passed in to the check if it is a Callable.
+            Arguments that should be passed in to the check if it is a Callable.
 
         :return: discord.ActionRow
         """
@@ -840,7 +844,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, SelectMenu)]
         return self
 
-    def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: typing.Any):
+    def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: Any):
         """
         Disables all :class:`SelectMenu`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
 
@@ -849,7 +853,7 @@ class ActionRow:
         check: Union[:class:`bool`, :class:`typing.Callable`]
             could be an :class:`bool` or usually any :type:`Callable` that returns a :class:`bool`
         *args: Any
-            Arguments that should passed in to the :param:`check` if it is a :type:`Callable`.
+            Arguments that should be passed in to the :param:`check` if it is a :type:`Callable`.
 
         :return: discord.ActionRow
         """
