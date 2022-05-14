@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import asyncio
 import functools
 import inspect
-import typing
+from typing import Union, Optional, List, Tuple, Dict, Any, Callable
 import datetime
 
 import discord
@@ -484,7 +484,7 @@ class Command(_BaseCommand):
         except AttributeError:
             pass
         else:
-            if origin is typing.Union:
+            if origin is Union:
                 errors = []
                 _NoneType = type(None)
                 for conv in converter.__args__:
@@ -992,7 +992,7 @@ class Command(_BaseCommand):
         except AttributeError:
             return False
 
-        if origin is not typing.Union:
+        if origin is not Union:
             return False
 
         return annotation.__args__[-1] is type(None)
@@ -1397,7 +1397,7 @@ class Group(GroupMixin, Command):
 
 # Decorators
 
-def command(name=None, cls=None, **attrs):
+def command(name=None, cls=None, **attrs) -> Union[Command, Group]:
     """A decorator that transforms a function into a :class:`.Command`
     or if called with :func:`.group`, :class:`.Group`.
 
@@ -1437,7 +1437,7 @@ def command(name=None, cls=None, **attrs):
 
     return decorator
 
-def group(name=None, **attrs):
+def group(name=None, **attrs) -> Group:
     """A decorator that transforms a function into a :class:`.Group`.
 
     This is similar to the :func:`.command` decorator but the ``cls``
