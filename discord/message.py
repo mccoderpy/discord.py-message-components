@@ -36,7 +36,6 @@ from .channel import ThreadChannel
 from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
-from .calls import CallMessage
 from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
 from .errors import InvalidArgument, ClientException, HTTPException, NotFound, MissingPermissionsToCreateThread
 from .embeds import Embed
@@ -473,9 +472,6 @@ class Message(Hashable):
     channel: Union[:class:`abc.Messageable`]
         The :class:`TextChannel` that the message was sent from.
         Could be a :class:`DMChannel` or :class:`GroupChannel` if it's a private message.
-    call: Optional[:class:`CallMessage`]
-        The call that the message refers to. This is only applicable to messages of type
-        :attr:`MessageType.call`.
 
         .. deprecated:: 1.7
 
@@ -786,26 +782,6 @@ class Message(Hashable):
                 role = self.guild.get_role(role_id)
                 if role is not None:
                     self.role_mentions.append(role)
-
-    def _handle_call(self, call):
-        if call is None or self.type is not MessageType.call:
-            self.call = None
-            return
-
-        # we get the participant source from the mentions array or
-        # the author
-
-        participants = []
-        for uid in map(int, call.get('participants', [])):
-            if uid == self.author.id:
-                participants.append(self.author)
-            else:
-                user = utils.find(lambda u: u.id == uid, self.mentions)
-                if user is not None:
-                    participants.append(user)
-
-        call['participants'] = participants
-        self.call = CallMessage(message=self, **call)
 
     def _rebind_channel_reference(self, new_channel):
         self.channel = new_channel
