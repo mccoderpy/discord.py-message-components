@@ -655,6 +655,11 @@ class Spotify:
         return self.end - self.start
 
     @property
+    def position(self):
+        """:class:`float`: The current position of the song being played."""
+        return (datetime.datetime.utcnow() - self.start).total_seconds()
+
+    @property
     def party_id(self):
         """:class:`str`: The party ID of the listening party."""
         return self._party.get('id', '')
