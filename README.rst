@@ -29,7 +29,7 @@
       :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
    
-   .. image:: .. image:: https://app.codacy.com/project/badge/Grade/55c668b1f98d4265b4d9e940c89f6e2f
+   .. image:: https://app.codacy.com/project/badge/Grade/55c668b1f98d4265b4d9e940c89f6e2f
       :target: https://www.codacy.com/gh/mccoderpy/discord.py-message-components/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mccoderpy/discord.py-message-components&amp;utm_campaign=Badge_Grade
       :alt: Code quality
 
