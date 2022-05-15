@@ -33,7 +33,7 @@ import re
 import sys
 import traceback
 import types
-from typing import Optional, Union, Pattern, AnyStr, Callable, Awaitable, Any
+from typing import Optional, Union, Pattern, Match, AnyStr, Callable, Awaitable, Any
 
 import discord
 
@@ -425,7 +425,7 @@ class BotBase(GroupMixin):
         self._after_invoke = coro
         return coro
 
-    def on_click(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]= None) -> Callable[
+    ''''def on_click(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]= None) -> Callable[
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
@@ -440,7 +440,7 @@ class BotBase(GroupMixin):
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.Button` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed. 
         
@@ -524,7 +524,7 @@ class BotBase(GroupMixin):
             return func
 
         return decorator
-    
+    '''
     # listener registration
 
     def add_interaction_listener(self, _type,  func, custom_id: re.Pattern):

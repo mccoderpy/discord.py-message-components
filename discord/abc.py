@@ -663,7 +663,7 @@ class GuildChannel:
         elif isinstance(target, Role):
             perm_type = 'role'
         else:
-            raise InvalidArgument('target parameter must be either Member or Role')
+            raise InvalidArgument(f'target parameter must be either Member or Role, not {target.__class__.__name__}')
 
         if isinstance(overwrite, _Undefined):
             if len(permissions) == 0:

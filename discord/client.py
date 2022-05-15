@@ -33,7 +33,7 @@ import sys
 import re
 import traceback
 import warnings
-from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable, TYPE_CHECKING
+from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable, TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
     from .permissions import Permissions
@@ -61,8 +61,6 @@ from .backoff import ExponentialBackoff
 from .webhook import Webhook
 from .iterators import GuildIterator
 from .appinfo import AppInfo
-
-from .interactions import ApplicationCommandInteraction
 from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
     GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType, \
     Localizations
@@ -1155,7 +1153,7 @@ class Client:
                     style=ButtonStyle.blurple)
 
             # function that's called when the Button pressed
-            @client.on_click(custom_id='cool blue Button')
+            @client.on_click(custom_id='^cool blue Button$') # use ^ and $ if you want that it exactly match this name, otherwise something like 'cool blue Button is blue' will match too
             async def cool_blue_button(i: discord.ComponentInteraction, button: Button):
                 await i.respond(f'Hey you pressed a {button.custom_id}!', hidden=True)
 
@@ -1174,7 +1172,7 @@ class Client:
 
             _custom_id = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(func.__name__)
+            ) else re.compile(f'^{func.__name__}$')
 
             try:
                 listeners = self._listeners['raw_button_click']
@@ -1264,7 +1262,7 @@ class Client:
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -1278,8 +1276,8 @@ class Client:
                   components=[...])
 
             # function that's called when the Modal is submitted
-            @client.on_submit(custom_id='suggestions_modal')
-            async def suggestions_modal_callback(i: discord.ModalSubmitInteraction, modal):
+            @client.on_submit(custom_id='^suggestions_modal$')
+            async def suggestions_modal_callback(i: discord.ModalSubmitInteraction):
                 ...
 
         Raises
@@ -1301,7 +1299,7 @@ class Client:
                 listeners = []
                 self._listeners['modal_submit'] = listeners
 
-            listeners.append((func, lambda i, c: _custom_id.match(str(c.custom_id))))
+            listeners.append((func, lambda i: _custom_id.match(str(i.custom_id))))
             return func
 
         return decorator
@@ -1590,7 +1588,7 @@ class Client:
         name: Optional[:class:`str`]
             The name of the message-command, default to the functions name.
             Must be between 1-32 characters long.
-        default_required_permission: Optional[:class:`Permissions`]
+        default_required_permissions: Optional[:class:`Permissions`]
             Permissions that a Member needs by default to execute(see) the command.
         allow_dm: Optional[:class:`discord.Permissions`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
@@ -1655,7 +1653,7 @@ class Client:
        name: Optional[:class:`str`]
            The name of the user-command, default to the functions name.
            Must be between 1-32 characters long.
-       default_member_permission: Optional[:class:`discord.Permissions`]
+       default_required_permissions: Optional[:class:`discord.Permissions`]
            Permissions that a Member needs by default to execute(see) the command.
        allow_dm:  :class:`bool`
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.

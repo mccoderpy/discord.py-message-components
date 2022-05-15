@@ -159,7 +159,7 @@ class CogMeta(type):
         listeners_as_list = []
         for listener in listeners.values():
             for listener_name in listener.__cog_listener_names__:
-                # I use __name__ instead of just storing the value so I can inject
+                # I use __name__ instead of just storing the value, so I can inject
                 # the self attribute when the time comes to add them to the bot
                 listeners_as_list.append((listener_name, listener.__name__))
 
@@ -290,7 +290,7 @@ class Cog(metaclass=CogMeta):
 
     @classmethod
     def _get_overridden_method(cls, method):
-        """Return None if the method is not overridden. Otherwise returns the overridden method."""
+        """Return None if the method is not overridden. Otherwise, returns the overridden method."""
         return getattr(method.__func__, '__cog_special_method__', method)
 
     @classmethod
@@ -351,7 +351,7 @@ class Cog(metaclass=CogMeta):
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Button` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.Button` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -383,7 +383,7 @@ class Cog(metaclass=CogMeta):
             actual.__cog_interaction_listener__ = True
             _custom_id = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(actual.__name__)
+            ) else re.compile(f'^{actual.__name__}$')
             try:
                 actual.__interaction_listener_names__.append(('raw_button_click', _custom_id))
             except AttributeError:
@@ -407,7 +407,7 @@ class Cog(metaclass=CogMeta):
         Parameters
         -----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -443,7 +443,7 @@ class Cog(metaclass=CogMeta):
             actual.__cog_interaction_listener__ = True
             _custom_id = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(actual.__name__)
+            ) else re.compile(f'^{actual.__name__}$')
             try:
                 actual.__interaction_listener_names__.append(('raw_selection_select', _custom_id))
             except AttributeError:
@@ -456,8 +456,8 @@ class Cog(metaclass=CogMeta):
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-        A decorator that registers a on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
-         if so, the :func:`func` is called..
+        A decorator that registers an on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
+         if so, the :func:`func` is called.
 
         The function this is attached to must take the same parameters as a
         `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
@@ -468,7 +468,7 @@ class Cog(metaclass=CogMeta):
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as an function name
+            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -501,7 +501,7 @@ class Cog(metaclass=CogMeta):
             actual.__cog_interaction_listener__ = True
             _custom_id = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(actual.__name__)
+            ) else re.compile(f'^{actual.__name__}$')
             try:
                 actual.__interaction_listener_names__.append(('modal_submit', _custom_id))
             except AttributeError:
@@ -797,16 +797,16 @@ class Cog(metaclass=CogMeta):
         .. note::
 
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
         Parameters
         ----------
         name: Optional[:class:`str`]
             The name of the message-command, default to the functions name.
             Must be between 1-32 characters long.
-        default_required_permission: Optional[:class:`Permissions`]
+        default_required_permissions: Optional[:class:`discord.Permissions`]
             Permissions that a Member needs by default to execute(see) the command.
-        allow_dm: Optional[:class:`discord.Permissions`]
+        allow_dm: Optional[:class:`bool`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
             By default, commands are visible.
         guild_ids: Optional[List[:class:`int`]]
@@ -875,9 +875,9 @@ class Cog(metaclass=CogMeta):
        name: Optional[:class:`str`]
            The name of the user-command, default to the functions name.
            Must be between 1-32 characters long.
-       default_member_permission: Optional[:class:`discord.Permissions`]
+       default_required_permissions: Optional[:class:`discord.Permissions`]
            Permissions that a Member needs by default to execute(see) the command.
-       allow_dm:  :class:`bool`
+       allow_dm:  Optional[class:`bool`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
        guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
@@ -1070,7 +1070,7 @@ class Cog(metaclass=CogMeta):
         # while Bot.add_listener can raise if it's not a coroutine,
         # this precondition is already met by the listener decorator
         # already, thus this should never raise.
-        # Outside of, memory errors and the like...
+        # Outside of memory errors and the like...
         for name, method_name in self.__cog_listeners__:
             bot.add_listener(getattr(self, method_name), name)
 
