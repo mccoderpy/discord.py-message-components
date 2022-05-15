@@ -28,6 +28,10 @@
    .. image:: https://readthedocs.org/projects/discordpy-message-components/badge/?version=developer
       :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
+   
+   .. image:: .. image:: https://app.codacy.com/project/badge/Grade/55c668b1f98d4265b4d9e940c89f6e2f
+      :target: https://www.codacy.com/gh/mccoderpy/discord.py-message-components/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mccoderpy/discord.py-message-components&amp;utm_campaign=Badge_Grade
+      :alt: Code quality
 
    A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & many other features by `mccoderpy <https://github.com/mccoderpy/>`_
 
