@@ -20,11 +20,9 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-from __future__ import annotations
-
 import datetime
 from typing import Optional, TYPE_CHECKING, overload
-from .utils import _get_as_snowflake, get, parse_time
+from .utils import _get_as_snowflake, parse_time
 from .role import Role
 from .user import User
 from .errors import InvalidArgument
@@ -39,12 +37,6 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
-    """from .types.integration import (
-        IntegrationAccount as IntegrationAccountPayload,
-        Integration as IntegrationPayload,
-        IntegrationType,
-        IntegrationApplication as IntegrationApplicationPayload,
-    )"""
     from .guild import Guild
 
 
@@ -61,7 +53,7 @@ class IntegrationAccount:
 
     __slots__ = ('id', 'name')
 
-    def __init__(self, data: IntegrationAccountPayload) -> None:
+    def __init__(self, data) -> None:
         self.id: Optional[int] = _get_as_snowflake(data, 'id')
         self.name: str = data.pop('name')
 
@@ -101,7 +93,7 @@ class Integration:
         'enabled',
     )
 
-    def __init__(self, *, data: IntegrationPayload, guild: Guild) -> None:
+    def __init__(self, *, data, guild: Guild) -> None:
         self.guild = guild
         self._state = guild._state
         self._from_data(data)
@@ -109,9 +101,9 @@ class Integration:
     def __repr__(self):
         return f"<{self.__class__.__name__} id={self.id} name={self.name!r}>"
 
-    def _from_data(self, data: IntegrationPayload) -> None:
+    def _from_data(self, data) -> None:
         self.id: int = int(data['id'])
-        self.type: IntegrationType = data['type']
+        self.type = data['type']
         self.name: str = data['name']
         self.account: IntegrationAccount = IntegrationAccount(data['account'])
 
@@ -136,7 +128,7 @@ class Integration:
 
 class StreamIntegration(Integration):
     """Represents a stream integration for Twitch or YouTube.
-    .. versionadded:: 2.0
+    .. versionadded:: 1.8
     Attributes
     ----------
     id: :class:`int`
@@ -180,7 +172,7 @@ class StreamIntegration(Integration):
         'subscriber_count'
     )
 
-    def _from_data(self, data: IntegrationPayload) -> None:
+    def _from_data(self, data) -> None:
         super()._from_data(data)
         self.revoked: bool = data['revoked']
         self.expire_behaviour: ExpireBehaviour = try_enum(ExpireBehaviour, data['expire_behavior'])
@@ -273,7 +265,7 @@ class StreamIntegration(Integration):
 
 class IntegrationApplication:
     """Represents an application for a bot integration.
-    .. versionadded:: 2.0
+    .. versionadded:: 1.8
     Attributes
     ----------
     id: :class:`int`
@@ -299,7 +291,7 @@ class IntegrationApplication:
         'user',
     )
 
-    def __init__(self, *, data: IntegrationApplicationPayload, state):
+    def __init__(self, *, data, state):
         self.id: int = int(data['id'])
         self.name: str = data['name']
         self.icon: Optional[str] = data['icon']
@@ -312,7 +304,7 @@ class IntegrationApplication:
 class BotIntegration(Integration):
     """Represents a bot integration on discord.
 
-    .. versionadded:: 2.0
+    .. versionadded:: 1.8
     Attributes
     ----------
     id: :class:`int`
@@ -335,7 +327,7 @@ class BotIntegration(Integration):
 
     __slots__ = Integration.__slots__ + ('application',)
 
-    def _from_data(self, data: IntegrationPayload) -> None:
+    def _from_data(self, data) -> None:
         super()._from_data(data)
         self.application = IntegrationApplication(data=data['application'], state=self._state)
 
