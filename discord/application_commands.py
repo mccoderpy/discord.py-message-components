@@ -132,7 +132,7 @@ class Localizations:
                 self.__languages_dict__[Locale[locale].value] = localized_text
 
     def __repr__(self) -> str:
-        return '<Localizations specified languages: %s>' % ", ".join([Locale.try_value(l) for l in self.__languages_dict__])
+        return '<Localizations: %s>' % (", ".join([Locale.try_value(l) for l in self.__languages_dict__]) if self.__languages_dict__ else 'None')
 
     def __getitem__(self, item) -> Optional[str]:
         return self.__languages_dict__.__getitem__(Locale[item].value)
@@ -1046,7 +1046,9 @@ class SlashCommand(ApplicationCommand):
                 to_invoke = sub_command
             connector = to_invoke.connector
             for option in options:
-                name = connector.get(option.name) or option.name
+                # as we can't use - in argument names replace this by default,
+                # so you don't have to specify it in the connector for some-option -> some_option
+                name = connector.get(option.name) or option.name.replace('-', '_')
                 if option.type in (OptionType.string, OptionType.integer, OptionType.boolean, OptionType.number):
                     orgin_option = get(to_invoke.options, name=option.name)
                     converter = orgin_option.converter
@@ -1156,7 +1158,7 @@ async def do_conversion(interaction, converter, argument, param):
             errors = []
             _NoneType = type(None)
             for conv in converter.__args__:
-                # if we got to this part in the code, then the previous conversions have failed
+                # if we got to this part in the code, then the previous conversions have failed,
                 # so we should just undo the view, return the default, and allow parsing to continue
                 # with the other parameters
                 if conv is _NoneType:
@@ -1476,7 +1478,7 @@ def generate_options(
         elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
             args = getattr(annotation, '__args__', [])
-            union = []
+            union: List[Any] = []
             _remove_none = []
             if isinstance(args, tuple):
                 args = list(args)
@@ -1522,7 +1524,8 @@ def generate_options(
                 )
                 continue
             else:
-                converter = Union.__getitem__(*union)
+                if union:
+                    converter = Union.__getitem__(*union) # type: ignore
                 options.append(
                     SlashCommandOption(option_type=str,
                                        name=name,
