@@ -219,7 +219,7 @@ class Asset:
         if format is not None and format not in VALID_STATIC_FORMATS:
             raise InvalidArgument("format must be None or one of {}".format(VALID_AVATAR_FORMATS))
         return cls(state, f'/app-assets/710982414301790216/store/{sticker_pack.banner_asset_id}.{format}?size={size}')
-        
+
     @classmethod
     def _from_emoji(cls, state, emoji, *, format=None, static_format='png'):
         if format is not None and format not in VALID_AVATAR_FORMATS:
@@ -230,7 +230,6 @@ class Asset:
             raise InvalidArgument("static_format must be one of {}".format(VALID_STATIC_FORMATS))
         if format is None:
             format = 'gif' if emoji.animated else static_format
-
         return cls(state, '/emojis/{0.id}.{1}'.format(emoji, format))
 
     @classmethod
