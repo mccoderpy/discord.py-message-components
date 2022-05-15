@@ -285,3 +285,8 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                )
 
 Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/latest/>`_ to see more examples.
+
+
+.. image:: https://api.codacy.com/project/badge/Grade/7c8089a232824f748bce4cabcc9e1211
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/gh/mccoderpy/discord.py-message-components?utm_source=github.com&utm_medium=referral&utm_content=mccoderpy/discord.py-message-components&utm_campaign=Badge_Grade_Settings
