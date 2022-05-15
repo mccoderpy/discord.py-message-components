@@ -204,7 +204,7 @@ A Slash-Command(Chat-Input) wich with that you can see the welcome screen of you
 
         await i.respond(embed=wc_embed)
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 A Message Command that translate the corresponding Message in to the invokers locale language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -235,7 +235,7 @@ A Message Command that translate the corresponding Message in to the invokers lo
            file = new_file.write(translated)
            return await interaction.respond(file=discord.File(file, filename=f'{interaction.id}_translated.txt'), hidden=True)
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 A User context-menu command wich shows you information about the corresponding user
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,7 +299,7 @@ A User context-menu command wich shows you information about the corresponding u
                 embed.set_image(url=f'https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}&width=500')
         await interaction.respond(embed=embed, hidden=True)
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 Buttons
 +++++++
@@ -358,7 +358,7 @@ A Command that sends you a Message and edit it when you click a Button:
         # The Discord API doesn't send an event when you press a link button so we can't "receive" that.
 
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 
 Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:
@@ -625,7 +625,7 @@ A Select Menu that shows you the different response-types for an interaction
         await modal_interaction.respond(embed=embed)
 
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 
 Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/developer/>`_ to see more examples.
