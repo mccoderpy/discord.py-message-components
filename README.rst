@@ -7,7 +7,7 @@
    :name: discord.py-message-components
    :align: center
    :alt: Name of the Project (discord.py-message-components)
-   
+
    ..
    .. image:: https://discord.com/api/guilds/852871920411475968/embed.png
       :target: https://discord.gg/sb69muSqsg
@@ -29,13 +29,13 @@
       :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
 
-   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & many other features by `mccoderpy <https://github.com/mccoderpy/>`_ 
-   
-**NOTE:** 
+   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & many other features by `mccoderpy <https://github.com/mccoderpy/>`_
+
+**NOTE:**
      This library will be further developed independently of discord.py.
      New features are also implemented. It's not an extension!
-     The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet. 
-     
+     The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet.
+
      **❗Also important to know❗:** `Why is this library so inactive at the moment? <https://github.com/mccoderpy/discord.py-message-components/discussions/17#>`_
 
 **❗The most (new) features are only documented in Code currently❗**
@@ -46,7 +46,7 @@
    :align: center
    :scale: 20%
    :target: https://discordpy-message-components.readthedocs.io/en/developer/
-   
+
    **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/developer/>`_
 
 You need help? Or have ideas/feedback?
@@ -74,10 +74,10 @@ first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.
 Then install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** using:
 
 .. code:: sh
-    
+
     # Linux/macOS
     python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
-    
+
     # Windows
     py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
 
@@ -204,7 +204,7 @@ A Slash-Command(Chat-Input) wich with that you can see the welcome screen of you
 
         await i.respond(embed=wc_embed)
 
-    client.run('Y)
+    client.run('You Bot-Token here')
 
 A Message Command that translate the corresponding Message in to the invokers locale language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -240,11 +240,11 @@ A Message Command that translate the corresponding Message in to the invokers lo
 A User context-menu command wich shows you information about the corresponding user
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: python
-   
+
     import discord
 
     client = discord.Client(sync_commands=True)
-   
+
     @client.user_command(guild_ids=[852871920411475968])
     async def userinfo(interaction: discord.ApplicationCommandInteraction, member: discord.Member):
         _roles = member.roles.copy()
