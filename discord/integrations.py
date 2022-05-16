@@ -93,7 +93,7 @@ class Integration:
         'enabled',
     )
 
-    def __init__(self, *, data, guild: Guild) -> None:
+    def __init__(self, *, data, guild: 'Guild') -> None:
         self.guild = guild
         self._state = guild._state
         self._from_data(data)
