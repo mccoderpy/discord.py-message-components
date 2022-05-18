@@ -120,7 +120,6 @@ class ConnectionState:
         self.sync_commands_on_ready: bool = options.get('sync_commands', False)
         self.dispatch = dispatch
         self.syncer = syncer
-        self.is_bot = None
         self.handlers = handlers
         self.hooks = hooks
         self.shard_count = None
@@ -378,7 +377,7 @@ class ConnectionState:
         channel_id = channel.id
         self._private_channels[channel_id] = channel
 
-        if self.is_bot and len(self._private_channels) > 128:
+        if len(self._private_channels) > 128:
             _, to_remove = self._private_channels.popitem(last=False)
             if isinstance(to_remove, DMChannel):
                 self._private_channels_by_user.pop(to_remove.recipient.id, None)
@@ -443,36 +442,34 @@ class ConnectionState:
 
     async def _delay_ready(self):
         try:
-            # only real bots wait for GUILD_CREATE streaming
-            if self.is_bot:
-                states = []
-                while True:
-                    # this snippet of code is basically waiting N seconds
-                    # until the last GUILD_CREATE was sent
-                    try:
-                        guild = await asyncio.wait_for(self._ready_state.get(), timeout=self.guild_ready_timeout)
-                    except asyncio.TimeoutError:
-                        break
+            states = []
+            while True:
+                # this snippet of code is basically waiting N seconds
+                # until the last GUILD_CREATE was sent
+                try:
+                    guild = await asyncio.wait_for(self._ready_state.get(), timeout=self.guild_ready_timeout)
+                except asyncio.TimeoutError:
+                    break
+                else:
+                    if self._guild_needs_chunking(guild):
+                        future = await self.chunk_guild(guild, wait=False)
+                        states.append((guild, future))
                     else:
-                        if self._guild_needs_chunking(guild):
-                            future = await self.chunk_guild(guild, wait=False)
-                            states.append((guild, future))
+                        if guild.unavailable is False:
+                            self.dispatch('guild_available', guild)
                         else:
-                            if guild.unavailable is False:
-                                self.dispatch('guild_available', guild)
-                            else:
-                                self.dispatch('guild_join', guild)
+                            self.dispatch('guild_join', guild)
 
-                for guild, future in states:
-                    try:
-                        await asyncio.wait_for(future, timeout=5.0)
-                    except asyncio.TimeoutError:
-                        log.warning('Shard ID %s timed out waiting for chunks for guild_id %s.', guild.shard_id, guild.id)
+            for guild, future in states:
+                try:
+                    await asyncio.wait_for(future, timeout=5.0)
+                except asyncio.TimeoutError:
+                    log.warning('Shard ID %s timed out waiting for chunks for guild_id %s.', guild.shard_id, guild.id)
 
-                    if guild.unavailable is False:
-                        self.dispatch('guild_available', guild)
-                    else:
-                        self.dispatch('guild_join', guild)
+                if guild.unavailable is False:
+                    self.dispatch('guild_available', guild)
+                else:
+                    self.dispatch('guild_join', guild)
 
             # remove the state
             try:
@@ -480,10 +477,6 @@ class ConnectionState:
             except AttributeError:
                 pass # already been deleted somehow
 
-            # call GUILD_SYNC after we're done chunking
-            if not self.is_bot:
-                log.info('Requesting GUILD_SYNC for %s guilds', len(self.guilds))
-                await self.syncer([s.id for s in self.guilds])
         except asyncio.CancelledError:
             pass
         else:

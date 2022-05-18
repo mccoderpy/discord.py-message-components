@@ -347,7 +347,6 @@ class ButtonColor(ButtonStyle):
     .. note ::
         This is just an Aliase to :class:`ButtonStyle`.
     """
-    pass
 
 
 class TextInputStyle(Enum):
@@ -573,6 +572,7 @@ class MessageType(Enum):
     application_command                          = 20
     thread_starter_message                       = 21
     guild_invite_reminder                        = 22
+
 
 
 class VoiceRegion(Enum):

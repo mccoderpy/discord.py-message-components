@@ -380,9 +380,6 @@ class DiscordWebSocket:
             }
         }
 
-        if not self._connection.is_bot:
-            payload['d']['synced_guilds'] = []
-
         if self.shard_id is not None and self.shard_count is not None:
             payload['d']['shard'] = [self.shard_id, self.shard_count]
 

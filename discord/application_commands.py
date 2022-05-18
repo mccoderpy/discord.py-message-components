@@ -145,7 +145,7 @@ class Localizations:
         try:
             return self.__languages_dict__.__getitem__(locale.value)
         except (KeyError, AttributeError):
-            if (locale.value not in self.__slots__  if isinstance(locale, Locale) else locale in self.__slots__):
+            if (locale.value not in self.__slots__  if isinstance(locale, Locale) else locale not in self.__slots__):
                 raise KeyError(f'Unknown locale "{locale}". See {api_docs}reference#locales for a list of locales.')
             raise KeyError(f'There is no locale value set for {locale.name}.')
 

@@ -1404,29 +1404,6 @@ class Message(Hashable):
         """
         await self._state.http.clear_reactions(self.channel.id, self.id)
 
-    @utils.deprecated()
-    async def ack(self):
-        """|coro|
-
-        Marks this message as read.
-
-        The user must not be a bot user.
-
-        .. deprecated:: 1.7
-
-        Raises
-        -------
-        HTTPException
-            Acking failed.
-        ClientException
-            You must not be a bot user.
-        """
-
-        state = self._state
-        if state.is_bot:
-            raise ClientException('Must not be a bot account to ack messages.')
-        return await state.http.ack_message(self.channel.id, self.id)
-
     async def reply(self, content=None, **kwargs):
         """|coro|
 

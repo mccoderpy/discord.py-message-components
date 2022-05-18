@@ -106,7 +106,7 @@ class HTTPClient:
     def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True):
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.connector = connector
-        self.__session = None  # filled in static_login
+        self.__session: aiohttp.ClientSession = None  # filled in static_login
         self._locks = weakref.WeakValueDictionary()
         self._global_over = asyncio.Event()
         self._global_over.set()
@@ -149,8 +149,7 @@ class HTTPClient:
 
         # header creation
         headers = {
-            'User-Agent': self.user_agent,
-            'X-Ratelimit-Precision': 'millisecond',
+            'User-Agent': self.user_agent
         }
 
         if self.token is not None:
@@ -203,7 +202,6 @@ class HTTPClient:
 
                         # even errors have text involved in them so this is safe to call
                         data = await json_or_text(r)
-
                         # check if we have rate limit header information
                         remaining = r.headers.get('X-Ratelimit-Remaining')
                         if remaining == '0' and r.status != 429:
@@ -227,7 +225,7 @@ class HTTPClient:
                             fmt = 'We are being rate limited. Retrying in %.2f seconds. Handled under the bucket "%s"'
 
                             # sleep a bit
-                            retry_after = data['retry_after'] / 1000.0
+                            retry_after = data['retry_after']
                             log.warning(fmt, retry_after, bucket)
 
                             # check if it's a global rate limit
@@ -653,7 +651,6 @@ class HTTPClient:
             params['after'] = after
         if around is not None:
             params['around'] = around
-
         return self.request(Route('GET', '/channels/{channel_id}/messages', channel_id=channel_id), params=params)
 
     def publish_message(self, channel_id, message_id):
