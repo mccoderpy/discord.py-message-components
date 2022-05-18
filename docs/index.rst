@@ -337,7 +337,7 @@ A Command that sends you a Message and edit it when you click a Button:
         an_embed = discord.Embed(title='Here are some Button\'s', description='Choose an option', color=discord.Color.random())
         msg = await ctx.send(embed=an_embed, components=components)
 
-        def _check(i: discord.Interaction, b):
+        def _check(i: discord.BaseInteraction, b):
             return i.message == msg and i.member == ctx.author
 
         interaction, button = await client.wait_for('button_click', check=_check)
@@ -448,7 +448,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
 
 
     @client.on_click()
-    async def up(i: discord.Interaction, button):
+    async def up(i: discord.BaseInteraction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_y(1)
         await i.edit(embed=discord.Embed(title="Little Game",
@@ -460,7 +460,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                )
 
     @client.on_click()
-    async def down(i: discord.Interaction, button):
+    async def down(i: discord.BaseInteraction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_y(-1)
         await i.edit(embed=discord.Embed(title="Little Game",
@@ -472,7 +472,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                )
 
     @client.on_click()
-    async def right(i: discord.Interaction, button):
+    async def right(i: discord.BaseInteraction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(1)
         await i.edit(embed=discord.Embed(title="Little Game",
@@ -484,7 +484,7 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                )
 
     @client.on_click()
-    async def left(i: discord.Interaction, button):
+    async def left(i: discord.BaseInteraction, button):
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(-1)
         await i.edit(embed=discord.Embed(title="Little Game",
@@ -522,7 +522,7 @@ Sending-SelectMenu's and respond to them
                         placeholder='Select some Options', max_values=3)
             ]])
 
-      def check_selection(i: discord.Interaction, select_menu):
+      def check_selection(i: discord.BaseInteraction, select_menu):
          return i.author == ctx.author and i.message == msg_with_selects
 
       interaction, select_menu = await client.wait_for('selection_select', check=check_selection)
