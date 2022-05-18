@@ -251,7 +251,7 @@ class BaseUser(_BaseUser):
         :class:`Asset`
             The resulting CDN asset.
         """
-        return Asset._from_guild_banner(self._state, self, format=format, static_format=static_format, size=size)
+        return Asset._from_banner(self._state, self, format=format, static_format=static_format, size=size)
 
     @property
     def colour(self):

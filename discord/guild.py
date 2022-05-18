@@ -46,7 +46,7 @@ from .permissions import PermissionOverwrite, Permissions
 from .colour import Colour
 from .errors import InvalidArgument, ClientException
 from .channel import *
-from .enums import VoiceRegion, ChannelType, try_enum, VerificationLevel, ContentFilter, NotificationLevel, EventEntityType
+from .enums import VoiceRegion, ChannelType, Locale, try_enum, VerificationLevel, ContentFilter, NotificationLevel, EventEntityType
 from .mixins import Hashable
 from .scheduled_event import GuildScheduledEvent
 from .user import User
@@ -338,7 +338,7 @@ class Guild(Hashable):
         self.premium_tier = guild.get('premium_tier', 0)
         self.premium_subscription_count = guild.get('premium_subscription_count') or 0
         self._system_channel_flags = guild.get('system_channel_flags', 0)
-        self.preferred_locale = guild.get('preferred_locale')
+        self.preferred_locale = try_enum(Locale, guild.get('preferred_locale'))
         self.discovery_splash = guild.get('discovery_splash')
         self._rules_channel_id = utils._get_as_snowflake(guild, 'rules_channel_id')
         self._public_updates_channel_id = utils._get_as_snowflake(guild, 'public_updates_channel_id')

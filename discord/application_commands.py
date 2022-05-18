@@ -38,11 +38,14 @@ from .abc import GuildChannel
 from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING
 from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
+from .errors import InvalidArgument
 
 if TYPE_CHECKING:
     from .ext.commands import Cog, Converter
     from datetime import datetime
-
+    from .guild import Guild
+    from .user import User
+    from .interactions import BaseInteraction
 
 __all__ = (
     'Localizations',
@@ -135,7 +138,17 @@ class Localizations:
         return '<Localizations: %s>' % (", ".join([Locale.try_value(l) for l in self.__languages_dict__]) if self.__languages_dict__ else 'None')
 
     def __getitem__(self, item) -> Optional[str]:
-        return self.__languages_dict__.__getitem__(Locale[item].value)
+        if isinstance(item, Locale):
+            locale = Locale[item.name]
+        else:
+            locale = try_enum(Locale, str(item))
+        try:
+            return self.__languages_dict__.__getitem__(locale.value)
+        except (KeyError, AttributeError):
+            if (locale.value not in self.__slots__  if isinstance(locale, Locale) else locale in self.__slots__):
+                raise KeyError(f'Unknown locale "{locale}". See {api_docs}reference#locales for a list of locales.')
+            raise KeyError(f'There is no locale value set for {locale.name}.')
+
 
     def __setitem__(self, key, value):
         self.__languages_dict__[Locale[key].value] = value
@@ -153,6 +166,63 @@ class Localizations:
 
     def update(self, __m: 'Localizations'):
         self.__languages_dict__.update(__m.__languages_dict__)
+
+    def from_target(self, target: Union['Guild', 'BaseInteraction'], *, default: Any = None):
+        """
+        Returns the value for the local of the object (if it's set), or :attr:`default`(:type:`None`)
+
+        Parameters
+        ----------
+        target: Union[:class:`~discord.Guild`, :class:`~discord.BaseInteraction`]
+            The target witch locale to use.
+            If it is of type :obj:`~discord.BaseInteraction` (or any subclass) it returns takes the local of the author.
+        default: Optional[Any]
+            The value or an object to return by default if there is no value for the locale of :attr:`target` set.
+            Default to :type:`None` or :class:`~discord.Locale.english_US`/:class:`~discord.Locale.english_GB`
+
+        Return
+        ------
+        Union[:class:`str`, :type:`None`]
+            The value of the locale or :type:`None` if there is no value for the locale set.
+
+        Raises
+        ------
+        :exc:`TypeError`
+            If :attr:`target` is of the wrong type.
+        """
+        return_default = False
+        if hasattr(target, 'preferred_locale'):
+            try:
+                return self[target.preferred_locale.value]
+            except KeyError as exc:
+                if exc.args[0].startswith('U'): # just the first letter because it's enough to identify wich one it is
+                    raise
+                return_default = True
+        elif hasattr(target, 'author_locale'):
+            try:
+                return self[target.author_locale.value]
+            except KeyError as exc:
+                if exc.args[0].startswith('U'):  # just the first letter because it's enough to identify wich one it is
+                    raise
+                return_default = True
+        else:
+            raise TypeError(
+                f'target must be either of type discord.Guild or discord.BaseInteraction, not {target.__class__.__name__}'
+            )
+        if return_default:
+            try:
+                return self[default.value if default is Locale else default]
+            except KeyError:
+                if default is None:
+                    return self.__languages_dict__.get('en-US', self.__languages_dict__.get('en-GB', None))
+                else:
+                    if (default.value if default is Locale else default) not in self.__slots__:
+                        return default
+                    else:
+                        try:
+                            self[default.value if default is Locale else default]
+                        except KeyError: # not a locale so return it
+                            return default
 
 
 class ApplicationCommand:

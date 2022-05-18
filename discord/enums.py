@@ -75,6 +75,17 @@ def _create_value_cls(name):
     cls = namedtuple(f'_EnumValue_' + name, 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
     cls.__str__ = lambda self: '%s.%s' % (name, self.name)
+    def __getattribute__(self, n) -> Union[bool, Any]:
+        if n in dir(cls):
+            return super(cls, self).__getattribute__(n)
+        else:
+            if n in self._actual_enum_cls_.__members__:
+                return self.name == n
+            else:
+                raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
+    # With this you can use something like some_channel.type.text to check if it is of this type
+    # It is similar to "some_channel.type == ChannelType.text"
+    cls.__getattribute__ = __getattribute__
     return cls
 
 
@@ -119,9 +130,6 @@ class EnumMeta(type):
         attrs['_enum_member_names_'] = member_names
         actual_cls = super().__new__(cls, name, bases, attrs)
         value_cls._actual_enum_cls_ = actual_cls
-        value_cls.__getattribute__: lambda s, n: Union[Any, bool] = lambda self, name:\
-            super(value_cls, self).__getattribute__(name) if name in dir(value_cls) else \
-                (self.name == name if name in self._actual_enum_cls_.__members__ else AttributeError(f'{self.__class__} has no attribute {name}.'))
         return actual_cls
 
     def __iter__(cls):

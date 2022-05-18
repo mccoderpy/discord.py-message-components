@@ -447,7 +447,7 @@ class Client:
 
         The default error handler provided by the client.
 
-        By default this prints to :data:`sys.stderr` however it could be
+        By default, this prints to :data:`sys.stderr` however it could be
         overridden to have a different implementation.
         Check :func:`~discord.on_error` for more details.
         """
@@ -459,7 +459,7 @@ class Client:
 
         The default error handler when an Exception was raised when invoking an application-command.
 
-        By default this prints to :data:`sys.stderr` however it could be
+        By default, this prints to :data:`sys.stderr` however it could be
         overridden to have a different implementation.
         Check :func:`~discord.on_application_command_error` for more details.
         """
@@ -700,7 +700,7 @@ class Client:
 
                 # We should only get this when an unhandled close code happens,
                 # such as a clean disconnect (1000) or a bad state (bad token, no sharding, etc)
-                # sometimes, discord sends us 1000 for unknown reasons so we should reconnect
+                # sometimes, discord sends us 1000 for unknown reasons, so we should reconnect
                 # regardless and rely on is_closed instead
                 if isinstance(exc, ConnectionClosed):
                     if exc.code == 4014:
@@ -725,15 +725,15 @@ class Client:
         if self._closed:
             return
 
-        await self.http.close()
-        self._closed = True
-
         for voice in self.voice_clients:
             try:
                 await voice.disconnect()
             except Exception:
                 # if an error happens during disconnects, disregard it.
                 pass
+
+        await self.http.close()
+        self._closed = True
 
         if self.ws is not None and self.ws.open:
             await self.ws.close(code=1000)
@@ -1103,7 +1103,6 @@ class Client:
 
         Example
         ---------
-
         .. code-block:: python3
 
             @client.event
@@ -1127,21 +1126,28 @@ class Client:
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
+
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
-         if so, the :func:`func` is called.
+        if so, the decorated function is called.
 
         The function this is attached to must take the same parameters as a
-        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_button_click>`_.
+        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_raw_button_click>`_.
 
         .. important::
-            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+            The function decorated must be a coroutine, if not, :exc:`TypeError` is raised.
+
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
 
         Parameters
         ----------
-        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Button` could not use as a function name,
+        custom_id: Optional[Union[:py:type:`Pattern`[AnyStr], AnyStr]]
+            If the :attr:`custom_id` of the :class:`~discord.Button` could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
+
 
         Example
         -------
@@ -1153,7 +1159,7 @@ class Client:
                     style=ButtonStyle.blurple)
 
             # function that's called when the Button pressed
-            @client.on_click(custom_id='^cool blue Button$') # use ^ and $ if you want that it exactly match this name, otherwise something like 'cool blue Button is blue' will match too
+            @client.on_click(custom_id='^cool blue Button$')
             async def cool_blue_button(i: discord.ComponentInteraction, button: Button):
                 await i.respond(f'Hey you pressed a {button.custom_id}!', hidden=True)
 
@@ -1161,9 +1167,9 @@ class Client:
         -------
         The decorator for the function called when the Button clicked
 
-        Raises
-        ------
-        TypeError
+        Raise
+        -----
+        :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func: Awaitable[Any]):
@@ -1189,18 +1195,18 @@ class Client:
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-        A decorator with which you can assign a function to a specific :class:`discord.SelectMenu` (or its custom_id).
+        A decorator with which you can assign a function to a specific :class:`~discord.SelectMenu` (or its custom_id).
 
         The function this is attached to must take the same parameters as a
-        `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_selection_select>`_.
+        `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_raw_selection_select>`_.
 
         .. important::
-            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+            The decorated function must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
         -----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
-            If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as a function name,
+            If the `custom_id` of the :class:`~discord.SelectMenu` could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -1224,7 +1230,7 @@ class Client:
 
         Raise
         ------
-        TypeError
+        :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func: Awaitable[Any]):
@@ -1233,7 +1239,7 @@ class Client:
 
             _custom_id = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(func.__name__)
+            ) else re.compile(f'^{func.__name__}$')
 
             try:
                 listeners = self._listeners['raw_selection_select']
@@ -1251,18 +1257,18 @@ class Client:
     ]:
         """
         A decorator that registers an on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
-         if so, the :func:`func` is called.
+        if so, the decorated function is called.
 
         The function this is attached to must take the same parameters as a
         `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
 
         .. important::
-            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+            The decorated function must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Modal` could not use as a function name,
+            If the `custom_id` of the :class:`~discord.Modal` could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
@@ -1282,7 +1288,7 @@ class Client:
 
         Raises
         ------
-        TypeError
+        :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
         def decorator(func: Awaitable[Any]):
@@ -1291,7 +1297,7 @@ class Client:
 
             _custom_id = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(func.__name__)
+            ) else re.compile(f'^{func.__name__}$')
 
             try:
                 listeners = self._listeners['modal_submit']
@@ -1332,29 +1338,30 @@ class Client:
                                           GuildOnlySubCommand
                                     ]]:
         """
-       A decorator that adds a slash-command to the client.
+
+        A decorator that adds a slash-command to the client.
 
         .. note::
 
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
         name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
-        name_localizations: Optional[:class:`discord.Localizations`]
+        name_localizations: Optional[:class:`~discord.Localizations`]
             Localizations object for name field. Values follow the same restrictions as :attr:`name
         description: Optional[:class:`str`]
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
-        description_localizations: Optional[:class:`discord.Localizations`]
+        description_localizations: Optional[:class:`~discord.Localizations`]
             Localizations object for description field. Values follow the same restrictions as :attr:`description`
         allow_dm: Optional[:class:`bool`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
             By default, commands are visible.
-        default_required_permissions: Optional[:class:`discord.Permissions`]
+        default_required_permissions: Optional[:class:`~discord.Permissions`]
              Permissions that a Member needs by default to execute(see) the command.
-        options: Optional[List[:class:`SlashCommandOption`]]
+        options: Optional[List[:class:`~discord.SlashCommandOption`]]
             A list of max. 25 options for the command. If not provided the options will be generated
             using :meth:`generate_options` that creates the options out of the function parameters.
             Required options **must** be listed before optional ones.
@@ -1383,19 +1390,19 @@ class Client:
 
         Raises
         ------
-        class:`TypeError`:
+        :exc:`TypeError`:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
             or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
             itself is invalid.
-        :class:`InvalidArgument`:
+        :exc:`~discord.InvalidArgument`:
             You passed :attr:`group_name` but no :attr:`base_name`.
-        :class:`ValueError`:
+        :exc:`ValueError`:
             Any of :attr:`name`, :attr:`description`, :attr:`options`, :attr:`base_name`, :attr:`base_desc`, :attr:`group_name` or :attr:`group_desc` is not valid.
 
         Returns
         -------
-        Callable:
-            The function that wich registers the func given as a slash-command to the client and returns the generated command.
+        :class:`types.FunctionType`;
+            The function that wich registers the decorated function as a slash-command to the client and returns the generated command.
         """
 
         def decorator(func: Awaitable[Any]) -> Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
@@ -1408,8 +1415,7 @@ class Client:
 
             Returns
             -------
-            Union[:class:`SlashCommand`, :class:`GuildOnlySlashCommand`, :class:`SubCommand`, :class:`GuildOnlySubCommand`]:
-                The slash-command registered.
+            The slash-command registered.
                 If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`SlashCommand`.
                 If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
                 representing the guild-only slash-commands.
@@ -1581,7 +1587,7 @@ class Client:
         .. note::
 
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
         Parameters
         ----------
@@ -1590,7 +1596,7 @@ class Client:
             Must be between 1-32 characters long.
         default_required_permissions: Optional[:class:`Permissions`]
             Permissions that a Member needs by default to execute(see) the command.
-        allow_dm: Optional[:class:`discord.Permissions`]
+        allow_dm: Optional[:class:`~discord.Permissions`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
             By default, commands are visible.
         guild_ids: Optional[List[:class:`int`]]
@@ -1646,14 +1652,14 @@ class Client:
        .. note::
 
            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-           must be set to ``True`` to register a command if he not already exist and update him if changes where made.
+           must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
        Parameters
        ----------
        name: Optional[:class:`str`]
            The name of the user-command, default to the functions name.
            Must be between 1-32 characters long.
-       default_required_permissions: Optional[:class:`discord.Permissions`]
+       default_required_permissions: Optional[:class:`~discord.Permissions`]
            Permissions that a Member needs by default to execute(see) the command.
        allow_dm:  :class:`bool`
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
