@@ -630,7 +630,8 @@ class ThreadMember:
     def mention(self):
         return '<@%s>' % self.id
 
-class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
+
+class ThreadChannel(abc.Messageable, Hashable):
     def __init__(self, *, state, guild, data):
         self._state = state
         self.id = int(data['id'])
@@ -695,7 +696,6 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
         original_message = self._state._get_message(self.id)
         return original_message or self.id
 
-
     @property
     def type(self):
         return try_enum(ChannelType, self._type)
@@ -740,6 +740,16 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
         """
         return datetime.datetime.fromisoformat(self._thread_meta.get('create_timestamp'))
 
+    @property
+    def mention(self):
+        """:class:`str`: The string that allows you to mention the thread."""
+        return f'<#{self.id}>'
+
+    @property
+    def jump_url(self):
+        """:class:`str`: Returns a URL that allows the client to jump to the referenced thread."""
+        return f'https://discord.com/channels/{self.guild.id}/{self.id}'
+
     def get_member(self, user_id):
         return self._members.get(user_id, None)
 
@@ -763,7 +773,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
         if self.archived:
             raise ThreadIsArchived(self.join)
         if self.me:
-            raise Exception('You\'r already a member of this Thread.')
+            raise ClientException('You\'r already a member of this thread.')
 
         return await self._state.http.add_thread_member(channeL_id=self.id)
 
@@ -781,7 +791,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
         if self.archived:
             raise ThreadIsArchived(self.leave)
         if not self.me:
-            raise Exception('You\'r not a member of this Thread, so you could not leave it.')
+            raise ClientException('You cannot leave a thread if you are not a member of it.')
 
         return await self._state.http.remove_thread_member(channel_id=self.id)
 
@@ -805,7 +815,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
             raise ThreadIsArchived(self.add_member)
         member_id = member if isinstance(member, int) else member.id
         if self.get_member(member_id):
-            raise Exception('The User %s is already a Member of this Thread.' % member)
+            raise ClientException('The user %s is already a Member of this thread.' % member)
 
         return await self._state.http.add_thread_member(channeL_id=self.id, member_id=member_id)
 
@@ -830,7 +840,7 @@ class ThreadChannel(abc.Messageable, abc.GuildChannel, Hashable):
             raise ThreadIsArchived(self.remove_member)
         member_id = member if isinstance(member, int) else member.id
         if not self.get_member(member_id):
-            raise Exception('The User %s is not a Member of this Thread yet, so you could not remove him.' % member)
+            raise ClientException('The user %s is not a member of this thread yet, so you could not remove him.' % member)
 
         return await self._state.http.remove_thread_member(channel_id=self.id, member_id=member_id)
 
@@ -1245,6 +1255,11 @@ class CategoryChannel(abc.GuildChannel, Hashable):
     def type(self):
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.category
+
+    @property
+    def jump_url(self):
+        """:class:`str`: Returns an empty string as you can't jump to a category."""
+        return ''
 
     def is_nsfw(self):
         """:class:`bool`: Checks if the category is NSFW."""

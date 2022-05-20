@@ -615,7 +615,8 @@ class BaseInteraction:
         self._channel = channel
 
     @property
-    def command(self) -> Union['SlashCommand', 'MessageCommand', 'UserCommand']:
+    def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
+        """"Optional[:class:``ApplicationCommand`] The application-command that was invoked if any"""
         if getattr(self, '_command', None) is not None:
             return self._command
         return self._state._get_client()._get_application_command(self.data.id) \
