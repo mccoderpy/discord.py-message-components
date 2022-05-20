@@ -572,6 +572,7 @@ class MessageType(Enum):
     application_command                          = 20
     thread_starter_message                       = 21
     guild_invite_reminder                        = 22
+    automoderation_action                        = 24
 
 
 

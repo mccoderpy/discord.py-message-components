@@ -241,7 +241,7 @@ class URLAndCustomIDNotAlowed(DiscordException):
          :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` don't send any Interaction to Discord when they are clicked.
     """
     def __init__(self, custom_id):
-        msg = f"custom_id's ({custom_id}) are not alowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` because Discord don't send any Interaction when clicking on a Link-Button." \
+        msg = f"custom_id's ({custom_id}) are not allowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` because Discord don't send any Interaction when clicking on a Link-Button." \
               f"For More Information visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
         super().__init__(msg)
 
@@ -255,26 +255,37 @@ class EmptyActionRow(DiscordException):
         super().__init__(msg)
 
 
-class UnknowInteraction(DiscordWarning):
+class UnknownInteraction(DiscordWarning):
     """
-    A warning that comes when you try to interact with an expired Interaction.
+    A warning that comes when you try to interact with an expired interaction.
     """
     def __init__(self, interaction_id):
         msg = f'You have already respond to this interaction ({interaction_id}) ' \
               f'and/or 15 minutes have passed since the interaction, which is why Discord has deleted the interaction.'
         super().__init__(msg)
 
+
+class AlreadyResponded(DiscordException):
+    """
+    Exception thrown when attempting to send the callback for an interaction that has already been responded to.'
+    """
+    def  __init__(self, interaction_id):
+        msg = f'You have already send a callback(using defer or respond_with_modal) to this interaction ({interaction_id}) '
+        super().__init__(msg)
+
+
 class ThreadIsArchived(DiscordException):
     """
-    Exception that's thrown when trying to use a method on a ThreadChannel that is Archived and need's to be unarchived  first.
+    Exception that's thrown when trying to use a method on a ThreadChannel that is archived and need's to be unarchived  first.
     """
     def __init__(self, method):
         msg = f'You can\'t use %s when the Thread is archived. Un-archive it first.'
         super().__init__(msg % method)
 
+
 class MissingPermissionsToCreateThread(DiscordException):
     """
-    Exception that's thrown when trying to create a Thread of a type you don't have the permission for to create.
+    Exception that's thrown when trying to create a thread of a type you don't have the permission for to create.
     """
     def __init__(self, *permissions, type):
         msg = f'You\'r missing (any of) %s permission(s) to create a thread of type %s.'

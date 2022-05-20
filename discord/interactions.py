@@ -25,7 +25,7 @@ from typing import (Union,
                     TYPE_CHECKING)
 from .components import Button, SelectMenu, ActionRow, Modal, TextInput
 from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
-from .errors import NotFound, InvalidArgument
+from .errors import NotFound, InvalidArgument, AlreadyResponded
 from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType,\
     try_enum
 
@@ -284,12 +284,14 @@ class BaseInteraction:
         self._component = None
 
     def __repr__(self):
-        """Represents a :class:`discord.B aseInteraction`-object."""
+        """Represents a :class:`discord.BaseInteraction`-object."""
         return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
     
-    async def defer(self,
-                    response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
-                    hidden: Optional[bool] = False) -> Optional[Message]:
+    async def defer(
+            self,
+            response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
+            hidden: Optional[bool] = False
+    ) -> Optional[Message]:
         """
         |coro|
 
@@ -297,23 +299,23 @@ class BaseInteraction:
 
         If :attr:`response_type` is `InteractionCallbackType.deferred_msg_with_source` it shows a loading state to the user.
 
-        :param response_type: Optional[:class:`InteractionCallbackType`]
+        response_type: Optional[:class:`InteractionCallbackType`]
             The type to response with, aiter :class:`InteractionCallbackType.deferred_msg_with_source` or :class:`InteractionCallbackType.deferred_update_msg` (e.g. 5 or 6)
 
-        :param hidden: Optional[:class:`bool`]
+        hidden: Optional[:class:`bool`]
             Whether to defer ephemerally(only the :attr:`author` of the interaction can see the message)
 
             .. note::
                 Only for :class:`InteractionCallbackType.deferred_msg_with_source`.
 
         .. important::
-            If you doesn't respond with an message using :meth:`respond`
+            If you don't respond with a message using :meth:`respond`
             or edit the original message using :meth:`edit` within less than 3 seconds,
-            discord will indicates that the interaction failed and the interaction-token will be invalidated.
+            discord will indicate that the interaction failed and the interaction-token will be invalidated.
             To provide this us this method
 
         .. note::
-            A Token will be Valid for 15 Minutes so you could edit the original :attr:`message` with :meth:`edit`,
+            A Token will be Valid for 15 Minutes, so you could edit the original :attr:`message` with :meth:`edit`,
              :meth:`respond` or doing anything other with this interaction for 15 minutes.
             After that time you have to edit the original message with the Methode :meth:`edit` of the :attr:`message`
              and send new messages with the :meth:`send` Methode of :attr:`channel`
@@ -322,7 +324,7 @@ class BaseInteraction:
         if isinstance(response_type, int):
             response_type = InteractionCallbackType.from_value(response_type)
         if self.deferred:
-            return warnings.warn("\033[91You have already responded to this Interaction!\033[0m")
+            raise AlreadyResponded(self.id)
         base = {"type": int(response_type), "data": {'flags': 64 if hidden else None}}
         try:
             data = await self._http.post_initial_response(
@@ -333,7 +335,7 @@ class BaseInteraction:
                 interaction_id=self.id
             )
         except NotFound:
-            log.warning(f'Unknown Interaction {self.id}')
+            return AlreadyResponded(self.id)
         else:
             self.deferred = True
             if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
@@ -349,9 +351,7 @@ class BaseInteraction:
 
         'Defers' if it isn't yet and edit the message
         """
-        if self.deferred_modal:
-            return await self.message.edit(**fields)
-        if self.message_is_hidden:
+        if self.message_is_hidden or self.deferred_modal:
             return await self.message.edit(**fields)
         try:
             content: Optional[str] = fields['content']
@@ -569,22 +569,14 @@ class BaseInteraction:
                 type=9
             )
         else:
-            data = await self._state.http.edit_interaction_response(
-                token=self._token,
-                interaction_id=self.id,
-                application_id=self._application_id,
-                deferred=self.deferred,
-                use_webhook=False,
-                data=modal.to_dict(),
-                type=9)
-
+            raise AlreadyResponded(self.id)
         self.deferred = True
         self.deferred_modal = True
         return data
 
     async def get_original_callback(self, raw: bool = False):
         """|coro|
-        Fetch the Original Callback-Message of the Interaction
+        Fetch the original callback-message of the interaction
         .. warning::
             This is a API-Call and should use carefully
         """
@@ -739,6 +731,9 @@ class ModalSubmitInteraction(BaseInteraction):
     @property
     def custom_id(self):
         return self.data.custom_id
+
+    async def respond_with_modal(self, modal: 'Modal'):
+        raise NotImplementedError('You can\'t respond to a modal submit with another modal.')
 
 
 class InteractionData:

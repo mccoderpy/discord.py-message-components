@@ -493,10 +493,12 @@ class HTTPClient:
     def edit_interaction_response(self, interaction_id: int, token: str, application_id: int, deferred: bool, use_webhook: bool = True, data: dict = None, files: list = None):
         if files and len(files):
             data['attachments'] = [
-                {'id': index,
-                 'description': file.description,
-                 'filename': file.filename
-                 } for index, file in enumerate(files)]
+                {
+                    'id': index,
+                    'description': file.description,
+                    'filename': file.filename
+                } for index, file in enumerate(files)
+            ]
         if not deferred:
             data = {'data': data, 'type': 7}
             r = Route('POST', f'/interactions/{interaction_id}/{token}/callback')
