@@ -25,13 +25,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-import sys
-import typing
+
 from .member import Member
 from .user import User
 from .message import Message
-from .errors import NotFound, UnknowInteraction
-from .channel import DMChannel
 
 
 class _RawReprMixin:
@@ -231,36 +228,3 @@ class RawReactionClearEmojiEvent(_RawReprMixin):
             self.guild_id = int(data['guild_id'])
         except KeyError:
             self.guild_id = None
-
-
-class RawInteractionCreateEvent(_RawReprMixin):
-    def __init__(self, data, http=None):
-        self.http = http
-        self._type = data.get('t', data.get('type', None))
-        d = data.get('d', None)
-        if d:
-            self.__token = d.get('token', None)
-            self._version = d.get('version', None)
-            self._type = d.get(type, None)
-            if self._type != 'INTERACTION_CREATE':
-                return
-        else:
-            self._version = data.get('version', None)
-            self._type = data.get('type', None)
-            self.__token = data.get('token', None)
-        self._raw = data
-        self._message_id = data.get('message').get('id', None)
-        self._data = data.get('data', None)
-        self._member = data.get('member', None)
-        self._user = data.get('user', self._member.get('user'))
-        self.__interaction_id = data.get('id', 0)
-        self._guild_id = data.get('guild_id', 0)
-        self._channel_id = data.get('channel_id', 0)
-        self.__application_id = data.get('application_id', 0)
-        self.guild = None
-        self.channel = None
-        self.member: Member = None
-        self.user: User = None
-        self.button = (self._data)
-        self.message: Message = None
-        self._deferred = False
