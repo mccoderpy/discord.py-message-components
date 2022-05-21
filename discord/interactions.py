@@ -1,5 +1,4 @@
 import logging
-import warnings
 
 from . import abc
 
@@ -25,7 +24,7 @@ from typing import (Union,
                     TYPE_CHECKING)
 from .components import Button, SelectMenu, ActionRow, Modal, TextInput
 from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
-from .errors import NotFound, InvalidArgument, AlreadyResponded
+from .errors import NotFound, InvalidArgument, AlreadyResponded, UnknownInteraction
 from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType,\
     try_enum
 
@@ -231,10 +230,10 @@ class EphemeralMessage:
         try:
             data = await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id, token=self.__interaction__._token, application_id=self.__interaction__._application_id, deferred=self.__interaction__.deferred, use_webhook=True, files=None, data=fields)
         except NotFound:
-            log.warning('Unknown Interaction')
+           raise UnknownInteraction(self.__interaction__.id)
         else:
             if not isinstance(data, dict):
-                data = await self.__interaction__.get_original_callback()
+                data = await self.__interaction__.get_original_callback(raw=True)
             self._update(data)
             if not self.__interaction__.callback_message:
                 self.__interaction__.callback_message = self
@@ -723,6 +722,7 @@ class AutocompleteInteraction(BaseInteraction):
 
 class ModalSubmitInteraction(BaseInteraction):
     def get_field(self, custom_id) -> Union['TextInput', None]:
+        """Optional[:class:`~discord.TextInput`]: Return the field witch :attr:`custom_id` match or :type:`None`"""
         for ar in self.data.components:
             for c in ar:
                 if c.custom_id == custom_id:
@@ -730,10 +730,19 @@ class ModalSubmitInteraction(BaseInteraction):
         return None
 
     @property
+    def fields(self):
+        """List[:class:`TextInput`] returns a :class:`list` containing the fields of the modal."""
+        field_list = []
+        for ar in self.data.components:
+            for c in ar:
+                field_list.append(c)
+        return field_list
+
+    @property
     def custom_id(self):
         return self.data.custom_id
 
-    async def respond_with_modal(self, modal: 'Modal'):
+    async def respond_with_modal(self, modal: 'Modal') -> NotImplementedError:
         raise NotImplementedError('You can\'t respond to a modal submit with another modal.')
 
 
