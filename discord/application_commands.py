@@ -244,6 +244,9 @@ class ApplicationCommand:
         self.name_localizations: Localizations = kwargs.get('name_localizations', Localizations())
         self.description_localizations: Localizations = kwargs.get('description_localizations', Localizations())
 
+    def __getitem__(self, item):
+        return getattr(self, item)
+
     @property
     def _state(self):
         return self._state_
@@ -1252,7 +1255,6 @@ async def _transform_greedy_pos(ctx, param, required, converter, value):
     from .ext.commands.view import StringView
     view = StringView(value)
     result = []
-    print(value)
     while not view.eof:
         # for use with a manual undo
         previous = view.index
@@ -1266,7 +1268,6 @@ async def _transform_greedy_pos(ctx, param, required, converter, value):
             break
         else:
             result.append(value)
-            print(value)
 
     if not result and not required:
         return param.default
