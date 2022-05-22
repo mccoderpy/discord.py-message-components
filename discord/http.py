@@ -441,164 +441,6 @@ class HTTPClient:
         r = Route('PATCH', '/channels/{channel_id}/messages/{message_id}', channel_id=channel_id, message_id=message_id)
         return self.request(r, json=fields)
 
-    def get_application_commands(self, application_id, command_id=None, guild_id=None):
-        return self.request(Route('GET', f'/applications/{application_id}{f"/guilds/{guild_id}"if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}?with_localizations=true'))
-
-    def create_application_command(self, application_id, data, guild_id=None):
-        if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
-        else:
-            url = f'/applications/{application_id}/commands'
-        return self.request(Route('POST', url), json=data)
-
-    def edit_application_command(self, application_id, command_id, data, guild_id=None):
-        if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
-        else:
-            url = f'/applications/{application_id}/commands/{command_id}'
-        return self.request(Route('PATCH', url), json=data)
-
-    def delete_application_command(self, application_id, command_id, guild_id=None):
-        if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
-        else:
-            url = f'/applications/{application_id}/commands/{command_id}'
-        return self.request(Route('DELETE', url))
-
-    def bulk_overwrite_application_commands(self, application_id, data, guild_id=None):
-        if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
-        else:
-            url = f'/applications/{application_id}/commands'
-        return self.request(Route('PUT', url), json=data)
-
-    def get_guild_application_command_permissions(self, application_id, guild_id, command_id=None):
-        if command_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'
-        else:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'
-        return self.request(Route('GET', url))
-
-    def edit_application_command_permissions(self, application_id, guild_id, command_id, data):
-        return self.request(Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'), json=data)
-
-    def batch_edit_application_command_permissions(self, application_id, guild_id, data):
-        return self.request(Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'), json=data)
-
-    def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
-        r_url = f"/webhooks/{application_id}/{token}/callback" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
-        r = Route("POST", r_url)
-        return self.request(r, json=_resp)
-
-    def edit_interaction_response(self, interaction_id: int, token: str, application_id: int, deferred: bool, use_webhook: bool = True, data: dict = None, files: list = None):
-        if files and len(files):
-            data['attachments'] = [
-                {
-                    'id': index,
-                    'description': file.description,
-                    'filename': file.filename
-                } for index, file in enumerate(files)
-            ]
-        if not deferred:
-            data = {'data': data, 'type': 7}
-            r = Route('POST', f'/interactions/{interaction_id}/{token}/callback')
-        else:
-            r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original' if use_webhook is True else f'/interactions/{interaction_id}/{token}/messages/@original')
-        form = []
-        if files is not None:
-            form.append({'name': 'payload_json', 'value': utils.to_json(data)})
-            for index, file in enumerate(files):
-                form.append({
-                    'name': 'files[%s]' % index,
-                    'value': file.fp,
-                    'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                })
-
-            return self.request(r, form=form, files=files)
-        else:
-            return self.request(r, json=data)
-
-    def send_interaction_response(self, use_webhook: bool, interaction_id: int, token: str, application_id: int, deferred: bool,
-                                  followup: bool, data: dict = None, files: list = None, type: int = 4):
-        form = []
-        if files and len(files):
-            data['attachments'] = [{'id': index,
-                                    'description': file.description,
-                                    'filename': file.filename
-                                    } for index, file in enumerate(files)]
-        if not deferred and not followup:
-            payload = {'data': data, 'type': int(type)}
-            r = Route('POST', f'/webhooks/{application_id}/{token}' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
-        else:
-            payload = data
-            r = Route('POST', f'/webhooks/{application_id}/{token}')
-        if files is not None:
-            form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
-            for index, file in enumerate(files):
-                form.append({
-                    'name': 'files[%s]' % index,
-                    'value': file.fp,
-                    'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                })
-
-            return self.request(r, form=form, files=files)
-        else:
-            return self.request(r, json=payload)
-
-    def get_original_interaction_response(self, interaction_token, application_id):
-        r = Route('GET', f'/webhooks/{application_id}/{interaction_token}/messages/@original')
-        return self.request(r)
-
-    def send_autocomplete_callback(self, interaction_token, interaction_id, choices):
-        r = Route('POST', f'/interactions/{interaction_id}/{interaction_token}/callback')
-        choices = {'data': {'choices': [choice.to_dict() for choice in choices]}, 'type': 8}
-        return self.request(r, json=choices)
-
-    def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, reason=None):
-        r = Route('POST', f'/channels/{channel_id}{f"/messages/{message_id}" if message_id else ""}/threads')
-        params = {
-            'type': int(type),
-            'name': str(name),
-            'auto_archive_duration': int(auto_archive_duration)
-        }
-        return self.request(r, json=params, reason=reason)
-
-    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, reason=None):
-        r = Route('PATCH', f'/channels/{channel_id}')
-        params = {}
-        if name:
-            params['name'] = str(name)
-        if auto_archive_duration:
-            params['auto_archive_duration'] = int(auto_archive_duration)
-        if archived:
-            params['archived'] = bool(archived)
-        if locked:
-            params['locked'] = bool(locked)
-        return self.request(r, json=params, reason=reason)
-
-    def add_thread_member(self, channeL_id, member_id='@me'):
-        r = Route('PUT', f'/channels/{channeL_id}/thread-members/{member_id}')
-        return self.request(r)
-
-    def remove_thread_member(self, channel_id, member_id='@me'):
-        r = Route('DELETE', f'/channels/{channel_id}/thread-members/{member_id}')
-        return self.request(r)
-
-    def list_thread_members(self, channel_id):
-        return self.request(Route('GET', f'/channels/{channel_id}/thread-members'))
-
-    def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
-        if type not in('public', 'privat'):
-            raise ValueError('type must be public or privat, not %s' % type)
-        r = Route('GET', f'/channels/{channel_id}{"/users/@me" if joined_privat else ""}/threads/archived/{type}')
-        params = {
-            'before': before,
-            'limit': int(limit)
-        }
-        return self.request(r, json=params)
-
     def add_reaction(self, channel_id, message_id, emoji):
         r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
                   channel_id=channel_id, message_id=message_id, emoji=emoji)
@@ -670,8 +512,51 @@ class HTTPClient:
     def pins_from(self, channel_id):
         return self.request(Route('GET', '/channels/{channel_id}/pins', channel_id=channel_id))
 
-    # Member management
+    # Thread management
+    def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, reason=None):
+        r = Route('POST', f'/channels/{channel_id}{f"/messages/{message_id}" if message_id else ""}/threads')
+        params = {
+            'type': int(type),
+            'name': str(name),
+            'auto_archive_duration': int(auto_archive_duration)
+        }
+        return self.request(r, json=params, reason=reason)
 
+    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, reason=None):
+        r = Route('PATCH', f'/channels/{channel_id}')
+        params = {}
+        if name:
+            params['name'] = str(name)
+        if auto_archive_duration:
+            params['auto_archive_duration'] = int(auto_archive_duration)
+        if archived:
+            params['archived'] = bool(archived)
+        if locked:
+            params['locked'] = bool(locked)
+        return self.request(r, json=params, reason=reason)
+
+    def add_thread_member(self, channeL_id, member_id='@me'):
+        r = Route('PUT', f'/channels/{channeL_id}/thread-members/{member_id}')
+        return self.request(r)
+
+    def remove_thread_member(self, channel_id, member_id='@me'):
+        r = Route('DELETE', f'/channels/{channel_id}/thread-members/{member_id}')
+        return self.request(r)
+
+    def list_thread_members(self, channel_id):
+        return self.request(Route('GET', f'/channels/{channel_id}/thread-members'))
+
+    def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
+        if type not in ('public', 'privat'):
+            raise ValueError('type must be public or privat, not %s' % type)
+        r = Route('GET', f'/channels/{channel_id}{"/users/@me" if joined_privat else ""}/threads/archived/{type}')
+        params = {
+            'before': before,
+            'limit': int(limit)
+        }
+        return self.request(r, json=params)
+
+    # Member management
     def kick(self, user_id, guild_id, reason=None):
         r = Route('DELETE', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)
         if reason:
@@ -709,16 +594,8 @@ class HTTPClient:
 
     def edit_profile(self, password, username, avatar, **fields):
         payload = {
-            'password': password,
-            'username': username,
             'avatar': avatar
         }
-
-        if 'email' in fields:
-            payload['email'] = fields['email']
-
-        if 'new_password' in fields:
-            payload['new_password'] = fields['new_password']
 
         return self.request(Route('PATCH', '/users/@me'), json=payload)
 
@@ -1117,7 +994,7 @@ class HTTPClient:
 
     def edit_guild_event(self, guild_id, event_id, *, reason=None, **fields):
         valid_keys = ('name', 'description', 'entity_type', 'privacy_level', 'entity_metadata',
-                      'channel_id', 'scheduled_start_time', 'scheduled_end_time', 'status')
+                      'channel_id', 'scheduled_start_time', 'scheduled_end_time', 'status', 'image')
         payload = {
             k: v for k, v in fields.items() if k in valid_keys
         }
@@ -1133,7 +1010,7 @@ class HTTPClient:
 
     def edit_role(self, guild_id, role_id, *, reason=None, **fields):
         r = Route('PATCH', '/guilds/{guild_id}/roles/{role_id}', guild_id=guild_id, role_id=role_id)
-        valid_keys = ('name', 'permissions', 'color', 'hoist', 'mentionable')
+        valid_keys = ('name', 'permissions', 'color', 'hoist', 'mentionable', 'icon')
         payload = {
             k: v for k, v in fields.items() if k in valid_keys
         }
@@ -1183,8 +1060,175 @@ class HTTPClient:
     def move_member(self, user_id, guild_id, channel_id, *, reason=None):
         return self.edit_member(guild_id=guild_id, user_id=user_id, channel_id=channel_id, reason=reason)
 
-    # Misc
+    # application-command's management
+    def get_application_commands(self, application_id, command_id=None, guild_id=None):
+        return self.request(Route('GET',
+                                  f'/applications/{application_id}{f"/guilds/{guild_id}" if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}?with_localizations=true'))
 
+    def create_application_command(self, application_id, data, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
+        else:
+            url = f'/applications/{application_id}/commands'
+        return self.request(Route('POST', url), json=data)
+
+    def edit_application_command(self, application_id, command_id, data, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
+        else:
+            url = f'/applications/{application_id}/commands/{command_id}'
+        return self.request(Route('PATCH', url), json=data)
+
+    def delete_application_command(self, application_id, command_id, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
+        else:
+            url = f'/applications/{application_id}/commands/{command_id}'
+        return self.request(Route('DELETE', url))
+
+    def bulk_overwrite_application_commands(self, application_id, data, guild_id=None):
+        if guild_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
+        else:
+            url = f'/applications/{application_id}/commands'
+        return self.request(Route('PUT', url), json=data)
+
+    def get_guild_application_command_permissions(self, application_id, guild_id, command_id=None):
+        if command_id:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'
+        else:
+            url = f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'
+        return self.request(Route('GET', url))
+
+    def edit_application_command_permissions(self, application_id, guild_id, command_id, data):
+        return self.request(
+            Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'),
+            json=data
+        )
+
+    def batch_edit_application_command_permissions(self, application_id, guild_id, data):
+        return self.request(
+            Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'),
+            json=data)
+
+    # Interaction management
+    def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
+        r_url = f"/webhooks/{application_id}/{token}/callback" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
+        r = Route("POST", r_url)
+        return self.request(r, json=_resp)
+
+    def edit_interaction_response(self,
+                                  interaction_id: int,
+                                  token: str,
+                                  application_id: int,
+                                  deferred: bool,
+                                  use_webhook: bool = True,
+                                  data: dict = None,
+                                  files: list = None
+                                  ):
+        if files and len(files):
+            data['attachments'] = [
+                {
+                    'id': index,
+                    'description': file.description,
+                    'filename': file.filename
+                } for index, file in enumerate(files)
+            ]
+        if not deferred:
+            data = {'data': data, 'type': 7}
+            r = Route('POST', f'/interactions/{interaction_id}/{token}/callback')
+        else:
+            r = Route('PATCH',
+                      f'/webhooks/{application_id}/{token}/messages/@original' if use_webhook is True else f'/interactions/{interaction_id}/{token}/messages/@original')
+        form = []
+        if files is not None:
+            form.append({'name': 'payload_json', 'value': utils.to_json(data)})
+            for index, file in enumerate(files):
+                form.append({
+                    'name': 'files[%s]' % index,
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream'
+                })
+
+            return self.request(r, form=form, files=files)
+        else:
+            return self.request(r, json=data)
+
+    def send_interaction_response(self,
+                                  interaction_id: int,
+                                  token: str,
+                                  application_id: int,
+                                  deferred: bool,
+                                  followup: bool = False,
+                                  data: dict = None,
+                                  files: list = None,
+                                  type: int = 4):
+        form = []
+        if files and len(files):
+            data['attachments'] = [{'id': index,
+                                    'description': file.description,
+                                    'filename': file.filename
+                                    } for index, file in enumerate(files)]
+        if not deferred and not followup:
+            payload = {'data': data, 'type': int(type)}
+            r = Route('POST', f"/interactions/{interaction_id}/{token}/callback")
+        else:
+            payload = data
+            r = Route('POST', f'/webhooks/{application_id}/{token}')
+        if files is not None:
+            form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
+            for index, file in enumerate(files):
+                form.append({
+                    'name': 'files[%s]' % index,
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream'
+                })
+
+            return self.request(r, form=form, files=files)
+        else:
+            return self.request(r, json=payload)
+
+    def get_original_interaction_response(self, token: str, application_id: int):
+        r = Route('GET', f'/webhooks/{application_id}/{token}/messages/@original')
+        return self.request(r)
+
+    def get_followup_message(self, token, application_id, message_id):
+        r = Route('GET', f'/webhooks/{application_id}/{token}/messages/{message_id}')
+        return self.request(r)
+
+    def edit_followup_message(self, application_id: int, token: str, message_id: int , data: dict, files: list = None):
+        if files and len(files):
+            data['attachments'] = [
+                {
+                    'id': index,
+                    'description': file.description,
+                    'filename': file.filename
+                } for index, file in enumerate(files)
+            ]
+        r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/{message_id}')
+        form = []
+        if files is not None:
+            form.append({'name': 'payload_json', 'value': utils.to_json(data)})
+            for index, file in enumerate(files):
+                form.append({
+                    'name': 'files[%s]' % index,
+                    'value': file.fp,
+                    'filename': file.filename,
+                    'content_type': 'application/octet-stream'
+                })
+
+            return self.request(r, form=form, files=files)
+        else:
+            return self.request(r, json=data)
+
+    def send_autocomplete_callback(self, token: str, interaction_id: int, choices: list):
+        r = Route('POST', f'/interactions/{interaction_id}/{token}/callback')
+        data = {'data': {'choices': choices}, 'type': 8}
+        return self.request(r, json=data)
+
+    # Misc
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
 

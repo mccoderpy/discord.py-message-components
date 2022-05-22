@@ -479,7 +479,7 @@ class Client:
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     async def _request_sync_commands(self, is_cog_reload: bool = False):
-        """Used to sync commands if the ``GUILD_CREATE`` stream is over
+        """Used to sync commands if the ``GUILD_CREATE`` stream is over or a :class:`~discord.ext.commands.Cog` was reloaded.
 
         .. warning::
             **DO NOT OVERWRITE THIS METHOD!!!
@@ -1791,8 +1791,10 @@ class Client:
             any_changed = False
             has_update = False
             try:
-                registered_guild_commands_raw = await self.http.get_application_commands(application_id,
-                                                                                         guild_id=guild_id)
+                registered_guild_commands_raw = await self.http.get_application_commands(
+                    application_id,
+                    guild_id=guild_id
+                )
             except HTTPException:
                 warnings.warn(
                     'Missing access to guild %s or don\'t have the application.commands scope in there, skipping!'
@@ -1830,10 +1832,12 @@ class Client:
                         self.get_guild(int(guild_id)),
                         guild_id
                     )
-                    updated = await self.http.edit_application_command(application_id,
-                                                                       to_send[0]['id'],
-                                                                       to_send[0],
-                                                                       guild_id)
+                    updated = await self.http.edit_application_command(
+                        application_id,
+                        to_send[0]['id'],
+                        to_send[0],
+                        guild_id
+                    )
                 elif len(to_send) == 1 and not has_update and not to_maybe_remove:
                     log.info(
                         'Registering one new application-command %s in guild %s (%s).',
@@ -2406,6 +2410,14 @@ class Client:
         return Webhook.from_state(data, state=self._connection)
 
     async def fetch_all_nitro_stickers(self):
+        """
+        Retrieves a :class:`list` with all buildin :class:`~discord.StickerPack`'s.
+
+        Returns
+        --------
+        :class:`.StickerPack`
+            A list containing all buildin sticker-packs.
+        """
         data = await self.http.get_all_nitro_stickers()
         packs = [StickerPack(state=self._connection, data=d) for d in data['sticker_packs']]
         return packs

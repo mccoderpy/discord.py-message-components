@@ -25,7 +25,7 @@ from typing import (Union,
 from .components import Button, SelectMenu, ActionRow, Modal, TextInput
 from .channel import DMChannel, ThreadChannel, _channel_factory, TextChannel
 from .errors import NotFound, InvalidArgument, AlreadyResponded, UnknownInteraction
-from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType,\
+from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType, \
     try_enum
 
 if TYPE_CHECKING:
@@ -46,9 +46,14 @@ __all__ = (
 )
 
 
+class InteractionMessage(Message):
+    def __init__(self):
+        pass
+
+
 class EphemeralMessage:
     """
-    Like a normal :class:`discord.Message` but with an modified :meth:`edit` method and without delete method.
+    Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
     """
 
     def __init__(self, *, state, channel, data, interaction):
@@ -177,7 +182,8 @@ class EphemeralMessage:
         return getattr(self.channel, 'guild', None)
 
     def __repr__(self):
-        return '<EphemeralMessage id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(self)
+        return '<EphemeralMessage id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(
+            self)
 
     def __eq__(self, other):
         return isinstance(other.__class__, self.__class__) and self.id == other.id
@@ -213,7 +219,8 @@ class EphemeralMessage:
             embeds = [embeds]
         if embeds is not None:
             fields['embeds'] = [e.to_dict() for e in embeds]
-        components: Optional[List[Union[List[Button, SelectMenu], ActionRow, Button, SelectMenu]]] = fields.pop('components', None)
+        components: Optional[List[Union[List[Button, SelectMenu], ActionRow, Button, SelectMenu]]] = fields.pop(
+            'components', None)
         _components = []
         if components is not None and not isinstance(components, list):
             components = [components]
@@ -228,9 +235,13 @@ class EphemeralMessage:
             fields['components'] = _components
 
         try:
-            data = await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id, token=self.__interaction__._token, application_id=self.__interaction__._application_id, deferred=self.__interaction__.deferred, use_webhook=True, files=None, data=fields)
+            data = await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id,
+                                                                    token=self.__interaction__._token,
+                                                                    application_id=self.__interaction__._application_id,
+                                                                    deferred=self.__interaction__.deferred,
+                                                                    use_webhook=True, files=None, data=fields)
         except NotFound:
-           raise UnknownInteraction(self.__interaction__.id)
+            raise UnknownInteraction(self.__interaction__.id)
         else:
             if not isinstance(data, dict):
                 data = await self.__interaction__.get_original_callback(raw=True)
@@ -241,11 +252,11 @@ class EphemeralMessage:
 
 
 class BaseInteraction:
-
     """
-    The Class for an discord-interaction like klick a :class:`Button` or select an option of :class:`SelectMenu` in discord
+    The Base-Class for a discord-interaction like klick a :class:`~discord.Button`,
+    select (an) option(s) of :class:`~discord.SelectMenu` or using an application-command in discord
     For more general information's about Interactions visit the Documentation of the
-    `Discord-API <https://discord.com/developers/docs/interactions/slash-commands#interaction-object>`_
+    `Discord-API <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object>`_
     """
 
     def __init__(self, state, data):
@@ -266,7 +277,8 @@ class BaseInteraction:
                 self.message = Message(state=state, channel=self.channel, data=message_data)
             self.cached_message = self.message and self._state._get_message(self.message.id)
             self.message_id = self.message.id
-        self.data = InteractionData(data=data.get('data', None), state=state, guild=self.guild, channel_id=self.channel_id)
+        self.data = InteractionData(data=data.get('data', None), state=state, guild=self.guild,
+                                    channel_id=self.channel_id)
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
@@ -281,11 +293,12 @@ class BaseInteraction:
         self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
+        self.messages: Optional[List[Union[Message, EphemeralMessage]]] = {}
 
     def __repr__(self):
         """Represents a :class:`discord.BaseInteraction`-object."""
         return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
-    
+
     async def defer(
             self,
             response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
@@ -385,7 +398,7 @@ class BaseInteraction:
                                   f'got: {len(fields["embeds"])}')
 
         try:
-           components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = fields['components']
+            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = fields['components']
         except KeyError:
             pass
         else:
@@ -393,9 +406,10 @@ class BaseInteraction:
                 c_list = []
                 for i, component in enumerate(list(components) if not isinstance(components, list) else components):
                     if isinstance(component, ActionRow):
-                       c_list.extend(component.to_dict())
+                        c_list.extend(component.to_dict())
                     elif isinstance(component, list):
-                        c_list.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
+                        c_list.extend(
+                            ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
                     elif isinstance(component, (Button, SelectMenu)):
                         c_list.extend(ActionRow(component).to_dict())
                 fields['components'] = c_list
@@ -421,7 +435,7 @@ class BaseInteraction:
                                                               application_id=self._application_id, data=fields,
                                                               deferred=self.deferred,
                                                               followup=True if (self.callback_message and not
-                                                                                self.callback_message.flags.loading)
+                                                              self.callback_message.flags.loading)
                                                               else False,
                                                               use_webhook=False,
                                                               type=7)
@@ -464,7 +478,7 @@ class BaseInteraction:
         """|coro|
 
         Responds to an interaction by sending a message that can be made visible only to the person who performed the
-         interaction by setting the `hidden` parameter to :bool:`True`.
+        interaction by setting the `hidden` parameter to :bool:`True`.
         """
         state = self._state
         if not self.channel:
@@ -480,7 +494,8 @@ class BaseInteraction:
         if embeds is not None:
             embed_list.extend([e.to_dict() for e in embeds])
         if len(embed_list) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embed_list)}')
+            raise InvalidArgument(
+                f'The maximum number of embeds that can be send with a message is 10, got: {len(embed_list)}')
         if embed_list:
             data['embeds'] = embed_list
 
@@ -492,7 +507,8 @@ class BaseInteraction:
                 elif isinstance(component, ActionRow):
                     _components.extend(component.to_dict())
                 elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
+                    _components.extend(
+                        ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
             if _components:
                 data['components'] = _components
 
@@ -503,7 +519,6 @@ class BaseInteraction:
                 allowed_mentions = allowed_mentions.to_dict()
         else:
             allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
-
 
         if mention_author is not None:
             allowed_mentions = allowed_mentions or AllowedMentions().to_dict()
@@ -519,32 +534,52 @@ class BaseInteraction:
             file_list.extend(files)
         files = file_list
         if len(files) > 10:
-            raise InvalidArgument(f'The maximum number of files that can be send with a message is 10, got: {len(files)}')
+            raise InvalidArgument(
+                f'The maximum number of files that can be send with a message is 10, got: {len(files)}')
         flags = MessageFlags._from_value(0)
         if hidden:
             flags.ephemeral = True
         if suppress:
             flags.suppress_embeds = True
         data['flags'] = flags.value
-        if self.deferred and not self.callback_message:
-            method = state.http.edit_interaction_response(token=self._token, interaction_id=self.id,
-                                                          application_id=self._application_id,
-                                                          data=data, files=files, deferred=self.deferred)
+        if self.deferred and (not self.callback_message or self.callback_message.flags.loading):
+            method = state.http.edit_interaction_response(
+                token=self._token,
+                interaction_id=self.id,
+                application_id=self._application_id,
+                data=data,
+                files=files,
+                deferred=self.deferred
+            )
         else:
-            method = state.http.send_interaction_response(token=self._token, interaction_id=self.id,
-                                                          application_id=self._application_id, data=data, files=files,
-                                                          deferred=self.deferred,
-                                                          followup=True if self.callback_message else False,
-                                                          use_webhook=False)
+            if not self.callback_message:
+                method = state.http.send_interaction_response(
+                    token=self._token,
+                    interaction_id=self.id,
+                    application_id=self._application_id,
+                    data=data,
+                    files=files,
+                    deferred=self.deferred,
+                )
+            else:
+                method = state.http.send_interaction_response(
+                    token=self._token,
+                    application_id=self._application_id,
+                    data=data,
+                    files=files,
+                    followup=True,
+                    deferred=self.deferred,
+                )
         data = await method
 
         if not isinstance(data, dict):
-            msg = await self.get_original_callback()
+            data = await self.get_original_callback(raw=True)
+        if hidden:  # should not be the case but im not sure at the moment
+            msg = EphemeralMessage(state=self._state, channel=self.channel, data=data, interaction=self)
         else:
-            if hidden:  # should not be the case but im not sure at the moment
-                msg = EphemeralMessage(state=self._state, interaction=self, channel=self.channel, data=data)
-            else:
-                msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
+            msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
+        if self.callback_message:
+            self.messages[msg.id] = msg
         if not hidden and delete_after is not None:
             # TODO: Fix deleting wrong message
             await msg.delete(delay=delete_after)
@@ -555,7 +590,7 @@ class BaseInteraction:
         self.deferred = True
         return msg
 
-    async def respond_with_modal(self, modal: 'Modal'):
+    async def respond_with_modal(self, modal: 'Modal') -> Dict:
         if not self.deferred:
             data = await self._state.http.send_interaction_response(
                 token=self._token,
@@ -577,7 +612,7 @@ class BaseInteraction:
         """|coro|
         Fetch the original callback-message of the interaction
         .. warning::
-            This is a API-Call and should use carefully
+            This is an API-Call and should be used carefully
         """
         data = await self._state.http.get_original_interaction_response(self._token, self._application_id)
         if raw:
@@ -589,6 +624,8 @@ class BaseInteraction:
         self.callback_message = msg
         return msg
 
+    def get_followup(self, id: int) -> Optional[Union[Message, EphemeralMessage]]:
+        return self.messages[id]
 
     @property
     def created_at(self):
@@ -709,9 +746,11 @@ class AutocompleteInteraction(BaseInteraction):
         if len(choices) > 25:
             raise ValueError(f'The maximum of choices is 25. Got {len(choices)}.')
         else:
-            await self._http.send_autocomplete_callback(interaction_id=self.id,
-                                                        interaction_token=self._token,
-                                                        choices=choices)
+            await self._http.send_autocomplete_callback(
+                token=self._token,
+                interaction_id=self.id,
+                choices=[choice.to_dict() for choice in choices]
+            )
 
     async def respond(self, *args, **kwargs):
         raise NotImplementedError
@@ -730,7 +769,7 @@ class ModalSubmitInteraction(BaseInteraction):
         return None
 
     @property
-    def fields(self):
+    def fields(self) -> List['TextInput']:
         """List[:class:`TextInput`] returns a :class:`list` containing the fields of the modal."""
         field_list = []
         for ar in self.data.components:
@@ -739,7 +778,15 @@ class ModalSubmitInteraction(BaseInteraction):
         return field_list
 
     @property
-    def custom_id(self):
+    def custom_id(self) -> str:
+        """
+        The Custom ID of the modal
+
+        Returns
+        -------
+        :class:`str`
+            The :attr:`custom_id` of the :class:`~discord.Modal`.
+        """
         return self.data.custom_id
 
     async def respond_with_modal(self, modal: 'Modal') -> NotImplementedError:
@@ -823,8 +870,8 @@ class option_float(float):
 class InteractionDataOption:
     def __init__(self, *, state, data, guild=None, **kwargs):
         self._state = state
-        self._guild = guild
         self._data = data
+        self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
         self.name: str = data['name']
         self.type: OptionType = OptionType.try_value(data['type'])
@@ -846,7 +893,7 @@ class InteractionDataOption:
         return bool(self._data.get('focused', False))
 
     @property
-    def options(self) -> Optional[List[Any]]:
+    def options(self) -> Optional[List['InteractionDataOption']]:
         options = self._data.get('options', [])
         return [InteractionDataOption(state=self._state, data=option, guild=self._guild) for option in options]
 
@@ -895,7 +942,7 @@ class ResolvedData:
                 factory, _ch_type_ = _channel_factory(c['type'])
                 channel = factory(guild=self._guild, data=c, state=self._state)
             _channels[int(_id)] = channel
-    
+
     @property
     def roles(self) -> Optional[Dict[int, Role]]:
         return getattr(self, '_roles', {})
