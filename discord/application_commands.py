@@ -835,7 +835,7 @@ class SubCommand(SlashCommandOption):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
-            print(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
             return
 
         if self.cog is not None:
@@ -1025,7 +1025,7 @@ class SlashCommand(ApplicationCommand):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if self.autocomplete_func is None:
-            print(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
             return
         if self.cog is not None:
             args = (self.cog, interaction, *args)
@@ -1391,7 +1391,6 @@ class SubCommandGroup(SlashCommandOption):
         self.parent = parent
 
     def __repr__(self):
-        print(self.to_dict())
         return '<SubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s>' % \
                (self.parent.name,
                 self.name,
