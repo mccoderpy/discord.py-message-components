@@ -437,7 +437,6 @@ class BaseInteraction:
                                                               followup=True if (self.callback_message and not
                                                               self.callback_message.flags.loading)
                                                               else False,
-                                                              use_webhook=False,
                                                               type=7)
 
         if not isinstance(data, dict):
@@ -597,7 +596,6 @@ class BaseInteraction:
                 interaction_id=self.id,
                 application_id=self._application_id,
                 deferred=self.deferred,
-                use_webhook=False,
                 followup=False,
                 data=modal.to_dict(),
                 type=9
@@ -880,6 +878,8 @@ class InteractionDataOption:
     def value(self) -> Optional[Union[str, int, float]]:
         value = self._data.get('value', None)
         if value:
+            if isinstance(value, bool): # because booleans are integers too
+                return value
             if isinstance(value, int):
                 return option_int(value, focused=self.focused)
             elif isinstance(value, str):
