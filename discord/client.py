@@ -1502,14 +1502,14 @@ class Client:
                 if base_name:
                     base = GuildOnlySlashCommand(client=self, name=_name, description=_description,
                                                  default_member_permissions=default_required_permissions,
-                                                 options=_options, guild_ids=guild_ids, connector=connector,
-                                                 commands=guild_cmds)
+                                                 options=_options, guild_ids=guild_ids, connector=connector)
                     if group_name:
                         base = GuildOnlySubCommandGroup(parent=base, client=self, name=_name, description=_description,
                                                         default_member_permissions=default_required_permissions,
                                                         options=_options, guild_ids=guild_ids, connector=connector)
                     return GuildOnlySubCommand(parent=base, client=self, name=_name, description=_description,
-                                               options=_options, func=func, guild_ids=guild_ids, connector=connector)
+                                               options=_options, func=func, guild_ids=guild_ids, connector=connector,
+                                               commands=guild_cmds)
                 return GuildOnlySlashCommand(client=self, name=_name, description=_description,
                                              default_member_permission=default_required_permissions, options=_options,
                                              func=func, guild_ids=guild_ids, connector=connector, commands=guild_cmds)

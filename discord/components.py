@@ -512,12 +512,12 @@ class Modal:
         Between 1 and 5 (inclusive) components that make up the modal.
     """
     def __init__(self,
-                 custom_id: str,
                  title: str,
+                 custom_id: str,
                  components: List[Union['ActionRow', List['TextInput']]]) -> None:
         # TODO: Add Error handling
-        self.custom_id = custom_id
         self.title = title
+        self.custom_id = custom_id
         self.components: List[ActionRow] = []
         for c in components:
             if isinstance(c, list):

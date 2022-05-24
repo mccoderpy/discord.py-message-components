@@ -343,7 +343,7 @@ class Cog(metaclass=CogMeta):
         if so, the :func:`func` is called.
 
         The function this is attached to must take the same parameters as a
-        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_button_click>`_.
+        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_raw_button_click>`_.
 
         .. important::
             The func must be a coroutine, if not, :exc:`TypeError` is raised.
@@ -399,7 +399,7 @@ class Cog(metaclass=CogMeta):
         A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
 
         The function this is attached to must take the same parameters as a
-        `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_raw_selection_select>`_.
+        `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_raw_selection_select>`_.
 
         .. important::
             The func must be a coroutine, if not, :exc:`TypeError` is raised.
@@ -460,7 +460,7 @@ class Cog(metaclass=CogMeta):
          if so, the :func:`func` is called.
 
         The function this is attached to must take the same parameters as a
-        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
+        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_modal_submit>`_.
 
         .. important::
             The func must be a coroutine, if not, :exc:`TypeError` is raised.
@@ -708,8 +708,7 @@ class Cog(metaclass=CogMeta):
                 if base_name:
                     base = GuildOnlySlashCommand(cog=cls, func=actual, name=_name, description=_description,
                                                  default_member_permissions=default_required_permissions,
-                                                 options=_options, guild_ids=guild_ids, connector=connector,
-                                                 commands=guild_cmds)
+                                                 options=_options, guild_ids=guild_ids, connector=connector)
                     if group_name:
                         base = GuildOnlySubCommandGroup(cog=cls, parent=base, name=_name, description=_description,
                                                         default_member_permissions=default_required_permissions,
@@ -719,7 +718,8 @@ class Cog(metaclass=CogMeta):
                                                commands=guild_cmds)
                 return GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
                                              default_member_permissions=default_required_permissions,
-                                             options=_options, func=actual, guild_ids=guild_ids, connector=connector)
+                                             options=_options, func=actual, guild_ids=guild_ids, connector=connector,
+                                             commands=guild_cmds)
             else:
                 base, base_command, sub_command_group = None, None, None
                 if base_name:

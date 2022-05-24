@@ -35,16 +35,14 @@ from types import FunctionType
 from .utils import async_all, find, get, snowflake_time
 from typing_extensions import Literal
 from .abc import GuildChannel
-from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING
+from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING, Coroutine, Awaitable
 from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
-from .errors import InvalidArgument
 
 if TYPE_CHECKING:
     from .ext.commands import Cog, Converter
     from datetime import datetime
     from .guild import Guild
-    from .user import User
     from .interactions import BaseInteraction
 
 __all__ = (
@@ -875,8 +873,9 @@ class SubCommand(SlashCommandOption):
 class GuildOnlySubCommand(SubCommand):
     """Represents a :class:`SubCommand` for multiple guilds with the same function."""
     def __init__(self, *args, guild_ids: List[int] = None, **kwargs):
+        parent = kwargs.get('parent', None)
+        self.guild_ids = guild_ids or parent.guild_ids if parent else []
         super().__init__(*args, **kwargs)
-        self.guild_ids = guild_ids or self.parent.guild_ids
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
@@ -887,6 +886,23 @@ class GuildOnlySubCommand(SubCommand):
                   self.options,
                   ', '.join([str(g) for g in self.guild_ids])
                   )
+
+    def autocomplete_callback(self, coro: Coroutine[Any, Any, Awaitable]):
+        """
+        A decorator that sets a coroutine function as the function that will be called
+        when discord sends an autocomplete interaction for this command.
+
+        Parameters
+        ----------
+        coro: Callable[Any, Any, Coroutine]
+            The function that should be set as autocomplete_func for this command.
+            Must take the same amount of params the command itself takes.
+        """
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError('The autocomplete callback function must be a coroutine.')
+        self.autocomplete_func = coro
+        for cmd in self._commands:
+            cmd.autocomplete_func = coro
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -1282,8 +1298,8 @@ async def transform(interaction, param, converter, value) -> Any:
 
 
 class GuildOnlySlashCommand(SlashCommand):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, guild_ids: Optional[List[int]] = None, **kwargs):
+        super().__init__(*args, **kwargs, guild_ids=guild_ids)
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
@@ -1294,6 +1310,23 @@ class GuildOnlySlashCommand(SlashCommand):
                   self.options,
                   ', '.join([str(g) for g in self.guild_ids])
                   )
+
+    def autocomplete_callback(self, coro: 'Coroutine[Any, Any, Awaitable]'):
+        """
+        A decorator that sets a coroutine function as the function that will be called
+        when discord sends an autocomplete interaction for this command.
+
+        Parameters
+        ----------
+        coro: Callable[Any, Any, Coroutine]
+            The function that should be set as autocomplete_func for this command.
+            Must take the same amount of params the command itself takes.
+        """
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError('The autocomplete callback function must be a coroutine.')
+        self.autocomplete_func = coro
+        for cmd in self._commands:
+            cmd.autocomplete_func = coro
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
