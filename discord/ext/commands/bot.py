@@ -1018,11 +1018,12 @@ class BotBase(GroupMixin):
                                 sub_command.parent = existing_command
                                 existing_command._sub_commands[sub_command.name] = sub_command
                         else:
+                            # Just overwrite the existing one
                             self._application_commands_by_type[cmd_type][command.name] = command
                             continue
 
                     else:
-                        # if its not a slash-command overwrite the existing one
+                        # if it's not a slash-command overwrite the existing one
                         self._application_commands_by_type[cmd_type][command.name] = command
                         continue
 
@@ -1081,8 +1082,11 @@ class BotBase(GroupMixin):
                                     # set the parent of the subcommand to the existing command
                                     sub_command.parent = existing_command
                                     existing_command._sub_commands[sub_command.name] = sub_command
+                            else:
+                                # Just overwrite the existing one
+                                self._guild_specific_application_commands[guild_id][cmd_type] = command
                         else:
-                            # if its not a slash-command overwrite the existing one
+                            # If it's not a slash-command overwrite the existing one
                             self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
 
                             continue
