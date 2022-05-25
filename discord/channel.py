@@ -582,6 +582,11 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         """|coro|
 
         Creates a new thread in this channel.
+
+        You must have the :attr:`~Permissions.manage_channels` permission to
+        use this.
+
+
         """
         if private is True and not self.permissions_for(self.guild.get_member(self._state.self_id)).create_private_threads:
             raise MissingPermissionsToCreateThread(Permissions.use_private_threads, Permissions.send_messages_in_threads,
@@ -854,7 +859,6 @@ class ThreadChannel(abc.Messageable, Hashable):
         return self.members
 
 
-
 class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
     __slots__ = ('name', 'id', 'guild', 'bitrate', 'user_limit',
                  '_state', 'position', '_overwrites', 'category_id',
@@ -924,13 +928,14 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
     def permissions_for(self, member):
         base = super().permissions_for(member)
 
-        # voice channels cannot be edited by people who can't connect to them
+        # voice channels cannot be edited by people who can't connect to them,
         # It also implicitly denies all other voice perms
         if not base.connect:
             denied = Permissions.voice()
             denied.update(manage_channels=True, manage_roles=True)
             base.value &= ~denied.value
         return base
+
 
 class VoiceChannel(VocalGuildChannel, abc.Messageable):
     """Represents a Discord guild voice channel.
@@ -995,7 +1000,7 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
     def channel_type():
         return ChannelType.voice
 
-    def _get_channel(self):
+    async def _get_channel(self):
         return self
 
     @property
@@ -1060,6 +1065,7 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         """
 
         await self._edit(options, reason=reason)
+
 
 class StageChannel(VocalGuildChannel):
     """Represents a Discord guild stage channel.
