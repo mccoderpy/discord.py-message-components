@@ -538,7 +538,6 @@ class Modal:
 
     @classmethod
     def from_dict(cls, data):
-        print(data)
         return cls(
             custom_id=data['custom_id'],
             title=data['title'],

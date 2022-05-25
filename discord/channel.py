@@ -28,6 +28,7 @@ import time
 import asyncio
 from typing import Union, Optional, Callable, TYPE_CHECKING
 
+import discord
 from .object import Object
 
 from .permissions import Permissions
@@ -731,10 +732,12 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def me(self):
+        """Optional[:class:`ThreadMember`]: The thread member of the bot, or :obj:`None` if he is not a member of the thread."""
         return self.get_member(self._state.self_id)
 
     @property
-    def parent_channel(self):
+    def parent_channel(self) -> TextChannel:
+        """:class:`TextChannel`: The parent channel of this tread"""
         return self.guild.get_channel(self.parent_id)
 
     @property
@@ -746,22 +749,46 @@ class ThreadChannel(abc.Messageable, Hashable):
         return datetime.datetime.fromisoformat(self._thread_meta.get('create_timestamp'))
 
     @property
-    def mention(self):
+    def mention(self) -> str:
         """:class:`str`: The string that allows you to mention the thread."""
         return f'<#{self.id}>'
 
     @property
-    def jump_url(self):
+    def jump_url(self) -> str:
         """:class:`str`: Returns a URL that allows the client to jump to the referenced thread."""
         return f'https://discord.com/channels/{self.guild.id}/{self.id}'
 
-    def get_member(self, user_id):
+    def get_member(self, user_id) -> Optional[ThreadMember]:
+        """:class:`ThreadMember`: Returns the member of thread with the given user_id, or :obj:`None` if he is not in this thread."""
         return self._members.get(user_id, None)
 
-    def permissions_for(self, member):
+    def permissions_for(self, member) -> 'Permissions':
+        """Handles permission resolution for the current :class:`~discord.Member`.
+
+        .. note::
+            threads inherit their permissions from their parent channel.
+
+        This function takes into consideration the following cases:
+
+        - Guild owner
+        - Guild roles
+        - Channel overrides
+        - Member overrides
+
+        Parameters
+        ----------
+        member: :class:`~discord.Member`
+            The member to resolve permissions for.
+
+        Returns
+        -------
+        :class:`~discord.Permissions`
+            The resolved permissions for the member.
+        """
         return self.parent_channel.permissions_for(member)
 
     def is_nsfw(self):
+        """:class:`bool`: Whether the parent channel of this thread has NSFW enabled."""
         return self.parent_channel.is_nsfw()
 
     async def join(self):
@@ -857,6 +884,102 @@ class ThreadChannel(abc.Messageable, Hashable):
             if not self.get_member(int(thread_member['user_id'])):
                 self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
         return self.members
+
+    async def delete(self, *, reason=None):
+        """|coro|
+
+        Deletes the thread channel.
+
+        You must have :attr:`~Permissions.manage_channels` permission to use this.
+
+        Parameters
+        -----------
+        reason: Optional[:class:`str`]
+            The reason for deleting this tread.
+            Shows up on the audit log.
+
+        Raises
+        -------
+        ~discord.Forbidden
+            You do not have proper permissions to delete the thread.
+        ~discord.NotFound
+            The thread was not found or was already deleted.
+        ~discord.HTTPException
+            Deleting the thread failed.
+        """
+        await self._state.http.delete_channel(self.id, reason=reason)
+
+    async def create_invite(self, *, reason=None, **fields):
+        """|coro|
+
+        Creates an instant invite from this thread.
+
+        You must have the :attr:`~Permissions.create_instant_invite` permission to
+        do this.
+
+        Parameters
+        ------------
+        max_age: :class:`int`
+            How long the invite should last in seconds. If it's 0 then the invite
+            doesn't expire. Defaults to ``0``.
+        max_uses: :class:`int`
+            How many uses the invite could be used for. If it's 0 then there
+            are unlimited uses. Defaults to ``0``.
+        temporary: :class:`bool`
+            Denotes that the invite grants temporary membership
+            (i.e. they get kicked after they disconnect). Defaults to ``False``.
+        unique: :class:`bool`
+            Indicates if a unique invite URL should be created. Defaults to True.
+            If this is set to ``False`` then it will return a previously created
+            invite.
+        reason: Optional[:class:`str`]
+            The reason for creating this invite. Shows up on the audit log.
+
+        Raises
+        -------
+        ~discord.HTTPException
+            Invite creation failed.
+
+        Returns
+        --------
+        :class:`~discord.Invite`
+            The invite that was created.
+        """
+
+        data = await self._state.http.create_invite(self.id, reason=reason, **fields)
+        return Invite.from_incomplete(data=data, state=self._state)
+
+    async def invites(self):
+        """|coro|
+
+        Returns a list of all active instant invites from this thread.
+
+        You must have :attr:`~Permissions.manage_channels` to get this information.
+
+        Raises
+        -------
+        ~discord.Forbidden
+            You do not have proper permissions to get the information.
+        ~discord.HTTPException
+            An error occurred while fetching the information.
+
+        Returns
+        -------
+        List[:class:`~discord.Invite`]
+            The list of invites that are currently active.
+        """
+        from .invite import Invite
+
+        state = self._state
+        data = await state.http.invites_from_channel(self.id)
+        result = []
+
+        for invite in data:
+            invite['channel'] = self
+            invite['guild'] = self.guild
+            result.append(Invite(state=state, data=invite))
+
+        return result
 
 
 class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
