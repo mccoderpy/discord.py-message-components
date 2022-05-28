@@ -1,7 +1,7 @@
 A simple suggestions manager using Modals
 =========================================
 
-## Usage examples:
+### Usage examples
 
 https://user-images.githubusercontent.com/80390413/170806145-074cb35f-1e22-4ad9-8b25-647c3a4b3f8f.mp4
 
