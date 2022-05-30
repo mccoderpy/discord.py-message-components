@@ -124,7 +124,7 @@ class BotBase(GroupMixin):
         if self.owner_id and self.owner_ids:
             raise TypeError('Both owner_id and owner_ids are set.')
 
-        if self.owner_ids and not isinstance(self.owner_ids, collections.abc.Collection):
+        if self.owner_ids and not isinstance(self.owner_ids, collections.Collection):
             raise TypeError('owner_ids must be a collection not {0.__class__!r}'.format(self.owner_ids))
 
         if options.pop('self_bot', False):
@@ -425,108 +425,7 @@ class BotBase(GroupMixin):
         self._after_invoke = coro
         return coro
 
-    ''''def on_click(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]= None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
-        """
-        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
-        if so, the :func:`func` is called.
-
-        You can find more info about this in the 
-        `documentation <https://discordpy-message-components.readthedocs.io/en/latest/additions.html#on-click>`.
-
-        The func must be a :ref:`coroutine <coroutine>`, if not, :exc:`TypeError` is raised.
-        
-        Parameters
-        ----------
-        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`discord.Button` could not use as a function name,
-            or you want to give the function a different name then the custom_id use this one to set the custom_id.
-            You can also specify a regex and if the custom_id matches it, the function will be executed. 
-        
-        Example
-        -------
-        .. code-block:: python
-
-            # the Button
-            Button(label='Hey im a cool blue Button',
-                    custom_id='cool blue Button',
-                    style=ButtonColor.blurple)
-
-            # function that's called when the Button pressed
-            @client.on_click(custom_id='cool blue Button')
-            async def cool_blue_button(i: discord.Interaction):
-                await i.respond('Hey you pressed a `cool blue Button`!', hidden=True)
-
-        Raises
-        ------
-        :class:`TypeError`
-            The coroutine passed is not actually a coroutine.
-        """
-        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('event registered must be a coroutine function')
-            _custom_id = re.compile(custom_id) if (
-                        custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(func.__name__)
-            self.add_interaction_listener('raw_button_click', func, _custom_id)
-            return func
-        
-        return decorator
-    
-    def on_select(self, custom_id:Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
-        """
-        A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
-        
-        .. important::
-            The Function this decorator attached to must be an coroutine (means an awaitable)
-
-        Parameters
-        ----------
-        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-
-            If the :attr:`custom_id` of the SelectMenu could not use as an function name
-            or you want to give the function a different name then the custom_id use this one to set the custom_id.
-            You can also specify a regex and if the custom_id matches it, the function will be executed.
-
-
-        Example
-        -------
-        .. code-block:: python
-
-            # the SelectMenu
-            SelectMenu(custom_id='choose_your_gender',
-                    options=[
-                            select_option(label='Female', value='Female', emoji='♀️'),
-                            select_option(label='Male', value='Male', emoji='♂️'),
-                            select_option(label='Non Binary', value='Non Binary', emoji='⚧')
-                            ], placeholder='Choose your Gender')
-
-            # function that's called when the SelectMenu is used
-            @client.on_select()
-            async def choose_your_gender(i: discord.Interaction, select_menu):
-                await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
-
-        Raises
-        --------
-        TypeError
-            The coroutine passed is not actually a coroutine.
-        """
-        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError('event registered must be a coroutine function')
-            _custom_id = re.compile(custom_id) if (
-                    custom_id is not None and not isinstance(custom_id, re.Pattern)
-            ) else re.compile(func.__name__)
-            self.add_interaction_listener('raw_selection_select', func, _custom_id)
-            return func
-
-        return decorator
-    '''
     # listener registration
-
     def add_interaction_listener(self, _type,  func, custom_id: re.Pattern):
         """
         This adds an interaction(decorator) like :meth:`on_click` or :meth:`on_select` to the client listeners.
@@ -1084,7 +983,7 @@ class BotBase(GroupMixin):
                                     existing_command._sub_commands[sub_command.name] = sub_command
                             else:
                                 # Just overwrite the existing one
-                                self._guild_specific_application_commands[guild_id][cmd_type] = command
+                                self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
                         else:
                             # If it's not a slash-command overwrite the existing one
                             self._guild_specific_application_commands[guild_id][cmd_type][command.name] = command
