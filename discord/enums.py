@@ -45,6 +45,7 @@ __all__ = (
     'OptionType',
     'TimestampStyle',
     'Locale',
+    'InviteTargetType',
     'MessageType',
     'VoiceRegion',
     'SpeakingState',
@@ -379,6 +380,7 @@ class InteractionCallbackType(Enum):
     deferred_update_msg = 6
     update_msg = 7
     autocomplete_callback = 8
+    modal = 9
 
     @classmethod
     def from_value(cls, value):
@@ -469,6 +471,34 @@ class TimestampStyle(Enum):
     @classmethod
     def from_value(cls, value):
         return try_enum(cls, value)
+
+
+class InviteTargetType(Enum):
+    stream = 1
+    embedded = 2
+    embedded_application = 2
+
+
+class VoiceActivityApplication(Enum):
+    WatchTogether       = 880218394199220334
+    PokerNight          = 755827207812677713
+    BetrayalIO          = 773336526917861400
+    FishingtonIO        = 814288819477020702
+    ChessInThePark      = 832012774040141894
+    SketchyArtist       = 879864070101172255
+    Awkword             = 879863881349087252
+    DoodleCrew          = 878067389634314250
+    SketchHeads         = 902271654783242291
+    LetterTile          = 879863686565621790
+    WordSnacks          = 879863976006127627
+    SpellCast           = 852509694341283871
+    CheckersInThePark   = 832013003968348200
+    CG3Prod             = CheckersInThePark
+    Blazing8s           = 832025144389533716
+    CG4Prod             = Blazing8s
+    Ocho                = Blazing8s
+    PuttParty           = 945737671223947305
+    LandIO              = 903769130790969345
 
 
 class Locale(Enum):

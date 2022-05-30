@@ -869,19 +869,27 @@ class GuildChannel:
 
         Parameters
         ------------
-        max_age: :class:`int`
+        max_age: Optional[:class:`int`]
             How long the invite should last in seconds. If it's 0 then the invite
             doesn't expire. Defaults to ``0``.
-        max_uses: :class:`int`
+        max_uses: Optional[:class:`int`]
             How many uses the invite could be used for. If it's 0 then there
             are unlimited uses. Defaults to ``0``.
-        temporary: :class:`bool`
+        temporary: Optional[:class:`bool`]
             Denotes that the invite grants temporary membership
             (i.e. they get kicked after they disconnect). Defaults to ``False``.
-        unique: :class:`bool`
+        unique: Optional[:class:`bool`]
             Indicates if a unique invite URL should be created. Defaults to True.
             If this is set to ``False`` then it will return a previously created
             invite.
+        target_type: Optional[:class:`int`]
+            The type of target for this voice channel invite. ``1`` for stream and ``2`` for embedded-application.
+        target_user_id: Optional[:class:`int`]
+        	The id of the :class:`~discord.User` whose stream to display for this invite,
+        	required if :attr:`target_type` is ``1``, the user must be streaming in the channel.
+        target_application_id: Optional[:class:`int`]
+            The id of the embedded application to open for this invite,
+             required if :attr:`target_type` is ``2``, the application must have the EMBEDDED flag.
         reason: Optional[:class:`str`]
             The reason for creating this invite. Shows up on the audit log.
 
