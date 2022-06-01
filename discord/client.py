@@ -487,7 +487,7 @@ class Client:
         """
         if not hasattr(self, 'app'):
             await self.application_info()
-        if (is_cog_reload and getattr(self, 'sync_on_cog_reload', False) is True) or (not is_cog_reload and self.sync_commands is True):
+        if (is_cog_reload and getattr(self, 'sync_commands_on_cog_reload', False) is True) or (not is_cog_reload and self.sync_commands is True):
             await self._sync_commands()
         else:
             log.info('Collecting application-commands for Application %s (%s)', self.app.name, self.app.id)
