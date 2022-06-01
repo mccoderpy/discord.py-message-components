@@ -1,5 +1,7 @@
-🇺🇦 Welcome to discord.py-message-components'! 🇺🇦
-=========================================================
+.. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
+
+|flag_ua| Welcome to discord.py-message-components'! |flag_ua|
+==============================================================
 
 .. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
    :name: discord.py-message-components
@@ -28,7 +30,17 @@
       :alt: Documentation Status
 
    A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implemation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_ 
-   
+
++---------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                              **❗ℹIMPORTANTℹ❗**                                                                    |
++===================================================================================================================================================+
+| This branch represents only the `PyPI <https://pypi.org>`_ version of this library,                                                               |
+| which is currently **not up to date** due to some (privat) issues                                                                                 |
+| (as soon as we have documented the new features and the developer branch is stable enough, this will be updated).                                 |
+|                                                                                                                                                   |
+| **To get the latest version with the newest features and bug(-fixes) please take a look at the** `developer <../../tree/developer>`_ **branch**   |
++---------------------------------------------------------------------------------------------------------------------------------------------------+
+
 **NOTE:** 
      This library will be further developed independently of discord.py.
      New features are also implemented. It's not an extension!
