@@ -102,7 +102,7 @@ To install `this library <https://pypi.org/project/discord.py-message-components
 Examples
 ________
 
-**ℹFor more examples take a look in** `here <https://github.com/mccoderpy/discord.py-message-components/edit/developer/examples>`_
+**ℹFor more examples take a look in** `here <https://github.com/mccoderpy/discord.py-message-components/tree/developer/examples>`_
 
 
 .. note::
