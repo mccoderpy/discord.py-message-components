@@ -46,11 +46,6 @@ __all__ = (
 )
 
 
-class InteractionMessage(Message):
-    def __init__(self):
-        pass
-
-
 class EphemeralMessage:
     """
     Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
@@ -64,7 +59,7 @@ class EphemeralMessage:
         self.channel = channel
         self._update(data)
 
-    def _update(self, data):
+    def _update(self, data, /):
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
         self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
         self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
@@ -235,11 +230,13 @@ class EphemeralMessage:
             fields['components'] = _components
 
         try:
-            data = await self._state.http.edit_interaction_response(interaction_id=self.__interaction__.id,
-                                                                    token=self.__interaction__._token,
-                                                                    application_id=self.__interaction__._application_id,
-                                                                    deferred=self.__interaction__.deferred,
-                                                                    use_webhook=True, files=None, data=fields)
+            data = await self._state.http.edit_interaction_response(
+                interaction_id=self.__interaction__.id,
+                token=self.__interaction__._token,
+                application_id=self.__interaction__._application_id,
+                deferred=self.__interaction__.deferred,
+                use_webhook=True,
+                data=fields)
         except NotFound:
             raise UnknownInteraction(self.__interaction__.id)
         else:
@@ -282,7 +279,7 @@ class BaseInteraction:
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
-        self.author_locale: Locale = try_enum(Locale, data.get('locale', None))
+        self.author_locale: Locale = try_enum(Locale, data['locale'])
         self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale', None))
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
@@ -296,14 +293,14 @@ class BaseInteraction:
         self.messages: Optional[List[Union[Message, EphemeralMessage]]] = {}
 
     def __repr__(self):
-        """Represents a :class:`discord.BaseInteraction`-object."""
+        """Represents a :class:`~discord.BaseInteraction` object."""
         return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
 
-    async def defer(
+    async def _defer(
             self,
             response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
             hidden: Optional[bool] = False
-    ) -> Optional[Message]:
+    ) -> Optional[Union[Message, EphemeralMessage]]:
         """
         |coro|
 
@@ -350,7 +347,7 @@ class BaseInteraction:
             return AlreadyResponded(self.id)
         else:
             self.deferred = True
-            if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
+            if hidden is True and response_type.deferred_msg_with_source:
                 self.deferred_hidden = True
             if not data and response_type.msg_with_source or response_type.deferred_msg_with_source:
                 msg = self.callback_message = await self.get_original_callback()
@@ -394,8 +391,10 @@ class BaseInteraction:
                 fields['embeds'] = None
 
         if fields.get('embeds', None) and len(fields['embeds']) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, '
-                                  f'got: {len(fields["embeds"])}')
+            raise InvalidArgument(
+                f'The maximum number of embeds that can be send with a message is 10, '
+                f'got: {len(fields["embeds"])}'
+            )
 
         try:
             components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = fields['components']
@@ -422,22 +421,55 @@ class BaseInteraction:
             flags.suppress_embeds = suppress
         fields['flags'] = flags.value
         delete_after: Optional[float] = fields.pop('delete_after', None)
+        files = None
+        try:
+            files: Optional[List[File]] = fields['files']
+        except KeyError:
+            pass
+        else:
+            if files is not None:
+                _files = []
+                keep_original_files: Optional[bool] = fields.pop('keep_original_files', False)
+                if keep_original_files:
+                    for index, file in enumerate(self.message.attachments):
+                        _files.append({'id': index, **file.to_dict()})
+                _id = len(_files)  # to continue the file id count
+                for index, file in enumerate(files):
+                    _files.append(
+                        {
+                            'id': index + _id,
+                            'description': file.description,
+                            'filename': file.filename
+                        }
+                    )
+                fields['attachments'] = _files
+            else:
+                fields['attachments'] = []
+
         state = self._state
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
         if self.deferred:
-            data = await state.http.edit_interaction_response(token=self._token, interaction_id=self.id,
-                                                              application_id=self._application_id, data=fields,
-                                                              deferred=self.deferred)
+            data = await state.http.edit_interaction_response(
+                token=self._token,
+                interaction_id=self.id,
+                application_id=self._application_id,
+                data=fields,
+                files=files,
+                deferred=self.deferred
+            )
         else:
-            data = await state.http.send_interaction_response(token=self._token, interaction_id=self.id,
-                                                              application_id=self._application_id, data=fields,
-                                                              deferred=self.deferred,
-                                                              followup=True if (self.callback_message and not
-                                                              self.callback_message.flags.loading)
-                                                              else False,
-                                                              type=7)
+            data = await state.http.send_interaction_response(
+                token=self._token,
+                interaction_id=self.id,
+                application_id=self._application_id,
+                data=fields,
+                files=files,
+                deferred=self.deferred,
+                followup=True if (self.callback_message and not self.callback_message.flags.loading) else False,
+                type=7
+            )
 
         if not isinstance(data, dict):
             data = await self.get_original_callback(raw=True)
@@ -494,7 +526,8 @@ class BaseInteraction:
             embed_list.extend([e.to_dict() for e in embeds])
         if len(embed_list) > 10:
             raise InvalidArgument(
-                f'The maximum number of embeds that can be send with a message is 10, got: {len(embed_list)}')
+                f'The maximum number of embeds that can be send with a message is 10, got: {len(embed_list)}'
+            )
         if embed_list:
             data['embeds'] = embed_list
 
@@ -534,14 +567,15 @@ class BaseInteraction:
         files = file_list
         if len(files) > 10:
             raise InvalidArgument(
-                f'The maximum number of files that can be send with a message is 10, got: {len(files)}')
+                f'The maximum number of files that can be send with a message is 10, got: {len(files)}'
+            )
         flags = MessageFlags._from_value(0)
         if hidden:
             flags.ephemeral = True
         if suppress:
             flags.suppress_embeds = True
         data['flags'] = flags.value
-        if self.deferred and (not self.callback_message or self.callback_message.flags.loading):
+        if self.deferred and self.callback_message and self.callback_message.flags.loading:
             method = state.http.edit_interaction_response(
                 token=self._token,
                 interaction_id=self.id,
@@ -580,7 +614,6 @@ class BaseInteraction:
         if self.callback_message:
             self.messages[msg.id] = msg
         if not hidden and delete_after is not None:
-            # TODO: Fix deleting wrong message
             await msg.delete(delay=delete_after)
         if hidden is True and not self.deferred:
             self.deferred_hidden = True
@@ -590,6 +623,14 @@ class BaseInteraction:
         return msg
 
     async def respond_with_modal(self, modal: 'Modal') -> Dict:
+        """|coro|
+        Respond to an interaction with a popup modal.
+
+        Parameters
+        ----------
+        modal: :class:`~discord.Modal`
+            The modal to send.
+        """
         if not self.deferred:
             data = await self._state.http.send_interaction_response(
                 token=self._token,
@@ -697,27 +738,21 @@ class ApplicationCommandInteraction(BaseInteraction):
         else:
             self.target = None
 
-    async def defer(self,
-                    type: Union[Literal[5], InteractionCallbackType] = 5,
-                    hidden: bool = False) -> Message:
+    async def defer(self, hidden: bool = False) -> Union[Message, EphemeralMessage]:
         """
         Defers the interaction, the user sees a loading state
 
         Parameters
         ----------
-        type: Union[Literal[5], :class:`InteractionCallbackType.deferred_msg_with_source`]
-            Currently only one type
         hidden: Optional[:class:`bool`]
             Weather only the author of the command should see this
 
         Returns
         -------
-        Message:
-            The Message containing the loading-state
+        Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]:
+            The Message containing the loading state
         """
-        if isinstance(type, int):
-            type = InteractionCallbackType.from_value(type)
-        data = await super().defer(type, hidden=hidden)
+        data = await super()._defer(5, hidden)
         return data
 
 
@@ -738,9 +773,61 @@ class ComponentInteraction(BaseInteraction):
                     self._component = select_menu
         return self._component
 
+    async def defer(self,
+                    type: Union[Literal[7], InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
+                    hidden: bool = False) -> Message:
+        """
+        Defers the interaction.
+
+        Parameters
+        ----------
+        type: Union[Literal[5, 6]]
+            Use ``5`` to edit the original message later and ``6`` to let the user sees a loading state and edit it later.
+        hidden: Optional[:class:`bool`]
+            Weather only the author of the command should see this, default :obj:`True`
+
+             .. note::
+                Only for :class:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``).
+
+        Returns
+        -------
+        Optional[Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]]:
+            The message containing the loading-state if `class`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``) is used, else :obj:`None`.
+        """
+        data = await super()._defer(type, hidden)
+        return data
+
 
 class AutocompleteInteraction(BaseInteraction):
-    async def suggest(self, choices: List[SlashCommandOptionChoice]) -> None:
+    @property
+    def focused_option(self) -> 'InteractionDataOption':
+        """:class:`~discord.InteractionDataOption`: Returns the currently focused option."""
+        for option in self.data.options:
+            if option.focused:
+                return option
+
+    @property
+    def focused_option_name(self) -> str:
+        """:class:`str`: Returns the name of the currently focused option."""
+        return self.focused_option.name
+
+
+    async def send_choices(self, choices: List[SlashCommandOptionChoice]) -> None:
+        """
+        Respond to the interaction with the choices the user should have.
+
+        Parameters
+        ----------
+        choices: List[:class:`~discord.SlashCommandOptionChoice`]
+            A list of maximum 25 options the user could choose from.
+
+        Raises
+        ------
+        ValueError
+            When more than 25 choices are passed.
+        discord.NotFound
+            You have been waited to long with responding to the interaction.
+        """
         if len(choices) > 25:
             raise ValueError(f'The maximum of choices is 25. Got {len(choices)}.')
         else:
@@ -750,16 +837,21 @@ class AutocompleteInteraction(BaseInteraction):
                 choices=[choice.to_dict() for choice in choices]
             )
 
+    @utils.copy_doc(send_choices)
+    async def suggest(self, choices: List[SlashCommandOptionChoice]) -> None:
+        """An aliase for :meth:`send_choices`"""
+        return await self.send_choices(choices)
+
     async def respond(self, *args, **kwargs):
         raise NotImplementedError
 
     async def defer(self, *args, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError('You must directly respond to an autocomplete interaction.')
 
 
 class ModalSubmitInteraction(BaseInteraction):
     def get_field(self, custom_id) -> Union['TextInput', None]:
-        """Optional[:class:`~discord.TextInput`]: Return the field witch :attr:`custom_id` match or :type:`None`"""
+        """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`custom_id` match or :type:`None`"""
         for ar in self.data.components:
             for c in ar:
                 if c.custom_id == custom_id:
@@ -768,7 +860,7 @@ class ModalSubmitInteraction(BaseInteraction):
 
     @property
     def fields(self) -> List['TextInput']:
-        """List[:class:`TextInput`] returns a :class:`list` containing the fields of the modal."""
+        """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the modal."""
         field_list = []
         for ar in self.data.components:
             for c in ar:
@@ -786,6 +878,22 @@ class ModalSubmitInteraction(BaseInteraction):
             The :attr:`custom_id` of the :class:`~discord.Modal`.
         """
         return self.data.custom_id
+
+    async def defer(self, hidden: Optional[bool] = False) -> Optional[Union[Message, EphemeralMessage]]:
+        """
+        Defers the interaction, the user sees a loading state
+
+        Parameters
+        ----------
+        hidden: Optional[:class:`bool`]
+            Weather only the author of the modal should see this
+
+        Returns
+        -------
+        Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]:
+            The Message containing the loading-state.
+        """
+        return await super()._defer(InteractionCallbackType.deferred_msg_with_source, hidden)
 
     async def respond_with_modal(self, modal: 'Modal') -> NotImplementedError:
         raise NotImplementedError('You can\'t respond to a modal submit with another modal.')
