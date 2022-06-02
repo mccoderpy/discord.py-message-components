@@ -120,7 +120,8 @@ class BotBase(GroupMixin):
         self.owner_id = options.get('owner_id')
         self.owner_ids = options.get('owner_ids', set())
         self.strip_after_prefix = options.get('strip_after_prefix', False)
-        self.sync_on_cog_reload: bool = options.get('sync_commands_on_cog_reload', False)
+        self.sync_commands_on_cog_reload: bool = options.get('sync_commands_on_cog_reload', False)
+        self.sync_commands: bool = options.get('sync_commands', False)
         if self.owner_id and self.owner_ids:
             raise TypeError('Both owner_id and owner_ids are set.')
 
@@ -1312,7 +1313,20 @@ class Bot(BotBase, discord.Client):
         the ``command_prefix`` is set to ``!``. Defaults to ``False``.
 
         .. versionadded:: 1.7
-    sync_on_cog_reload: :class:`bool`
+    sync_commands: :class:`bool`
+        Whether to sync application-commands on startup, default ``False``.
+
+        This will register global and guild application-commands(slash-, user- and message-commands)
+        that are not registered yet, update changes and remove application-commands that could not be found
+        in the code anymore if :attr:`delete_not_existing_commands` is set to ``True`` what it is by default.
+
+        .. note::
+            It can take up to an hour until updates on global application-commands are available
+            in all guilds the bot is in due to global caching on discords side.
+            For testing purposes it is recommended to use guild-only commands because they are available immediately.
+    delete_not_existing_commands: :class:`bool`
+        Whether to remove global and guild-only application-commands that are not in the code anymore, default ``True``.
+    sync_commands_on_cog_reload: :class:`bool`
         Whether to sync global and guild-only application-commands when reloading an extension, default ``False``.
     """
     pass
