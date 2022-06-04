@@ -11,7 +11,7 @@ in creating applications that utilise the Discord API.
 Prerequisites
 ---------------
 
-discord.py works with Python 3.5.3 or higher. Support for earlier versions of Python
+discord.py-message-components works with Python 3.5.3 or higher. Support for earlier versions of Python
 is not provided. Python 2.7 or lower is not supported. Python 3.4 or lower is not supported
 due to one of the dependencies (:doc:`aiohttp <aio:index>`) not supporting Python 3.4.
 
@@ -23,14 +23,14 @@ Installing
 
 You can get the library directly from PyPI: ::
 
-    python3 -m pip install -U discord.py
+    python3 -m pip install -U discord.py-message-components
 
 If you are using Windows, then the following should be used instead: ::
 
-    py -3 -m pip install -U discord.py
+    py -3 -m pip install -U discord.py-message-components
 
 
-To get voice support, you should use ``discord.py[voice]`` instead of ``discord.py``, e.g. ::
+To get voice support, you should use ``discord.py-message-components[voice]`` instead of ``discord.py-message-components``, e.g. ::
 
     python3 -m pip install -U discord.py[voice]
 
@@ -83,14 +83,14 @@ However, for the quick and dirty:
 
     .. code-block:: shell
 
-        $ pip install -U discord.py
+        $ pip install -U discord.py-message-components
 
 Congratulations. You now have a virtual environment all set up.
 
 Basic Concepts
 ---------------
 
-discord.py revolves around the concept of :ref:`events <discord-api-events>`.
+discord.py-message-components revolves around the concept of :ref:`events <discord-api-events>`.
 An event is something you listen to and then respond to. For example, when a message
 happens, you will receive an event about it that you can respond to.
 
