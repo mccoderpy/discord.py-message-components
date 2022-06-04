@@ -1,3 +1,4 @@
 sphinxcontrib_trio
+Jinja2 >.0.3
 
 sphinxcontrib-contentui==0.2.5
