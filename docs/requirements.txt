@@ -1,2 +1,3 @@
-sphinx-rtd-theme==0.5.2
+sphinxcontrib_trio
+
 sphinxcontrib-contentui==0.2.5
