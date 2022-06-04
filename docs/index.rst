@@ -1,6 +1,6 @@
 .. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
 
-.. image:: images/drop_down_icon.svg
+.. image:: ./images/drop_down_icon.svg
 
 |flag_ua| Welcome to discord\.py-message-components |flag_ua|
 ==============================================================
