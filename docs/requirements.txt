@@ -1,4 +1,4 @@
 sphinxcontrib_trio
 Jinja2 >.0.3
-
+aiohttp>=3.6.0,<3.8.0
 sphinxcontrib-contentui==0.2.5
