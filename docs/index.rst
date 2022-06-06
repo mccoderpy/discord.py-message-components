@@ -104,7 +104,7 @@ These pages go into great detail about everything the API can do.
   :maxdepth: 1
 
   api
-  interactions <interactions/index.rst>
+  interactions <Interactions/index.rst>
   discord.ext.commands API Reference <ext/commands/api.rst>
   discord.ext.tasks API Reference <ext/tasks/index.rst>
 
