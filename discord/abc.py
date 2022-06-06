@@ -1004,8 +1004,8 @@ class Messageable(metaclass=abc.ABCMeta):
             The rich embed for the content.
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
-        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
-            A list of :class:`~discord.ActionRow`'s or a :class:`list` of :class:`Button`'s or :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]]]]
+            A list of :class:`~discord.ActionRow`'s or a :class:`list` of :class:`~discord.Button`'s or :class:`~discord.SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]

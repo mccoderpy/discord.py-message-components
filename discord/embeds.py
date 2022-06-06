@@ -305,7 +305,7 @@ class Embed:
         Parameters
         -----------
         url: :class:`str`
-            The source URL for the image. Only HTTP(S) is supported.
+            The source URL for the image. Only HTTP(S) and discords `attachment://` protocol is supported.
         """
 
         if url is EmptyEmbed:
@@ -347,7 +347,7 @@ class Embed:
         Parameters
         -----------
         url: :class:`str`
-            The source URL for the thumbnail. Only HTTP(S) is supported.
+            The source URL for the thumbnail. Only HTTP(S) and discords `attachment://` protocol is supported.
         """
 
         if url is EmptyEmbed:

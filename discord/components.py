@@ -624,6 +624,7 @@ class ActionRow:
         The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`, or 1 :class:`SelectMenu`.
 
     .. note ::
+
         For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
     """
 

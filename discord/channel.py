@@ -743,8 +743,12 @@ class ThreadChannel(abc.Messageable, Hashable):
     @property
     def created_at(self) -> Optional[datetime.datetime]:
         """An aware timestamp of when the thread was created in UTC.
+
         .. note::
+
             This timestamp only exists for threads created after 9 January 2022, otherwise returns ``None``.
+
+        :return: Optional[:class:`datetime.datetime`]
         """
         return datetime.datetime.fromisoformat(self._thread_meta.get('create_timestamp'))
 
@@ -945,7 +949,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         :class:`~discord.Invite`
             The invite that was created.
         """
-
+        from .invite import Invite
         data = await self._state.http.create_invite(self.id, reason=reason, **fields)
         return Invite.from_incomplete(data=data, state=self._state)
 
