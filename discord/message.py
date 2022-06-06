@@ -120,10 +120,9 @@ class Attachment(Hashable):
     content_type: Optional[:class:`str`]
         The attachment's `media type <https://en.wikipedia.org/wiki/Media_type>`_
     ephemeral: :class:`bool`
-        Whether the attachment is part of a ephemral message.
+        Whether the attachment is part of a ephemeral message.
     description: Optional[:class:`str`]
         The description for the file.
-        .. versionadded:: 1.7
     """
 
     __slots__ = ('id', 'size', 'height', 'width', 'ephemeral', 'description',
@@ -151,6 +150,10 @@ class Attachment(Hashable):
 
     def __str__(self):
         return self.url or ''
+
+    def _to_minimal_dict(self):
+        """:class:`dict`: A minimal dictionary containing the filename and description of the attachment."""
+        return {'filename': self.filename, 'description': self.description}
 
     async def save(self, fp, *, seek_begin=True, use_cached=False):
         """|coro|
@@ -469,12 +472,11 @@ class Message(Hashable):
         This is not stored long term within Discord's servers and is only used ephemerally.
     embeds: List[:class:`Embed`]
         A list of embeds the message has.
-    channel: Union[:class:`abc.Messageable`]
-        The :class:`TextChannel` that the message was sent from.
+    components: List[:class:`~discord.ActionRow`]:
+        A list of components the message has.
+    channel: Union[:class:`abc.Messageable`, :class:`~discord.ThreadChannel`]
+        The :class:`TextChannel`, :class:`~discord.ThreadChannel` or :class:`VoiceChannel` that the message was sent from.
         Could be a :class:`DMChannel` or :class:`GroupChannel` if it's a private message.
-
-        .. deprecated:: 1.7
-
     reference: Optional[:class:`~discord.MessageReference`]
         The message that this message references. This is only applicable to messages of
         type :attr:`MessageType.pins_add`, crossposted messages created by a
@@ -519,7 +521,6 @@ class Message(Hashable):
         Extra features of the message.
 
         .. versionadded:: 1.3
-
     reactions : List[:class:`Reaction`]
         Reactions to a message. Reactions can be either custom emoji or standard unicode emoji.
     activity: Optional[:class:`dict`]
@@ -569,13 +570,11 @@ class Message(Hashable):
         self.type: MessageType = try_enum(MessageType, data['type'])
         self._thread = data.get('thread', None)
         self.pinned = data['pinned']
-        self.flags: MessageFlags = MessageFlags._from_value(data.get('flags', 0))
         self.mention_everyone: bool  = data['mention_everyone']
         self.tts: bool = data['tts']
         self.content: Optional[str] = data['content']
         self.nonce = data.get('nonce')
         self.stickers = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
-        self.interaction = data.get('interaction', None)
 
         try:
             ref = data['message_reference']
@@ -1207,6 +1206,7 @@ class Message(Hashable):
 
         if delete_after is not None:
             await self.delete(delay=delete_after)
+        return self
 
     @property
     def dict(self):
@@ -1560,8 +1560,8 @@ class PartialMessage(Hashable):
     )
 
     def __init__(self, *, channel, id):
-        if channel.type not in (ChannelType.text, ChannelType.news, ChannelType.private, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread):
-            raise TypeError('Expected TextChannel, ThreadChannel or DMChannel not %r' % type(channel))
+        if channel.type not in (ChannelType.text, ChannelType.voice, ChannelType.news, ChannelType.private, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread):
+            raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
         self.channel = channel
         self._state = channel._state
