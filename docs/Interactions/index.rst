@@ -1,7 +1,7 @@
 .. _interactions:
 
-`Interactions`
-================
+``Interactions``
+=================
 
 .. note::
     This part of the docs is still in work! and many things are uncompleted or completely missing.
