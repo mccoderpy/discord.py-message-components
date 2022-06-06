@@ -826,9 +826,20 @@ class Intents(BaseFlags):
     def message_content(self):
         """:class:`bool`: Whether to receive the content, embeds, attachments and components of a message.
 
+        .. note::
+
+            The bot will still receive these fields when the message is in a privat chat with the bot,
+            or the bot is mentioned in the message.
+
         This corresponds to the following events:
 
-        - :func:`on_member_update` (activities, status)
+        - :func:`on_message` (content, embeds, attachments, components)
+        - :func:`on_message_edit` (content, embeds, attachments, components)
+        - :func:`on_raw_message_edit` (cached_message)
+        - :func:`on_message_delete` (content, embeds, attachments, components)
+        - :func:`on_raw_message_delete` (cached_message)
+        - :func:`on_bulk_message_delete` (content, embeds, attachments, components)
+        - :func:`on_raw_bulk_message_delete` (cached_messages)
 
         This also corresponds to the following attributes and classes:
 
@@ -837,7 +848,7 @@ class Intents(BaseFlags):
         - :attr:`Message.attachments`
         - :attr:`Message.components`
 
-        For more information go to the :ref:`message-content intent documentation <https://support-dev.discord.com/hc/en-us/articles/4404772028055>`.
+        For more information go to the `message-content intent documentation <https://support-dev.discord.com/hc/en-us/articles/4404772028055>`_ .
 
         .. note::
 
