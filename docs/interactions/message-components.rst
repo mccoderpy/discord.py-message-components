@@ -6,8 +6,9 @@ ActionRow
 .. attributetable:: ActionRow
 
 .. autoclass:: ActionRow()
-    .. automethod:: __init__
     :members:
+
+    .. automethod:: __init__
 
 
 Button
@@ -16,8 +17,10 @@ Button
 .. attributetable:: Button
 
 .. autoclass:: Button()
-    .. automethod:: __init__
     :members:
+
+    .. automethod:: __init__
+
 
 SelectMenu
 ~~~~~~~~~~~
@@ -25,8 +28,10 @@ SelectMenu
 .. attributetable:: SelectMenu
 
 .. autoclass:: SelectMenu()
-    .. automethod:: __init__
     :members:
+
+    .. automethod:: __init__
+
 
 SelectOption
 ~~~~~~~~~~~~~
@@ -34,8 +39,10 @@ SelectOption
 .. attributetable:: SelectOption
 
 .. autoclass:: SelectOption()
-    .. automethod:: __init__
     :members:
+
+    .. automethod:: __init__
+
 
 Modal
 ~~~~~~
@@ -43,8 +50,9 @@ Modal
 .. attributetable:: Modal
 
 .. autoclass:: Modal()
-.. automethod:: __init__
     :members:
+
+    .. automethod:: __init__
 
 TextInput
 ~~~~~~~~~~
@@ -52,5 +60,6 @@ TextInput
 .. attributetable:: TextInput
 
 .. autoclass:: TextInput()
-    .. automethod:: __init__
     :members:
+
+    .. automethod:: __init__

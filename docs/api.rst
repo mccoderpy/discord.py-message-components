@@ -3035,6 +3035,15 @@ ThreadChannel
     .. automethod:: typing
         :async-with:
 
+ThreadMember
+~~~~~~~~~~~~~~
+
+.. attributetable:: ThreadMember
+
+.. autoclass:: ThreadMember()
+    :members:
+    :inherited-members:
+
 VoiceChannel
 ~~~~~~~~~~~~~
 
