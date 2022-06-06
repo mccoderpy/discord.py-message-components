@@ -543,7 +543,7 @@ class SlashCommandOption:
             Only valid for :class:`OptionType.string` or :class:`OptionType.integer`
         ignore_conversion_failures: Optional[:class:`bool`]
             Whether conversion failures should be ignored and the value should be passed without conversion instead.
-            Default :bool:`False`
+            Default ``False``
         """
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
