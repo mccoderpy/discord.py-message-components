@@ -102,33 +102,35 @@ function sleep(s) {
   return new Promise(resolve => setTimeout(resolve, s * 1000));
 }
 
+let gearwheel
+
 async function openModal(event, close) {
-  event.target.classList.remove("fa-shake");
-  event.target.style = `${!close ? "--fa-animation-direction: reverse; " : ""}--fa-animation-duration: 1s;`;
-  event.target.classList.add("fa-spin");
+  gearwheel.classList.remove("fa-shake");
+  gearwheel.style = `${!close ? "--fa-animation-direction: reverse; " : ""}--fa-animation-duration: 1s;`;
+  gearwheel.classList.add("fa-spin");
   sleep(0.5)
     .then(() => (!close ? settingsModal.open() : settingsModal.close()))
-    .then(() => event.target.classList.remove("fa-spin"))
-    .then(() => event.target.style = `--fa-animation-duration: 1s;`)
+    .then(() => gearwheel.classList.remove("fa-spin"))
+    .then(() => gearwheel.style = `--fa-animation-duration: 1s;`)
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  gearwheel = document.getElementsByClassName("fa-gear")[0];
   settingsModal = new Modal(document.querySelector('div#settings.modal'));
   for (const setting of settings) {
     setting.setElement();
   }
-  let gearwheel = document.querySelector("div.main-grid>div>a>span")
   gearwheel.addEventListener(
     'mouseover',
     (event) => {
-      event.target.style = "--fa-animation-direction: reverse; --fa-animation-duration: 3s;";
-      event.target.classList.add("fa-shake");
+      gearwheel.style = "--fa-animation-direction: reverse; --fa-animation-duration: 3s;";
+      gearwheel.classList.add("fa-shake");
     });
   gearwheel.addEventListener(
     'mouseout',
     (event) => {
       //event.target.style = "--fa-animation-duration: 20s;";
-      event.target.classList.remove("fa-shake");
+      gearwheel.classList.remove("fa-shake");
     });
   gearwheel.addEventListener('click', openModal)
 });

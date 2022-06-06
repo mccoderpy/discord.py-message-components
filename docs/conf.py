@@ -13,13 +13,21 @@
 import os
 import re
 import sys
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx as App
+
+sys.setrecursionlimit(15000)
+
+
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.append(os.path.abspath('extensions'))
 
 # -- Project information -----------------------------------------------------
 
-import sys
-sys.setrecursionlimit(15000)
+
 
 project = 'discord.py-message-components'
 copyright = '2022, Mathieu Corsham aka. mccoder.py'
@@ -36,30 +44,11 @@ release = version
 branch = 'developer' if version.endswith('a') else 'v' + version
 
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-
-f = globals().get('napoleon_google_docstring', None)
-del f
-
-"""extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx_rtd_theme',
-    'sphinxcontrib.contentui',
-    'sphinx.ext.extlinks',
-    'sphinx.ext.intersphinx',
-    'builder',
-    'sphinx.ext.napoleon',
-    'sphinxcontrib_trio',
-    'details',
-    'exception_hierarchy',
-    'attributetable',
-    'resourcelinks',
-] #'sphinx.ext.intersphinx', 'sphinxcontrib.napoleon', 'sphinx.ext.napoleon',"""
 
 extensions = [
     'builder',
@@ -108,6 +97,9 @@ resource_links = {
   'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
 }
 
+show_authors = True
+html_last_updated_fmt = '%b %d %Y'
+html_permalinks_icon = '<span class="fa fa-link" aria-hidden="true"></span>'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -177,4 +169,7 @@ master_doc = 'index'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static', '_static/style.css']
+html_static_path = ['_static']
+
+def setup(app: 'App'):
+    app.add_css_file('style.css')

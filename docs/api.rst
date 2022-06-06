@@ -1218,6 +1218,8 @@ of :class:`enum.Enum`.
    |                                         |       |                                                  |                             |       :alt: Example for update_msg         |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
 
+.. class:: Locale
+
 .. class:: ActivityType
 
     Specifies the type of :class:`Activity`. This is used to check how to
@@ -2811,46 +2813,6 @@ the user of the library.
     impossible to have dynamic attributes to the data classes.
 
 
-BaseInteraction
-~~~~~~~~~~~~~~~
-
-.. attributetable:: discord.BaseInteraction
-
-.. autoclass:: discord.BaseInteraction
-    :members:
-
-ApplicationCommandInteraction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. attributetable:: discord.ApplicationCommandInteraction
-
-.. autoclass:: discord.ApplicationCommandInteraction
-    :members:
-
-ComponentInteraction
-~~~~~~~~~~~~~~~~~~~~~
-
-.. attributetable:: discord.ComponentInteraction
-
-.. autoclass:: discord.ComponentInteraction
-    :members:
-
-AutocompleteInteraction
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. attributetable:: discord.AutocompleteInteraction
-
-.. autoclass:: discord.AutocompleteInteraction
-    :members:
-
-ModalSubmitInteraction
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. attributetable:: discord.ModalSubmitInteraction
-
-.. autoclass:: discord.ModalSubmitInteraction
-    :members:
-
 ClientUser
 ~~~~~~~~~~~~
 
@@ -2898,6 +2860,11 @@ Message
 .. attributetable:: Message
 
 .. autoclass:: Message()
+    :members:
+
+.. attributetable:: EphemeralMessage
+
+.. autoclass:: EphemeralMessage()
     :members:
 
 DeletedReferencedMessage
@@ -2951,6 +2918,17 @@ Guild
 
         :type: :class:`User`
 
+GuildScheduledEvent
+~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: GuildScheduledEvent
+
+.. autoclass:: GuildScheduledEvent()
+    :members:
+    :exclude-members: users
+
+    .. automethod:: users
+        :async-for:
 
 Integration
 ~~~~~~~~~~~~
@@ -3031,6 +3009,22 @@ TextChannel
 .. attributetable:: TextChannel
 
 .. autoclass:: TextChannel()
+    :members:
+    :inherited-members:
+    :exclude-members: history, typing
+
+    .. automethod:: history
+        :async-for:
+
+    .. automethod:: typing
+        :async-with:
+
+ThreadChannel
+~~~~~~~~~~~~~~
+
+.. attributetable:: ThreadChannel
+
+.. autoclass:: ThreadChannel()
     :members:
     :inherited-members:
     :exclude-members: history, typing

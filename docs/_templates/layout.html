@@ -60,19 +60,19 @@
     <header class="grid-item">
       <nav>
         <a href="{{ pathto(master_doc)|e }}" class="main-heading">discord.py-message-components</a>
-        <a href="https://github.com/mccoderpy/discord.py-message-components" title="GitHub"><span class="fa-1x fa-brands fa-github"></span></a>
-        <a href="{{ discord_invite }}" title="{{ _('Discord') }}"><span class="fa-1x fa-brands fa-discord"></span></a>
-        <a href="{{ pathto('faq') }}" title="FAQ"><span class="material-icons">help_center</span></a>
+        <a href="https://github.com/mccoderpy/discord.py-message-components" title="GitHub"><span class="fa-1x fa-brands fa-github" aria-hidden="true"></span></a>
+        <a href="{{ discord_invite }}" title="{{ _('Discord') }}"><span class="fa-1x fa-brands fa-discord" aria-hidden="true"></span></a>
+        <a href="{{ pathto('faq') }}" title="FAQ"><span class="material-icons" aria-hidden="true">help_center</span></a>
         {#- If we have more links we can put them here #}
-        <a onclick="mobileSearch.open();" title="{{ _('Search') }}" id="open-search" class="mobile-only"><span class="material-icons">search</span></a>
-        <a onclick="mobileSearch.close();" title="{{ _('Close') }}" id="close-search" class="mobile-only" hidden><span class="material-icons">close</span></a>
+        <a onclick="mobileSearch.open();" title="{{ _('Search') }}" id="open-search" class="mobile-only"><span class="material-icons" aria-hidden="true">search</span></a>
+        <a onclick="mobileSearch.close();" title="{{ _('Close') }}" id="close-search" class="mobile-only" hidden><span class="material-icons" aria-hidden="true">close</span></a>
       </nav>
       <nav class="mobile-only">
         <form role="search" class="search" action="{{ pathto('search') }}" method="get">
           <div class="search-wrapper">
             <input type="search" name="q" placeholder="{{ _('Search documentation') }}" />
             <button type="submit">
-              <span class="material-icons">search</span>
+              <span class="material-icons" aria-hidden="true"></span>
             </button>
           </div>
         </form>
@@ -108,7 +108,7 @@
         <span class="material-icons">menu</span>
       </span>
       {%- endif %}
-      <span id="settings-toggle" class="settings" onclick="openModal;">
+      <span id="settings-toggle" class="settings" onclick="openModal(this, false);">
         <span class="fa-1x fa-solid fa-gear"></span>
       </span>
       <div id="sidebar">
@@ -148,7 +148,7 @@
   </script>
   {%- endif %}
 
-  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, true); }" hidden>
+  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, false); }" hidden>
     <div class="modal-content">
       <span class="close" onclick="openModal(event, true);" title="Close">
         <span class="material-icons">close</span>

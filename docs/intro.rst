@@ -32,7 +32,7 @@ If you are using Windows, then the following should be used instead: ::
 
 To get voice support, you should use ``discord.py-message-components[voice]`` instead of ``discord.py-message-components``, e.g. ::
 
-    python3 -m pip install -U discord.py[voice]
+    python3 -m pip install -U discord.py-message-components[voice]
 
 On Linux environments, installing voice requires getting the following dependencies:
 
