@@ -98,12 +98,12 @@ class Localizations:
     | bg     | Bulgarian               | български           |
     | ru     | Russian                 | Pусский             |
     | uk     | Ukrainian               | Українська          |
-    | hi     | Hindi                   | हिन्दी                 |
+    | hi     | Hindi                   | हिन्दी              |
     | th     | Thai                    | ไทย                 |
-    | zh_CN  | Chinese, China          | 中文                 |
-    | ja     | Japanese                | 日本語               |
-    | zh_TW  | Chinese, Taiwan         | 繁體中文             |
-    | ko     | Korean                  | 한국어               |
+    | zh_CN  | Chinese, China          | 中文                  |
+    | ja     | Japanese                | 日本語                 |
+    | zh_TW  | Chinese, Taiwan         | 繁體中文                |
+    | ko     | Korean                  | 한국어                 |
     +--------+-------------------------+---------------------+
 
     Parameters
@@ -167,7 +167,7 @@ class Localizations:
 
     def from_target(self, target: Union['Guild', 'BaseInteraction'], *, default: Any = None):
         """
-        Returns the value for the local of the object (if it's set), or :attr:`default`(:type:`None`)
+        Returns the value for the local of the object (if it's set), or :attr:`default`(:class:`None`)
 
         Parameters
         ----------
@@ -176,12 +176,12 @@ class Localizations:
             If it is of type :obj:`~discord.BaseInteraction` (or any subclass) it returns takes the local of the author.
         default: Optional[Any]
             The value or an object to return by default if there is no value for the locale of :attr:`target` set.
-            Default to :type:`None` or :class:`~discord.Locale.english_US`/:class:`~discord.Locale.english_GB`
+            Default to :class:`None` or :class:`~discord.Locale.english_US`/:class:`~discord.Locale.english_GB`
 
         Return
         ------
-        Union[:class:`str`, :type:`None`]
-            The value of the locale or :type:`None` if there is no value for the locale set.
+        Union[:class:`str`, :class:`None`]
+            The value of the locale or :class:`None` if there is no value for the locale set.
 
         Raises
         ------
@@ -499,14 +499,14 @@ class SlashCommandOption:
         Parameters
         ----------
         option_type: Union[:class:`OptionType`, :class:`int`, :class:`type`]
-            Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :type:`type` like
-            ``discord.Member``, ``discord.TextChannel`` or ``str``.
-            If the :param:`option_type` is a :class:`type`, that subclasses :class:`abc.GuildChannel` the type of the
-            channel would set as the default :param:`channel_types`.
+            Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :class:`type` like
+            :class:`discord.Member`, :class:`discord.TextChannel` or :class:`str`.
+            If the :attr:`option_type` is a :class:`type`, that subclasses :class:`~discord.abc.GuildChannel` the type of the
+            channel would set as the default :attr:`channel_types`.
         name: :class:`str`
             The 1-32 characters long name of the option shows up in discord.
             The name must be the same as the one of the parameter for the slash-command
-            or connected using :param:`connector` of :class:`SlashCommand`/:class:`SubCommand` or the method
+            or connected using :attr:`connector` of :class:`SlashCommand`/:class:`SubCommand` or the method
             that generates one of these.
         description: :class:`str`
             The 1-100 characters long description of the option shows up in discord.
@@ -514,9 +514,9 @@ class SlashCommandOption:
             Weather this option must be provided by the user, default ``True``.
             If ``False``, the parameter of the slash-command that takes this option needs a default value.
         choices: Optional[List[:class:`SlashCommandOptionChoice`]]
-            A list of up to 25 choices the user could select. Only valid if the :param:`option_type` is one of
+            A list of up to 25 choices the user could select. Only valid if the :attr:`option_type` is one of
             :class:`OptionType.string`, :class:`OptionType.integer` or :class:`OptionType.number`.
-            The :attr:`value`'s of the choices must be of the :param:`option_type` of this option
+            The :attr:`value`'s of the choices must be of the :attr:`option_type` of this option
             (e.g. :class:`str`, :class:`int` or :class:`float`).
             If choices are set they are the only options a user could pass.
         autocomplete: Optional[:class:`bool`]
@@ -525,16 +525,16 @@ class SlashCommandOption:
             interactions for this option, default ``False``.
             With autocomplete, you can check the user's input and send matching choices to the client.
             **Autocomplete can only be used with options of the type** ``string``, ``integer`` or ``number``.
-            **If autocomplete is activated, the option cannot have** :param:`choices` **.**
+            **If autocomplete is activated, the option cannot have** :attr:`choices` **.**
         min_value: Optional[Union[:class:`int`, :class:`float`]]
-            If the :param:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
+            If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
             this is the minimum value the users input must be of.
         max_value: Optional[Union[:class:`int`, :class:`float`]]
-            If the :param:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
+            If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
             this is the maximum value the users input could be of.
         channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
             A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
-            Only valid if :param:`option_type` is :class:`OptionType.channel`.
+            Only valid if :attr:`option_type` is :class:`OptionType.channel`.
         default: Optional[Any]
             The default value that should be passed to the function if the option is not provided, default ``None``.
             Usually used for autocomplete callback.
@@ -1508,7 +1508,7 @@ def generate_options(
         A dictionary containing the name of function-parameters as keys and the name of the option as values.
         Useful for using non-ascii letters in your option names without getting (IDE-)errors.
     is_cog: Optional[:class:`bool`]
-        Whether the :param:`func` is inside a :class:`discord.exc.commands.Cog`. Used for Error handling.
+        Whether the :attr:`func` is inside a :class:`discord.exc.commands.Cog`. Used for Error handling.
 
     Returns
     -------
@@ -1518,7 +1518,7 @@ def generate_options(
     Raises
     ------
     TypeError:
-        The function/method specified at :param:`func` is missing a parameter to which the interaction object is passed.
+        The function/method specified at :attr:`func` is missing a parameter to which the interaction object is passed.
     """
     from .ext.commands import Converter, Greedy, converter as converters
     from .ext.commands.converter import _Greedy

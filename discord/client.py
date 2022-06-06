@@ -35,6 +35,8 @@ import traceback
 import warnings
 from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable, TYPE_CHECKING, overload
 
+import discord
+
 if TYPE_CHECKING:
     from .permissions import Permissions
 
@@ -1143,7 +1145,7 @@ class Client:
 
         Parameters
         ----------
-        custom_id: Optional[Union[:py:type:`Pattern`[AnyStr], AnyStr]]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
             If the :attr:`custom_id` of the :class:`~discord.Button` could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
@@ -1228,8 +1230,8 @@ class Client:
             async def choose_your_gender(i: discord.Interaction, select_menu):
                 await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
-        Raise
-        ------
+        Raises
+        -------
         :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
@@ -1346,11 +1348,13 @@ class Client:
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
             must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
+        Parameters
+        -----------
         name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
         name_localizations: Optional[:class:`~discord.Localizations`]
-            Localizations object for name field. Values follow the same restrictions as :attr:`name
+            Localizations object for name field. Values follow the same restrictions as :attr:`name`
         description: Optional[:class:`str`]
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
@@ -1401,8 +1405,13 @@ class Client:
 
         Returns
         -------
-        :class:`types.FunctionType`;
-            The function that wich registers the decorated function as a slash-command to the client and returns the generated command.
+        The slash-command registered.
+            If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`~discord.SlashCommand`.
+            If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`~discord.GuildOnlySlashCommand`
+            representing the guild-only slash-commands.
+            If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of :class:`~discord.SubCommand`.
+            if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`~discord.GuildOnlySubCommand`
+            representing the guild-only sub-commands.
         """
 
         def decorator(func: Awaitable[Any]) -> Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
@@ -1416,11 +1425,11 @@ class Client:
             Returns
             -------
             The slash-command registered.
-                If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`SlashCommand`.
-                If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
+                If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`~discord.SlashCommand`.
+                If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`~discord.GuildOnlySlashCommand`
                 representing the guild-only slash-commands.
-                If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of class:`SubCommand`.
-                if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
+                If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of :class:`~discord.SubCommand`.
+                if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`~discord.GuildOnlySubCommand`
                 representing the guild-only sub-commands.
             """
             if not asyncio.iscoroutinefunction(func):
@@ -1604,12 +1613,12 @@ class Client:
 
         Returns
         -------
-        MessageCommand:
+        ~discord.MessageCommand:
             The message-command registered.
 
         Raises
         ------
-        TypeError:
+        :exc:`TypeError`:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
         """
         def decorator(func: Awaitable[Any]) -> MessageCommand:
@@ -1668,12 +1677,12 @@ class Client:
 
        Returns
        -------
-       UserCommand:
+       ~discord.UserCommand:
            The user-command registered.
 
        Raises
        ------
-       TypeError:
+       :exc:`TypeError`:
            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
        """
         def decorator(func: Awaitable[Any]) -> UserCommand:
@@ -2411,12 +2420,12 @@ class Client:
 
     async def fetch_all_nitro_stickers(self):
         """
-        Retrieves a :class:`list` with all buildin :class:`~discord.StickerPack`'s.
+        Retrieves a :class:`list` with all build-in :class:`~discord.StickerPack` 's.
 
         Returns
         --------
-        :class:`.StickerPack`
-            A list containing all buildin sticker-packs.
+        :class:`~discord.StickerPack`
+            A list containing all build-in sticker-packs.
         """
         data = await self.http.get_all_nitro_stickers()
         packs = [StickerPack(state=self._connection, data=d) for d in data['sticker_packs']]

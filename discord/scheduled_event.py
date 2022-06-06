@@ -91,11 +91,11 @@ class GuildScheduledEvent(Hashable):
 
     @property
     def icon_url(self):
-        """:class:`Asset`: Returns the role icon asset."""
+        """:class:`Asset`: Returns the event image asset."""
         return self.icon_url_as()
 
     def icon_url_as(self, *, format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp', size=1024):
-        """Returns an :class:`Asset` for the role icon.
+        """Returns an :class:`Asset` for the event image.
 
         The format must be one of 'webp', 'jpeg', or 'png'. The
         size must be a power of 2 between 16 and 4096.
@@ -265,21 +265,6 @@ class GuildScheduledEvent(Hashable):
                     with_member: bool = False) -> EventUsersIterator:
         """Returns an :class:`~discord.AsyncIterator` that enables receiving the interest users of the event.
 
-        Examples
-        ---------
-
-        Usage ::
-
-            counter = 0
-            async for user in event.users(limit=200):
-                if user.id > 264905529753600000:  # all accounts created before 2018
-                    counter += 1
-
-        Flattening into a list: ::
-
-            users = await event.users(limit=123).flatten()
-            # users is now a list of Member/User...
-
         All parameters are optional.
 
         Parameters
@@ -295,7 +280,25 @@ class GuildScheduledEvent(Hashable):
             Retrieve users after this user.
             If a date is provided it must be a timezone-naive datetime representing UTC time.
         with_member: Optional[:class:`bool`]
-            If set to ``True``, return the Member instead of the User if it is part of the guild the event is in.
+            If set to ``True``, return the :class:`~discord.Member` instead of the :class:`~discord.User` if it is part of the guild the event is in.
+
+
+        Examples
+        ---------
+
+        .. code-block:: python3
+
+            # Usage
+
+            counter = 0
+            async for user in event.users(limit=200):
+                if user.id > 264905529753600000:  # all accounts created before 2018
+                    counter += 1
+
+            # Flattening into a list
+
+            users = await event.users(limit=123).flatten()
+            # users is now a list of Member/User...
 
         Raises
         ------
@@ -313,7 +316,7 @@ class GuildScheduledEvent(Hashable):
 
     async def delete(self, *, reason: str = None) -> None:
         """
-        Deletes the event. Requires ``MANAGE_EVENTS``Permissions.
+        Deletes the event. Requires ``MANAGE_EVENTS`` permissions.
 
         Parameters
         ----------

@@ -69,7 +69,6 @@ async def default_callback(interaction, *args, **kwargs):
                               'Probably something is being tested with him and he is not yet fully developed.',
                               hidden=True)
 
-
 class Guild(Hashable):
     """Represents a Discord guild.
 
@@ -397,12 +396,12 @@ class Guild(Hashable):
 
     @property
     def application_commands(self):
-        """List[:class:`application_commands.ApplicationCommand`]:
-        A list of application-commands from this application that are registered in this guild.
+        """List[:class:`~discord.ApplicationCommand`]: A list of application-commands from this application that are registered only in this guild.
         """
         return list(self._application_commands.values())
 
     def get_application_command(self, id):
+        """Optional[:class:`~discord.ApplicationCommand`]: Returns an application-command with the given id"""
         return self._application_commands.get(id, None)
 
     @property
@@ -412,12 +411,12 @@ class Guild(Hashable):
 
     @property
     def events(self):
-        """List[:class:`GuildScheduledEvent`]: A list of events that belong to this guild."""
+        """List[:class:`~discord.GuildScheduledEvent`]: A list of events that belong to this guild."""
         return list(self._events.values())
 
     def get_event(self, id: int) -> Optional[GuildScheduledEvent]:
         """
-        Returns an scheduled event with the given ID.
+        Returns a scheduled event with the given ID.
 
         Parameters
         ----------
@@ -426,7 +425,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        Optional[:class:`GuildScheduledEvent`]
+        Optional[:class:`~discord.GuildScheduledEvent`]
             The scheduled event or ``None`` if not found-
         """
         return self._events.get(id)
@@ -2517,32 +2516,31 @@ class Guild(Hashable):
                                      ) -> GuildScheduledEvent:
         """|coro|
         
-        Schedules a new Event in this guild. Requires ``MANAGE_EVENTS`` at least in the :param:`channel`
-        or in the entire guild if :param:`type` is :class:`EventType.external`.
+        Schedules a new Event in this guild. Requires ``MANAGE_EVENTS`` at least in the :attr:`channel`
+        or in the entire guild if :attr:`type` is :class:`EventType.external`.
         
         Parameters
         ----------
         name: :class:`str`
-            The name of the the name of the scheduled event. 1-100 characters long.
+            The name of the scheduled event. 1-100 characters long.
         entity_type: :class:`EventEntityType`
             The entity_type of the scheduled event.
 
-            **:param:`end_time` and :param:`location` must be provided if entity_type is :class:`EventEntityType.external`,
-             otherwise :param:`channel`.**
+            **:attr:`end_time` and :attr:`location` must be provided if entity_type is :class:`EventEntityType.external`, otherwise :attr:`channel`.**
 
         start_time: :class:`datetime.datetime`
             The time when the event will start. Must be a valid date in the future.
         end_time: Optional[:class:`datetime.datetime`]
             The time when the event will end. Must be a valid date in the future.
-            If :param:`entity_type` is :class:`EventEntityType.external` this must be provided.
+            If :attr:`entity_type` is :class:`EventEntityType.external` this must be provided.
         channel: Optional[Union[:class:`StageChannel`, :class:`VoiceChannel`]]
             The channel in which the event takes place.
-            Must be provided if :param:`entity_type` is :class:`EventEntityType.stage` or :class:`EventEntityType.voice`.
+            Must be provided if :attr:`entity_type` is :class:`EventEntityType.stage` or :class:`EventEntityType.voice`.
         description: Optional[:class`str`]
             The description of the scheduled event. 1-1000 characters long.
         location: Optional[:class:`str`]
             The location where the event will take place. 1-100 characters long.
-            **Must be provided if :param:`entity_type` is :class:`EventEntityType.external`**
+            **Must be provided if :attr:`entity_type` is :class:`EventEntityType.external`**
         cover_image: Optional[:class:`bytes`]:
             The cover image of the scheduled event.
         reason: Optional[:class:`str`]
@@ -2550,7 +2548,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        :class:`GuildScheduledEvent`
+        :class:`~discord.GuildScheduledEvent`
             The scheduled event on success.
 
         Raises

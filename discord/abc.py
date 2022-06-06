@@ -889,7 +889,7 @@ class GuildChannel:
         	required if :attr:`target_type` is ``1``, the user must be streaming in the channel.
         target_application_id: Optional[:class:`int`]
             The id of the embedded application to open for this invite,
-             required if :attr:`target_type` is ``2``, the application must have the EMBEDDED flag.
+            required if :attr:`target_type` is ``2``, the application must have the EMBEDDED flag.
         reason: Optional[:class:`str`]
             The reason for creating this invite. Shows up on the audit log.
 
@@ -1005,13 +1005,13 @@ class Messageable(metaclass=abc.ABCMeta):
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
         components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
-            A list of :type:`discord.ActionRow`'s or a list of :class:`Button`'s or :class:`SelectMenu`'
+            A list of :class:`~discord.ActionRow`'s or a :class:`list` of :class:`Button`'s or :class:`~discord.SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
-            A list of files to upload. Must be a maximum of 10.
+            A :class:`list` of files to upload. Must be a maximum of 10.
         stickers: List[:class:`~discord.GuildSticker`]
-            A list of up to 3 :class:`discord.GuildSticker` that should be send with the message.
+            A list of up to 3 :class:`discord.GuildSticker` that should be sent with the message.
         nonce: :class:`int`
             The nonce to use for sending this message. If the message was successfully sent,
             then the message will have a nonce with this value.
@@ -1043,8 +1043,8 @@ class Messageable(metaclass=abc.ABCMeta):
             .. versionadded:: 1.6
 
         hidden: Optional[:class:`bool`]
-            If :bool:`True` the message will be only bee visible for the performer of the interaction.
-            If this isn't called within an :class:`Interaction` it will be ignored
+            If ``True`` the message will be only bee visible for the performer of the interaction.
+            If this isn't called within any subclass of :class:`~discord.BaseInteraction` it will be ignored.
 
         Raises
         --------
@@ -1360,6 +1360,7 @@ class Connectable(metaclass=abc.ABCMeta):
     The following implement this ABC:
 
     - :class:`~discord.VoiceChannel`
+    - :class:`~discord.StageChannel`
     """
     __slots__ = ()
 

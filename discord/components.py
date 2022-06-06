@@ -166,14 +166,14 @@ class Button:
 
     def disable_if(self, check: Union[bool, Callable], *args):
         """
-        Disables the :class:`discord.Button` if the passed :attr:`check` returns :bool:`True`.
+        Disables the :class:`discord.Button` if the passed :attr:`check` returns ``True``.
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :type:`typing.Callable`]
-            The check could be an :class:`bool` or usually any :type:`Callable` that returns an :class:`bool`.
+        check: Union[:class:`bool`, :class:`typing.Callable`]
+            The check could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`.
         *args: Any
-            Arguments that should be passed in to the :attr:`check` if it is an :type:`Callable`.
+            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
         :return: discord.Button
          """
@@ -191,12 +191,12 @@ class Button:
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :type:`typing.Callable`]
-            The check could be an :class:`bool` or usually any :type:`Callable` that returns an :class:`bool`
+        check: Union[:class:`bool`, :class:`typing.Callable`]
+            The check could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`
         style: discord.ButtonStyle
             The style the :class:`Button` should have when the :attr:`check` returns True
         *args: Any
-            Arguments that should be passed in to the :attr:`check` if it is an :type:`Callable`.
+            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
         :return: discord.Button
 
@@ -470,14 +470,14 @@ class SelectMenu:
 
     def disable_if(self, check: Union[bool, Callable], *args):
         """
-        Disables the :class:`discord.SelectMenu` if the passed :attr:`check` returns :bool:`True`.
+        Disables the :class:`discord.SelectMenu` if the passed :attr:`check` returns ``True``.
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :type:`typing.Callable`]
+        check: Union[:class:`bool`, :class:`typing.Callable`]
             The check could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`.
         *args: Any
-            Arguments that should be passed in to the :param:`check` if it is an :type:`Callable`.
+            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
         :return: discord.SelectMenu
          """
@@ -619,9 +619,9 @@ class ActionRow:
     Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#ActionRow>`_
 
     Parameters
-    ----------
-    *components: *Union[:class:`Button, :class:`SelectMenu`]
-        The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`or 1 :class:`SelectMenu`.
+    -----------
+    *components: *Union[:class:`Button`, :class:`SelectMenu`]
+        The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`, or 1 :class:`SelectMenu`.
 
     .. note ::
         For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
@@ -677,7 +677,7 @@ class ActionRow:
 
     def add_component(self, component: Union[Button, SelectMenu]):
         """
-        Adds a component to the :class:`ActionRow`.
+        Adds a component to the :class:`ActionRow` and returns the action row.
 
         Parameters
         ----------
@@ -691,7 +691,7 @@ class ActionRow:
 
     def insert_component_at(self, index, component: Union[Button, SelectMenu]):
         """
-        Inserts a component before a specified index to the :class:`ActionRow`.
+        Inserts a component before a specified index to the :class:`ActionRow` and returns the action row.
 
         Parameters
         -----------
@@ -707,7 +707,7 @@ class ActionRow:
 
     def set_component_at(self, index, component: Union[Button, SelectMenu]):
         """
-        Modifies a component to the ActionRow object.
+        Modifies a component to the :class:`ActionRow`. and returns the action row.
 
         The index must point to a valid pre-existing component.
 
@@ -734,7 +734,7 @@ class ActionRow:
 
     def disable_component_at(self, index):
         """
-        Disables the component at the specified position.
+        Disables the component at the specified position and returns the action row.
 
         Parameters
         ----------
@@ -771,7 +771,7 @@ class ActionRow:
 
     def disable_all_components(self):
         """
-        Disables all component's in this :class:`ActionRow`.
+        Disables all component's in this :class:`ActionRow` and returns the action row.
 
         :return: discord.ActionRow
         """
@@ -780,11 +780,11 @@ class ActionRow:
 
     def disable_all_components_if(self, check: Union[bool, Callable], *args: Any):
         """
-        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
+        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns ``True``. It returns the action row.
 
         Parameters
         -----------
-        check: Union[:class:`bool`, :type:`typing.Callable`]
+        check: Union[:class:`bool`, :class:`typing.Callable`]
             Could be a bool or usually any Callable that returns a bool.
         *args: Any
             Arguments that should be passed in to the check if it is a Callable.
@@ -804,7 +804,7 @@ class ActionRow:
 
     def disable_all_buttons(self):
         """
-        Disables all ::class:`discord.Button`'s in this :class:`ActionRow`.
+        Disables all ::class:`discord.Button`'s in this :class:`ActionRow` and returns the action row.
 
         :return: discord.ActionRow
         """
@@ -813,11 +813,12 @@ class ActionRow:
 
     def disable_all_buttons_if(self, check: Union[bool, Callable], *args: Any):
         """
-        Disables all :class:`discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
+        Disables all :class:`discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns ``True``.
+        It returns the action row.
     
         Parameters
         -----------
-        check: Union[:class:`bool`, :type:`typing.Callable`]
+        check: Union[:class:`bool`, :class:`typing.Callable`]
             Could be a bool or usually any Callable that returns a bool.
         *args: Any
             Arguments that should be passed in to the check if it is a Callable.
@@ -836,7 +837,7 @@ class ActionRow:
 
     def disable_all_select_menus(self):
         """
-        Disables all :class:`discord.SelectMenu`'s in this :class:`ActionRow`.
+        Disables all :class:`discord.SelectMenu`'s in this :class:`ActionRow` and returns the action row.
 
         :return: discord.ActionRow
         """
@@ -845,14 +846,15 @@ class ActionRow:
 
     def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: Any):
         """
-        Disables all :class:`SelectMenu`'s in this :class:`ActionRow` if the passed :attr:`check` returns :bool:`True`.
+        Disables all :class:`SelectMenu`'s in this :class:`ActionRow` if the passed :attr:`check` returns ``True``.
+        It returns the action row.
 
         Parameters
         ----------
         check: Union[:class:`bool`, :class:`typing.Callable`]
-            could be an :class:`bool` or usually any :type:`Callable` that returns a :class:`bool`
+            could be an :class:`bool` or usually any :class:`Callable` that returns a :class:`bool`
         *args: Any
-            Arguments that should be passed in to the :param:`check` if it is a :type:`Callable`.
+            Arguments that should be passed in to the :attr:`check` if it is a :class:`Callable`.
 
         :return: discord.ActionRow
         """
@@ -869,7 +871,7 @@ class ActionRow:
     @classmethod
     def from_dict(cls, data):
         if data.get('type', None) != 1:
-            return InvalidArgument("%s could not be implemented as an ActionRow" % data)
+            return InvalidArgument("%s could not be interpreted as an ActionRow" % data)
         else:
             components = [_component_factory(component) for component in data.get('components', [])]
             return cls(*components)

@@ -29,7 +29,9 @@ from .enums import InteractionType, ApplicationCommandType, ComponentType, Inter
     try_enum
 
 if TYPE_CHECKING:
+    import datetime
     from .application_commands import SlashCommand, MessageCommand, UserCommand
+
 
 log = logging.getLogger(__name__)
 
@@ -509,7 +511,7 @@ class BaseInteraction:
         """|coro|
 
         Responds to an interaction by sending a message that can be made visible only to the person who performed the
-        interaction by setting the `hidden` parameter to :bool:`True`.
+        interaction by setting the `hidden` parameter to ``True``.
         """
         state = self._state
         if not self.channel:
@@ -647,11 +649,18 @@ class BaseInteraction:
         self.deferred_modal = True
         return data
 
-    async def get_original_callback(self, raw: bool = False):
+    async def get_original_callback(self, raw: bool = False) -> Optional[Union[Message, EphemeralMessage, dict]]:
         """|coro|
-        Fetch the original callback-message of the interaction
+        Fetch the original callback-message of the interaction.
+
         .. warning::
+
             This is an API-Call and should be used carefully
+
+        Parameters
+        ----------
+        raw: Optional[:class:`bool`]
+            Whether to return the raw data from the api instead of a :class:`~discord.Message`/:class:`EphemeralMessage`.
         """
         data = await self._state.http.get_original_interaction_response(self._token, self._application_id)
         if raw:
@@ -667,11 +676,11 @@ class BaseInteraction:
         return self.messages[id]
 
     @property
-    def created_at(self):
+    def created_at(self) -> 'datetime.datetime':
         """
         Returns the Interaction’s creation time in UTC.
 
-        :return: datetime.datetime
+        :return: :class:`datetime.datetime`
         """
         return utils.snowflake_time(self.id)
 
@@ -691,7 +700,7 @@ class BaseInteraction:
 
     @property
     def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
-        """"Optional[:class:``ApplicationCommand`] The application-command that was invoked if any"""
+        """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked if any."""
         if getattr(self, '_command', None) is not None:
             return self._command
         return self._state._get_client()._get_application_command(self.data.id) \
@@ -699,7 +708,7 @@ class BaseInteraction:
 
     @property
     def guild(self) -> Optional[Guild]:
-        """The guild of the interaction"""
+        """Optional[:class:`~discord.Guild`]: The guild of the interaction, if there is one."""
         return self._state._get_guild(self.guild_id)
 
     @property
@@ -712,7 +721,7 @@ class BaseInteraction:
 
     @property
     def bot(self):
-        """Returns the discord.Client/commands.Bot instance"""
+        """Returns the :class:`~discord.Client`/:class:`~discord.ext.commands.Bot` instance"""
         return self._state._get_client()
 
     @classmethod
@@ -851,7 +860,7 @@ class AutocompleteInteraction(BaseInteraction):
 
 class ModalSubmitInteraction(BaseInteraction):
     def get_field(self, custom_id) -> Union['TextInput', None]:
-        """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`custom_id` match or :type:`None`"""
+        """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`TextInput.custom_id` match or :class:`None`"""
         for ar in self.data.components:
             for c in ar:
                 if c.custom_id == custom_id:
@@ -860,7 +869,7 @@ class ModalSubmitInteraction(BaseInteraction):
 
     @property
     def fields(self) -> List['TextInput']:
-        """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the modal."""
+        """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the :class:`~discord.Modal`."""
         field_list = []
         for ar in self.data.components:
             for c in ar:
@@ -870,12 +879,12 @@ class ModalSubmitInteraction(BaseInteraction):
     @property
     def custom_id(self) -> str:
         """
-        The Custom ID of the modal
+        The Custom ID of the :class:`~discord.Modal`
 
         Returns
         -------
         :class:`str`
-            The :attr:`custom_id` of the :class:`~discord.Modal`.
+            The :attr:`~discord.Modal.custom_id` of the :class:`~discord.Modal`.
         """
         return self.data.custom_id
 
