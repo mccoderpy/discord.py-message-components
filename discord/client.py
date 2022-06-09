@@ -35,6 +35,8 @@ import traceback
 import warnings
 from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable, TYPE_CHECKING, overload
 
+import discord
+
 if TYPE_CHECKING:
     from .permissions import Permissions
 
@@ -157,14 +159,12 @@ class Client:
         The intents that you want to enable for the _session. This is a way of
         disabling and enabling certain gateway events from triggering and being sent.
         If not given, defaults to a regularly constructed :class:`Intents` class.
-
-        .. versionadded:: 1.5
+    gateway_version: :class:`int`
+        The gateway and api version to use. Defaults to ``v10``.
     member_cache_flags: :class:`MemberCacheFlags`
         Allows for finer control over how the library caches members.
         If not given, defaults to cache as much as possible with the
         currently selected intents.
-
-        .. versionadded:: 1.5
     fetch_offline_members: :class:`bool`
         A deprecated alias of ``chunk_guilds_at_startup``.
     chunk_guilds_at_startup: :class:`bool`
@@ -172,16 +172,12 @@ class Client:
         at start-up if necessary. This operation is incredibly slow for large
         amounts of guilds. The default is ``True`` if :attr:`Intents.members`
         is ``True``.
-
-        .. versionadded:: 1.5
     status: Optional[:class:`.Status`]
         A status to start your presence with upon logging on to Discord.
     activity: Optional[:class:`.BaseActivity`]
         An activity to start your presence with upon logging on to Discord.
     allowed_mentions: Optional[:class:`AllowedMentions`]
         Control how the client handles mentions by default on every message sent.
-
-        .. versionadded:: 1.4
     heartbeat_timeout: :class:`float`
         The maximum numbers of seconds before timing out and restarting the
         WebSocket in the case of not receiving a HEARTBEAT_ACK. Useful if
@@ -273,7 +269,8 @@ class Client:
         proxy = options.pop('proxy', None)
         proxy_auth = options.pop('proxy_auth', None)
         unsync_clock = options.pop('assume_unsync_clock', True)
-        self.http = HTTPClient(connector, proxy=proxy, proxy_auth=proxy_auth, unsync_clock=unsync_clock, loop=self.loop)
+        self.gateway_version: int = options.get('gateway_version', 10)
+        self.http = HTTPClient(connector, proxy=proxy, proxy_auth=proxy_auth, unsync_clock=unsync_clock, loop=self.loop, api_version=self.gateway_version)
 
         self._handlers = {
             'ready': self._handle_ready
@@ -1143,7 +1140,7 @@ class Client:
 
         Parameters
         ----------
-        custom_id: Optional[Union[:py:type:`Pattern`[AnyStr], AnyStr]]
+        custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
             If the :attr:`custom_id` of the :class:`~discord.Button` could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
@@ -1228,8 +1225,8 @@ class Client:
             async def choose_your_gender(i: discord.Interaction, select_menu):
                 await i.respond(f'You selected `{select_menu.values[0]}`!', hidden=True)
 
-        Raise
-        ------
+        Raises
+        -------
         :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
@@ -1346,11 +1343,13 @@ class Client:
             :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
             must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
+        Parameters
+        -----------
         name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
         name_localizations: Optional[:class:`~discord.Localizations`]
-            Localizations object for name field. Values follow the same restrictions as :attr:`name
+            Localizations object for name field. Values follow the same restrictions as :attr:`name`
         description: Optional[:class:`str`]
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
@@ -1401,8 +1400,13 @@ class Client:
 
         Returns
         -------
-        :class:`types.FunctionType`;
-            The function that wich registers the decorated function as a slash-command to the client and returns the generated command.
+        The slash-command registered.
+            If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`~discord.SlashCommand`.
+            If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`~discord.GuildOnlySlashCommand`
+            representing the guild-only slash-commands.
+            If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of :class:`~discord.SubCommand`.
+            if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`~discord.GuildOnlySubCommand`
+            representing the guild-only sub-commands.
         """
 
         def decorator(func: Awaitable[Any]) -> Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]:
@@ -1416,11 +1420,11 @@ class Client:
             Returns
             -------
             The slash-command registered.
-                If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`SlashCommand`.
-                If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
+                If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`~discord.SlashCommand`.
+                If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`~discord.GuildOnlySlashCommand`
                 representing the guild-only slash-commands.
-                If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of class:`SubCommand`.
-                if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
+                If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of :class:`~discord.SubCommand`.
+                if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`~discord.GuildOnlySubCommand`
                 representing the guild-only sub-commands.
             """
             if not asyncio.iscoroutinefunction(func):
@@ -1604,12 +1608,12 @@ class Client:
 
         Returns
         -------
-        MessageCommand:
+        ~discord.MessageCommand:
             The message-command registered.
 
         Raises
         ------
-        TypeError:
+        :exc:`TypeError`:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
         """
         def decorator(func: Awaitable[Any]) -> MessageCommand:
@@ -1668,12 +1672,12 @@ class Client:
 
        Returns
        -------
-       UserCommand:
+       ~discord.UserCommand:
            The user-command registered.
 
        Raises
        ------
-       TypeError:
+       :exc:`TypeError`:
            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
        """
         def decorator(func: Awaitable[Any]) -> UserCommand:
@@ -2411,12 +2415,12 @@ class Client:
 
     async def fetch_all_nitro_stickers(self):
         """
-        Retrieves a :class:`list` with all buildin :class:`~discord.StickerPack`'s.
+        Retrieves a :class:`list` with all build-in :class:`~discord.StickerPack` 's.
 
         Returns
         --------
-        :class:`.StickerPack`
-            A list containing all buildin sticker-packs.
+        :class:`~discord.StickerPack`
+            A list containing all build-in sticker-packs.
         """
         data = await self.http.get_all_nitro_stickers()
         packs = [StickerPack(state=self._connection, data=d) for d in data['sticker_packs']]
