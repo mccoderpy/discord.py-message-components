@@ -727,10 +727,10 @@ class ActionRow:
         :return: discord.ActionRow
         """
         try:
-            _component = self.components[index]
+            self.components[index]
         except IndexError:
             raise IndexError('component index %s out of range' % index)
-        _component = component
+        self.components[index] = component
         return self
 
     def disable_component_at(self, index):
@@ -870,7 +870,20 @@ class ActionRow:
         return self
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: dict):
+        """
+        Internal method to create a :class:`discord.ActionRow` from the data given by discord.
+
+        Parameters
+        ----------
+        data: dict
+            The raw data from the api.
+
+        Returns
+        -------
+        :class:`discord.ActionRow`
+            The ActionRow created.
+        """
         if data.get('type', None) != 1:
             return InvalidArgument("%s could not be interpreted as an ActionRow" % data)
         else:

@@ -302,7 +302,8 @@ class DiscordWebSocket:
 
         This is for internal use only.
         """
-        gateway = gateway or await client.http.get_gateway()
+        version = client.gateway_version
+        gateway = gateway or await client.http.get_gateway(v=version)
         socket = await client.http.ws_connect(gateway)
         ws = cls(socket, loop=client.loop)
 

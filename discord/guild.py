@@ -195,8 +195,8 @@ class Guild(Hashable):
                  '_welcome_screen', 'stickers')
 
     _PREMIUM_GUILD_LIMITS = {
-        None: _GuildLimit(emoji=50, sticker=0, bitrate=96e3, filesize=8388608),
-        0: _GuildLimit(emoji=50, sticker=0, bitrate=96e3, filesize=8388608),
+        None: _GuildLimit(emoji=50, sticker=5, bitrate=96e3, filesize=8388608),
+        0: _GuildLimit(emoji=50, sticker=5, bitrate=96e3, filesize=8388608),
         1: _GuildLimit(emoji=100, sticker=15, bitrate=128e3, filesize=8388608),
         2: _GuildLimit(emoji=150, sticker=30, bitrate=256e3, filesize=52428800),
         3: _GuildLimit(emoji=250, sticker=60, bitrate=384e3, filesize=104857600),
@@ -468,7 +468,7 @@ class Guild(Hashable):
         return r
 
     @property
-    def me(self):
+    def me(self) -> Member:
         """:class:`Member`: Similar to :attr:`Client.user` except an instance of :class:`Member`.
         This is essentially used to get the member version of yourself.
         """
@@ -481,7 +481,7 @@ class Guild(Hashable):
         return self._state._get_voice_client(self.id)
 
     @property
-    def text_channels(self):
+    def text_channels(self) -> List[TextChannel]:
         """List[:class:`TextChannel`]: A list of text channels that belongs to this guild.
 
         This is sorted by the position and are in UI order from top to bottom.
@@ -491,14 +491,14 @@ class Guild(Hashable):
         return r
 
     @property
-    def thread_channels(self):
+    def thread_channels(self) -> List[ThreadChannel]:
         """List[:class:`ThreadChannel`]: A list of thread channels the guild has.
 
-        This is sorted by the id of the thread.
+        This is sorted by the position of the threads :attr:`~discord.ThreadChannel.parent` and are in UI order from top to bottom.
         """
         r = list()
         [r.extend(ch.threads)  for ch in self._channels.values() if isinstance(ch, TextChannel)]
-        r.sort(key=lambda t: t.id)
+        r.sort(key=lambda t: (t.parent.position, t.id))
         return r
 
     @property
@@ -557,7 +557,7 @@ class Guild(Hashable):
 
         Returns
         --------
-        Optional[:class:`.abc.GuildChannel`]
+        Optional[Union[:class:`.abc.GuildChannel`, :class:`~discord.ThreadChannel`]]
             The returned channel or ``None`` if not found.
         """
         return self._channels.get(channel_id)
@@ -577,10 +577,11 @@ class Guild(Hashable):
         return SystemChannelFlags._from_value(self._system_channel_flags)
 
     async def welcome_screen(self):
+        """:class:`WelcomeScreen`: fetches the welcome screen from the guild."""
         data = await self._state.http.get_welcome_screen(guild_id=self.id)
         if data:
             self._welcome_screen = WelcomeScreen(state=self._state, guild=self, data=data)
-        return self._welcome_screen
+            return self._welcome_screen
 
     @property
     def rules_channel(self):
@@ -616,7 +617,7 @@ class Guild(Hashable):
     @property
     def sticker_limit(self):
         """:class:`int`: The maximum number of sticker slots this guild has."""
-        more_sticker = 60 if 'MORE_STICKER' in self.features else 0
+        more_sticker = 60 if 'MORE_STICKER' in self.features else 5
         return max(more_sticker, self._PREMIUM_GUILD_LIMITS[self.premium_tier].sticker)
 
     @property

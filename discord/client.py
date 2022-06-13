@@ -159,14 +159,12 @@ class Client:
         The intents that you want to enable for the _session. This is a way of
         disabling and enabling certain gateway events from triggering and being sent.
         If not given, defaults to a regularly constructed :class:`Intents` class.
-
-        .. versionadded:: 1.5
+    gateway_version: :class:`int`
+        The gateway and api version to use. Defaults to ``v10``.
     member_cache_flags: :class:`MemberCacheFlags`
         Allows for finer control over how the library caches members.
         If not given, defaults to cache as much as possible with the
         currently selected intents.
-
-        .. versionadded:: 1.5
     fetch_offline_members: :class:`bool`
         A deprecated alias of ``chunk_guilds_at_startup``.
     chunk_guilds_at_startup: :class:`bool`
@@ -174,16 +172,12 @@ class Client:
         at start-up if necessary. This operation is incredibly slow for large
         amounts of guilds. The default is ``True`` if :attr:`Intents.members`
         is ``True``.
-
-        .. versionadded:: 1.5
     status: Optional[:class:`.Status`]
         A status to start your presence with upon logging on to Discord.
     activity: Optional[:class:`.BaseActivity`]
         An activity to start your presence with upon logging on to Discord.
     allowed_mentions: Optional[:class:`AllowedMentions`]
         Control how the client handles mentions by default on every message sent.
-
-        .. versionadded:: 1.4
     heartbeat_timeout: :class:`float`
         The maximum numbers of seconds before timing out and restarting the
         WebSocket in the case of not receiving a HEARTBEAT_ACK. Useful if
@@ -275,7 +269,8 @@ class Client:
         proxy = options.pop('proxy', None)
         proxy_auth = options.pop('proxy_auth', None)
         unsync_clock = options.pop('assume_unsync_clock', True)
-        self.http = HTTPClient(connector, proxy=proxy, proxy_auth=proxy_auth, unsync_clock=unsync_clock, loop=self.loop)
+        self.gateway_version: int = options.get('gateway_version', 10)
+        self.http = HTTPClient(connector, proxy=proxy, proxy_auth=proxy_auth, unsync_clock=unsync_clock, loop=self.loop, api_version=self.gateway_version)
 
         self._handlers = {
             'ready': self._handle_ready

@@ -103,7 +103,7 @@ class HTTPClient:
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
 
-    def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True):
+    def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True, api_version=10):
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.connector = connector
         self.__session: aiohttp.ClientSession = None  # filled in static_login
@@ -114,6 +114,8 @@ class HTTPClient:
         self.proxy = proxy
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
+        self.api_version = api_version
+        Route.BASE = f'https://discord.com/api/v{api_version}'
 
         user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
         self.user_agent = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
@@ -1143,6 +1145,7 @@ class HTTPClient:
         form = []
         if files is not None:
             form.append({'name': 'payload_json', 'value': utils.to_json(data)})
+            _id = len(data.get('attachments', [])) - len(files)  # to continue the file id count
             for index, file in enumerate(files):
                 form.append({
                     'name': 'files[%s]' % index,
