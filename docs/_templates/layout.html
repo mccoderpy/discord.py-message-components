@@ -148,11 +148,9 @@
   </script>
   {%- endif %}
 
-  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, false); }" hidden>
+  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, true); }" hidden>
     <div class="modal-content">
-      <span class="close" onclick="openModal(event, true);" title="Close">
-        <span class="material-icons">close</span>
-      </span>
+      <span class="close material-icons" onclick="openModal(event, true);" title="Close">close</span>
       <h1>{{ _('Settings') }}</h1>
 
       <h2>{{ _('Font') }}</h2>

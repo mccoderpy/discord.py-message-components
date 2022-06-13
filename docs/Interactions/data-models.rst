@@ -7,6 +7,7 @@ BaseInteraction
 
 .. autoclass:: BaseInteraction()
     :members:
+    :exclude-members: from_type
 
 ApplicationCommandInteraction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,6 +17,7 @@ ApplicationCommandInteraction
 .. autoclass:: ApplicationCommandInteraction()
     :members:
     :inherited-members:
+    :exclude-members: from_type
 
 ComponentInteraction
 ~~~~~~~~~~~~~~~~~~~~~
@@ -25,6 +27,7 @@ ComponentInteraction
 .. autoclass:: ComponentInteraction()
     :members:
     :inherited-members:
+    :exclude-members: from_type
 
 AutocompleteInteraction
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,7 +37,7 @@ AutocompleteInteraction
 .. autoclass:: AutocompleteInteraction()
     :members:
     :inherited-members:
-    :exclude-members: defer, respond_with_modal
+    :exclude-members: defer, respond_with_modal, from_type
 
 ModalSubmitInteraction
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,7 +47,7 @@ ModalSubmitInteraction
 .. autoclass:: ModalSubmitInteraction
     :members:
     :inherited-members:
-    :exclude-members: defer, respond_with_modal
+    :exclude-members: defer, respond_with_modal, from_type
 
 
 Localizations

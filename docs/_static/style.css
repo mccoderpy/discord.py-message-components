@@ -49,6 +49,8 @@ Historically however, thanks to:
   --blue-5: #002275;
   --blue-6: #000f40;
 
+  --purple: #ac00f9
+
   --settings: var(--grey-1);
   --settings-hover: var(--grey-1-8);
   --main-background: var(--grey-1);
@@ -80,7 +82,8 @@ Historically however, thanks to:
   --main-h6-header-text: var(--grey-4);
   --main-h4-header-border: var(--grey-4);
   --header-link: var(--grey-6);
-  --header-link-hover-text: var(--white);
+  --header-link-hover-text: var(--blue);
+  --header-link-hover-text-visited: var(--purple);
   --admonition-background: var(--grey-2);
   --note-background: var(--blue-1);
   --note-text: var(--white);
@@ -595,15 +598,22 @@ div.modal-content {
 div.modal-content > span.close {
   color: #888;
   float: right;
-  font-weight: bold;
+  font-weight: bol;
   -moz-user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
+  transform: rotate( 90deg );
+  transition: transform .2s ease-out,stroke-dasharray .2s ease-out,-webkit-transform .2s ease-out;
+  box-sizing: border-box;
 }
 
 div.modal-content > span.close:hover,
 div.modal-content > span.close:focus {
-  color: #444;
+  color: #fff;
+  transform: rotate(
+-90deg
+);
+  transition: transform .2s ease-out,stroke-dasharray .2s ease-out,-webkit-transform .2s ease-out;
 }
 
 div.modal input {
@@ -720,6 +730,10 @@ a.headerlink {
 a.headerlink:hover {
   background-color: var(--header-link);
   color: var(--header-link-hover-text);
+}
+
+a.headerlink:visited {
+    color: var(--header-link-hover-text-visited);
 }
 
 h1:hover > a.headerlink,

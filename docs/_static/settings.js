@@ -108,6 +108,7 @@ async function openModal(event, close) {
   gearwheel.classList.remove("fa-shake");
   gearwheel.style = `${!close ? "--fa-animation-direction: reverse; " : ""}--fa-animation-duration: 1s;`;
   gearwheel.classList.add("fa-spin");
+  
   sleep(0.5)
     .then(() => (!close ? settingsModal.open() : settingsModal.close()))
     .then(() => gearwheel.classList.remove("fa-spin"))
