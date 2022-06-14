@@ -58,7 +58,7 @@
 You need help? Or have ideas/feedback?
 ______________________________________
 
-Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+Open a `issue <../../issues>`_/`pull request <../../pulls>`_, join the `support-server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
 
 Installing
 __________
