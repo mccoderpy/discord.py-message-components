@@ -32,7 +32,22 @@ Welcome to discord\.py-message-components' documentation!
       :target: https://discordpy-message-components.readthedocs.io/en/latest/
       :alt: Documentation Status
 
-   The Original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_
+   A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implemation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ by `mccoderpy <https://github.com/mccoderpy/>`_ 
+
++---------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                              **❗ℹIMPORTANTℹ❗**                                                                    |
++===================================================================================================================================================+
+| This branch represents only the `PyPI <https://pypi.org>`_ version of this library,                                                               |
+| which is currently **not up to date** due to some (privat) issues                                                                                 |
+| (as soon as we have documented the new features and the developer branch is stable enough, this will be updated).                                 |
+|                                                                                                                                                   |
+| **To get the latest version with the newest features and bug(-fixes) please take a look at the** `developer <../../tree/developer>`_ **branch**   |
++---------------------------------------------------------------------------------------------------------------------------------------------------+
+
+**NOTE:** 
+     This library will be further developed independently of discord.py.
+     New features are also implemented. It's not an extension!
+     The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet.
 
 .. |PyPI| image:: https://cdn.discordapp.com/emojis/854380926548967444.png?v=1
    :alt: PyPI Logo
@@ -45,7 +60,7 @@ Welcome to discord\.py-message-components' documentation!
 You need help? Or have ideas/feedback?
 ______________________________________
 
-Open a Issue/Pull request on `GitHub <https://github.com/mccoderpy/discord.py-message-components/pulls>`_, join the `support-Server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+Open a `issue <../../issues>`_/`pull request <../../pulls>`_, join the `support-server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
 
 
 Installing:
