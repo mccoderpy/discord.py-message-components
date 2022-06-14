@@ -55,8 +55,6 @@
    :scale: 20%
    :target: https://discordpy-message-components.readthedocs.io/en/latest/
 
-   **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/latest/>`_
-
 You need help? Or have ideas/feedback?
 ______________________________________
 
