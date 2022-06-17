@@ -897,6 +897,34 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param user: The user that joined or left.
     :type user: :class:`User`
 
+.. function:: on_auto_moderation_rule_create(guild, rule)
+
+    Called when a auto moderation rule is created.
+
+    :param guild: The guild the rule was created in.
+    :type guild: :class:`Guild`
+    :param rule: The rule that was created.
+    :type rule: :class:`AutoModerationRule`
+
+.. function:: on_auto_moderation_rule_update(guild, before, after)
+
+    Called when a auto moderation rule is updated.
+
+    :param guild: The guild the rule was updated in.
+    :type guild: :class:`Guild`
+    :param before: The old rule.
+    :type before: :class:`AutoModerationRule`
+    :param before: The updated rule.
+    :type before: :class:`AutoModerationRule`
+
+.. function:: on_auto_moderation_rule_delete(guild, rule)
+
+    Called when a auto moderation rule is deleted.
+
+    :param guild: The guild the rule was in.
+    :type guild: :class:`Guild`
+    :param rule: The rule that was deleted.
+    :type rule: :class:`AutoModerationRule`
 
 .. _discord-api-utils:
 

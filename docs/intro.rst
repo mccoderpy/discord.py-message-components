@@ -5,7 +5,7 @@
 Introduction
 ==============
 
-This is the documentation for discord.py, a library for Python to aid
+This is the documentation for discord.py-message-components, a library for Python to aid
 in creating applications that utilise the Discord API.
 
 Prerequisites
@@ -46,7 +46,21 @@ For a Debian-based system, the following command will get these dependencies:
 
     $ apt install libffi-dev libnacl-dev python3-dev
 
-Remember to check your permissions!
+**Remember to check your permissions!**
+
+To install the developer (alpha/beta) version from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ use:
+
+.. code-block:: sh
+
+    # Linux/macOS
+    python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+
+    # Windows
+    py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+
+.. warning::
+
+    Of curse you need to have git installed on your device. If you need help with this take a look **→** `here <https://github.com/git-guides/install-git>`_ **←**
 
 Virtual Environments
 ~~~~~~~~~~~~~~~~~~~~~
