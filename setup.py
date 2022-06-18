@@ -40,8 +40,8 @@ if version.endswith(('a', 'b', 'rc', 'dev')):
         out, err = p.communicate()
         if out:
             version += f'+g{out.decode("utf-8").strip()}'
-    except Exception as exc:
-        raise exc
+    except Exception:
+        __import__('traceback').print_exc()
     else:
         with open(f'{HERE}/version.txt', 'w') as fp:
             fp.write(version)
@@ -68,7 +68,7 @@ setup(
     url="https://github.com/mccoderpy/discord.py-message-components",
     project_urls={'Documentation': 'https://discordpy-message-components.readthedocs.io/en/latest/', 'Source': 'https://github.com/mccoderpy/discord.py-message-components/', 'Support': 'https://discord.gg/sb69muSqsg', 'Issue Tracker': 'https://github.com/mccoderpy/discord.py-message-components/issues'},
     author_email="mccuber04@outlook.de",
-    version=str(v if v else version),
+    version=str(version),
     author="mccoder.py",
     description="A \"fork\" of discord.py library made by Rapptz with implementation of the Discord-Message-Components & other features by mccoderpy",
     keywords='discord discord.py discord.py-message-components discord-components discord-interactions  message-components components ',

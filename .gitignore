@@ -1,16 +1,15 @@
-./TODO.py
-./examples.py
-./cogs/
-./data/
-./exportToHTML/
-./dist/
-./docs/_build/
+TODO.py
+examples.py
+/cogs/
+/data/
+/exportToHTML/
+/dist/
+/docs/_build/
 ./discord.py_message_components.egg-info
-./build/
+/build/
 .idea
 __pycache__
 *.pyc
 # Default ignored files
 /shelf/
 workspace.xml
-TODO.py
