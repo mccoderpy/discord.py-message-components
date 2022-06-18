@@ -16,13 +16,20 @@ if os.path.isfile('version.txt'):
         v = fp.read()
 
 if version != v:
-    i = input(f'are you sure to use version {version}>> ')
-    version = i if i else version
-    with open('version.txt', 'w') as fp:
-        fp.write(i)
+    try:
+        i = input(f'are you sure to use version {version}>> ')
+    except EOFError:
+        pass
+    else:
+        version = i if i else version
+        with open('version.txt', 'w') as fp:
+            fp.write(i)
 
 if not (version or v):
-    version = input('please set a version>> ')
+    try:
+        version = input('please set a version>> ')
+    except EOFError:
+        pass
     if not version:
         raise RuntimeError('version is not set')
 
