@@ -52,13 +52,17 @@ class WebHookLogger(HTTPHandler):
 
 logging.basicConfig(level=logging.INFO)  # handlers=[WebHookLogger('discord.com:443', webhook_url)]
 
+
+i = discord.Intents.all()
 client = commands.Bot(
     command_prefix=commands.when_mentioned_or('!'),
     strip_after_prefix=True,
-    intents=discord.Intents.all(),
     sync_commands_on_cog_reload=False,
     sync_commands=True,
-    remove_unused_commands=False
+    intents=i,
+    gateway_version=10,
+    remove_unused_commands=False,
+    activity=discord.Activity(type=discord.ActivityType.competing, name='his bugs (lovely called features)')
 )
 
 # @client.command()
@@ -90,6 +94,7 @@ async def userinfo(ctx: discord.ApplicationCommandInteraction, member: discord.M
     _roles.remove(member.guild.default_role)
     _roles.reverse()
     member: typing.Union[discord.User, discord.Member] = member
+    user = await client.fetch_user(member.id)
 
     embed = discord.Embed(title=f'Userinfo for {member}',
                           description=f'This is a Userinfo for {member.mention}.',
@@ -99,15 +104,17 @@ async def userinfo(ctx: discord.ApplicationCommandInteraction, member: discord.M
     to_add = [
         ('Name:', member.name, True),
         ('Tag:', member.discriminator, True),
-        ('User-ID:', member.id, True),
-        ('Nitro:', '✅ Yes' if member.premium_since else '❔ Unknown', True),
+        ('User-ID:', f'`{member.id}`', True),
+        ('Statuses:', member.raw_status, True),
+        ('Bot:', '✅' if member.bot else '❌'),
+        ('Nitro:', '✅ Yes' if (await user.profile()).nitro or member.premium_since else '❔ Unknown', True),
         ('Nick:', member.nick, True),
         ('Created-at:', discord.utils.styled_timestamp(member.created_at, 'R'), True),
         ('Joined at', discord.utils.styled_timestamp(member.joined_at, 'R'), True),
         ('Roles:', '\n'.join([r.mention for r in _roles]), True)
     ]
     if member.premium_since:
-        to_add.append(('Premium since:', discord.utils.styled_timestamp(member.premium_since, 'R'), True))
+        to_add.append(('Boosting since:', discord.utils.styled_timestamp(member.premium_since, 'R'), True))
 
     for name, value, inline in to_add:
         embed.add_field(name=name, value=value, inline=inline)
@@ -115,7 +122,6 @@ async def userinfo(ctx: discord.ApplicationCommandInteraction, member: discord.M
     embed.set_author(name=member.display_name, icon_url=member.display_avatar_url, url=f'https://discord.com/users/{member.id}')
     embed.set_footer(text=f'requested by {ctx.author}', icon_url=ctx.author.display_avatar_url)
     if not member.bot:
-        user = await client.fetch_user(member.id)
         if user.banner:
             embed.add_field(name='Banner', value=f'See the [banner](https://cdn.discordapp.com/banners/{user.id}/{user.banner}.{"gif" if user.is_banner_animated() else "webp"}) below', inline=False)
         else:
@@ -281,13 +287,19 @@ for i in range(2, 43):
                   max_value=42,
                   autocomplete=True)])
 async def autocomplete_test(i: discord.ApplicationCommandInteraction, text: str, number: int):
-    """Yust a command to test Auto-completion for options."""
+    """Just a command to test Auto-completion for options."""
     await i.respond(f'your choice was {number}\n`{text}`.')
 
 @autocomplete_test.autocomplete_callback
-async def callback_for_autocomplete_command(i: discord.AutocompleteInteraction, text: option_str = None, number: option_int = None):
+async def callback_for_autocomplete_command(i: discord.AutocompleteInteraction, text: option_str = '', number: option_int = 0):
     if text and text.focused:
-        suggestion_words = ['nothing', 'your', 'hand', 'lag', 'brain', 'is', 'great', 'make', 'made', 'library', 'i', 'you', 'are', 'big', 'little', 'discord', 'autocomplete', 'suggest', 'my', 'text', 'this', 'rain', 'python', 'frog', 'water', 'option', 'boy', 'girl', 'creative', 'weird', 'cringe', 'discord.py', 'discord.py-message-components', 'wrapper', 'education', 'tree', *[str(m) for m in i.guild.members]]
+        suggestion_words = [
+            'nothing', 'your', 'hand', 'lag', 'brain', 'is', 'great', 'make', 'made', 'library', 'i',
+            'you', 'are', 'big', 'little', 'discord', 'autocomplete', 'suggest', 'my', 'text', 'this',
+            'rain', 'python', 'frog', 'water', 'option', 'boy', 'girl', 'creative', 'weird', 'cringe',
+            'discord.py', 'discord.py-message-components', 'wrapper', 'education', 'tree',
+            *[str(m) for m in i.guild.members]
+        ]
         words = text.split(' ')
         choices = []
         for word in suggestion_words:
@@ -305,7 +317,7 @@ async def callback_for_autocomplete_command(i: discord.AutocompleteInteraction, 
         await i.suggest([SlashCommandOptionChoice(c, int(c)) for c in choices])
         # print(f'number is focused; the value is {number}.')
     else:
-        await i.suggest([SlashCommandOptionChoice('Please enter a value', 0)])
+        await i.suggest([SlashCommandOptionChoice('Please enter a value', '0' if i.focused_option_name == 'text' else 0)])
         # print('The focused option hat no value.')
 
 @client.slash_command(name='avatar', guild_ids=[852871920411475968])
@@ -447,7 +459,8 @@ async def sticker(ctx: commands.Context, *_stickers):
                                            'hours': 'How many hours to mute the Member for.',
                                            'minutes': 'How many minutes to mute the Member for.',
                                            'reason': 'The reason for muting the Member. Shows up in the audit-log.'
-                                           })
+                                           },
+                      default_required_permissions=Permissions(administrator=True))
 @commands.has_permissions(administrator=True)
 async def mute(ctx: discord.ApplicationCommandInteraction,
                member: discord.Member,
@@ -492,7 +505,8 @@ async def mute(ctx: discord.ApplicationCommandInteraction,
                       option_descriptions={
                           'member': 'The Member to un-mute.',
                           'reason': 'The reason for un-muting the Member. Shows up in the audit-log.'
-                      })
+                      },
+                      default_required_permissions=Permissions(administrator=True))
 @commands.has_permissions(administrator=True)
 async def unmute(ctx: discord.ApplicationCommandInteraction, member: discord.Member, *, reason: str = None):
     if not member.communication_disabled_until:
@@ -702,7 +716,7 @@ async def docs_select_gender(ctx):
 
 # function that's called when the SelectMenu is used
 @client.on_select()
-async def choose_your_gender(i: discord.ComponentInteraction):
+async def choose_your_gender(i: discord.ComponentInteraction, select):
     await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
 
 @client.command()
@@ -784,11 +798,10 @@ async def tixte_upload(
 
 @tixte_upload.autocomplete_callback
 async def tixte_domains_getter(interaction: discord.AutocompleteInteraction, *args, **kwargs):
-        print('Es geht')
-        async with aiohttp.ClientSession(headers={'Authorization': tixte_auth_token}) as tixte:
-            async with tixte.post('https://api.tixte.com/v1/users/@me/domains', ssl=False) as resp:
+        async with aiohttp.ClientSession(headers={'Authorization': tixte_auth_token,}) as tixte:
+            async with tixte.get('https://api.tixte.com/v1/users/@me/domains', ssl=False) as resp:
                 data = await resp.json()
-        await interaction.suggest([SlashCommandOptionChoice(name=f'{d["name"]} Uploads: {data["uploads"]}', value=f'{d["name"]}') for d in data['data']['domains']])
+        await interaction.suggest([SlashCommandOptionChoice(name=f'{d["name"]} - {d["uploads"]} uploads', value=f'{d["name"]}') for d in data['data']['domains']])
 
 
 @client.on_click(r'tixte:delete:https://.*')
@@ -888,7 +901,7 @@ async def interaction_types_example(i: discord.ComponentInteraction, s):
 
         await modal_interaction.respond(embed=embed)
 
-import json
+
 from typing import Union, Optional, List, Dict, Any
 from itertools import chain
 
@@ -938,11 +951,11 @@ def color_dict(obj: Union[Dict[str, Any], Any],
                     colored_obj = o_type(chain(colored_obj, [color_dict(value, bool_color=bool_color, int_color=int_color, str_color=str_color, highlight=highlight)]))
         return colored_obj
 
-
+import json
 def color_dumps(obj: Dict[str, Any], highlight: Optional[Union[str, List[str]]] = None, **kwargs):
     return json.dumps(color_dict(obj, highlight=highlight, **kwargs), separators=(', ', '\033[31m:\033[0m '), indent=4).replace('\\u001b', '\033').replace('"', '')
 
-_cogs = [p.stem for p in Path('./cogs').glob('*.py')]
+_cogs = [p.stem for p in Path('./cogs').glob('*_cog.py')]
 [(client.load_extension(f'cogs.{ext}'), print(f'{ext} was loaded successfully')) for ext in _cogs]
 
 """for commands in client._guild_specific_application_commands.values():
@@ -952,6 +965,7 @@ _cogs = [p.stem for p in Path('./cogs').glob('*.py')]
 """for commands_by_type in client._application_commands_by_type.values():
     for command in commands_by_type.values():
         print(color_dumps(command.to_dict(), highlight=('autocomplete', 'A')))"""
+
 # exit()
 # pprint(client._guild_specific_application_commands[852871920411475968]['chat_input']['upload'])
 # print(client._guild_specific_application
@@ -984,33 +998,126 @@ SelectMenu(custom_id='select_example',
                SelectOption('The 2. Option', '1', 'The second option you have', '2️⃣')
            ], placeholder='Select a Option')
 
-@client.on_click('hello there')
+
 async def hello_there(i: discord.ComponentInteraction, button: discord.Button):
     await i.respond(embeds=[discord.Embed(), discord.Embed(), discord.Embed(), discord.Embed(), discord.Embed(), discord.Embed(), discord.Embed()])
 
 
+@client.on_click('^edit-temp-channel$')
+async def edit_temp_channel(ctx: discord.ComponentInteraction, button):
+    if not ctx.author.voice:
+        return await ctx.respond('You need to be in a temp-channel to use this.', hidden=True)
+    channel: discord.VoiceChannel = ctx.author.voice.channel
+    if not ctx.author.permissions_in(channel).manage_channels:
+        return await ctx.respond('You can\'t use this as you are not the owner of this temp-channel.', hidden=True)
+    modal = Modal(
+        title='Edit channel',
+        custom_id=f'edit-temp-channel-modal:{channel.id}',
+        components=[
+            [
+                TextInput(
+                    label='Channel Name',
+                    custom_id='channel-name',
+                    value=channel.name,
+                    placeholder='This value must not be empty',
+                    max_length=25,
+                    min_length=1
+                )
+            ],
+            [
+                TextInput(
+                    label='Max members',
+                    custom_id='max-channel-members',
+                    value=str(channel.user_limit),
+                    placeholder='Member limit',
+                    max_length=2,
+                    min_length=0,
+                    required=False
+                )
+            ]
+        ]
+    )
+    await ctx.respond_with_modal(modal)
+
+@client.on_submit('^edit-temp-channel-modal:\d*$')
+async def edit_temp_channel_modal_submit(ctx: discord.ModalSubmitInteraction):
+    channel: discord.VoiceChannel = ctx.guild.get_channel(int(ctx.custom_id.split(':')[-1]))
+    if not channel:
+        return await ctx.respond('This channel does not exist anymore', hidden=True)
+    before_name = channel.name
+    before_limit = channel.user_limit
+    name = ctx.get_field('channel-name').value or channel.name
+    limit = ctx.get_field('max-channel-members').value or None
+    if limit:
+        limit = int(limit)
+    if not ctx.author.permissions_in(channel).manage_channels:
+        return await ctx.respond('You can\'t use this as you don\'t have the permissions anymore.', hidden=True)
+    if before_name == name and before_limit == limit:
+        await ctx.respond('Nothing has changed 🤷.', hidden=True)
+    else:
+        await channel.edit(name=name, user_limit=limit, reason=f'Edited by {ctx.author} by using the control-pannel.')
+        updated_embed = discord.Embed(
+            title='Successfully updated the channel.',
+        )
+        if before_name != name:
+            updated_embed.add_field(name='Changed name', value=f'From `{before_name}` to `{name}`', inline=False)
+        if before_limit != limit:
+            updated_embed.add_field(name='Changed user limit', value=f'From `{before_limit}` to `{limit}`', inline=False)
+        await ctx.respond(embed=updated_embed, hidden=False)
+
+@client.on_click('^temp-voice-kick-members$')
+async def temp_voice_kick_members(ctx: discord.ComponentInteraction, button):
+    if not ctx.author.voice:
+        return await ctx.respond('You need to be in a temp-channel to use this.', hidden=True)
+    channel: discord.VoiceChannel = ctx.author.voice.channel
+    if not ctx.author.permissions_in(channel).move_members:
+        return await ctx.respond('You can\'t use this as you are not the owner of this temp-channel.', hidden=True)
+    if len(channel.members) < 2:
+        return await ctx.respond('You can\'t use this as there is nobody to kick out.', hidden=True)
+    components = [
+        [
+            SelectMenu(
+                custom_id=f'temp-channel-kick-members-submit:{channel.id}',
+                max_values=len(channel.members) - 1,
+                options=[
+                    SelectOption(label=str(m), value=str(m.id)) for m in channel.members if m.id != ctx.author.id
+                ]
+            )
+        ]
+    ]
+    await ctx.respond(embed=discord.Embed(title='Select the members that should be kicked'), components=components, hidden=True)
+
+@client.on_select('^temp-channel-kick-members-submit:\d*$')
+async def temp_channel_modal_submit(ctx: discord.ComponentInteraction, select: SelectMenu):
+    channel: discord.VoiceChannel = ctx.guild.get_channel(int(select.custom_id.split(':')[-1]))
+    if not ctx.author.voice and not ctx.author.permissions_in(channel).move_members:
+        return await ctx.respond('You need to be in a temp-channel to use this.', hidden=True)
+    if not ctx.author.permissions_in(channel).manage_channels:
+        return await ctx.respond('You can\'t use this as you don\'t have the permissions anymore.', hidden=True)
+    to_kick: List[discord.Member] = [member for member in channel.members if member.id in select.values]
+    cant_kick = []
+    for m in to_kick:
+        if m.top_role > ctx.guild.me.top_role or m.guild_permissions.administrator:
+            cant_kick.append(m)
+            continue
+        try:
+            await m.edit(voice_channel=None, reason=f'Kicked by {ctx.author} by using the control-panel.')
+        except discord.Forbidden:
+            cant_kick.append(m)
+    if cant_kick and len(cant_kick) == len(to_kick):
+        return await ctx.respond(embed=discord.Embed(
+            title='❌❗Kicking failed❗❌',
+            description='I can\'t kick any of this member(s) as they are above my highest role.',
+            color=discord.Color.red()
+        ), hidden=True)
+    kicked = len(to_kick) - len(cant_kick)
+    kicked_embed = discord.Embed(title=f'Successful kicked {kicked} member{"s" if kicked > 1 else ""}',color=discord.Color.green())
+    if len(cant_kick):
+        kicked_embed.add_field(
+            name=f'❌❗Failed to kick these member{"s" if len(cant_kick) > 1 else ""}❗❌',
+            value=f'{", ".join([m.mention for m in cant_kick])}\n'
+                  f'**This is usually the case when they are above my highest role.**'
+        )
+    await ctx.respond(embed=kicked_embed, hidden=True)
 
 
-
-
-
-
-
-
-
-
-
-import json
-
-@client.command()
-async def add_bar(ctx, value: int, member: discord.Member = None):
-    member = member or ctx.author
-    with open('./data/economy.json')as fp:
-        data = json.load(fp)
-
-    if str(member.id) not in data.keys():
-        data[str(member.id)] = {'bar': 0, 'bank': 0}
-    data[str(member.id)]['bar'] += value
-
-    with open('./data/economy.json', 'w') as fp:
-        json.dump(data, fp, indent=4)
