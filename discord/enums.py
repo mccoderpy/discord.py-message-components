@@ -69,6 +69,10 @@ __all__ = (
     'ExpireBehaviour',
     'ExpireBehavior',
     'StickerType',
+    'AutoModActionType',
+    'AutoModEventType',
+    'AutoModTriggerType',
+    'AutoModKeywordPresetType'
 )
 
 
@@ -939,6 +943,29 @@ class StickerType(Enum):
 
     def __str__(self):
         return getattr(self, 'name', None)
+
+
+class AutoModEventType(Enum):
+    message_send = 1
+
+
+class AutoModKeywordPresetType(Enum):
+    profanity       = 1
+    sexual_content  = 2
+    slurs           = 3
+
+
+class AutoModTriggerType(Enum):
+    keyword         = 1
+    harmful_link    = 2
+    spam            = 3
+    keyword_preset  = 4
+
+
+class AutoModActionType(Enum):
+    block_message       = 1
+    send_alert_message  = 2
+    timeout_user        = 3
 
 
 def try_enum(cls: Enum, val: Any):
