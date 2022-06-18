@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApplicationCommand</title> 
+  <!-- end extra head -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/1c42fd883f.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="../../_static/style.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/codeblocks.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/icons.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/style.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/contentui.css" />
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+  <script src="../../_static/jquery.js"></script>
+  <script src="../../_static/underscore.js"></script>
+  <script src="../../_static/doctools.js"></script>
+  <script src="../../_static/language_data.js"></script>
+  <script src="../../_static/custom.js"></script>
+  <script src="../../_static/settings.js"></script>
+  <script src="../../_static/copy.js"></script>
+  <script src="../../_static/sidebar.js"></script>
+  <script src="../../_static/contentui.js"></script>
+  <link rel="shortcut icon" href="../../_static/discord_py_message_components_logo.ico"/>
+  <link rel="index" title="Index" href="../../genindex/" />
+  <link rel="search" title="Search" href="../../search/" />
+  <link rel="next" title="ActionRow" href="../message-components/" />
+  <link rel="prev" title="Interactions" href="../" />
+</head>
+<body>
+  <div class="main-grid">
+    <header class="grid-item">
+      <nav>
+        <a href="../../" class="main-heading">discord.py-message-components</a>
+        <a href="https://github.com/mccoderpy/discord.py-message-components" title="GitHub"><span class="fa-1x fa-brands fa-github" aria-hidden="true"></span></a>
+        <a href="https://discord.gg/sb69muSqsg" title="Discord"><span class="fa-1x fa-brands fa-discord" aria-hidden="true"></span></a>
+        <a href="../../faq/" title="FAQ"><span class="material-icons" aria-hidden="true">help_center</span></a>
+        <a onclick="mobileSearch.open();" title="Search" id="open-search" class="mobile-only"><span class="material-icons" aria-hidden="true">search</span></a>
+        <a onclick="mobileSearch.close();" title="Close" id="close-search" class="mobile-only" hidden><span class="material-icons" aria-hidden="true">close</span></a>
+      </nav>
+      <nav class="mobile-only">
+        <form role="search" class="search" action="../../search/" method="get">
+          <div class="search-wrapper">
+            <input type="search" name="q" placeholder="Search documentation" />
+            <button type="submit">
+              <span class="material-icons" aria-hidden="true"></span>
+            </button>
+          </div>
+        </form>
+      </nav>
+    </header>
+    <div class="sub-header grid-item">
+      <label for="documentation_select">View Documentation For</label>
+      <select id="documentation_select" onchange="window.location = this.value;">
+        <option value="#" selected>discord</option>
+        <option value="../../ext/commands/" >discord.ext.commands</option>
+        <option value="../../ext/tasks/" >discord.ext.tasks</option>
+      </select>
+      <form role="search" class="search" action="../../search/" method="get">
+        <div class="search-wrapper">
+          <input type="search" name="q" placeholder="Search documentation" />
+          <button type="submit">
+            <span class="material-icons">search</span>
+          </button>
+        </div>
+      </form>
+      <a accesskey="S" class="settings"><span class="fa-1x fa-solid fa-gear"></span></a>
+    </div>
+    <aside class="grid-item">
+      <span id="hamburger-toggle">
+        <span class="material-icons">menu</span>
+      </span>
+      <span id="settings-toggle" class="settings" onclick="openModal(this, false);">
+        <span class="fa-1x fa-solid fa-gear"></span>
+      </span>
+      <div id="sidebar">
+  <h3><a href="../../">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">ApplicationCommand</a></li>
+<li><a class="reference internal" href="#slashcommand">SlashCommand</a></li>
+<li><a class="reference internal" href="#subcommand">SubCommand</a></li>
+<li><a class="reference internal" href="#slashcommandoption">SlashCommandOption</a></li>
+<li><a class="reference internal" href="#slashcommandoptionchoice">SlashCommandOptionChoice</a></li>
+<li><a class="reference internal" href="#usercommand">UserCommand</a></li>
+<li><a class="reference internal" href="#messagecommand">MessageCommand</a></li>
+</ul>
+
+      </div>
+    </aside>
+    <main class="grid-item" role="main">
+      
+  <div class="section" id="applicationcommand">
+<h1>ApplicationCommand<a class="headerlink" href="#applicationcommand" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.ApplicationCommand"><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.ApplicationCommand.__init__">__init__</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.ApplicationCommand">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">ApplicationCommand</code><a class="headerlink" href="#discord.ApplicationCommand" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.ApplicationCommand.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.ApplicationCommand.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="slashcommand">
+<h1>SlashCommand<a class="headerlink" href="#slashcommand" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.SlashCommand"><div class="py-attribute-table-column">
+<span>
+Attributes</span><ul>
+<li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommand.options">options</a></li><li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommand.sub_commands">sub_commands</a></li></ul>
+</div><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.SlashCommand.__init__">__init__</a></li><li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.SlashCommand.autocomplete_callback">autocomplete_callback</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.SlashCommand">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">SlashCommand</code><a class="headerlink" href="#discord.SlashCommand" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.SlashCommand.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.SlashCommand.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a slash-command.
+You should use the <a class="reference internal" href="../../api/#discord.Client.slash_command" title="discord.Client.slash_command"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Client.slash_command</span></code></a> or <a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Cog.slash_command" title="discord.ext.commands.Cog.slash_command"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Cog.slash_command</span></code></a>
+decorator by default to create this.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of the slash-command. Must be between 1 and 32 characters long and oly contain a-z, _ and -.</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The description of the command shows up in discord. Between 1 and 100 characters long.</p></li>
+<li><p><strong>allow_dm</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+By default, commands are visible.</p></li>
+<li><p><strong>default_member_permissions</strong> (Optional[Union[<a class="reference internal" href="../../api/#discord.Permissions" title="discord.Permissions"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Permissions</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]) – Permissions that a Member needs by default to execute(see) the command.</p></li>
+<li><p><strong>options</strong> (Optional[List[<a class="reference internal" href="#discord.SlashCommandOption" title="discord.SlashCommandOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommandOption</span></code></a>]]) – A list of max. 25 options for the command.
+Required options <strong>must</strong> be listed before optional ones.</p></li>
+<li><p><strong>connector</strong> (Optional[Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – A dictionary containing the name of function-parameters as keys and the name of the option as values.
+Useful for using non-ascii Letters in your option names without getting ide-errors.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments used for internal handling.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommand.autocomplete_callback">
+<code class="sig-name descname">autocomplete_callback</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">coro</span></em><span class="sig-paren">)</span><a class="headerlink" href="#discord.SlashCommand.autocomplete_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator that sets a coroutine function as the function that will be called
+when discord sends an autocomplete interaction for this command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>coro</strong> (<em>Callable</em><em>[</em><em>Any</em><em>, </em><em>Any</em><em>, </em><em>Awaitable</em><em>]</em>) – The function that should be set as autocomplete_func for this command.
+Must take the same amount of params the command itself takes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommand.sub_commands">
+<code class="sig-name descname">sub_commands</code><a class="headerlink" href="#discord.SlashCommand.sub_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> of <a class="reference internal" href="#discord.SubCommand" title="discord.SubCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommand</span></code></a> and <code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommandGroup</span></code> the command has.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommand.options">
+<code class="sig-name descname">options</code><a class="headerlink" href="#discord.SlashCommand.options" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> of <a class="reference internal" href="#discord.SlashCommandOption" title="discord.SlashCommandOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommandOption</span></code></a> the command has.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="subcommand">
+<h1>SubCommand<a class="headerlink" href="#subcommand" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.SubCommand"><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.SubCommand.__init__">__init__</a></li><li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.SubCommand.autocomplete_callback">autocomplete_callback</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.SubCommand">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">SubCommand</code><a class="headerlink" href="#discord.SubCommand" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.SubCommand.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.SubCommand.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Representing an option for a <a class="reference internal" href="#discord.SlashCommand" title="discord.SlashCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommand</span></code></a>/<a class="reference internal" href="#discord.SubCommand" title="discord.SubCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommand</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>option_type</strong> (Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType</span></code>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>]) – Could be any of <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType</span></code>’s attributes, an integer between 0 and 10 or a <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> like
+<a class="reference internal" href="../../api/#discord.Member" title="discord.Member"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Member</span></code></a>, <a class="reference internal" href="../../api/#discord.TextChannel" title="discord.TextChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.TextChannel</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>.
+If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is a <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>, that subclasses <a class="reference internal" href="../../api/#discord.abc.GuildChannel" title="discord.abc.GuildChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GuildChannel</span></code></a> the type of the
+channel would set as the default <code class="xref py py-attr docutils literal notranslate"><span class="pre">channel_types</span></code>.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The 1-32 characters long name of the option shows up in discord.
+The name must be the same as the one of the parameter for the slash-command
+or connected using <code class="xref py py-attr docutils literal notranslate"><span class="pre">connector</span></code> of <a class="reference internal" href="#discord.SlashCommand" title="discord.SlashCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommand</span></code></a>/<a class="reference internal" href="#discord.SubCommand" title="discord.SubCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommand</span></code></a> or the method
+that generates one of these.</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The 1-100 characters long description of the option shows up in discord.</p></li>
+<li><p><strong>required</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Weather this option must be provided by the user, default <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the parameter of the slash-command that takes this option needs a default value.</p></li>
+<li><p><strong>choices</strong> (Optional[List[<a class="reference internal" href="#discord.SlashCommandOptionChoice" title="discord.SlashCommandOptionChoice"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommandOptionChoice</span></code></a>]]) – A list of up to 25 choices the user could select. Only valid if the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is one of
+<code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.string</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>.
+The <code class="xref py py-attr docutils literal notranslate"><span class="pre">value</span></code>’s of the choices must be of the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> of this option
+(e.g. <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>).
+If choices are set they are the only options a user could pass.</p></li>
+<li><p><strong>autocomplete</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Whether to enable
+<a class="reference external" href="https://discord.com/developers/docs/interactions/application-commands#autocomplete">autocomplete</a>
+interactions for this option, default <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+With autocomplete, you can check the user’s input and send matching choices to the client.
+<strong>Autocomplete can only be used with options of the type</strong> <code class="docutils literal notranslate"><span class="pre">string</span></code>, <code class="docutils literal notranslate"><span class="pre">integer</span></code> or <code class="docutils literal notranslate"><span class="pre">number</span></code>.
+<strong>If autocomplete is activated, the option cannot have</strong> <code class="xref py py-attr docutils literal notranslate"><span class="pre">choices</span></code> <strong>.</strong></p></li>
+<li><p><strong>min_value</strong> (Optional[Union[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]) – If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is one of <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>
+this is the minimum value the users input must be of.</p></li>
+<li><p><strong>max_value</strong> (Optional[Union[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]) – If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is one of <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>
+this is the maximum value the users input could be of.</p></li>
+<li><p><strong>channel_types</strong> (Optional[List[Union[<a class="reference internal" href="../../api/#discord.abc.GuildChannel" title="discord.abc.GuildChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.GuildChannel</span></code></a>, <a class="reference internal" href="../../api/#discord.ChannelType" title="discord.ChannelType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelType</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]]) – A list of <a class="reference internal" href="../../api/#discord.ChannelType" title="discord.ChannelType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelType</span></code></a> or the type itself like <code class="docutils literal notranslate"><span class="pre">TextChannel</span></code> or <code class="docutils literal notranslate"><span class="pre">StageChannel</span></code> the user could select.
+Only valid if <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.channel</span></code>.</p></li>
+<li><p><strong>default</strong> (<em>Optional</em><em>[</em><em>Any</em><em>]</em>) – The default value that should be passed to the function if the option is not provided, default <code class="docutils literal notranslate"><span class="pre">None</span></code>.
+Usually used for autocomplete callback.</p></li>
+<li><p><strong>converter</strong> (Optional[Union[<a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Greedy" title="discord.ext.commands.Greedy"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Greedy</span></code></a>, <a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Converter" title="discord.ext.commands.Converter"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Converter</span></code></a>]]) – A subclass of <a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Converter" title="discord.ext.commands.Converter"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Converter</span></code></a> to use for converting the value.
+Only valid for <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.string</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code></p></li>
+<li><p><strong>ignore_conversion_failures</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Whether conversion failures should be ignored and the value should be passed without conversion instead.
+Default <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SubCommand.autocomplete_callback">
+<code class="sig-name descname">autocomplete_callback</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">coro</span></em><span class="sig-paren">)</span><a class="headerlink" href="#discord.SubCommand.autocomplete_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator that sets a coroutine function as the function that will be called
+when discord sends an autocomplete interaction for this command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>coro</strong> (<em>Callable</em><em>[</em><em>Any</em><em>, </em><em>Any</em><em>, </em><em>Coroutine</em><em>]</em>) – The function that should be set as autocomplete_func for this command.
+Must take the same amount of params the command itself takes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="slashcommandoption">
+<h1>SlashCommandOption<a class="headerlink" href="#slashcommandoption" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.SlashCommandOption"><div class="py-attribute-table-column">
+<span>
+Attributes</span><ul>
+<li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommandOption.autocomplete">autocomplete</a></li><li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommandOption.channel_types">channel_types</a></li><li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommandOption.choices">choices</a></li><li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommandOption.max_value">max_value</a></li><li class="py-attribute-table-entry">
+<a class="reference internal" href="#discord.SlashCommandOption.min_value">min_value</a></li></ul>
+</div><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.SlashCommandOption.__init__">__init__</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.SlashCommandOption">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">SlashCommandOption</code><a class="headerlink" href="#discord.SlashCommandOption" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.SlashCommandOption.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.SlashCommandOption.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Representing an option for a <a class="reference internal" href="#discord.SlashCommand" title="discord.SlashCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommand</span></code></a>/<a class="reference internal" href="#discord.SubCommand" title="discord.SubCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommand</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>option_type</strong> (Union[<code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType</span></code>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>]) – Could be any of <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType</span></code>’s attributes, an integer between 0 and 10 or a <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> like
+<a class="reference internal" href="../../api/#discord.Member" title="discord.Member"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.Member</span></code></a>, <a class="reference internal" href="../../api/#discord.TextChannel" title="discord.TextChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.TextChannel</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>.
+If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is a <a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>, that subclasses <a class="reference internal" href="../../api/#discord.abc.GuildChannel" title="discord.abc.GuildChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GuildChannel</span></code></a> the type of the
+channel would set as the default <a class="reference internal" href="#discord.SlashCommandOption.channel_types" title="discord.SlashCommandOption.channel_types"><code class="xref py py-attr docutils literal notranslate"><span class="pre">channel_types</span></code></a>.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The 1-32 characters long name of the option shows up in discord.
+The name must be the same as the one of the parameter for the slash-command
+or connected using <code class="xref py py-attr docutils literal notranslate"><span class="pre">connector</span></code> of <a class="reference internal" href="#discord.SlashCommand" title="discord.SlashCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommand</span></code></a>/<a class="reference internal" href="#discord.SubCommand" title="discord.SubCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommand</span></code></a> or the method
+that generates one of these.</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The 1-100 characters long description of the option shows up in discord.</p></li>
+<li><p><strong>required</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Weather this option must be provided by the user, default <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the parameter of the slash-command that takes this option needs a default value.</p></li>
+<li><p><strong>choices</strong> (Optional[List[<a class="reference internal" href="#discord.SlashCommandOptionChoice" title="discord.SlashCommandOptionChoice"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommandOptionChoice</span></code></a>]]) – A list of up to 25 choices the user could select. Only valid if the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is one of
+<code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.string</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>.
+The <code class="xref py py-attr docutils literal notranslate"><span class="pre">value</span></code>’s of the choices must be of the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> of this option
+(e.g. <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>).
+If choices are set they are the only options a user could pass.</p></li>
+<li><p><strong>autocomplete</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – <p>Whether to enable
+<a class="reference external" href="https://discord.com/developers/docs/interactions/application-commands#autocomplete">autocomplete</a>
+interactions for this option, default <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+With autocomplete, you can check the user’s input and send matching choices to the client.
+<strong>Autocomplete can only be used with options of the type</strong> <code class="docutils literal notranslate"><span class="pre">string</span></code>, <code class="docutils literal notranslate"><span class="pre">integer</span></code> or <code class="docutils literal notranslate"><span class="pre">number</span></code>.
+<strong>If autocomplete is activated, the option cannot have</strong> <a class="reference internal" href="#discord.SlashCommandOption.choices" title="discord.SlashCommandOption.choices"><code class="xref py py-attr docutils literal notranslate"><span class="pre">choices</span></code></a> <strong>.</strong></p>
+</p></li>
+<li><p><strong>min_value</strong> (Optional[Union[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]) – If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is one of <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>
+this is the minimum value the users input must be of.</p></li>
+<li><p><strong>max_value</strong> (Optional[Union[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]) – If the <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is one of <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>
+this is the maximum value the users input could be of.</p></li>
+<li><p><strong>channel_types</strong> (Optional[List[Union[<a class="reference internal" href="../../api/#discord.abc.GuildChannel" title="discord.abc.GuildChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.GuildChannel</span></code></a>, <a class="reference internal" href="../../api/#discord.ChannelType" title="discord.ChannelType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelType</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]]) – A list of <a class="reference internal" href="../../api/#discord.ChannelType" title="discord.ChannelType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelType</span></code></a> or the type itself like <code class="docutils literal notranslate"><span class="pre">TextChannel</span></code> or <code class="docutils literal notranslate"><span class="pre">StageChannel</span></code> the user could select.
+Only valid if <code class="xref py py-attr docutils literal notranslate"><span class="pre">option_type</span></code> is <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.channel</span></code>.</p></li>
+<li><p><strong>default</strong> (<em>Optional</em><em>[</em><em>Any</em><em>]</em>) – The default value that should be passed to the function if the option is not provided, default <code class="docutils literal notranslate"><span class="pre">None</span></code>.
+Usually used for autocomplete callback.</p></li>
+<li><p><strong>converter</strong> (Optional[Union[<a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Greedy" title="discord.ext.commands.Greedy"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Greedy</span></code></a>, <a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Converter" title="discord.ext.commands.Converter"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Converter</span></code></a>]]) – A subclass of <a class="reference internal" href="../../ext/commands/api/#discord.ext.commands.Converter" title="discord.ext.commands.Converter"><code class="xref py py-class docutils literal notranslate"><span class="pre">discord.ext.commands.Converter</span></code></a> to use for converting the value.
+Only valid for <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.string</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code></p></li>
+<li><p><strong>ignore_conversion_failures</strong> (Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Whether conversion failures should be ignored and the value should be passed without conversion instead.
+Default <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommandOption.autocomplete">
+<code class="sig-name descname">autocomplete</code><a class="headerlink" href="#discord.SlashCommandOption.autocomplete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to enable
+<a class="reference external" href="https://discord.com/developers/docs/interactions/application-commands#autocomplete">autocomplete</a>
+interactions for this option.
+With autocomplete, you can check the user’s input and send matching choices to the client.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Autocomplete can only be used with options of the type <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.string</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.integer</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">OptionType.number</span></code>.
+If autocomplete is activated, the option cannot have <a class="reference internal" href="#discord.SlashCommandOption.choices" title="discord.SlashCommandOption.choices"><code class="xref py py-attr docutils literal notranslate"><span class="pre">choices</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommandOption.choices">
+<code class="sig-name descname">choices</code><a class="headerlink" href="#discord.SlashCommandOption.choices" title="Permalink to this definition">¶</a></dt>
+<dd><p>The choices that are set for this option</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Optional[List[<a class="reference internal" href="#discord.SlashCommandOptionChoice" title="discord.SlashCommandOptionChoice"><code class="xref py py-class docutils literal notranslate"><span class="pre">SlashCommandOptionChoice</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommandOption.min_value">
+<code class="sig-name descname">min_value</code><a class="headerlink" href="#discord.SlashCommandOption.min_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>The minimum value a user could enter that is set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Optional[Union[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommandOption.max_value">
+<code class="sig-name descname">max_value</code><a class="headerlink" href="#discord.SlashCommandOption.max_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>The maximum value a user could enter that is set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Optional[Union[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discord.SlashCommandOption.channel_types">
+<code class="sig-name descname">channel_types</code><a class="headerlink" href="#discord.SlashCommandOption.channel_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>The types of channels that could be selected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Optional[List[<a class="reference internal" href="../../api/#discord.ChannelType" title="discord.ChannelType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelType</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="slashcommandoptionchoice">
+<h1>SlashCommandOptionChoice<a class="headerlink" href="#slashcommandoptionchoice" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.SlashCommandOptionChoice"><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.SlashCommandOptionChoice.__init__">__init__</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.SlashCommandOptionChoice">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">SlashCommandOptionChoice</code><a class="headerlink" href="#discord.SlashCommandOptionChoice" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.SlashCommandOptionChoice.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.SlashCommandOptionChoice.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class representing a choice for a <a class="reference internal" href="../message-components/#discord.SelectOption" title="discord.SelectOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectOption</span></code></a> or <a class="reference internal" href="#discord.SubCommand" title="discord.SubCommand"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubCommand</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The 1-100 characters long name that will shows in the client.</p></li>
+<li><p><strong>value</strong> (Union[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – The value that will send as the options value.
+Must be of the type the option is of (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>).</p></li>
+<li><p><strong>name_localizations</strong> (Optional[<a class="reference internal" href="../data-models/#discord.Localizations" title="discord.Localizations"><code class="xref py py-class docutils literal notranslate"><span class="pre">Localizations</span></code></a>]) – Localized names for the choice.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="usercommand">
+<h1>UserCommand<a class="headerlink" href="#usercommand" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.UserCommand"><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.UserCommand.__init__">__init__</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.UserCommand">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">UserCommand</code><a class="headerlink" href="#discord.UserCommand" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.UserCommand.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.UserCommand.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="messagecommand">
+<h1>MessageCommand<a class="headerlink" href="#messagecommand" title="Permalink to this headline">¶</a></h1>
+<div class="py-attribute-table" data-move-to-id="discord.MessageCommand"><div class="py-attribute-table-column">
+<span>
+Methods</span><ul>
+<li class="py-attribute-table-entry">
+<span class="py-attribute-table-badge" title="method">
+def</span><a class="reference internal" href="#discord.MessageCommand.__init__">__init__</a></li></ul>
+</div></div><dl class="py class">
+<dt id="discord.MessageCommand">
+<em class="property">class </em><code class="sig-prename descclassname">discord.</code><code class="sig-name descname">MessageCommand</code><a class="headerlink" href="#discord.MessageCommand" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="discord.MessageCommand.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discord.MessageCommand.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+    </main>
+    <footer class="grid-item">
+        &#169; Copyright 2022, Mathieu Corsham aka. mccoder.py.
+      Last updated on Jun 11 2022.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.0.3.
+    </footer>
+  </div>
+
+  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, true); }" hidden>
+    <div class="modal-content">
+      <span class="close material-icons" onclick="openModal(event, true);" title="Close">close</span>
+      <h1>Settings</h1>
+
+      <h2>Font</h2>
+      <div class="setting">
+        <h3>Use a serif font:
+          <label class="toggle"
+            title="Use a serif font? Your system font will be used, falling back to serif.">
+            <input type="checkbox" name="useSerifFont" onclick="updateSetting(this);">
+            <span class="toggle-slider"></span>
+          </label>
+        </h3>
+      </div>
+
+      <h2>Theme</h2>
+      <div class="setting">
+        <h3>
+          <label class="toggle" title="Set your theme based on your system preferences">
+            <input type="radio" name="setTheme" onclick="updateSetting(this);" value="automatic" checked>
+          </label>
+          Automatic
+        </h3>
+        <h3>
+          <label class="toggle" title="Set your theme to light theme">
+            <input type="radio" name="setTheme" onclick="updateSetting(this);" value="light">
+          </label>
+          Light
+        </h3>
+        <h3>
+          <label class="toggle" title="Set your theme to dark theme">
+            <input type="radio" name="setTheme" onclick="updateSetting(this);" value="dark">
+          </label>
+          Dark
+        </h3>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="to-top" onclick="scrollToTop()" hidden>
+    <span><span class="material-icons">arrow_upward</span> to top</span>
+  </div>
+
+</body>
+</html>

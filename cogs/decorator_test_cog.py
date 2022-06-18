@@ -1,13 +1,22 @@
 import io
+import re
 import sys
+
+import aiohttp
+
 import discord
 import asyncio
 import traceback
 import translators
 from io import StringIO, BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from discord.ext import commands
-from discord import ActionRow, Button, SelectMenu, SelectOption, ButtonStyle, TextInput, ApplicationCommandInteraction
+from discord import ActionRow, Button, SelectMenu, SelectOption, ButtonStyle, TextInput, ApplicationCommandInteraction, \
+    Localizations, SlashCommandOption, OptionType, SlashCommandOptionChoice
+from discord import SlashCommandOptionChoice as Choice, SlashCommandOption as Option
+
+tixte_auth = "3167e71d-f0dd-4490-9010-a1d706cc452a"
+tixte_auth_token = 'tx.3mHBIuoOY74SrlPF.jmRqjvhmyItk1Kf1.sAf6J8B5oszemiR0.UVst'
 
 
 class DecoratorsTest(commands.Cog):
@@ -34,8 +43,8 @@ class DecoratorsTest(commands.Cog):
         ]])
 
     # function that's called when the SelectMenu is used
-    @commands.Cog.on_select()
-    async def choose_your_gender(self, i: discord.ComponentInteraction):
+    #@commands.Cog.on_select()
+    async def choose_your_gender(self, i: discord.ComponentInteraction, select):
         await i.respond(f'You selected `{i.component.values[0]}`!', hidden=True)
 
     #@commands.command()
@@ -94,7 +103,7 @@ class DecoratorsTest(commands.Cog):
                 msg.embeds[0].clear_fields()
                 await i.message.edit(embed=msg.embeds[0])
 
-    #@commands.Cog.on_select()
+    @commands.Cog.on_select()
     async def interaction_types_example(self, i: discord.ComponentInteraction, s):
         _type = s.values[0]
         if _type == 4:
@@ -145,7 +154,7 @@ class DecoratorsTest(commands.Cog):
                 value=modal_interaction.get_field('long_input').value,
                 inline=False
             )
-            await modal_interaction.respond(embed=discord.Embed(color=discord.Color.green()))
+            await modal_interaction.respond(embed=embed)
 
     @commands.command()
     async def edit_hidden(self, ctx):
@@ -153,6 +162,7 @@ class DecoratorsTest(commands.Cog):
 
     @commands.Cog.on_click()
     async def edit_hidden_msg(self, interaction: discord.ComponentInteraction, button):
+
         await interaction.respond('Hello', components=[[Button('Test', 'test_hidden_edit')]], hidden=True)
 
     @commands.Cog.on_click()
@@ -177,7 +187,7 @@ class DecoratorsTest(commands.Cog):
 
     @commands.Cog.on_click()
     async def type_6(self, i: discord.ComponentInteraction, button):
-        await i.defer()
+        await i.defer(6)
         await asyncio.sleep(3)
         await i.edit(content=None, embed=discord.Embed(title='Here is your order', timestamp=datetime.utcnow()).set_image(url='attachment://watermelon-1969949_960_720.webp'),
                      file=discord.File('watermelon-1969949_960_720.webp'),
@@ -199,7 +209,9 @@ class DecoratorsTest(commands.Cog):
 
     @commands.Cog.on_click()
     async def respond_(self, i: discord.ComponentInteraction, button):
-        await i.respond('Hello There 👋')
+        await i.defer(hidden=True)
+        await asyncio.sleep(1)
+        await i.respond('Hello There 👋', hidden=True)
 
     @commands.command()
     async def url(self, ctx):
@@ -268,7 +280,7 @@ class DecoratorsTest(commands.Cog):
     async def time_error(self, ctx, exc):
         await ctx.send(f'```py\n{exc}\n```')
 
-    @commands.Cog.message_command(guild_ids=[852871920411475968])
+    @commands.Cog.message_command(name_localizations=Localizations(german='übersetzen'),guild_ids=[852871920411475968])
     async def translate(self, interaction: discord.ApplicationCommandInteraction, message):
         if not message.content:
             return await interaction.respond('There is no content that could be translated.', hidden=True)
@@ -331,13 +343,13 @@ class DecoratorsTest(commands.Cog):
         if member.premium_since:
             to_add.append(('Premium since:', discord.utils.styled_timestamp(member.premium_since, 'R'), True))
         try:
-            roles_list = f'{_roles.pop(0)}'
+            roles_list = f'{_roles.pop(0).mention}'
         except IndexError:  # The Member don't has any roles
             roles_list = '`None`'
         else:
             for role in _roles:
                 updated = f'{roles_list}, {role.mention}'
-                if updated > 1024:
+                if len(updated) < 1024:
                     roles_list = updated
                 else:
                     break
@@ -354,14 +366,16 @@ class DecoratorsTest(commands.Cog):
             if user.banner:
                 embed.add_field(name='Banner', value=f'See the [banner]({user.banner_url}) below', inline=False)
             else:
-                embed.add_field(name='Banner Color',
-                                value=f'See the [banner-color](https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}?width=500) below',
-                                inline=False)
+                if user.banner_color:
+                    embed.add_field(name='Banner Color',
+                                    value=f'See the [banner-color](https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}?width=500) below',
+                                    inline=False)
             if user.banner:
                 embed.set_image(url=user.banner_url)
             else:
-                embed.set_image(
-                    url=f'https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}&width=500')
+                if user.banner_color:
+                    embed.set_image(
+                        url=f'https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}&width=500')
         await interaction.respond(embed=embed, hidden=True)
 
     #@commands.Cog.listener()
@@ -397,11 +411,12 @@ class DecoratorsTest(commands.Cog):
 
     @commands.Cog.listener()
     async def on_scheduled_event_update(self, guild: discord.Guild, before: discord.GuildScheduledEvent, after: discord.GuildScheduledEvent):
+        print(before)
         print(after)
 
     @commands.Cog.listener()
-    async def on_ready(self):
-        print(self.bot.get_guild(852871920411475968).events)
+    async def on_scheduled_event_delete(self, guild: discord.Guild, event: discord.GuildScheduledEvent):
+        print(event)
 
     @commands.Cog.slash_command()
     async def test2(self, ctx):
@@ -419,6 +434,190 @@ class DecoratorsTest(commands.Cog):
         elif button.custom_id.endswith('no'):
             await ctx.respond('Du hast `Nein` gesagt.', hidden=True)
 
+    @commands.Cog.slash_command(
+        name='upload',
+        description='Uploads the given file(s) to mccubers\' Tixte account.',
+        guild_ids=[852871920411475968],
+        options=[SlashCommandOption(option_type=OptionType.attachment,
+                                    name='file',
+                                    description='The file to upload'),
+                 SlashCommandOption(option_type=str,
+                                    name='domain',
+                                    description='Select a domain where the file should be uploaded to.',
+                                    autocomplete=True,
+                                    required=False),
+                 SlashCommandOption(option_type=str,
+                                    name='name',
+                                    description='Optional: The new filename',
+                                    required=False),
+                 SlashCommandOption(option_type=bool,
+                                    name='use-random-name',
+                                    description='Optional: use random filename',
+                                    required=False)
+                 ],
+        connector={'use-random-name': 'random_name'})
+    async def tixte_upload(
+            self,
+            ctx: discord.ApplicationCommandInteraction,
+            file: discord.Attachment,
+            domain: str = 'my-code.is-from.space',
+            name: str = None,
+            random_name: bool = False
+    ):
+        msg = await ctx.respond(f'uploading file to `{domain}`...')
+        form = aiohttp.FormData()
+        form.add_field(name='payload_json',
+                       value=discord.utils.to_json({"upload_source": "custom", "domain": domain.rstrip(), "type": 1,
+                                      "name": name or file.filename})
+                       )
+        form.add_field(name='file',
+                       content_type=file.content_type,
+                       value=(await file.read()))
+        async with aiohttp.ClientSession(headers={'Authorization': tixte_auth}) as tixte:
+            async with tixte.request('POST',
+                                     f'https://api.tixte.com/v1/upload?random={"true" if random_name else "false"}',
+                                     data=form, ssl=False) as resp:
+                data = await resp.json()
+
+        if not data['success'] == True:
+            return await msg.edit(content=f'**`Error occurred:`**```json\n{data["error"]["message"]}\n```')
+
+        embed = discord.Embed(title=data['data']['message'], description=f'Here is your file: {data["data"]["url"]}')
+        embed.set_image(url=data['data']['direct_url'])
+        await msg.edit(content='',
+                       embed=embed,
+                       components=[[
+                           Button(label='open in browser',
+                                  url=data['data']['url']),
+                           Button(label='delete file',
+                                  custom_id=f'tixte:delete:{data["data"]["deletion_url"].split("?")[0]}',
+                                  style=ButtonStyle.red,
+                                  emoji='🗑️')
+                       ]])
+
+    @tixte_upload.autocomplete_callback
+    async def tixte_domains_getter(self, interaction: discord.AutocompleteInteraction, *args, **kwargs):
+        async with aiohttp.ClientSession(headers={'Authorization': tixte_auth_token, }) as tixte:
+            async with tixte.get('https://api.tixte.com/v1/users/@me/domains', ssl=False) as resp:
+                data = await resp.json()
+        await interaction.suggest(
+            [SlashCommandOptionChoice(name=f'{d["name"]} - {d["uploads"]} uploads', value=f'{d["name"]}') for d in
+             data['data']['domains']])
+
+    @commands.Cog.on_click(r'tixte:delete:https://.*')
+    async def tixte_delete(self, interaction: discord.ComponentInteraction, button):
+        before_embed = interaction.message.embeds[0]
+        before_components = interaction.message.components
+        msg = await interaction.edit(embed=discord.Embed(title='⚠Warning: ❗This action is not reversible❗⚠',
+                                                         description='Are you sure you want to delete this file permanently?'),
+                                     components=[
+                                         [Button(label='Yes', custom_id='tixte:delete:yes', style=ButtonStyle.red),
+                                          Button(label='No', custom_id='tixte:delete:cancel', style=ButtonStyle.red)]])
+        try:
+            inter, but = await self.bot.wait_for('button_click', check=lambda i, b: b.custom_id in ['tixte:delete:yes','tixte:delete:cancel'],
+                                               timeout=10)
+        except asyncio.TimeoutError:
+            await msg.edit(embed=before_embed, components=before_components)
+        else:
+            if but.custom_id == 'tixte:delete:yes':
+                url = re.match(r'tixte:delete:(?P<url>https://.*)', button.custom_id).group('url')
+                async with aiohttp.ClientSession(
+                        headers={'Authorization': tixte_auth, 'Media-Type': 'application/json'}) as tixte:
+                    async with tixte.request('GET', f'{url}?auth={tixte_auth}', ssl=False) as resp:
+                        data = await resp.json()
+                await inter.edit(embed=discord.Embed(title=data['data']['message'], color=discord.Color.green()),
+                                 components=[])
+            else:
+                await inter.edit(embed=before_embed, components=before_components)
+
+    @commands.Cog.slash_command(
+        name="start-voice-activity",
+        description='Creates a voice channel activity',
+        options=[
+            Option(
+                name="activity-type",
+                description="The activity to start.",
+                   option_type=str,
+                   choices=[
+                       Choice(
+                           ac['name'],
+                           ac['value']
+                       ) for ac in [
+                           {"name": "YouTube Together",
+                            "value": "880218394199220334"},
+                           {"name": "Betrayal.io",
+                            "value": "773336526917861400"},
+                           {"name": "Poker Night",
+                            "value": "755827207812677713"},
+                           {"name": "Fishington.io",
+                            "value": "814288819477020702"},
+                           {"name": "Chess in the Park",
+                            "value": "832012586023256104"},
+                           {'name': 'Doodle',
+                            'value': '878067389634314250'},
+                           {'name': 'Letter Tile',
+                            'value': '879863686565621790'},
+                           {'name': 'Word Snacks',
+                            'value': '879863976006127627'},
+                           {'name': 'Awkword',
+                            'value': '879863881349087252'},
+                           {'name': 'Click Dis',
+                            'value': '832012854282158180'},
+                           {'name': 'Sketchy Artist',
+                            'value': '879864070101172255'},
+                           {'name': 'SpellCast',
+                            'value': '852509694341283871'},
+                           {'name': 'Checkers in the Park',
+                            'value': '832013003968348200'}
+                       ]
+                   ]
+            ),
+            Option(
+                name="voice-channel",
+                description="the voice-channel i should create the activity for",
+                option_type=discord.VoiceChannel,
+                required=False
+            )],
+        connector={'voice-channel': 'voice_channel', 'activity-type': 'activity_type'}
+    )
+    async def start_voice_activity(self, ctx: ApplicationCommandInteraction, activity_type: str, voice_channel: discord.VoiceChannel = None):
+        if channel := ((ctx.author.voice.channel if ctx.author.voice else None) if not voice_channel else voice_channel):
+            try:
+                invite = await channel.create_invite(target_application_id=activity_type, target_type=2, max_age=600)
+            except discord.Forbidden:
+                await ctx.respond(
+                    f'**⚠It looks like I\'m missing one or more of these permissions in {channel.mention} that are needed to start an activity⚠**\n'
+                    f'> **`Create Invites`**, **`Use Activities`**',
+                    hidden=True
+                )
+            else:
+                invite_embed = discord.Embed(
+                    title="Voice Activity started",
+                    description=f"I have started the voice activity in [{channel.mention}]({invite.url})",
+                    color=discord.Color.green()
+                )
+                invite_embed.add_field(
+                    name='Join',
+                    value=f'[Klick here to join the activity]({invite})',
+                    inline=False
+                )
+                invite_embed.add_field(
+                    name='Note:',
+                    value=f'This invite will expires in {discord.utils.styled_timestamp(datetime.now() + timedelta(minutes=10), discord.TimestampStyle.relative)}',
+                    inline=False
+                )
+                await ctx.respond(
+                    f'[{channel.mention}]({invite.url})',
+                    embed=invite_embed,
+                    delete_after=600
+                )
+        else:
+            await ctx.respond(
+                "You need to choice a voice-channel or bee in one to start a voice activity.",
+                hidden=True
+            )
+
 
 def setup(bot):
     bot.add_cog(DecoratorsTest(bot))
+

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactions</title> 
+  <!-- end extra head -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/1c42fd883f.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/codeblocks.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/icons.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="../_static/style.css" />
+  <link rel="stylesheet" type="text/css" href="../_static/contentui.css" />
+  <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+  <script src="../_static/jquery.js"></script>
+  <script src="../_static/underscore.js"></script>
+  <script src="../_static/doctools.js"></script>
+  <script src="../_static/language_data.js"></script>
+  <script src="../_static/custom.js"></script>
+  <script src="../_static/settings.js"></script>
+  <script src="../_static/copy.js"></script>
+  <script src="../_static/sidebar.js"></script>
+  <script src="../_static/contentui.js"></script>
+  <link rel="shortcut icon" href="../_static/discord_py_message_components_logo.ico"/>
+  <link rel="index" title="Index" href="../genindex/" />
+  <link rel="search" title="Search" href="../search/" />
+  <link rel="next" title="ApplicationCommand" href="application-commands/" />
+  <link rel="prev" title="API Reference" href="../api/" />
+</head>
+<body>
+  <div class="main-grid">
+    <header class="grid-item">
+      <nav>
+        <a href="../" class="main-heading">discord.py-message-components</a>
+        <a href="https://github.com/mccoderpy/discord.py-message-components" title="GitHub"><span class="fa-1x fa-brands fa-github" aria-hidden="true"></span></a>
+        <a href="https://discord.gg/sb69muSqsg" title="Discord"><span class="fa-1x fa-brands fa-discord" aria-hidden="true"></span></a>
+        <a href="../faq/" title="FAQ"><span class="material-icons" aria-hidden="true">help_center</span></a>
+        <a onclick="mobileSearch.open();" title="Search" id="open-search" class="mobile-only"><span class="material-icons" aria-hidden="true">search</span></a>
+        <a onclick="mobileSearch.close();" title="Close" id="close-search" class="mobile-only" hidden><span class="material-icons" aria-hidden="true">close</span></a>
+      </nav>
+      <nav class="mobile-only">
+        <form role="search" class="search" action="../search/" method="get">
+          <div class="search-wrapper">
+            <input type="search" name="q" placeholder="Search documentation" />
+            <button type="submit">
+              <span class="material-icons" aria-hidden="true"></span>
+            </button>
+          </div>
+        </form>
+      </nav>
+    </header>
+    <div class="sub-header grid-item">
+      <label for="documentation_select">View Documentation For</label>
+      <select id="documentation_select" onchange="window.location = this.value;">
+        <option value="#" selected>discord</option>
+        <option value="../ext/commands/" >discord.ext.commands</option>
+        <option value="../ext/tasks/" >discord.ext.tasks</option>
+      </select>
+      <form role="search" class="search" action="../search/" method="get">
+        <div class="search-wrapper">
+          <input type="search" name="q" placeholder="Search documentation" />
+          <button type="submit">
+            <span class="material-icons">search</span>
+          </button>
+        </div>
+      </form>
+      <a accesskey="S" class="settings"><span class="fa-1x fa-solid fa-gear"></span></a>
+    </div>
+    <aside class="grid-item">
+      <span id="settings-toggle" class="settings" onclick="openModal(this, false);">
+        <span class="fa-1x fa-solid fa-gear"></span>
+      </span>
+      <div id="sidebar">
+      </div>
+    </aside>
+    <main class="grid-item" role="main">
+      
+  <div class="section" id="interactions">
+<span id="id1"></span><h1><code class="docutils literal notranslate"><span class="pre">Interactions</span></code><a class="headerlink" href="#interactions" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This part of the docs is still in work! and many things are uncompleted or completely missing.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">discord.py-message-components</span></code> support for all the beautifully interactions by discord.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/">ApplicationCommand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/#slashcommand">SlashCommand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/#subcommand">SubCommand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/#slashcommandoption">SlashCommandOption</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/#slashcommandoptionchoice">SlashCommandOptionChoice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/#usercommand">UserCommand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application-commands/#messagecommand">MessageCommand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-components/">ActionRow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-components/#button">Button</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-components/#selectmenu">SelectMenu</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-components/#selectoption">SelectOption</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-components/#modal">Modal</a></li>
+<li class="toctree-l1"><a class="reference internal" href="message-components/#textinput">TextInput</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data-models/">BaseInteraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data-models/#applicationcommandinteraction">ApplicationCommandInteraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data-models/#componentinteraction">ComponentInteraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data-models/#autocompleteinteraction">AutocompleteInteraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data-models/#modalsubmitinteraction">ModalSubmitInteraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data-models/#localizations">Localizations</a></li>
+</ul>
+</div>
+</div>
+
+
+    </main>
+    <footer class="grid-item">
+        &#169; Copyright 2022, Mathieu Corsham aka. mccoder.py.
+      Last updated on Jun 16 2022.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.0.3.
+    </footer>
+  </div>
+
+  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, true); }" hidden>
+    <div class="modal-content">
+      <span class="close material-icons" onclick="openModal(event, true);" title="Close">close</span>
+      <h1>Settings</h1>
+
+      <h2>Font</h2>
+      <div class="setting">
+        <h3>Use a serif font:
+          <label class="toggle"
+            title="Use a serif font? Your system font will be used, falling back to serif.">
+            <input type="checkbox" name="useSerifFont" onclick="updateSetting(this);">
+            <span class="toggle-slider"></span>
+          </label>
+        </h3>
+      </div>
+
+      <h2>Theme</h2>
+      <div class="setting">
+        <h3>
+          <label class="toggle" title="Set your theme based on your system preferences">
+            <input type="radio" name="setTheme" onclick="updateSetting(this);" value="automatic" checked>
+          </label>
+          Automatic
+        </h3>
+        <h3>
+          <label class="toggle" title="Set your theme to light theme">
+            <input type="radio" name="setTheme" onclick="updateSetting(this);" value="light">
+          </label>
+          Light
+        </h3>
+        <h3>
+          <label class="toggle" title="Set your theme to dark theme">
+            <input type="radio" name="setTheme" onclick="updateSetting(this);" value="dark">
+          </label>
+          Dark
+        </h3>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="to-top" onclick="scrollToTop()" hidden>
+    <span><span class="material-icons">arrow_upward</span> to top</span>
+  </div>
+
+</body>
+</html>

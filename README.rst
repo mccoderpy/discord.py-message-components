@@ -36,8 +36,6 @@
      New features are also implemented. It's not an extension!
      The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet.
 
-     **❗Also important to know❗:** `Why is this library so inactive at the moment? <https://github.com/mccoderpy/discord.py-message-components/discussions/17#>`_
-
 **❗The most (new) features are only documented in Code currently❗**
 
 .. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
@@ -47,7 +45,7 @@
    :scale: 20%
    :target: https://discordpy-message-components.readthedocs.io/en/developer/
 
-   **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/developer/>`_
+   **Read the** `Documentation here <https://discordpy-message-components.readthedocs.io/en/developer/>`_
 
 You need help? Or have ideas/feedback?
 ______________________________________
@@ -59,8 +57,8 @@ __________
 
 **Python 3.5.3 or higher is required**
 
-This library overwrite the original discord.py library (or any other that would be imported using `import discord`) so to be sure all will work fine
-first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library if it is installed:
+This library overwrite the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library (or any other that would be imported using `import discord`) so to be sure all will work fine
+first uninstall the original discord.py Library if it is installed:
 
 .. code:: sh
 
@@ -69,23 +67,8 @@ first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.
 
     # Windows
     py -3 -m pip uninstall discord.py
-    # Replace discord.py with any other package that you have installed and that is imported with "discord
 
-Then install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** using:
-
-.. code:: sh
-
-    # Linux/macOS
-    python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
-
-    # Windows
-    py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
-
-**Of curse you nead to have git installed on your device. If you need help with this take a look** `here <https://github.com/git-guides/install-git>`_
-
-------------------------------------------
-
-To install `this library <https://pypi.org/project/discord.py-message-components>`_ from `PyPi <https://pypi.org>`_ use: ❗not up to date❗
+Then install `this library <https://pypi.org/project/discord.py-message-components>`_ using:
 
 .. code:: sh
 
@@ -95,10 +78,24 @@ To install `this library <https://pypi.org/project/discord.py-message-components
     # Windows
     py -3 -m pip install -U discord.py-message-components
 
+-----------------------------------------
+
+‼️To install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** use:
+
+.. code:: sh
+
+    # Linux/macOS
+    python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+
+    # Windows
+    py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
+
+Of curse you need to have git installed on your device. If you need help with this take a look `here <https://github.com/git-guides/install-git>`_
+
 Examples
 ________
 
-**ℹFor more examples take a look in** `here <https://github.com/mccoderpy/discord.py-message-components/edit/developer/examples>`_
+**ℹFor more examples take a look in the** `examples <https://github.com/mccoderpy/discord.py-message-components/tree/developer/examples>`_ **folder.**
 
 
 .. note::
@@ -204,7 +201,7 @@ A Slash-Command(Chat-Input) wich with that you can see the welcome screen of you
 
         await i.respond(embed=wc_embed)
 
-    client.run('Y)
+    client.run('Your Bot-Token here')
 
 A Message Command that translate the corresponding Message in to the invokers locale language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -235,7 +232,7 @@ A Message Command that translate the corresponding Message in to the invokers lo
            file = new_file.write(translated)
            return await interaction.respond(file=discord.File(file, filename=f'{interaction.id}_translated.txt'), hidden=True)
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 A User context-menu command wich shows you information about the corresponding user
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,7 +296,7 @@ A User context-menu command wich shows you information about the corresponding u
                 embed.set_image(url=f'https://serux.pro/rendercolour?hex={hex(user.banner_color.value).replace("0x", "")}&width=500')
         await interaction.respond(embed=embed, hidden=True)
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 Buttons
 +++++++
@@ -358,7 +355,7 @@ A Command that sends you a Message and edit it when you click a Button:
         # The Discord API doesn't send an event when you press a link button so we can't "receive" that.
 
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 
 Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:
@@ -372,24 +369,24 @@ Another (complex) Example where a small Embed will be send; you can move a small
     class Pointer:
         def __init__(self, guild: discord.Guild):
             self.guild = guild
-            self._possition_x = 0
-            self._possition_y = 0
+            self._position_x = 0
+            self._position_y = 0
 
         @property
-        def possition_x(self):
-            return self._possition_x
+        def position_x(self):
+            return self._position_x
 
         def set_x(self, x: int):
-            self._possition_x += x
-            return self._possition_x
+            self._position_x += x
+            return self._position_x
 
         @property
-        def possition_y(self):
-            return self._possition_y
+        def position_y(self):
+            return self._position_y
 
         def set_y(self, y: int):
-            self._possition_y += y
-            return self._possition_y
+            self._position_y += y
+            return self._position_y
 
 
     def get_pointer(obj: typing.Union[discord.Guild, int]):
@@ -442,8 +439,8 @@ Another (complex) Example where a small Embed will be send; you can move a small
         await ctx.send(embed=discord.Embed(title="Little Game",
                                            description=display(x=0, y=0)),
                        components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                                   discord.ActionRow(arrow_button().update(disabled=True).set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
-                                                     arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0),
+                                   discord.ActionRow(arrow_button().update(disabled=True).set_label('←').set_custom_id('left').disable_if(pointer.position_x <= 0),
+                                                     arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.position_y <= 0),
                                                      arrow_button().set_label('→').set_custom_id('right'))
                                    ]
                        )
@@ -454,11 +451,11 @@ Another (complex) Example where a small Embed will be send; you can move a small
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_y(1)
         await i.edit(embed=discord.Embed(title="Little Game",
-                                         description=display(x=pointer.possition_x, y=pointer.possition_y)),
-                               components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up').disable_if(pointer.possition_y >= 9), empty_button),
-                                           discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
+                                         description=display(x=pointer.position_x, y=pointer.position_y)),
+                               components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up').disable_if(pointer.position_y >= 9), empty_button),
+                                           discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.position_x <= 0),
                                                              arrow_button().set_label('↓').set_custom_id('down'),
-                                                             arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
+                                                             arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.position_x >= 9))]
                                )
 
     @client.on_click()
@@ -466,11 +463,11 @@ Another (complex) Example where a small Embed will be send; you can move a small
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_y(-1)
         await i.edit(embed=discord.Embed(title="Little Game",
-                                              description=display(x=pointer.possition_x, y=pointer.possition_y)),
+                                              description=display(x=pointer.position_x, y=pointer.position_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                                           discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
-                                                             arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.possition_y <= 0),
-                                                             arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
+                                           discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.position_x <= 0),
+                                                             arrow_button().set_label('↓').set_custom_id('down').disable_if(pointer.position_y <= 0),
+                                                             arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.position_x >= 9))]
                                )
 
     @client.on_click()
@@ -478,11 +475,11 @@ Another (complex) Example where a small Embed will be send; you can move a small
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(1)
         await i.edit(embed=discord.Embed(title="Little Game",
-                                               description=display(x=pointer.possition_x, y=pointer.possition_y)),
+                                               description=display(x=pointer.position_x, y=pointer.position_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
                                            discord.ActionRow(arrow_button().set_label('←').set_custom_id('left'),
                                                              arrow_button().set_label('↓').set_custom_id('down'),
-                                                             arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.possition_x >= 9))]
+                                                             arrow_button().set_label('→').set_custom_id('right').disable_if(pointer.position_x >= 9))]
                                )
 
     @client.on_click()
@@ -490,9 +487,9 @@ Another (complex) Example where a small Embed will be send; you can move a small
         pointer: Pointer = get_pointer(interaction.guild)
         pointer.set_x(-1)
         await i.edit(embed=discord.Embed(title="Little Game",
-                                               description=display(x=pointer.possition_x, y=pointer.possition_y)),
+                                               description=display(x=pointer.position_x, y=pointer.position_y)),
                                components=[discord.ActionRow(empty_button, arrow_button().set_label('↑').set_custom_id('up'), empty_button),
-                                           discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.possition_x <= 0),
+                                           discord.ActionRow(arrow_button().set_label('←').set_custom_id('left').disable_if(pointer.position_x <= 0),
                                                              arrow_button().set_label('↓').set_custom_id('down'),
                                                              arrow_button().set_label('→').set_custom_id('right'))]
                                )
@@ -625,7 +622,7 @@ A Select Menu that shows you the different response-types for an interaction
         await modal_interaction.respond(embed=embed)
 
 
-    client.run('You Bot-Token here')
+    client.run('Your Bot-Token here')
 
 
 Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/developer/>`_ to see more examples.

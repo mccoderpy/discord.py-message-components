@@ -15,18 +15,18 @@ if os.path.isfile('version.txt'):
     with open('version.txt', 'r') as fp:
         v = fp.read()
 
-if version and not v:
+if version != v:
     i = input(f'are you sure to use version {version}>> ')
     version = i if i else version
     with open('version.txt', 'w') as fp:
         fp.write(i)
 
 if not (version or v):
-    version = input('please set an version>> ')
+    version = input('please set a version>> ')
     if not version:
         raise RuntimeError('version is not set')
 
-if version.endswith(('a', 'b', 'rc')):
+if version.endswith(('a', 'b', 'rc', 'dev')):
     # append version identifier based on commit count
     try:
         import subprocess
@@ -41,7 +41,7 @@ if version.endswith(('a', 'b', 'rc')):
         if out:
             version += f'+g{out.decode("utf-8").strip()}'
     except Exception as exc:
-        pass
+        raise exc
 
 
 # The text of the README file
@@ -87,7 +87,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Utilities'
     ],
-    packages=['discord', 'discord.ext.commands', 'discord.ext.tasks'],
+    packages=['discord', 'discord.bin', 'discord.ext.commands', 'discord.ext.tasks'],
     include_package_data=True,
     install_requires=["aiohttp", "chardet", "yarl", "async-timeout", "typing-extensions", "attrs", "multidict", "idna"],
     python_requires=">=3.6"

@@ -35,14 +35,15 @@ from types import FunctionType
 from .utils import async_all, find, get, snowflake_time
 from typing_extensions import Literal
 from .abc import GuildChannel
-from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING
+from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING, Coroutine, Awaitable
 from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
 
 if TYPE_CHECKING:
     from .ext.commands import Cog, Converter
     from datetime import datetime
-
+    from .guild import Guild
+    from .interactions import BaseInteraction
 
 __all__ = (
     'Localizations',
@@ -97,12 +98,12 @@ class Localizations:
     | bg     | Bulgarian               | български           |
     | ru     | Russian                 | Pусский             |
     | uk     | Ukrainian               | Українська          |
-    | hi     | Hindi                   | हिन्दी                 |
+    | hi     | Hindi                   | हिन्दी              |
     | th     | Thai                    | ไทย                 |
-    | zh_CN  | Chinese, China          | 中文                 |
-    | ja     | Japanese                | 日本語               |
-    | zh_TW  | Chinese, Taiwan         | 繁體中文             |
-    | ko     | Korean                  | 한국어               |
+    | zh_CN  | Chinese, China          | 中文                  |
+    | ja     | Japanese                | 日本語                 |
+    | zh_TW  | Chinese, Taiwan         | 繁體中文                |
+    | ko     | Korean                  | 한국어                 |
     +--------+-------------------------+---------------------+
 
     Parameters
@@ -132,10 +133,32 @@ class Localizations:
                 self.__languages_dict__[Locale[locale].value] = localized_text
 
     def __repr__(self) -> str:
-        return '<Localizations specified languages: %s>' % ", ".join([Locale.try_value(l) for l in self.__languages_dict__])
+        return '<Localizations: %s>' % (", ".join([Locale.try_value(l) for l in self.__languages_dict__]) if self.__languages_dict__ else 'None')
 
     def __getitem__(self, item) -> Optional[str]:
-        return self.__languages_dict__.__getitem__(Locale[item].value)
+        if isinstance(item, Locale):
+            locale = Locale[item.name]
+        else:
+            locale = try_enum(Locale, str(item))
+        try:
+            return self.__languages_dict__[locale.value]
+        except KeyError:
+            # TODO: Find a better solution for this.
+            try:
+                maybe_them = (locale.name, locale.name.replace('_', '-'), locale.value.replace('_', '-'))
+                for i in maybe_them:
+                    try:
+                        return self.__languages_dict__[i]
+                    except KeyError:
+                        continue
+                raise KeyError
+            except:
+                raise
+        except (KeyError, AttributeError):
+            if (locale.value not in self.__slots__  if isinstance(locale, Locale) else locale not in self.__slots__):
+                raise KeyError(f'Unknown locale "{locale}". See {api_docs}reference#locales for a list of locales.')
+            raise KeyError(f'There is no locale value set for {locale.name}.')
+
 
     def __setitem__(self, key, value):
         self.__languages_dict__[Locale[key].value] = value
@@ -153,6 +176,63 @@ class Localizations:
 
     def update(self, __m: 'Localizations'):
         self.__languages_dict__.update(__m.__languages_dict__)
+
+    def from_target(self, target: Union['Guild', 'BaseInteraction'], *, default: Any = None):
+        """
+        Returns the value for the local of the object (if it's set), or :attr:`default`(:class:`None`)
+
+        Parameters
+        ----------
+        target: Union[:class:`~discord.Guild`, :class:`~discord.BaseInteraction`]
+            The target witch locale to use.
+            If it is of type :obj:`~discord.BaseInteraction` (or any subclass) it returns takes the local of the author.
+        default: Optional[Any]
+            The value or an object to return by default if there is no value for the locale of :attr:`target` set.
+            Default to :class:`None` or :class:`~discord.Locale.english_US`/:class:`~discord.Locale.english_GB`
+
+        Return
+        ------
+        Union[:class:`str`, :class:`None`]
+            The value of the locale or :class:`None` if there is no value for the locale set.
+
+        Raises
+        ------
+        :exc:`TypeError`
+            If :attr:`target` is of the wrong type.
+        """
+        return_default = False
+        if hasattr(target, 'preferred_locale'):
+            try:
+                return self[target.preferred_locale.value]
+            except KeyError as exc:
+                if exc.args and exc.args[0].startswith('U'): # just the first letter because it's enough to identify wich one it is
+                    pass
+                return_default = True
+        elif hasattr(target, 'author_locale'):
+            try:
+                return self[target.author_locale.value]
+            except KeyError as exc:
+                if exc.args and exc.args[0].startswith('U'):  # just the first letter because it's enough to identify wich one it is
+                    pass
+                return_default = True
+        else:
+            raise TypeError(
+                f'target must be either of type discord.Guild or discord.BaseInteraction, not {target.__class__.__name__}'
+            )
+        if return_default:
+            try:
+                return self[default.value if default is Locale else default]
+            except KeyError:
+                if default is None:
+                    return self.__languages_dict__.get('en-US', self.__languages_dict__.get('en-GB', None))
+                else:
+                    if (default.value if default is Locale else default) not in self.__slots__:
+                        return default
+                    else:
+                        try:
+                            self[default.value if default is Locale else default]
+                        except KeyError: # not a locale so return it
+                            return default
 
 
 class ApplicationCommand:
@@ -173,6 +253,9 @@ class ApplicationCommand:
         self.allow_dm = kwargs.get('allow_dm', True)
         self.name_localizations: Localizations = kwargs.get('name_localizations', Localizations())
         self.description_localizations: Localizations = kwargs.get('description_localizations', Localizations())
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
     @property
     def _state(self):
@@ -428,14 +511,14 @@ class SlashCommandOption:
         Parameters
         ----------
         option_type: Union[:class:`OptionType`, :class:`int`, :class:`type`]
-            Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :type:`type` like
-            ``discord.Member``, ``discord.TextChannel`` or ``str``.
-            If the :param:`option_type` is a :class:`type`, that subclasses :class:`abc.GuildChannel` the type of the
-            channel would set as the default :param:`channel_types`.
+            Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :class:`type` like
+            :class:`discord.Member`, :class:`discord.TextChannel` or :class:`str`.
+            If the :attr:`option_type` is a :class:`type`, that subclasses :class:`~discord.abc.GuildChannel` the type of the
+            channel would set as the default :attr:`channel_types`.
         name: :class:`str`
             The 1-32 characters long name of the option shows up in discord.
             The name must be the same as the one of the parameter for the slash-command
-            or connected using :param:`connector` of :class:`SlashCommand`/:class:`SubCommand` or the method
+            or connected using :attr:`connector` of :class:`SlashCommand`/:class:`SubCommand` or the method
             that generates one of these.
         description: :class:`str`
             The 1-100 characters long description of the option shows up in discord.
@@ -443,9 +526,9 @@ class SlashCommandOption:
             Weather this option must be provided by the user, default ``True``.
             If ``False``, the parameter of the slash-command that takes this option needs a default value.
         choices: Optional[List[:class:`SlashCommandOptionChoice`]]
-            A list of up to 25 choices the user could select. Only valid if the :param:`option_type` is one of
+            A list of up to 25 choices the user could select. Only valid if the :attr:`option_type` is one of
             :class:`OptionType.string`, :class:`OptionType.integer` or :class:`OptionType.number`.
-            The :attr:`value`'s of the choices must be of the :param:`option_type` of this option
+            The :attr:`value`'s of the choices must be of the :attr:`option_type` of this option
             (e.g. :class:`str`, :class:`int` or :class:`float`).
             If choices are set they are the only options a user could pass.
         autocomplete: Optional[:class:`bool`]
@@ -454,16 +537,16 @@ class SlashCommandOption:
             interactions for this option, default ``False``.
             With autocomplete, you can check the user's input and send matching choices to the client.
             **Autocomplete can only be used with options of the type** ``string``, ``integer`` or ``number``.
-            **If autocomplete is activated, the option cannot have** :param:`choices` **.**
+            **If autocomplete is activated, the option cannot have** :attr:`choices` **.**
         min_value: Optional[Union[:class:`int`, :class:`float`]]
-            If the :param:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
+            If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
             this is the minimum value the users input must be of.
         max_value: Optional[Union[:class:`int`, :class:`float`]]
-            If the :param:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
+            If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
             this is the maximum value the users input could be of.
         channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
             A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
-            Only valid if :param:`option_type` is :class:`OptionType.channel`.
+            Only valid if :attr:`option_type` is :class:`OptionType.channel`.
         default: Optional[Any]
             The default value that should be passed to the function if the option is not provided, default ``None``.
             Usually used for autocomplete callback.
@@ -472,7 +555,7 @@ class SlashCommandOption:
             Only valid for :class:`OptionType.string` or :class:`OptionType.integer`
         ignore_conversion_failures: Optional[:class:`bool`]
             Whether conversion failures should be ignored and the value should be passed without conversion instead.
-            Default :bool:`False`
+            Default ``False``
         """
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
@@ -762,7 +845,7 @@ class SubCommand(SlashCommandOption):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
-            print(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
             return
 
         if self.cog is not None:
@@ -802,8 +885,9 @@ class SubCommand(SlashCommandOption):
 class GuildOnlySubCommand(SubCommand):
     """Represents a :class:`SubCommand` for multiple guilds with the same function."""
     def __init__(self, *args, guild_ids: List[int] = None, **kwargs):
+        parent = kwargs.get('parent', None)
+        self.guild_ids = guild_ids or parent.guild_ids if parent else []
         super().__init__(*args, **kwargs)
-        self.guild_ids = guild_ids or self.parent.guild_ids
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
@@ -814,6 +898,23 @@ class GuildOnlySubCommand(SubCommand):
                   self.options,
                   ', '.join([str(g) for g in self.guild_ids])
                   )
+
+    def autocomplete_callback(self, coro: Coroutine[Any, Any, Awaitable]):
+        """
+        A decorator that sets a coroutine function as the function that will be called
+        when discord sends an autocomplete interaction for this command.
+
+        Parameters
+        ----------
+        coro: Callable[Any, Any, Coroutine]
+            The function that should be set as autocomplete_func for this command.
+            Must take the same amount of params the command itself takes.
+        """
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError('The autocomplete callback function must be a coroutine.')
+        self.autocomplete_func = coro
+        for cmd in self._commands:
+            cmd.autocomplete_func = coro
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -952,7 +1053,7 @@ class SlashCommand(ApplicationCommand):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if self.autocomplete_func is None:
-            print(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
             return
         if self.cog is not None:
             args = (self.cog, interaction, *args)
@@ -1046,7 +1147,9 @@ class SlashCommand(ApplicationCommand):
                 to_invoke = sub_command
             connector = to_invoke.connector
             for option in options:
-                name = connector.get(option.name) or option.name
+                # as we can't use - in argument names replace this by default,
+                # so you don't have to specify it in the connector for some-option -> some_option
+                name = connector.get(option.name) or option.name.replace('-', '_')
                 if option.type in (OptionType.string, OptionType.integer, OptionType.boolean, OptionType.number):
                     orgin_option = get(to_invoke.options, name=option.name)
                     converter = orgin_option.converter
@@ -1156,7 +1259,7 @@ async def do_conversion(interaction, converter, argument, param):
             errors = []
             _NoneType = type(None)
             for conv in converter.__args__:
-                # if we got to this part in the code, then the previous conversions have failed
+                # if we got to this part in the code, then the previous conversions have failed,
                 # so we should just undo the view, return the default, and allow parsing to continue
                 # with the other parameters
                 if conv is _NoneType:
@@ -1180,7 +1283,6 @@ async def _transform_greedy_pos(ctx, param, required, converter, value):
     from .ext.commands.view import StringView
     view = StringView(value)
     result = []
-    print(value)
     while not view.eof:
         # for use with a manual undo
         previous = view.index
@@ -1194,7 +1296,6 @@ async def _transform_greedy_pos(ctx, param, required, converter, value):
             break
         else:
             result.append(value)
-            print(value)
 
     if not result and not required:
         return param.default
@@ -1209,8 +1310,8 @@ async def transform(interaction, param, converter, value) -> Any:
 
 
 class GuildOnlySlashCommand(SlashCommand):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, guild_ids: Optional[List[int]] = None, **kwargs):
+        super().__init__(*args, **kwargs, guild_ids=guild_ids)
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
@@ -1221,6 +1322,23 @@ class GuildOnlySlashCommand(SlashCommand):
                   self.options,
                   ', '.join([str(g) for g in self.guild_ids])
                   )
+
+    def autocomplete_callback(self, coro: 'Coroutine[Any, Any, Awaitable]'):
+        """
+        A decorator that sets a coroutine function as the function that will be called
+        when discord sends an autocomplete interaction for this command.
+
+        Parameters
+        ----------
+        coro: Callable[Any, Any, Coroutine]
+            The function that should be set as autocomplete_func for this command.
+            Must take the same amount of params the command itself takes.
+        """
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError('The autocomplete callback function must be a coroutine.')
+        self.autocomplete_func = coro
+        for cmd in self._commands:
+            cmd.autocomplete_func = coro
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -1318,7 +1436,6 @@ class SubCommandGroup(SlashCommandOption):
         self.parent = parent
 
     def __repr__(self):
-        print(self.to_dict())
         return '<SubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s>' % \
                (self.parent.name,
                 self.name,
@@ -1403,7 +1520,7 @@ def generate_options(
         A dictionary containing the name of function-parameters as keys and the name of the option as values.
         Useful for using non-ascii letters in your option names without getting (IDE-)errors.
     is_cog: Optional[:class:`bool`]
-        Whether the :param:`func` is inside a :class:`discord.exc.commands.Cog`. Used for Error handling.
+        Whether the :attr:`func` is inside a :class:`discord.exc.commands.Cog`. Used for Error handling.
 
     Returns
     -------
@@ -1413,7 +1530,7 @@ def generate_options(
     Raises
     ------
     TypeError:
-        The function/method specified at :param:`func` is missing a parameter to which the interaction object is passed.
+        The function/method specified at :attr:`func` is missing a parameter to which the interaction object is passed.
     """
     from .ext.commands import Converter, Greedy, converter as converters
     from .ext.commands.converter import _Greedy
@@ -1476,7 +1593,7 @@ def generate_options(
         elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
             args = getattr(annotation, '__args__', [])
-            union = []
+            union: List[Any] = []
             _remove_none = []
             if isinstance(args, tuple):
                 args = list(args)
@@ -1522,7 +1639,8 @@ def generate_options(
                 )
                 continue
             else:
-                converter = Union.__getitem__(*union)
+                if union:
+                    converter = Union.__getitem__(*union) # type: ignore
                 options.append(
                     SlashCommandOption(option_type=str,
                                        name=name,

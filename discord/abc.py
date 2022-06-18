@@ -383,6 +383,11 @@ class GuildChannel:
         return '<#%s>' % self.id
 
     @property
+    def jump_url(self):
+        """:class:`str`: Returns a URL that allows the client to jump to the referenced channel."""
+        return f'https://discord.com/channels/{self.guild_id}/{self.id}'  # type: ignore
+
+    @property
     def created_at(self):
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
@@ -663,7 +668,7 @@ class GuildChannel:
         elif isinstance(target, Role):
             perm_type = 'role'
         else:
-            raise InvalidArgument('target parameter must be either Member or Role')
+            raise InvalidArgument(f'target parameter must be either Member or Role, not {target.__class__.__name__}')
 
         if isinstance(overwrite, _Undefined):
             if len(permissions) == 0:
@@ -864,19 +869,27 @@ class GuildChannel:
 
         Parameters
         ------------
-        max_age: :class:`int`
+        max_age: Optional[:class:`int`]
             How long the invite should last in seconds. If it's 0 then the invite
             doesn't expire. Defaults to ``0``.
-        max_uses: :class:`int`
+        max_uses: Optional[:class:`int`]
             How many uses the invite could be used for. If it's 0 then there
             are unlimited uses. Defaults to ``0``.
-        temporary: :class:`bool`
+        temporary: Optional[:class:`bool`]
             Denotes that the invite grants temporary membership
             (i.e. they get kicked after they disconnect). Defaults to ``False``.
-        unique: :class:`bool`
+        unique: Optional[:class:`bool`]
             Indicates if a unique invite URL should be created. Defaults to True.
             If this is set to ``False`` then it will return a previously created
             invite.
+        target_type: Optional[:class:`int`]
+            The type of target for this voice channel invite. ``1`` for stream and ``2`` for embedded-application.
+        target_user_id: Optional[:class:`int`]
+        	The id of the :class:`~discord.User` whose stream to display for this invite,
+        	required if :attr:`target_type` is ``1``, the user must be streaming in the channel.
+        target_application_id: Optional[:class:`int`]
+            The id of the embedded application to open for this invite,
+            required if :attr:`target_type` is ``2``, the application must have the EMBEDDED flag.
         reason: Optional[:class:`str`]
             The reason for creating this invite. Shows up on the audit log.
 
@@ -963,7 +976,6 @@ class Messageable(metaclass=abc.ABCMeta):
                    allowed_mentions: Optional[AllowedMentions] = None,
                    reference: Optional[Union['Message', 'MessageReference']] = None,
                    mention_author: Optional[bool] = None,
-                   hidden=None,
                    **kwargs):
         """|coro|
 
@@ -991,14 +1003,14 @@ class Messageable(metaclass=abc.ABCMeta):
             The rich embed for the content.
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
-        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
-            A list of :type:`discord.ActionRow`'s or a list of :class:`Button`'s or :class:`SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]]]]
+            A list of :class:`~discord.ActionRow`'s or a :class:`list` of :class:`~discord.Button`'s or :class:`~discord.SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
-            A list of files to upload. Must be a maximum of 10.
+            A :class:`list` of files to upload. Must be a maximum of 10.
         stickers: List[:class:`~discord.GuildSticker`]
-            A list of up to 3 :class:`discord.GuildSticker` that should be send with the message.
+            A list of up to 3 :class:`discord.GuildSticker` that should be sent with the message.
         nonce: :class:`int`
             The nonce to use for sending this message. If the message was successfully sent,
             then the message will have a nonce with this value.
@@ -1030,8 +1042,8 @@ class Messageable(metaclass=abc.ABCMeta):
             .. versionadded:: 1.6
 
         hidden: Optional[:class:`bool`]
-            If :bool:`True` the message will be only bee visible for the performer of the interaction.
-            If this isn't called within an :class:`Interaction` it will be ignored
+            If ``True`` the message will be only bee visible for the performer of the interaction.
+            If this isn't called within any subclass of :class:`~discord.BaseInteraction` it will be ignored.
 
         Raises
         --------
@@ -1110,9 +1122,7 @@ class Messageable(metaclass=abc.ABCMeta):
         interaction_token = kwargs.pop('__interaction_token', None)
         application_id = kwargs.pop('__application_id', None)
         followup = kwargs.pop('followup', False)
-        if is_interaction_response:
-            if hidden and file or files:
-                raise AttributeError('An ephemeral(hidden) Message could not contain file(s)')
+        hidden = kwargs.pop('hidden', None)
         if file is not None:
             if not isinstance(file, File):
                 raise InvalidArgument('file parameter must be File')
@@ -1144,7 +1154,7 @@ class Messageable(metaclass=abc.ABCMeta):
                 raise InvalidArgument('files parameter must be a list of File')
 
             try:
-                if hidden is not None:
+                if is_interaction_response:
                     data = await state.http.send_interaction_response(use_webhook=use_webhook,
                                                                       interaction_id=interaction_id,
                                                                       token=interaction_token,
@@ -1164,7 +1174,7 @@ class Messageable(metaclass=abc.ABCMeta):
                 for f in files:
                     f.close()
         else:
-            if hidden is not None:
+            if is_interaction_response:
                 data = await state.http.send_interaction_response(use_webhook=use_webhook,
                                                                   interaction_id=interaction_id,
                                                                   token=interaction_token,
@@ -1179,14 +1189,14 @@ class Messageable(metaclass=abc.ABCMeta):
                 data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
                                                                           nonce=nonce, allowed_mentions=allowed_mentions,
                                                                           message_reference=reference, stickers=stickers)
-        if hidden is not True:
+        if is_interaction_response:
             if not isinstance(data, dict) and hidden is not None:
                 # Thanks Discord that they don't return the message when we send the interaction callback
                 data = await state.http.get_original_interaction_response(application_id=application_id, interaction_token=interaction_token)
-            ret = state.create_message(channel=channel, data=data)
-            if (delete_after is not None) and (hidden is not True):
-                await ret.delete(delay=delete_after)
-            return ret
+        ret = state.create_message(channel=channel, data=data)
+        if (delete_after is not None) and (not is_interaction_response or hidden is not True):
+            await ret.delete(delay=delete_after)
+        return ret
 
     async def trigger_typing(self):
         """|coro|
@@ -1347,6 +1357,7 @@ class Connectable(metaclass=abc.ABCMeta):
     The following implement this ABC:
 
     - :class:`~discord.VoiceChannel`
+    - :class:`~discord.StageChannel`
     """
     __slots__ = ()
 

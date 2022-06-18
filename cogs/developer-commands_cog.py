@@ -1,14 +1,19 @@
 import re
 import types
-import typing
 import pathlib
+from collections import namedtuple
 from io import StringIO
 
 import os
 import sys
+import json
 import asyncio
+from itertools import chain
 
 import aiohttp
+from aioconsole import aexec
+from typing import Any, Optional, Union, List, Dict
+
 from discord.utils import to_json
 
 import discord
@@ -16,24 +21,89 @@ import logging
 import datetime as dt
 import traceback
 from discord.ext import commands
-from discord import ActionRow, Button, ButtonStyle, BaseInteraction as Interaction, SelectMenu, SelectOption, \
-    SlashCommandOption, OptionType, SlashCommandOptionChoice
+from discord import ActionRow, Button, ButtonStyle, BaseInteraction as Interaction, \
+    ApplicationCommandInteraction as APPCI, SelectMenu, SelectOption, \
+    SlashCommandOption as Option, OptionType, SlashCommandOptionChoice, Permissions, ApplicationCommandInteraction, \
+    AutocompleteInteraction, option_str
+from discord import Permissions
+from discord import Localizations
+from discord import SlashCommandOptionChoice as Choice
+
 
 datetime = dt.datetime
 
-
-def log():
-    return logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
-from aioconsole import aexec
+
 
 tixte_auth = "3167e71d-f0dd-4490-9010-a1d706cc452a"
 tixte_auth_token = 'tx.3mHBIuoOY74SrlPF.jmRqjvhmyItk1Kf1.sAf6J8B5oszemiR0.UVst'
 
 
+
+_callbackMessage = namedtuple(
+    '_callbackMessage',
+    ('content', 'embed', 'embeds', 'file', 'files', 'components', 'allowed_mentions'),
+    defaults=(None, None, None, None, None, None, None),
+    module=__name__
+)
+
+
+def color_dict(obj: Union[Dict[str, Any], Any],
+               *,
+               highlight: str = None,
+               key_color: str = '\033[91m',
+               bool_color: str = '\33[94m',
+               int_color: str = '\033[34m',
+               str_color: str = '\033[93m',
+               highlight_color_fg: str = '\033[97m',
+               highlight_color_bg: str = '\033[43m',
+               __is_key = False) -> Dict[str, Any]:
+    if not isinstance(obj, (dict, list, tuple, set)):
+        if isinstance(obj, (bool, type(None))):
+            c_type = bool_color
+            obj = f'{bool_color}{obj}\033[0m'
+        elif isinstance(obj, (int, float)):
+            c_type = int_color
+            obj = f'{int_color}{obj}\033[0m'
+        elif isinstance(obj, str):
+            c_type = str_color
+            if not __is_key:
+                obj = f'{str_color}\'{obj}\'\033[0m'
+            else:
+                obj = f'{key_color}{obj}\033[0m'
+        else:
+            c_type = '\033[39m'
+        if highlight:
+            if not isinstance(highlight, (list, tuple, set)):
+                highlight = [highlight]
+            for to_highlight in highlight:
+                obj = str(obj).replace(str(to_highlight), f'{highlight_color_fg}{highlight_color_bg}{to_highlight}\033[49m{c_type}')
+
+        return obj
+    else:
+        o_type = obj.__class__
+        colored_obj = o_type()
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                colored_obj[color_dict(key, key_color=key_color, bool_color=bool_color, int_color=int_color, str_color=str_color, highlight=highlight, __is_key=True)] = color_dict(value, key_color=key_color, bool_color=bool_color, int_color=int_color, str_color=str_color, highlight=highlight)
+        else:
+            for value in obj:
+                if isinstance(value, (dict, list, tuple)):
+                    colored_obj.__iadd__([color_dict(value, key_color=key_color, bool_color=bool_color, int_color=int_color, str_color=str_color, highlight=highlight)])
+                else:
+                    colored_obj = o_type(chain(colored_obj, [color_dict(value, bool_color=bool_color, int_color=int_color, str_color=str_color, highlight=highlight)]))
+        return colored_obj
+
+import json
+def color_dumps(obj: Dict[str, Any], highlight: Optional[Union[str, List[str]]] = None, **kwargs):
+    return json.dumps(color_dict(obj, highlight=highlight, **kwargs), separators=(', ', '\033[31m:\033[0m '), indent=4).replace('\\u001b', '\033').replace('"', '')
+
+
 class DeveloperCommands(commands.Cog):
     def __init__(self, bot):
+        self.pepy_statistics: Optional[dict] = None
         self.bot: commands.Bot = bot
         self.load_time = datetime.now()
 
@@ -145,21 +215,21 @@ class DeveloperCommands(commands.Cog):
 
     @commands.Cog.slash_command(name='eval',
                        description='executes a python code',
-                       guild_ids=[852871920411475968],
+                       guild_ids=[852871920411475968, 823982544235135016],
                        options=[
-                           SlashCommandOption(name='code',
+                           Option(name='code',
                                          description='The Code to execute. Only Python 3 Code supportet.',
                                          option_type=str,
                                          required=False),
-                           SlashCommandOption(name='response-markup',
+                           Option(name='response-markup',
                                          description='The markup to be used for the response (e.g. json, html, etc.) default: py',
                                          option_type=str,
                                          required=False),
-                           SlashCommandOption(name='ephemeral',
+                           Option(name='ephemeral',
                                          description='Whether the answer should only be visible to you',
                                          option_type=bool,
                                          required=False),
-                           SlashCommandOption(name='file',
+                           Option(name='file',
                                          description='The file to execute. Only Python 3 Code supportet.',
                                          option_type=discord.OptionType.attachment,
                                          required=False),
@@ -167,8 +237,9 @@ class DeveloperCommands(commands.Cog):
                        connector={
                            'response-markup': 'rl'
                        })
-    async def slash_eval(self, ctx: Interaction, code: str = '', rl: str = 'py', ephemeral: bool = False, file: 'discord.Attachment' = None):
+    async def slash_eval(self, ctx: APPCI, code: str = '', rl: str = 'py', ephemeral: bool = False, file: 'discord.Attachment' = None):
         try:
+            __callback = discord.embeds.EmbedProxy(_callbackMessage()._asdict()) # type: ignore
             await ctx.defer(hidden=ephemeral)
             match = re.search('\n```([a-z]{2,4})', code)
             if match:
@@ -180,12 +251,11 @@ class DeveloperCommands(commands.Cog):
                 if file:
                     code = (await file.read()).decode('utf-8')
                 else:
-                    await ctx.respond('You need to provide code or upload a code-file using the `file` parameter.')
-                    return
+                    return await ctx.respond('You need to provide **`code`** or upload a file using the **`file`** parameter.', delete_after=10)
             else:
                 if code.startswith('```py\n'):
                     code = code[6:]
-                if code.startswith('```'):
+                elif code.startswith('```'):
                     code = code[3:]
                 if code.endswith('\n```'):
                     code = code[:-4]
@@ -195,7 +265,7 @@ class DeveloperCommands(commands.Cog):
             failed = False
             before = [p for p in pathlib.Path('.').glob('*.*') if p.is_file()].copy()
             try:
-                await asyncio.wait_for(aexec(code, {'ctx': ctx, 'self': self, 'code': code, **locals(), **globals(), **self.bot.cogs}), timeout=20)
+                await asyncio.wait_for(aexec(code, {'ctx': ctx, 'self': self, 'code': code, 'callback': __callback, **locals(), **globals(), **self.bot.cogs}), timeout=20)
             except Exception as exc:
                 traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stdout)
                 failed = True
@@ -217,6 +287,7 @@ class DeveloperCommands(commands.Cog):
                     file += p.suffix
                 after[index] = file
             after = sorted(after, key=lambda f: f[4:])
+            callback_msg_fields = {k: v for k, v in __callback.__dict__.items() if v is not None}
             if 2000 >= len(result.rstrip()) >= 1:
                 await ctx.respond(
                     f'```{rl}\n{result}\n```',
@@ -224,14 +295,20 @@ class DeveloperCommands(commands.Cog):
                                                              replied_user=False),
                     files=[discord.File(p) for p in after])
             elif len(result.rstrip()) < 1:
-                await ctx.respond('```\nNo Output\n```', files=[discord.File(p) for p in after])
+                await ctx.respond(
+                    '```\nNo Output\n```',
+                    files=[discord.File(p) for p in after],
+                    **callback_msg_fields
+                )
             else:
                 files = [discord.File(p) for p in after]
                 files.append(discord.File(f'./data/file-output/eval-{ctx.id}.{rl}',
                                           f'Result for the command invoked by {ctx.author}.{rl}'))
-                await ctx.respond(files=files,
-                               allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=False,
-                                                                        replied_user=False))
+                await ctx.respond(
+                    files=files,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                    **callback_msg_fields
+                )
             os.remove(f'./data/file-output/eval-{ctx.id}.{rl}')
             for file in after:
                 os.remove(file)
@@ -278,25 +355,227 @@ class DeveloperCommands(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def clearcmdchannel(self, ctx: commands.Context, guild: typing.Union[discord.Guild, int], channel: typing.Union[discord.TextChannel, int], amount: int = 100):
+    async def clearcmdchannel(self, ctx: commands.Context, guild: Union[discord.Guild, int], channel: Union[discord.TextChannel, int], amount: int = 100):
         if isinstance(guild, int):
             guild = self.bot.get_guild(guild)
         if isinstance(channel, int):
             channel = guild.get_channel(channel)
         await channel.purge(limit=amount, check=lambda m: m.author.id != self.bot.user.id and (not m.pinned))
 
+    @commands.Cog.slash_command(
+        name='clear',
+        description='Deletes the last x messages in the chat.',
+        description_localizations=Localizations(german='Löscht die letzten x Nachrichten im Chat.'),
+        default_required_permissions=Permissions(manage_messages=True),
+        options=[
+            Option(
+                option_type=int,
+                name='count',
+                description='The number (x) of messages that should be deleted.',
+                description_localizations=Localizations(german='Wie viele (x) Nachrichten gelöscht werden sollen.'),
+                max_value=100,
+                min_value=2
+            ),
+            Option(
+                option_type=discord.Member,
+                name='member',
+                description='The member wich last x messages should be deleted.',
+                description_localizations=Localizations(
+                    german='Der Member dessen letzten x Nachrichten gelöscht werden sollen.'
+                ),
+                required=False
+            ),
+            Option(
+                option_type=str,
+                name='members',
+                description='Separated by a , the member wich last x messages should be deleted. Separated by a ,',
+                description_localizations=Localizations(
+                    german='Per , getrennt, die Member deren letzten x Nachrichten gelöscht werden sollen.'
+                ),
+                required=False,
+                converter=commands.Greedy[discord.Member]
+            ),
+            Option(
+                option_type=str,
+                name='before',
+                name_localizations=Localizations(german='vor'),
+                description='If specified, the last x messages before this message are deleted.',
+                description_localizations=Localizations(
+                    german='Wenn angegeben werden die letzten x Nachrichten nach dieser Nachricht gelöscht.'
+                ),
+                required=False,
+                converter=commands.MessageConverter
+            ),
+            Option(
+                option_type=str,
+                name='after',
+                name_localizations=Localizations(german='nach'),
+                description='If specified, the last x messages after this message are deleted.',
+                description_localizations=Localizations(
+                    german='Wenn angegeben werden die letzten x Nachrichten vor dieser Nachricht gelöscht.'
+                ),
+                required=False,
+                converter=commands.MessageConverter
+            ),
+            Option(
+                option_type=str,
+                name='reason',
+                name_localizations=Localizations(german='grund'),
+                description='The reason for deleting message are deleted.',
+                description_localizations=Localizations(
+                    german='Der Grund warum die Nachrichten gelöscht werden.'
+                ),
+                required=False,
+            )
+
+        ],
+        guild_ids=[852871920411475968])
+    async def clear(self,
+                    ctx: APPCI,
+                    count: int,
+                    member: discord.Member = None,
+                    members: Optional[List[discord.Member]] = [],
+                    before: discord.Message = None,
+                    after: discord.Message = None,
+                    reason: str = None,
+                    around: discord.Message = None):
+        if not ctx.author.permissions_in(ctx.channel).manage_messages:
+            return
+        if members and len(members) == 1 and member == members[0]:
+            member = members[0]
+        question = await ctx.respond(
+            embed=discord.Embed(
+                title=f"deleting messages",
+                description=f'[{ctx.author.mention}]\n are you sure to delete the'
+                            f' last {count} messages {f"from {member.mention}" if member else (f"{len(members)} members" if members else "in this Channel")}?',
+                color=discord.Color.red()),
+            components=[
+                [
+                    discord.Button(
+                        label="Yes",
+                        emoji="✅",
+                        style=discord.ButtonColor.green,
+                        custom_id="Yes"
+                    ),
+                    discord.Button(
+                        label="No",
+                        emoji="❌",
+                        style=discord.ButtonColor.red,
+                        custom_id="No"
+                    )
+                ]
+            ]
+        )
+
+        def check(i: discord.ComponentInteraction, b: discord.Button):
+            return i.message.id == question.id and i.author.id == ctx.author.id
+
+        try:
+            i, b = await self.bot.wait_for("button_click", check=check, timeout=10)
+            await i.defer()
+            if b.custom_id == 'Yes':
+                await question.delete()
+
+                def check_params(m: discord.Message):
+                    if member:
+                        if m.author.id == member.id: return True
+                    else:
+                        if members:
+                            if m.author in members: return True
+                        else:
+                            return True
+
+                deleted = await ctx.channel.purge(limit=count, check=check_params, before=before, after=after,
+                                                  around=around)
+                deleted_from = []
+                for m in deleted:
+                    if m.author not in deleted_from:
+                        deleted_from.append(m.author)
+                m_count = len(deleted_from)
+                embed = discord.Embed(
+                    description=f'Deleted `{len(deleted)}` messages from {m_count} member{"s" if m_count > 1 else ""}| {discord.utils.styled_timestamp(datetime.now(), "R")}',
+                    color=discord.Color.green()
+                )
+                if reason:
+                    embed.add_field(name='Reason:', value=f'```\n{reason}\n```', inline=False)
+                embed.add_field(
+                    name='Deleted messages from:',
+                    value=', '.join([m.mention for m in deleted_from])
+                )
+                await i.channel.send(embed=embed)
+            else:
+                await question.delete()
+        except asyncio.TimeoutError:
+            await question.delete()
+
+    @commands.Cog.slash_command(
+        name="reload",
+        description="reloads a Cog",
+        description_localizations=Localizations(german='Läd einen Cog neu'),
+        default_required_permissions=8,
+        options=[
+            Option(
+                name="cog",
+                description="The Cog to reload",
+                description_localizations=Localizations(german='Der Cog, der neu geladen werden soll'),
+                option_type=str,
+                autocomplete=True
+            ),
+            Option(
+                name='sync-commands',
+                description='Whether slash-commands should be updated; default False',
+                description_localizations=Localizations(
+                    german='Ob Slash-Commands synchronisiert werden sollen; standardgemäß False'),
+                option_type=bool,
+                required=False
+            )
+        ],
+        connector={'sync-commands': 'sync_slash_commands'}
+    )
+    @commands.is_owner()
+    async def reload(self, ctx, cog: str, sync_slash_commands: bool = False):
+        before = getattr(self.bot, 'sync_commands_on_cog_reload', False)
+        self.bot.sync_commands_on_cog_reload = sync_slash_commands
+        await ctx.defer(hidden=True)
+        try:
+            self.bot.reload_extension(f'cogs.{cog}')
+            log.info(f"reloaded Cog \033[32m{cog}\033[0m")
+            await ctx.respond(
+                f"The Cog `{cog}` has been successful reloaded{' and the slash-commands synced.' if sync_slash_commands is True else '.'}",
+                hidden=True)
+        except commands.ExtensionNotLoaded:
+            await ctx.respond(f"There is no extension with the Name `{cog}` loaded", hidden=True)
+        except Exception:
+            with open("error.py", "w") as error:
+                error.write(f"Es ist folgender Fehler beim Versuch den Cog {cog} neu zuladen aufgetreten:\n\n")
+                traceback.print_exc(file=error)
+            await ctx.respond(file=discord.File(fp="error.py"))
+            os.remove('error.py')
+        self.sync_commands_on_cog_reload = before
+
+    @reload.autocomplete_callback
+    async def reload_cog_autocomplete(self, i, cog: str = None, sync_slash_commands: bool = False):
+        if cog:
+            await i.suggest(
+                [Choice(name, c.__init__.__globals__['__file__'].split('\\')[-1].replace('.py', '')) for name, c in
+                 self.bot.cogs.items() if (name.lower().startswith(cog.lower()) or c.__init__.__globals__['__file__'].split('\\')[-1].lower().startswith(cog.lower()))])
+        else:
+            await i.suggest(
+                [Choice(name, c.__init__.__globals__['__file__'].split('\\')[-1].replace('.py', '')) for name, c in
+                 self.bot.cogs.items()])
+
     """@commands.Cog.slash_command(name='upload',
                                 description='Uploads the given file(s) to mccubers\' Tixte account.',
                                 guild_ids=[852871920411475968],
-                                options=[SlashCommandOption(option_type=OptionType.attachment,
+                                options=[Option(option_type=OptionType.attachment,
                                                             name='file',
                                                             description='The file to upload'),
-                                         SlashCommandOption(option_type=str,
+                                         Option(option_type=str,
                                                             name='domain',
                                                             description='Select a domain where the file should be uploaded to.',
                                                             autocomplete=True,
                                                             required=False),
-                                         SlashCommandOption(option_type=str,
+                                         Option(option_type=str,
                                                             name='name',
                                                             description='Optional: The new filename',
                                                             required=False))
@@ -369,9 +648,105 @@ class DeveloperCommands(commands.Cog):
             else:
                 await inter.edit(embed=before_embed, components=before_components)
 
-    # @commands.Cog.listener()
-    async def on_interaction_create(self, data):
-        __import__('pprint').pprint(data)
+    @commands.Cog.slash_command(
+        name='statistics',
+        description='Get the PyPI download statistics for the library',
+        description_localizations=Localizations(german='Rufe die Statistiken für die Library auf'),
+        options=[
+            Option(
+                option_type=str,
+                name='version',
+                description='For wich version the statistics should be displayed for.',
+                description_localizations=Localizations(
+                    german="Für welche Versionen die Statistiken angezeigt werden sollen."
+                ),
+                autocomplete=True,
+                requiered=False
+            ),
+            Option(
+                option_type=str,
+                name='from',
+                description='For wich day the statistics should be displayed for.',
+                description_localizations=Localizations(
+                    german="Für welche Tag die Statistiken angezeigt werden sollen."
+                ),
+                autocomplete=True,
+                requiered=False
+            )
+        ],
+        connector={
+            'from': '_from'
+        }
+    )
+    async def show_statistics(self, ctx: ApplicationCommandInteraction, version: str = 'all', _from: str = 'last_day'):
+        if not (statistics := self.pepy_statistics):
+            async with aiohttp.ClientSession(headers={'Content-Type': 'application/json'}) as session:
+                async with session.get('https://api.pepy.tech/api/v2/projects/discord.py-message-components') as resp:
+                    resp.raise_for_status()
+                    self.pepy_statistics = statistics = json.loads(await resp.text())
+        if _from == 'last_day':
+            all_downloads = [{k: v} for k, v in statistics['downloads'].items()][-1]
+        else:
+            all_downloads = statistics['downloads']
+        if version != 'all' and _from != 'last_day' and version not in all_downloads:
+            try:
+                return await ctx.respond(f'There are no statistics for this version on <t:{int(datetime.fromisoformat(_from).timestamp()+43200)}:D>.', hidden=True)
+            except:
+                return await ctx.respond(f'`{_from}` is not a valid date.', hidden=True)
+        statistics_embed = discord.Embed(
+            title='Total statistics' if _from == 'total' else f'Statistics from {f"<t:{int(datetime.fromisoformat(_from).timestamp()+43200)}:D>" if _from != "last_day" else f"<t:{int(datetime.fromisoformat(list(all_downloads)[0]).timestamp()+43200)}:D>"}',
+            description=f'Here are the download statistics from [PyPI](https://pypi.org/discord.py-message-components) for {"version" if version != "all" else "all"} {version if version != "all" else "versions"}.',
+            color=discord.Color.green()
+        )
+        if version != "all":
+            all_downloads = {day: {v: download_count for v, download_count in downloads.items() if v == version} for day, downloads in all_downloads.items()}
+        all_downloads[list(all_downloads.keys())[0]]['Total'] = f'{sum([sum([count for count in counts.values()]) for counts in all_downloads.values()])}\n'
+        if _from == 'total':
+            versions = {}
+            for day, downloads in all_downloads.items():
+                for v, download_count in downloads.items():
+                    try:
+                        versions[v] += download_count
+                    except KeyError:
+                        versions[v] = download_count
+            versions = dict(sorted(versions.items(), key=lambda c: c, reverse=True))
+            statistics_embed.add_field(
+                name=f'Total downloads per version from <t:{int(datetime.fromisoformat(list(all_downloads)[0]).timestamp()+43200)}:R> to <t:{int(datetime.fromisoformat(list(all_downloads)[-1]).timestamp()+43200)}:R>:',
+                value='\n'.join([f'**{v}:** `{count}`' for v, count in versions.items()]),
+                inline=False
+            )
+        else:
+            statistics_embed.add_field(
+                name=f'Downloads from <t:{int(datetime.fromisoformat(list(all_downloads)[0]).timestamp()+43200)}:R>:',
+                value='\n'.join([f'**{v}:** `{count}`' for v, count in dict(sorted(all_downloads[list(all_downloads)[0]].items(), key=lambda c: c, reverse=True)).items()]),
+                inline=False
+            )
+        statistics_embed.add_field(
+            name='Total downloads:',
+            value=f'`{statistics["total_downloads"]}`',
+            inline=False
+        )
+        await ctx.respond(embed=statistics_embed)
+        self.pepy_statistics = None
+
+    @show_statistics.autocomplete_callback
+    async def get_versions(self, ctx: AutocompleteInteraction, version: option_str = '', _from: option_str = ''):
+        if not (statistics:= self.pepy_statistics):
+            async with aiohttp.ClientSession(headers={'Content-Type': 'application/json'}) as session:
+                async with session.get('https://api.pepy.tech/api/v2/projects/discord.py-message-components') as resp:
+                    resp.raise_for_status()
+                    self.pepy_statistics = statistics = json.loads(await resp.text())
+        if ctx.focused_option_name == 'version':
+            if not version:
+                version = ''
+            versions = statistics['versions']
+            await ctx.send_choices([Choice('all', 'all')] + [Choice(v, v) for v in versions if version in v][:24])
+        else:
+            if not _from:
+                _from = ''
+            days = [Choice('last', 'last_day'), Choice('total', 'total')]
+            days.extend([Choice(day, day) for day in statistics['downloads'] if _from in day])
+            await ctx.send_choices(days[:25])
 
     def _reload_module(self, module: str):
         import importlib

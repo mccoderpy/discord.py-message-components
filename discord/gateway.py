@@ -302,7 +302,8 @@ class DiscordWebSocket:
 
         This is for internal use only.
         """
-        gateway = gateway or await client.http.get_gateway()
+        version = client.gateway_version
+        gateway = gateway or await client.http.get_gateway(v=version)
         socket = await client.http.ws_connect(gateway)
         ws = cls(socket, loop=client.loop)
 
@@ -367,11 +368,11 @@ class DiscordWebSocket:
             'd': {
                 'token': self.token,
                 'properties': {
-                    '$os': sys.platform,
-                    '$browser': 'discord.py-message-components',
-                    '$device': 'discord.py-message-components',
-                    '$referrer': '',
-                    '$referring_domain': ''
+                    'os': sys.platform,
+                    'browser': 'discord.py-message-components',
+                    'device': 'discord.py-message-components',
+                    'referrer': '',
+                    'referring_domain': ''
                 },
                 'compress': True,
                 'large_threshold': 250,
@@ -379,9 +380,6 @@ class DiscordWebSocket:
                 'v': 3
             }
         }
-
-        if not self._connection.is_bot:
-            payload['d']['synced_guilds'] = []
 
         if self.shard_id is not None and self.shard_count is not None:
             payload['d']['shard'] = [self.shard_id, self.shard_count]
@@ -444,7 +442,7 @@ class DiscordWebSocket:
         if op != self.DISPATCH:
             if op == self.RECONNECT:
                 # "reconnect" can only be handled by the Client
-                # so we terminate our connection and raise an
+                # , so we terminate our connection and raise an
                 # internal exception signalling to reconnect.
                 log.debug('Received RECONNECT opcode.')
                 await self.close()
