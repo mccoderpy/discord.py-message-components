@@ -39,8 +39,6 @@ class Button:
     """
     Represents an `Discord-Button <https://discord.com/developers/docs/interactions/message-components#button-object>`_
 
-    Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#Button>`_
-
     Parameters
     ----------
     label: Optional[:class:`str`] = None
@@ -179,7 +177,7 @@ class Button:
         ----------
         check: Union[:class:`bool`, :class:`typing.Callable`]
             The check could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`.
-        *args: Any
+        \*args: Any
             Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
         Returns
@@ -251,8 +249,6 @@ class SelectOption:
     """
     A class that creates an option for a :class:`SelectMenu`
     and represents it in a :class:`SelectMenu` in the components of a :class:`discord.Message`.
-
-    Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#SelectOption>`_
 
     Parameters
     ----------
@@ -328,8 +324,6 @@ class SelectMenu:
 
     """
     Represents a `Select-Menu <https://discord.com/developers/docs/interactions/message-components#select-menus>`_
-
-    Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#SelectMenu>`_
 
     Parameters
     ----------
@@ -429,7 +423,7 @@ class SelectMenu:
 
         Returns
         --------
-        List[Union[:clss:`int`, :class:`str`]]
+        List[Union[:class:`int`, :class:`str`]]
             A list of selected options
         """
         values = []
@@ -454,7 +448,7 @@ class SelectMenu:
 
         Returns
         --------
-        List[Union[:clss:`int`, :class:`str`]]
+        List[Union[:class:`int`, :class:`str`]]
             A list of **not** selected options
         """
         _not_selected = []
@@ -496,11 +490,12 @@ class SelectMenu:
         """
         Disables the :class:`discord.SelectMenu` if the passed :attr:`check` returns ``True``.
 
+
         Parameters
         ----------
         check: Union[:class:`bool`, :class:`typing.Callable`]
             The check could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`.
-        *args: Any
+        \*args: Any
             Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
         Returns
@@ -575,7 +570,6 @@ class TextInput:
     """
     Represents an `Discord-TextInput` <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
 
-    Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#TextInput>`_
 
     Parameters
     ----------
@@ -643,11 +637,9 @@ class ActionRow:
     """
     Represents an ActionRow-Part for the components of an :class:`discord.Message`.
 
-    Read more in the `Documentation <https://discordpy-message-components.readthedocs.io/en/latest/components.html#ActionRow>`_
-
     Parameters
     -----------
-    *components: *Union[:class:`Button`, :class:`SelectMenu`]
+    \*components: \*Union[:class:`Button`, :class:`SelectMenu`]
         The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`, or 1 :class:`SelectMenu`.
 
     .. note ::
@@ -802,7 +794,7 @@ class ActionRow:
 
         Parameters
         ----------
-        *components: *Union[:class:`Button`, :class:`SelectMenu`]
+        \*components: \*Union[:class:`Button`, :class:`SelectMenu`]
             The components to add to the ActionRow.
 
         Returns

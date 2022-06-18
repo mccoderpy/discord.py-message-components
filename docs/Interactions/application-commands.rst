@@ -9,7 +9,6 @@ ApplicationCommand
 .. autoclass:: ApplicationCommand()
     :members:
 
-    .. automethod:: __init__()
 
 
 
@@ -22,7 +21,6 @@ SlashCommand
     :members:
     :inherited-members:
 
-    .. automethod:: __init__()
 
 SubCommand
 ~~~~~~~~~~~~~
@@ -32,7 +30,6 @@ SubCommand
 .. autoclass:: SubCommand()
     :members:
 
-    .. automethod:: __init__()
 
 SlashCommandOption
 ~~~~~~~~~~~~~~~~~~~
@@ -43,7 +40,6 @@ SlashCommandOption
     :members:
     :inherited-members:
 
-    .. automethod:: __init__()
 
 SlashCommandOptionChoice
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +50,6 @@ SlashCommandOptionChoice
     :members:
     :inherited-members:
 
-    .. automethod:: __init__()
 
 UserCommand
 ~~~~~~~~~~~~~
@@ -65,7 +60,6 @@ UserCommand
     :members:
     :inherited-members:
 
-    .. automethod:: __init__()
 
 MessageCommand
 ~~~~~~~~~~~~~~~
@@ -76,4 +70,3 @@ MessageCommand
     :members:
     :inherited-members:
 
-    .. automethod:: __init__()

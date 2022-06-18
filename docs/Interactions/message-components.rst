@@ -8,7 +8,6 @@ ActionRow
 .. autoclass:: ActionRow()
     :members:
 
-    .. automethod:: __init__
 
 
 Button
@@ -19,7 +18,6 @@ Button
 .. autoclass:: Button()
     :members:
 
-    .. automethod:: __init__
 
 
 SelectMenu
@@ -30,7 +28,6 @@ SelectMenu
 .. autoclass:: SelectMenu()
     :members:
 
-    .. automethod:: __init__
 
 
 SelectOption
@@ -41,7 +38,6 @@ SelectOption
 .. autoclass:: SelectOption()
     :members:
 
-    .. automethod:: __init__
 
 
 Modal
@@ -52,7 +48,6 @@ Modal
 .. autoclass:: Modal()
     :members:
 
-    .. automethod:: __init__
 
 TextInput
 ~~~~~~~~~~
@@ -61,5 +56,3 @@ TextInput
 
 .. autoclass:: TextInput()
     :members:
-
-    .. automethod:: __init__
