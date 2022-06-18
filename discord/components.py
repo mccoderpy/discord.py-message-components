@@ -113,10 +113,13 @@ class Button:
         """
         Sets the Label of the :class:`Button`
 
-        :param label: str
+        label: :class`str`
             The label to replace th old one with.
 
-        :return: discord.Button
+        Returns
+        -------
+        :class:`~discord.Button`
+            The updated instance
         """
         if len(label) > 80:
             raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
@@ -131,8 +134,10 @@ class Button:
         url: :class:`str`
             The url to replace the old one with
 
-        :return: discord.Button
-
+        Returns
+        -------
+        :class:`~discord.Button`
+            The updated instance
         """
         if not url.startswith('http'):
             raise InvalidButtonUrl(url)
@@ -147,11 +152,13 @@ class Button:
         """
         Sets the custom_id of the :class:`Button`
 
-        :param custom_id: Union[:class:`str`, :class:`int`]
+        custom_id: Union[:class:`str`, :class:`int`]
             The custom_id to replace the old one with
 
-        :return: discord.Button
-
+        Returns
+        --------
+        :class:`~discord.Button`
+            The updated instance
         """
         if self.url:
             raise URLAndCustomIDNotAlowed(custom_id)
@@ -175,7 +182,10 @@ class Button:
         *args: Any
             Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
-        :return: discord.Button
+        Returns
+        -------
+        :class:`~discord.Button`
+            The updated instance
          """
         try:
             check = check(*args)
@@ -198,7 +208,10 @@ class Button:
         *args: Any
             Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
-        :return: discord.Button
+        Returns
+        -------
+        :class:`~discord.Button`
+            The updated instance
 
         """
         try:
@@ -411,9 +424,13 @@ class SelectMenu:
         .. note::
             This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
 
-        If the value is a number it is returned as an integer, otherwise as string
+        .. important::
+            If the value is a number it is returned as an integer, otherwise as string
 
-        :return: List[Union[int, str]]
+        Returns
+        --------
+        List[Union[:clss:`int`, :class:`str`]]
+            A list of selected options
         """
         values = []
         _values = getattr(self, '_values', [])
@@ -432,9 +449,13 @@ class SelectMenu:
         .. note::
             This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
 
-        If the value is a number it is returned as an integer, otherwise as string
+        .. important::
+            If the value is a number it is returned as an integer, otherwise as string
 
-        :return: List[Union[int, str]]
+        Returns
+        --------
+        List[Union[:clss:`int`, :class:`str`]]
+            A list of **not** selected options
         """
         _not_selected = []
         values = self.values
@@ -454,10 +475,13 @@ class SelectMenu:
         Parameters
         ----------
 
-        :param custom_id: Union[:class:`str`, :class:`int`]
+        custom_id: Union[:class:`str`, :class:`int`]
             The custom_id to replace the old one with
 
-        :return: discord.SelectMenu
+        Returns
+        -------
+        :class:`~discord.SelectMenu`
+            The updated instance
         """
         if len(custom_id) > 100:
             raise InvalidArgument(
@@ -479,7 +503,10 @@ class SelectMenu:
         *args: Any
             Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
 
-        :return: discord.SelectMenu
+        Returns
+        -------
+        :class:`~discord.SelectMenu`
+            The updated instance
          """
         try:
             check = check(*args)
@@ -685,7 +712,10 @@ class ActionRow:
         component: Union[:class:`Button`, :class:`SelectMenu`]
             The component to add to the ActionRow.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         self.components.append(component)
         return self
@@ -701,7 +731,10 @@ class ActionRow:
         component: Union[:class:`Button`, :class:`SelectMenu`]
             The component to insert.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         self.components.insert(index, component)
         return self
@@ -710,7 +743,8 @@ class ActionRow:
         """
         Modifies a component to the :class:`ActionRow`. and returns the action row.
 
-        The index must point to a valid pre-existing component.
+        .. note::
+            The index must point to a valid pre-existing component.
 
         Parameters
         ----------
@@ -724,7 +758,10 @@ class ActionRow:
         IndexError
             An invalid index was provided.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         try:
             self.components[index]
@@ -739,15 +776,18 @@ class ActionRow:
 
         Parameters
         ----------
-        index: int
+        index: :class:`int`
             The position of the component to be deactivated in the ActionRow.
 
         Raises
         ------
-        IndexError
+        :exc:`IndexError`
             The specified index is outside the length of the actionRow.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         try:
             component = self.components[index]
@@ -765,7 +805,10 @@ class ActionRow:
         *components: *Union[:class:`Button`, :class:`SelectMenu`]
             The components to add to the ActionRow.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         self.components.extend(*components)
         return self
@@ -774,7 +817,10 @@ class ActionRow:
         """
         Disables all component's in this :class:`ActionRow` and returns the action row.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         [obj.__setattr__('disabled', True) for obj in self.components]
         return self
@@ -790,7 +836,10 @@ class ActionRow:
         *args: Any
             Arguments that should be passed in to the check if it is a Callable.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         if not isinstance(check, (bool, Callable)):
             raise AttributeError(
@@ -807,7 +856,10 @@ class ActionRow:
         """
         Disables all ::class:`discord.Button`'s in this :class:`ActionRow` and returns the action row.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
@@ -824,7 +876,10 @@ class ActionRow:
         *args: Any
             Arguments that should be passed in to the check if it is a Callable.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         if not isinstance(check, (bool, Callable)):
             raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
@@ -840,7 +895,10 @@ class ActionRow:
         """
         Disables all :class:`discord.SelectMenu`'s in this :class:`ActionRow` and returns the action row.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, SelectMenu)]
         return self
@@ -857,7 +915,10 @@ class ActionRow:
         *args: Any
             Arguments that should be passed in to the :attr:`check` if it is a :class:`Callable`.
 
-        :return: discord.ActionRow
+        Returns
+        -------
+        :class:`~discord.ActionRow`
+            The updated instance
         """
         if not isinstance(check, (bool, Callable)):
             raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
@@ -881,7 +942,7 @@ class ActionRow:
 
         Returns
         -------
-        :class:`discord.ActionRow`
+        :class:`~discord.ActionRow`
             The ActionRow created.
         """
         if data.get('type', None) != 1:

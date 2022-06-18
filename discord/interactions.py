@@ -551,7 +551,7 @@ class BaseInteraction:
             are used instead.
 
         hidden: Optional[:class:`bool`]
-            If ``True`` the message will be only visible for the performer of the interaction (e.g. :attr:`.author`.
+            If ``True`` the message will be only visible for the performer of the interaction (e.g. :attr:`~discord.BaseInteraction.author`).
         """
         state = self._state
         if not self.channel:
