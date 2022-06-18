@@ -12,7 +12,7 @@ with open(f'{HERE}/discord/__init__.py') as f:
 
 v = None
 if os.path.isfile('version.txt'):
-    with open('version.txt', 'r') as fp:
+    with open(f'{HERE}/version.txt', 'r') as fp:
         v = fp.read()
 
 if version != v:
@@ -42,6 +42,10 @@ if version.endswith(('a', 'b', 'rc', 'dev')):
             version += f'+g{out.decode("utf-8").strip()}'
     except Exception as exc:
         raise exc
+    else:
+        with open(f'{HERE}/version.txt', 'w') as fp:
+            fp.write(version)
+
 
 
 # The text of the README file

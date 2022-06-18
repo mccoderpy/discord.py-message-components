@@ -16,6 +16,11 @@ __author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015-2021 Rapptz & 2021-present mccoderpy'
 __version__ = '1.8a'
+try:
+    with open('./version.txt') as fp:
+        __version__ = fp.read()
+except Exception:
+    pass
 
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
@@ -65,5 +70,7 @@ from .scheduled_event import GuildScheduledEvent
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
 version_info = VersionInfo(major=1, minor=8, micro=0, releaselevel='alpha', serial=0)
+
+del VersionInfo, namedtuple
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
