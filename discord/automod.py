@@ -296,3 +296,18 @@ class AutoModRule:
         for channel_id in self._except_channels:
             channel = self.guild.get_role(int(channel_id))
             yield channel or Object(channel_id, _type=GuildChannel, state=self._state)
+        
+    @property
+    def creator(self) -> Member:
+        """
+        Returns the creator of the rule
+
+        .. note::
+            The :func:`discord.Intents.members` must be enabled, otherwise this may return `` None``
+
+        Returns
+        --------
+        :class:`~discord.Member`
+            The User, that created the rule.
+        """
+        return self.guild.get_member(self.creator_id)
