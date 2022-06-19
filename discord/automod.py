@@ -52,6 +52,11 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .member import Member
 
+__all__ = (
+    'AutoModAction',
+    'AutoModTriggerMetadata',
+    'AutoModRule'
+)
 
 class AutoModAction:
     def __init__(self, type: AutoModActionType, **metadata):
