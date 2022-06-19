@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# - * - coding: utf - 8 -*-
 
 """
 The MIT License (MIT)
@@ -27,7 +27,16 @@ DEALINGS IN THE SOFTWARE.
 import copy
 from collections import namedtuple
 from datetime import datetime
-from typing import Union, Optional, List, Tuple, Dict, Any, Awaitable, TYPE_CHECKING
+from typing import (
+    Union,
+    Optional,
+    List,
+    Tuple,
+    Dict,
+    Any,
+    Awaitable,
+    TYPE_CHECKING
+)
 
 from discord.utils import _bytes_to_base64_data
 
@@ -932,7 +941,12 @@ class Guild(Hashable):
 
         return utils.find(pred, members)
 
-    def _create_channel(self, name, overwrites, channel_type, category=None, **options):
+    def _create_channel(self,
+                        name: str,
+                        overwrites: Dict[Union[Role, Member], PermissionOverwrite],
+                        channel_type: ChannelType,
+                        category: Optional[CategoryChannel] = None,
+                        **options: Dict[str, Any]):
         if overwrites is None:
             overwrites = {}
         elif not isinstance(overwrites, dict):
@@ -940,6 +954,8 @@ class Guild(Hashable):
 
         perms = []
         for target, perm in overwrites.items():
+            if not isinstance(target, (Role, Member)):
+                raise InvalidArgument('Expected Member or Role received {0.__name__}'.format(type(target)))
             if not isinstance(perm, PermissionOverwrite):
                 raise InvalidArgument('Expected PermissionOverwrite received {0.__name__}'.format(type(perm)))
 
