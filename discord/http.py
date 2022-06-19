@@ -1231,6 +1231,22 @@ class HTTPClient:
         data = {'data': {'choices': choices}, 'type': 8}
         return self.request(r, json=data)
 
+    # AutoMod management
+    def get_automod_rules(self, guild_id: int):
+        return self.request(Route('GET', f'/guilds/{guild_id}/auto-moderation/rules'))
+
+    def get_automod_rule(self, guild_id: int, rule_id: int):
+        return self.request(Route('GET', f'/guilds/{guild_id}/auto-moderation/rules/{rule_id}'))
+
+    def create_automod_rule(self, guild_id: int, data: dict):
+        return self.request(Route('POST', f'/guilds/{guild_id}/auto-moderation/rules'), json=data)
+
+    def edit_automod_rule(self, guild_id: int, rule_id: int, data: dict):
+        return self.request(Route('PATCH', f'/guilds/{guild_id}/auto-moderation/rules/{rule_id}'), json=data)
+
+    def delete_automod_rule(self, guild_id: int, rule_id: int):
+        return self.request(Route('DELETE', f'/guilds/{guild_id}/auto-moderation/rules/{rule_id}'))
+
     # Misc
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
