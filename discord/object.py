@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -24,6 +24,18 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+from __future__ import annotations
+
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    SupportsInt
+)
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from .state import ConnectionState
+
 from . import utils
 from .mixins import Hashable
 
@@ -37,7 +49,7 @@ class Object(Hashable):
     objects (if any) actually inherit from this class.
 
     There are also some cases where some websocket events are received
-    in :issue:`strange order <21>` and when such events happened you would
+    in :old-issue:`strange order <21>` and when such events happened you would
     receive this class rather than the actual data class. These cases are
     extremely rare.
 
@@ -59,9 +71,11 @@ class Object(Hashable):
     -----------
     id: :class:`int`
         The ID of the object.
+    type: :class:`object`
+        The object this should represent if any.
     """
 
-    def __init__(self, id):
+    def __init__(self, id: SupportsInt, _type: Optional[type] = None, state: Optional[ConnectionState] = None) -> None:
         try:
             id = int(id)
         except ValueError:
@@ -69,10 +83,13 @@ class Object(Hashable):
         else:
             self.id = id
 
-    def __repr__(self):
-        return '<Object id=%r>' % self.id
+        self.type: Optional[type] = _type
+        self._state: Optional[ConnectionState] = state
+
+    def __repr__(self) -> str:
+        return f'<Object id={self.id!r} type={self.type!r}>'
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime:
         """:class:`datetime.datetime`: Returns the snowflake's creation time in UTC."""
         return utils.snowflake_time(self.id)
