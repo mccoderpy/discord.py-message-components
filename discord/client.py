@@ -1791,7 +1791,7 @@ class Client:
                 else:
                     if len(to_maybe_remove) > 0:
                         log.info(
-                            'Removing %s global application-commands that arent used in this code anymore.'
+                            'Removing %s global application-command(s) that isn\'t/arent used in this code anymore.'
                             ' To prevent this set `remove_not_existing_commands` of %s to False',
                             len(to_maybe_remove), self.__class__.__name__
                         )
@@ -1887,7 +1887,7 @@ class Client:
                     else:
                         if len(to_maybe_remove) > 0:
                             log.info(
-                                'Removing %s application-commands from guild %s (%s) that arent used in this code anymore.'
+                                'Removing %s application-command(s) from guild %s (%s) that isn\'t/arent used in this code anymore.'
                                  'To prevent this set `remove_not_existing_commands` of %s to False',
                                 len(to_maybe_remove),
                                 self.get_guild(int(guild_id)),
@@ -1897,7 +1897,7 @@ class Client:
 
                     if len(to_send) != 0:
                             log.info(
-                                'Detected %s updated/new application-commands for guild %s (%s), bulk overwriting them...',
+                                'Detected %s updated/new application-command(s) for guild %s (%s), bulk overwriting them...',
                                 len(to_send),
                                 self.get_guild(int(guild_id)),
                                 guild_id
