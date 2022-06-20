@@ -67,6 +67,7 @@ from .asset import Asset
 from .flags import SystemChannelFlags
 from .integrations import _integration_factory
 from .sticker import GuildSticker
+from .automod import AutoModRule
 from .application_commands import SlashCommand, MessageCommand, UserCommand, Localizations
 
 BanEntry = namedtuple('BanEntry', 'reason user')
@@ -198,7 +199,7 @@ class Guild(Hashable):
                  'premium_tier', 'premium_subscription_count', '_system_channel_flags',
                  'preferred_locale', 'discovery_splash', '_rules_channel_id',
                  '_public_updates_channel_id', 'premium_progress_bar_enabled',
-                 '_welcome_screen', 'stickers')
+                 '_welcome_screen', 'stickers', '_automod_rules')
 
     _PREMIUM_GUILD_LIMITS = {
         None: _GuildLimit(emoji=50, sticker=5, bitrate=96e3, filesize=8388608),
@@ -2738,4 +2739,62 @@ class Guild(Hashable):
             cog=cog
         )
         return await self._register_application_command(command)
+
+    async def automod_rules(self) -> List[AutoModRule]:
+        """|coro|
+
+        Fetches the Auto Mod rules for this guild
+        
+        .. warning::
+            This is an API-call, use it carefully.
+        
+        Returns
+        --------
+        List[:class:`~discord.AutoModRule`]
+            A list of AutoMod rules the guild has
+        """
+        data = await self._state.http.get_automod_rules(guild_id=self.id)
+        self._automod_rules = automod_rules = [AutoModRule(state=self._state, guild=self, data=data)]
+        return automod_rules
+
+    async def create_automod_rule(self,
+                                  name: str,
+
+                                  ) -> AutoModRule:
+        """|coro|
+
+        Creates a new AutoMod rule for this guild
+
+        .. warning::
+            This is an API-call, use it carefully.
+
+        Parameters
+        -----------
+        name: :class:`str`
+            The name, the rule should have
+
+
+        Returns
+        --------
+        :class:`~discord.AutoModRule`
+            The AutoMod rule created
+
+        Raises
+        ------
+        :exc:`discord.Forbidden`
+            The bot is missing permissions to create AutoMod rules
+        :exc:`discord.HTTPException`
+            Creating the rule failed
+        """
+        # TODO: Get some sleep, continue tomorrow :)
+        data = {
+            'name': name
+        }
+        rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data)
+        rule = AutoModRule(state=self._state, guild=self, data=rule_data)
+        try:
+            self._automod_rules.append(rule)
+        except AttributeError:
+            self._automod_rules = [rule]
+        return rule
 
