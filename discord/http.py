@@ -773,8 +773,15 @@ class HTTPClient:
         }
         return self.request(Route('POST', '/guilds/templates/{code}', code=code), json=payload)
 
-    def get_bans(self, guild_id):
-        return self.request(Route('GET', '/guilds/{guild_id}/bans', guild_id=guild_id))
+    def get_bans(self, guild_id, limit: int, after: int = None, before: int = None):
+        params = {
+            'limit': limit
+        }
+        if after:
+            params['after'] = after
+        if before:
+            params['before'] = before
+        return self.request(Route('GET', '/guilds/{guild_id}/bans', guild_id=guild_id), params=params)
 
     def get_ban(self, user_id, guild_id):
         return self.request(Route('GET', '/guilds/{guild_id}/bans/{user_id}', guild_id=guild_id, user_id=user_id))

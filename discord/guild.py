@@ -42,6 +42,7 @@ from discord.utils import _bytes_to_base64_data
 
 if TYPE_CHECKING:
     from os import PathLike
+    from .abc import Snowflake
     from .ext.commands import Cog
     from .application_commands import SlashCommandOption, SubCommandGroup, SubCommand
 
@@ -55,12 +56,13 @@ from .permissions import PermissionOverwrite, Permissions
 from .colour import Colour
 from .errors import InvalidArgument, ClientException
 from .channel import *
-from .enums import VoiceRegion, ChannelType, Locale, try_enum, VerificationLevel, ContentFilter, NotificationLevel, EventEntityType
+from .enums import VoiceRegion, ChannelType, Locale, try_enum, VerificationLevel, ContentFilter, NotificationLevel, \
+    EventEntityType, AutoModTriggerType, AutoModEventType
 from .mixins import Hashable
 from .scheduled_event import GuildScheduledEvent
 from .user import User
 from .invite import Invite
-from .iterators import AuditLogIterator, MemberIterator
+from .iterators import AuditLogIterator, MemberIterator, BanIterator, BanEntry
 from .welcome_screen import *
 from .widget import Widget
 from .asset import Asset
@@ -70,7 +72,6 @@ from .sticker import GuildSticker
 from .automod import AutoModRule
 from .application_commands import SlashCommand, MessageCommand, UserCommand, Localizations
 
-BanEntry = namedtuple('BanEntry', 'reason user')
 _GuildLimit = namedtuple('_GuildLimit', 'emoji sticker bitrate filesize')
 
 
@@ -1553,39 +1554,72 @@ class Guild(Hashable):
             reason=data['reason']
         )
 
-    async def bans(self):
-        """|coro|
-
-        Retrieves all the users that are banned from the guild as a :class:`list` of :class:`BanEntry`.
+    def bans(self,
+             limit: Optional[int] = None,
+             before: Optional[Union['Snowflake', datetime]] = None,
+             after: Optional[Union['Snowflake', datetime]] = None):
+        """Retrieves an :class:`.AsyncIterator` that enables receiving the guild's bans.
 
         You must have the :attr:`~Permissions.ban_members` permission
         to get this information.
 
+        .. note::
+
+            This method is an API call. Use it careful.
+
+        All parameters are optional.
+
+        Parameters
+        ----------
+        limit: Optional[:class:`int`]
+            The number of bans to retrieve. Defaults to all.
+            Note that this is potentially slow.
+        before: Optional[Union[:class:`.abc.Snowflake`, :class:`datetime.datetime`]]
+            Retrieve members before this date or object.
+            If a date is provided it must be a timezone-naive datetime representing UTC time.
+        after: Optional[Union[:class:`.abc.Snowflake`, :class:`datetime.datetime`]]
+            Retrieve members after this date or object.
+            If a date is provided it must be a timezone-naive datetime representing UTC time.
+
         Raises
-        -------
+        ------
         Forbidden
             You do not have proper permissions to get the information.
         HTTPException
-            An error occurred while fetching the information.
+            Getting the bans failed.
 
-        Returns
+        Yields
+        ------
+        :class:`.BanEntry`
+            The ban entry containing the user and an optional reason.
+
+        Examples
         --------
-        List[:class:`BanEntry`]
-            A list of :class:`BanEntry` objects.
-        """
-        # TODO: Add pagination via AsyncIterator class
-        data = await self._state.http.get_bans(self.id)
-        return [BanEntry(user=User(state=self._state, data=e['user']),
-                         reason=e['reason'])
-                for e in data]
 
-    async def prune_members(self, *, days, compute_prune_count=True, roles=None, reason=None):
+        Usage ::
+
+            async for ban_entry in guild.bans(limit=150):
+                print(ban_entry.user)
+
+        Flattening into a list ::
+
+            ban_entries = await guild.bans(limit=150).flatten()
+            # ban_entries is now a list of BanEntry...
+        """
+        return BanIterator(self, limit=limit, before=before, after=after)
+    
+    async def prune_members(self,
+                            *,
+                            days: int,
+                            compute_prune_count=True,
+                            roles: List['Snowflake'] = None,
+                            reason: Optional[str] = None):
         r"""|coro|
 
         Prunes the guild from its inactive members.
 
         The inactive members are denoted if they have not logged on in
-        ``days`` number of days and they have no roles.
+        ``days`` number of days, and they have no roles.
 
         You must have the :attr:`~Permissions.kick_members` permission
         to use this.
@@ -2759,6 +2793,8 @@ class Guild(Hashable):
 
     async def create_automod_rule(self,
                                   name: str,
+                                  event_type: AutoModEventType,
+                                  trigger_type: AutoModTriggerType
 
                                   ) -> AutoModRule:
         """|coro|
@@ -2788,7 +2824,9 @@ class Guild(Hashable):
         """
         # TODO: Get some sleep, continue tomorrow :)
         data = {
-            'name': name
+            'name': name,
+            'event_type': int(event_type),
+            'trigger_t#ype': int(trigger_type)
         }
         rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data)
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)

@@ -26,12 +26,19 @@ DEALINGS IN THE SOFTWARE.
 
 import asyncio
 import datetime
+from collections import namedtuple
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Union
+)
 
 if TYPE_CHECKING:
-    from .scheduled_event import GuildScheduledEvent
+    from .guild import Guild
     from .abc import Snowflake, Messageable
+    from .scheduled_event import GuildScheduledEvent
+    
 
 from .errors import NoMoreItems
 from .utils import time_snowflake, maybe_coroutine
@@ -39,6 +46,7 @@ from .object import Object
 from .audit_logs import AuditLogEntry
 
 OLDEST_OBJECT = Object(id=0)
+BanEntry = namedtuple('BanEntry', 'reason user')
 
 
 class _AsyncIterator:
@@ -788,6 +796,96 @@ class EventUsersIterator(_AsyncIterator):
         """Retrieve users using after parameter."""
         after = self.after.id if self.after else None
         data = await self.getter(self.guild_id, self.event.id, limit=retrieve, after=after, with_member=self.with_member)
+        if len(data):
+            if self.limit is not None:
+                self.limit -= retrieve
+            self.after = Object(id=int(data[0]['user']['id']))
+            data = reversed(data)
+        return data
+
+
+class BanIterator(_AsyncIterator):
+    def __init__(self,
+                 guild: 'Guild',
+                 limit: int = 1000,
+                 before: Optional[Union['Snowflake', datetime.datetime]] = None,
+                 after: Optional[Union['Snowflake', datetime.datetime]] = None,):
+        self.guild = guild
+        self.guild_id = guild.id
+        self.state = guild._state
+        self.limit = limit
+
+        if isinstance(before, datetime.datetime):
+            before = Object(id=time_snowflake(before, high=True))
+        if isinstance(after, datetime.datetime):
+            after = Object(id=time_snowflake(after, high=True))
+
+        self.before: Optional[Object] = before
+        self.after: Optional[Object] = after
+        
+        self.ban_entries = asyncio.Queue()
+        self.getter = guild._state.http.get_bans
+
+        self._filter = None
+
+        if self.before and self.after:
+            self._retrieve_bans = self._retrieve_bans_before_strategy
+            self._filter = lambda be: int(be['user']['id']) > self.after.id
+        elif self.before:
+            self._retrieve_bans = self._retrieve_bans_before_strategy
+        else:
+            self._retrieve_bans = self._retrieve_bans_after_strategy
+
+    async def next(self):
+        if self.ban_entries.empty():
+            await self.fill_ban_entries()
+
+        try:
+            return self.ban_entries.get_nowait()
+        except asyncio.QueueEmpty:
+            raise NoMoreItems()
+
+    def _get_retrieve(self):
+        l = self.limit
+        if l is None or l > 1000:
+            r = 1000
+        else:
+            r = l
+        self.retrieve = r
+        return r > 0
+
+    async def fill_ban_entries(self):
+        # this is a hack because >circular imports<
+        from .user import User
+
+        state = self.state
+
+        if self._get_retrieve():
+
+            data = await self._retrieve_bans(self.retrieve)
+            if self.limit is None or len(data) < 100:
+                self.limit = 0
+
+            if self._filter:
+                data = filter(self._filter, data)
+
+            for element in data:
+                await self.ban_entries.put(BanEntry(user=User(state=state, data=element['user']), reason=element['reason']))
+
+    async def _retrieve_bans_before_strategy(self, retrieve):
+        """Retrieve bans using before parameter."""
+        before = self.before.id if self.before else None
+        data = await self.getter(self.guild_id, limit=retrieve, before=before)
+        if len(data):
+            if self.limit is not None:
+                self.limit -= retrieve
+            self.before = Object(id=int(data[-1]['user']['id']))
+        return data
+
+    async def _retrieve_bans_after_strategy(self, retrieve):
+        """Retrieve bans using after parameter."""
+        after = self.after.id if self.after else None
+        data = await self.getter(self.guild_id, limit=retrieve, after=after)
         if len(data):
             if self.limit is not None:
                 self.limit -= retrieve
