@@ -2591,7 +2591,7 @@ class Guild(Hashable):
         location: Optional[:class:`str`]
             The location where the event will take place. 1-100 characters long.
             **Must be provided if :attr:`entity_type` is :class:`EventEntityType.external`**
-        cover_image: Optional[:class:`bytes`]:
+        cover_image: Optional[:class:`bytes`]
             The cover image of the scheduled event.
         reason: Optional[:class:`str`]
             The reason for scheduling the event, shows up in the audit-log.
@@ -2606,8 +2606,8 @@ class Guild(Hashable):
         TypeError:
             Any parameter is of wrong type.
         errors.InvalidArgument:
-            entity_type is EventEntityType.stage or EventEntityType.voice but channel is not provided
-            or EventEntityType.external but no location or end_time provided.
+            entity_type is :attr:`~EventEntityType.stage` or :attr:`~EventEntityType.voice` but channel is not provided
+            or :attr:`~EventEntityType.external` but no location or end_time provided.
         ValueError:
             The value of any parameter is invalid. (e.g. to long/short)
         errors.Forbidden:

@@ -2194,7 +2194,7 @@ of :class:`enum.Enum`.
 
         The event hasn't startet yet
 
-    .. attribute:: scheduled
+    .. attribute:: active
 
         The event is currently active
 
