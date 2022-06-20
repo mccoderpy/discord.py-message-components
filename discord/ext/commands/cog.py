@@ -198,7 +198,7 @@ class Cog(metaclass=CogMeta):
     """
 
     def __new__(cls, *args, **kwargs):
-        # For issue 426, we need to store a copy of the command objects
+        # For :old-issue:`426`, we need to store a copy of the command objects
         # since we modify them to inject `self` to them.
         # To do this, we need to interfere with the Cog creation process.
         self = super().__new__(cls)
@@ -542,8 +542,8 @@ class Cog(metaclass=CogMeta):
             must be set to ``True`` to register a command if he not already exists and update him if changes where made.
 
         Parameters
+        -----------
 
-        ----------
         name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
@@ -587,7 +587,7 @@ class Cog(metaclass=CogMeta):
             otherwise it will replace the one before.
 
         Raises
-        ------
+        -------
         class:`TypeError`:
             The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
             or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
@@ -599,8 +599,12 @@ class Cog(metaclass=CogMeta):
 
         Returns
         -------
-        Callable:
-            The function that wich registers the func given as a slash-command to the client and returns the generated command.
+        The slash-command registered.
+            If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`~discord.SlashCommand`.
+            If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`~discord.GuildOnlySlashCommand`
+            representing the guild-only slash-commands.
+            If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of :class:`~discord.SubCommand`.
+            if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`~discord.GuildOnlySubCommand`
         """
 
         def decorator(func: Awaitable[Any]) -> Union[

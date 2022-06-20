@@ -438,6 +438,7 @@ class Guild(Hashable):
         """
         return self._events.get(id)
 
+    get_scheduled_event = get_event
 
     @property
     def large(self):
@@ -2800,9 +2801,6 @@ class Guild(Hashable):
         """|coro|
 
         Creates a new AutoMod rule for this guild
-
-        .. warning::
-            This is an API-call, use it carefully.
 
         Parameters
         -----------
