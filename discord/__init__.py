@@ -67,6 +67,8 @@ from .raw_models import *
 from .team import *
 from .sticker import Sticker, GuildSticker
 from .scheduled_event import GuildScheduledEvent
+from .automod import *
+
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
 version_info = VersionInfo(major=1, minor=8, micro=0, releaselevel='alpha', serial=0)
