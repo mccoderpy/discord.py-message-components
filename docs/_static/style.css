@@ -359,6 +359,10 @@ header > nav > a:hover {
   margin-right: 0.5em;
 }
 
+.sub-header > .settings:hover {
+    cursor: pointer;
+}
+
 .setting h3 {
   display: inline-block;
   margin-left: 2em;
@@ -772,6 +776,7 @@ main ul.search li {
   padding: 5px 0 5px 20px;
 }
 
+main
 main ol {
   counter-reset: li;
   margin-left: 0;
