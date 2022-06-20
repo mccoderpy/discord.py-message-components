@@ -43,6 +43,31 @@ if TYPE_CHECKING:
 
 
 class GuildScheduledEvent(Hashable):
+    """
+    Represents a scheduled event in a guild
+
+    .. warning::
+        Do not initialize this class manually. Use :meth:`~discord.Guild.fetch_event` or :meth:`~discord.Guild.fetch_events` instead.
+
+    Attributes
+    -----------
+    id: :class:`int`
+        The id of the event
+    name: :class:`str`
+        The name of the event
+    description: :class:`str`
+        The description of the event
+    start_time: :class:`datetime.datetime`
+        When the event will start
+    end_time: Optional[:class:`datetime.datetime`]
+        Optional, when the event will end
+    creator: :class:`~discord.User`
+        The creator of the event
+    status: :class:`EventStatus`
+        The status of the event
+    entity_type: :class:`EventEntityType`
+        The type of the scheduled event
+    """
     def __init__(self, state: 'ConnectionState', guild: 'Guild', data: dict) -> None:
         self._state: 'ConnectionState' = state
         self.id: int = int(data['id'])
@@ -51,10 +76,10 @@ class GuildScheduledEvent(Hashable):
 
     def _update(self, data) -> None:
         state = self._state
+        self.name: str = data['name']
         self.guild_id = int(data['guild_id'])
         self.channel_id: Optional[int] = _get_as_snowflake(data, 'channel_id')
         self.creator_id: Optional[int] = _get_as_snowflake(data, 'creator_id')
-        self.name: str = data['name']
         self.description: Optional[str] = data.get('description', None)
         self.start_time: datetime = datetime.fromisoformat(data['scheduled_start_time'])
         self.end_time: Optional[datetime] = datetime.fromisoformat(data['scheduled_end_time']) \
@@ -85,7 +110,9 @@ class GuildScheduledEvent(Hashable):
 
     @property
     def channel(self) -> Optional[Union['StageChannel', 'VoiceChannel']]:
-        """The channel the event is scheduled in if :attr:`.entity_type` is ``stage`` or ``voice``."""
+        """Optional[Union[:class:`StageChannel, :class:`VoiceChannel`]]:
+        The channel the event is scheduled in if :attr:`.entity_type` is ``stage`` or ``voice``.
+        """
         if self.creator_id:
             return self.guild.get_channel(self.channel_id)
 
@@ -127,9 +154,24 @@ class GuildScheduledEvent(Hashable):
 
         Parameters
         ----------
+        name: :class:`str`
+            The new name of the event
+        description: :class:`str`
+            The new description of the event
+        start_time: :class:`datetime.datetime`
+            The new start time of the event
+        end_time: Optional[:class:`datetime.datetime`]
+            The new end time of the event
+        status: :class:`EventStatus`
+            The new status of the event.
+        entity_type: :class:`EventEntityType`
+            The new type of the scheduled event
+        location: :class:`str`
+            The new location of the event. If ``entity_type`` is :attr:`EventEntityType.external`
+        channel: Optional[Union[:class:`StageChannel, :class:`VoiceChannel`]]
+            The new channel the event is scheduled in if ``entity_type`` is :attr:`EventEntityType.stage` or :attr:`EventEntityType.voice`.
         reason: Optional[:class:`str`]
             The reason for editing the event, shows up in the audit-log.
-        fields
 
         Returns
         -------

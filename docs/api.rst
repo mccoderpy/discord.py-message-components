@@ -2170,6 +2170,55 @@ of :class:`enum.Enum`.
 
         Represents a sticker with a lottie image.
 
+.. class:: EventEntityType
+
+    The location where a :class:`GuildScheduledEvent` will be scheduled at
+
+    .. attribute:: stage
+
+        The event wil be in a stage channel
+
+    .. attribute:: voice
+
+        The event wil be in a voice channel
+
+    .. attribute:: external
+
+        The event wil be outside of discord, like on a website or in the real world
+
+.. class:: EventStatus
+
+    The status of a :class:`GuildScheduledEvent`
+
+    .. attribute:: scheduled
+
+        The event hasn't startet yet
+
+    .. attribute:: scheduled
+
+        The event is currently active
+
+    .. attribute:: completed
+
+        The event is over
+
+    .. attribute:: canceled
+
+        The scheduled event was canceled
+
+    .. note::
+
+        \* Once :attr:`~GuildScheduledEvent.status` is set to ``completed` or ``canceled``, the ``status`` can no longer be updated
+
+    Valid Guild Scheduled Event Status Transitions
+
+        - ``scheduled`` --> ``active``
+
+        - ``active`` --------> ``completed``
+
+        - ``scheduled`` --> ``canceled``
+
+
 Async Iterator
 ----------------
 
