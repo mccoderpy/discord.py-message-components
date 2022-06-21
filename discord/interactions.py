@@ -646,7 +646,11 @@ class BaseInteraction:
                     followup=True,
                     deferred=self.deferred,
                 )
-        data = await method
+        try:
+            data = await method
+        finally:
+            for f in files:
+                f.close()
 
         if not isinstance(data, dict):
             data = await self.get_original_callback(raw=True)

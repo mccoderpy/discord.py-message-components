@@ -1056,6 +1056,10 @@ from being stringly typed in case the strings change in the future.
 All enumerations are subclasses of an internal class which mimics the behaviour
 of :class:`enum.Enum`.
 
+.. note::
+    You can use any of the enum classe members as an attribute of an instance of it to get a :class:`bool` whether the instance has this value.
+    For example `channel.type.private` will return ``True`` if the channel is a private channel (PS: channel must be a :class:`DMChannel` or any other channel like object in this case)
+
 .. class:: ChannelType
 
     Specifies the type of channel.
@@ -2219,6 +2223,73 @@ of :class:`enum.Enum`.
         - ``scheduled`` --> ``canceled``
 
 
+.. class:: AutoModEventType
+
+    Indicates in what event context a :class:`AutoModRule` should be checked.
+
+    .. attribute:: message_send
+
+        When a member sends or edits a message (in the guild the rule belongs to)
+
+.. class:: AutoModKeywordPresetType
+
+    .. attribute:: profanity
+
+        Words that may be considered forms of swearing or cursing
+
+    .. attribute:: sexual_content
+
+        Words that refer to sexually explicit behavior or activity
+
+    .. attribute:: slurs
+
+        Personal insults or words that may be considered hate speech
+
+.. class:: AutoModTriggerType
+
+    Characterizes the type of content which can trigger the rule.
+
+    .. note::
+
+        The ``harmful_link`` and ``spam`` trigger types are not yet(22/06/2022) released, so they cannot be used in most servers.
+
+    .. attribute:: keyword
+
+        Check if content contains words from a user defined list of keywords
+
+    .. attribute:: harmful_link
+
+        Check if content contains any harmful links
+
+    .. attribute:: spam
+
+        Check if content represents generic spam
+
+    .. attribute:: keyword_preset
+
+        Check if content contains words from internal pre-defined wordsets
+
+.. class:: AutoModActionType
+
+    The type of action that should be taken in an :class:`AutoModAction`.
+
+    .. attribute:: block_message
+
+        Blocks the content of a message according to the rule
+
+    .. attribute:: send_alert_message
+
+        Logs user content to a specified channel
+
+    .. attribute:: timeout_user
+
+        Timeout the user for a specific duration
+
+        .. note::
+
+            This can only be used when the :attr:`~AutoModRule.trigger_type` is ``keyword``
+
+
 Async Iterator
 ----------------
 
@@ -3007,6 +3078,22 @@ GuildScheduledEvent
     .. automethod:: users
         :async-for:
 
+AutoModRule
+~~~~~~~~~~~~~~~~
+
+.. attributetable:: AutoModRule()
+
+.. autoclass:: AutoModRule()
+    :members:
+
+WelcomeScreen
+~~~~~~~~~~~~~~
+
+.. attributetable:: WelcomeScreen
+
+.. autoclass:: WelcomeScreen()
+    :members:
+
 Integration
 ~~~~~~~~~~~~
 
@@ -3469,6 +3556,31 @@ PublicUserFlags
 .. attributetable:: PublicUserFlags
 
 .. autoclass:: PublicUserFlags()
+    :members:
+
+AutoModAction
+~~~~~~~~~~~~~~
+
+.. attributetable:: AutoModAction
+
+.. autoclass:: AutoModAction()
+    :members:
+
+AutoModTriggerMetadata
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: AutoModTriggerMetadata
+
+.. autoclass:: AutoModTriggerMetadata()
+    :members:
+
+WelcomeScreenChannel
+~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: WelcomeScreenChannel
+
+.. autoclass:: WelcomeScreenChannel()
+
     :members:
 
 Exceptions
