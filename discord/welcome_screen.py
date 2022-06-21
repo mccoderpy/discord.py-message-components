@@ -5,17 +5,34 @@ from .partial_emoji import PartialEmoji
 if TYPE_CHECKING:
     from .abc import GuildChannel
 
-__all__ = ('WelcomeScreenChannel',
-           'WelcomeScreen')
+__all__ = (
+    'WelcomeScreenChannel',
+    'WelcomeScreen'
+)
 
 
 class WelcomeScreenChannel:
+    """
+    Represents a channel shown in a welcome screen.
+
+    Parameters
+    -----------
+    channel: :class:`~discord.Snowflake`
+        The channel the welcome screen channel belongs to
+    description: :class:`str`
+        The description of the welcome screen channel
+    emoji: Optional[Union[:class:`~discord.PartialEmoji`, :class:`str`]
+        The emoji that is shown on the left side of the welcome screen channel
+    """
     def __init__(self, channel: 'GuildChannel', description: str = None, emoji: Optional[Union[PartialEmoji, str]] = None):
-        self._state = channel._state
+        try:
+            self._state = channel._state
+        except AttributeError:
+            pass
         self.channel = channel
         self.description: Optional[str] = description
         if emoji and isinstance(emoji, str):
-            emoji = PartialEmoji(name=emoji)
+            emoji = PartialEmoji.from_string(emoji)
         self.emoji: Optional[PartialEmoji] = emoji
 
     @classmethod
@@ -45,6 +62,20 @@ class WelcomeScreenChannel:
 
 
 class WelcomeScreen:
+    """
+    Represents a welcome screen for a guild returned by :meth:`Guild.fetch_welcome_screen`.
+
+    .. warning::
+        Do not initialize this class directly. Use :meth:`guild.fetch_welcome_screen` instead.
+
+    Attributes
+    -----------
+    guild: :class:`~discord.Guild`
+        The guild the welcome screen belongs to
+    description: :class:`str`
+        The description of the welcome screen
+    welcome_channels: List[:class:`WelcomeScreenChannel`]
+    """
     def __init__(self, state, guild, data):
         self._state = state
         self.guild = guild
