@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-present Rapptz
+Copyright (c) 2015-2021 Rapptz & (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -79,17 +79,20 @@ class PartialEmoji(_EmojiTag):
 
     @classmethod
     def from_string(cls, string: str):
-        """Converts a custom emoji as they are in a message into a partial emoji object.
+        """Converts a (custom) emoji as they are in a message into a partial emoji object.
 
         .. note::
             To get them, type a custom emoji into the chat, put an ``\`` in front of it and send it.
             You can then use what comes out when you add a reaction or similar.
+
+        .. warning::
+            This does **not** support the :emoji: format for (standard) emojis
         """
 
         match = re.match('^<(a?):([\-\w]+):(\d+)>$', string)
         if match:
             return cls(animated=bool(match.group(1)), name=match.group(2), id=int(match.group(3)))
-        raise ValueError('The Passed Emoji is not a discord custom-emoji.')
+        return cls(name=string)
 
     @classmethod
     def from_dict(cls, data):
