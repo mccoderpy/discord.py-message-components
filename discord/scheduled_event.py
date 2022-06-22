@@ -111,7 +111,7 @@ class GuildScheduledEvent(Hashable):
 
     @property
     def channel(self) -> Optional[Union['StageChannel', 'VoiceChannel']]:
-        """Optional[Union[:class:`StageChannel, :class:`VoiceChannel`]]:
+        """Optional[Union[:class:`StageChannel`, :class:`VoiceChannel`]]:
         The channel the event is scheduled in if :attr:`.entity_type` is ``stage`` or ``voice``.
         """
         if self.creator_id:
@@ -168,7 +168,7 @@ class GuildScheduledEvent(Hashable):
         entity_type: :class:`EventEntityType`
             The new type of the scheduled event
         location: :class:`str`
-            The new location of the event. If ``entity_type`` is :attr:`EventEntityType.external`
+            The new location of the event. If ``entity_type`` is :attr:`~EventEntityType.external`
         channel: Optional[Union[:class:`StageChannel, :class:`VoiceChannel`]]
             The new channel the event is scheduled in if ``entity_type`` is :attr:`EventEntityType.stage` or :attr:`EventEntityType.voice`.
         reason: Optional[:class:`str`]
