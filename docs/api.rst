@@ -286,6 +286,23 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param kwargs: The keyword arguments for the event that raised the
         exception.
 
+.. function:: on_application_command_error(command, interaction, exception)
+
+    The default error handler when an exception was raised while invoking an :ref:`application-command </interactions/>`.
+
+    .. note::
+        This includes when a :meth:`~ext.commands.check` fails
+
+    By default, this prints to :data:`sys.stderr` however it could be
+    overridden to have a different implementation.
+
+    :param command: The :class:`SlashCommand`/:class:`SubCommand`, :class:`MessageCommand` or :class:`UserCommand` in wich invocation the exception was raised.
+    :type command: :class:`ApplicationCommand`
+    :param interaction: The interaction that was invoked
+    :type interaction: :class:`ApplicationCommandInteraction`
+    :param exception: The exception that was raised
+    :type exception: :class:`Exception`
+
 .. function:: on_socket_raw_receive(msg)
 
     Called whenever a message is received from the WebSocket, before
@@ -897,34 +914,35 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param user: The user that joined or left.
     :type user: :class:`User`
 
-.. function:: on_auto_moderation_rule_create(guild, rule)
+.. function:: on_automod_rule_create(rule)
 
     Called when a auto moderation rule is created.
 
-    :param guild: The guild the rule was created in.
-    :type guild: :class:`Guild`
     :param rule: The rule that was created.
-    :type rule: :class:`AutoModerationRule`
+    :type rule: :class:`AutoModRule`
 
-.. function:: on_auto_moderation_rule_update(guild, before, after)
+.. function:: on_automod_rule_update(before, after)
 
     Called when a auto moderation rule is updated.
 
-    :param guild: The guild the rule was updated in.
-    :type guild: :class:`Guild`
     :param before: The old rule.
-    :type before: :class:`AutoModerationRule`
-    :param before: The updated rule.
-    :type before: :class:`AutoModerationRule`
+    :type before: :class:`AutoModRule`
+    :param after: The updated rule.
+    :type after: :class:`AutoModRule`
 
-.. function:: on_auto_moderation_rule_delete(guild, rule)
+.. function:: on_automod_rule_delete(rule)
 
     Called when a auto moderation rule is deleted.
 
-    :param guild: The guild the rule was in.
-    :type guild: :class:`Guild`
     :param rule: The rule that was deleted.
-    :type rule: :class:`AutoModerationRule`
+    :type rule: :class:`AutoModRule`
+
+.. function:: on_automod_action(payload)
+
+    Called when a :class:`AutoModRule` was triggered by a user
+
+    :param payload: The payload containing all the information
+    :type payload: :class:`AutoModActionPayload`
 
 .. _discord-api-utils:
 
@@ -3086,6 +3104,14 @@ AutoModRule
 .. autoclass:: AutoModRule()
     :members:
 
+AutoModActionPayload
+~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: AutoModActionPayload()
+
+.. autoclass:: AutoModActionPayload()
+    :members:
+
 WelcomeScreen
 ~~~~~~~~~~~~~~
 
@@ -3561,7 +3587,7 @@ PublicUserFlags
 AutoModAction
 ~~~~~~~~~~~~~~
 
-.. attributetable:: AutoModAction
+.. attributetable:: AutoModAction()
 
 .. autoclass:: AutoModAction()
     :members:
