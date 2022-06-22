@@ -38,6 +38,9 @@ class DiscordWarning(Warning):
     """Base warning class for discord.py
 
     Ideally speaking, this could be caught to handle any warnings thrown from this library.
+
+    .. note::
+        This inherits from :class:`Warning` instead of :class:`Exception`.
     """
     pass
 
@@ -200,14 +203,15 @@ class ConnectionClosed(ClientException):
 
 
 class PrivilegedIntentsRequired(ClientException):
-    """Exception that's thrown when the gateway is requesting privileged intents
+    """Exception that's thrown when the gateway is requesting privileged intents,
     but they're not ticked in the developer page yet.
 
     Go to https://discord.com/developers/applications/ and enable the intents
-    that are required. Currently these are as follows:
+    that are required. Currently, these are as follows:
 
     - :attr:`Intents.members`
     - :attr:`Intents.presences`
+    - :attr:`Intents.message_content`
 
     Attributes
     -----------
@@ -253,7 +257,7 @@ class URLAndCustomIDNotAlowed(DiscordException):
 
 class EmptyActionRow(DiscordException):
     """
-    Exception that's thrown when there is an empty :class:`discord.ActionRow` in your message.
+    Exception that's thrown when there is an empty :class:`~discord.ActionRow` in your message.
     """
     def __init__(self):
         msg = 'The Discord-API does not allows you to send an empty ActionRow, you have to parse at least one component'
