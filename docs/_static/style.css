@@ -184,13 +184,16 @@ Historically however, thanks to:
   --search-sidebar-text: var(--search-text);
 }
 
-img[src$="snake_dark.svg"]  {
+img[src$="banner_light.png"]  {
   display: none;
 }
-:root[data-theme="dark"] img[src$="snake.svg"] {
-  display: none;
+
+:root[data-theme="light"] div[id$="discord-py-message-components"] > img {
+  content: url("../_images/banner_light.png");
+  display: inherit;
 }
-:root[data-theme="dark"] img[src$="snake_dark.svg"] {
+:root[data-theme="dark"] div[id$="discord-py-message-components"] > img {
+  content: url("../_images/banner_dark.png");
   display: inherit;
 }
 

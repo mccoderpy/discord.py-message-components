@@ -1,11 +1,12 @@
 .. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
 
 .. image:: ./images/drop_down_icon.svg
+.. image:: ./images/banner_light.png
 
 |flag_ua| Welcome to discord\.py-message-components |flag_ua|
 ==============================================================
 
-.. figure:: https://cdn.discordapp.com/attachments/852872100073963532/854711446767796286/discord.py-message-components.png
+.. figure:: ./images/banner_dark.png
    :name: discord.py-message-components
    :align: center
    :alt: Name of the Project (discord.py-message-components)
@@ -39,8 +40,6 @@
      New features are also implemented. It's not an extension!
      The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet.
 
-**❗The most (new) features are only documented in Code currently❗**
-
 .. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
    :alt: Link to the documentation of discord.py-message-components
@@ -57,7 +56,7 @@ for Discord.
 
 - Modern Pythonic API using ``async``\/``await`` syntax
 - Sane rate limit handling that prevents 429s
-- Implements the entire Discord API
+- Implements the entire Discord API (for Bots)
 - Command extension to aid with bot creation
 - Easy to use with an object oriented design
 - Optimised for both speed and memory
