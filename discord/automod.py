@@ -64,6 +64,28 @@ __all__ = (
 
 
 class AutoModAction:
+    """
+    Represents an action which will execute whenever a rule is triggered.
+
+    Attributes
+    -----------
+    type: :class:`AutoModActionType`
+        The type of action
+    channel_id: Optional[:class:`int`]
+        The channel to which user content should be logged.
+
+        .. note::
+            This field is only required :attr:`~AutoModAction.type` is :attr:~`AutoModActionType.send_alert_message`
+
+    timeout_duration: Optional[Union[:class:`int`, :class:`datetime.timedelta`]]
+        Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the user should be timeouted.
+
+        **The maximum value is ``2419200`` seconds (4 weeks)**
+
+        .. note::
+           This field is only required if :attr:`type` is :attr:`AutoModActionType.timeout_user`
+
+    """
     def __init__(self, type: AutoModActionType, **metadata):
         """
         Represents an action which will execute whenever a rule is triggered.
@@ -78,7 +100,7 @@ class AutoModAction:
             .. note::
                 This field is only required :attr:`~AutoModAction.type` is :attr:~`AutoModActionType.send_alert_message`
 
-        timeout_duration: Optional[Union[:class:`int`, :class:`datetime.timedelta`]
+        timeout_duration: Optional[Union[:class:`int`, :class:`datetime.timedelta`]]
             Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the user should be timeouted.
 
             **The maximum value is ``2419200`` seconds (4 weeks)**
@@ -289,36 +311,38 @@ class AutoModTriggerMetadata:
 
 
 class AutoModRule:
+    """
+    Represents a rule for auto moderation
+
+    .. warning::
+        Do not initialize this class directly. Use :meth:`~discord.Guild.create_automod_rule` instead.
+
+    Attributes
+    -----------
+    id: :class:`int`
+        The id of this rule
+    guild: :class:`~discord.Guild`
+        The guild  this rule belongs to
+    name: :class:`str`
+        The name of the rule
+    creator_id: :class:`int`
+        The id of the user wich created this rule
+    event_type: :class:`AutoModEventType`
+        The event wich will trigger this rule
+    trigger_type: :class:`AutoModEventType`
+        The type of content which will trigger the rule
+    trigger_metadata: :class:`AutoModTriggerMetadata`
+        Additional data used to determine whether a rule should be triggered.
+        Different fields are relevant based on the value of :attr:`.trigger_type`.
+    actions: List[:class:`AutoModAction`]
+        The actions which will execute when the rule is triggered
+    enabled: :class:`bool`
+        Whether the rule is enabled
+    """
     def __init__(self,
                  state: ConnectionState,
                  guild: Guild,
                  **data) -> None:
-        """
-        .. warning::
-            Do not initialize this class directly. Use :meth:`~discord.Guild.create_automod_rule` instead.
-
-        Attributes
-        -----------
-        id: :class:`int`
-            The id of this rule
-        guild: :class:`~discord.Guild`
-            The guild  this rule belongs to
-        name: :class:`str`
-            The name of the rule
-        creator_id: :class:`int`
-            The id of the user wich created this rule
-        event_type: :class:`AutoModEventType`
-            The event wich will trigger this rule
-        trigger_type: :class:`AutoModEventType`
-            The type of content which will trigger the rule
-        trigger_metadata: :class:`AutoModTriggerMetadata`
-            Additional data used to determine whether a rule should be triggered.
-            Different fields are relevant based on the value of :attr:`.trigger_type`.
-        actions: List[:class:AutoModAction`]
-            The actions which will execute when the rule is triggered
-        enabled: :class:`bool`
-            Whether the rule is enabled
-        """
         self._state: ConnectionState = state
         self.guild: Guild = guild
         self.id: int = int(data['id'])
@@ -396,7 +420,7 @@ class AutoModRule:
         
         Returns
         --------
-        Optional[:class:`~discord.Member`}
+        Optional[Member]
             The member, that created the rule.
         """
         creator = self.guild.get_member(self.creator_id)
@@ -493,8 +517,8 @@ class AutoModActionPayload:
 
         Returns
         --------
-        :class:`GuildChannel`
-            A :class:`TextChannel`, :class:`VoiceChannel` or :class:`ThreadChannel`
+        Optional[:class:`abc.GuildChannel`]
+            The :class:`TextChannel`, :class:`VoiceChannel` or :class:`ThreadChannel` the user content was posted in.
         """
         return self.guild.get_channel(self.channel_id)
 
@@ -508,7 +532,7 @@ class AutoModActionPayload:
 
         Returns
         --------
-        :class:`User`
+        :class:`.User`
             The user that triggered the rule
         """
         return self._state.get_user(self.user_id)
@@ -528,7 +552,7 @@ class AutoModActionPayload:
 
         Returns
         --------
-        Optional[Member]
+        Optional[Member]:
             The guild member
         """
         member = self.guild.get_member(self.user_id)
