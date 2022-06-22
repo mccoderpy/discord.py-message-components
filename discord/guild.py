@@ -69,7 +69,7 @@ from .asset import Asset
 from .flags import SystemChannelFlags
 from .integrations import _integration_factory
 from .sticker import GuildSticker
-from .automod import AutoModRule
+from .automod import AutoModRule, AutoModTriggerMetadata, AutoModAction
 from .application_commands import SlashCommand, MessageCommand, UserCommand, Localizations
 
 _GuildLimit = namedtuple('_GuildLimit', 'emoji sticker bitrate filesize')
@@ -645,7 +645,7 @@ class Guild(Hashable):
         """List[:class:`Member`]: A list of members that belong to this guild."""
         return list(self._members.values())
 
-    def get_member(self, user_id):
+    def get_member(self, user_id) -> Optional[Member]:
         """Returns a member with the given ID.
 
         Parameters
@@ -2778,7 +2778,7 @@ class Guild(Hashable):
     async def automod_rules(self) -> List[AutoModRule]:
         """|coro|
 
-        Fetches the Auto Mod rules for this guild
+        Fetches the Auto Moderation rules for this guild
         
         .. warning::
             This is an API-call, use it carefully.
@@ -2789,15 +2789,18 @@ class Guild(Hashable):
             A list of AutoMod rules the guild has
         """
         data = await self._state.http.get_automod_rules(guild_id=self.id)
-        self._automod_rules = automod_rules = [AutoModRule(state=self._state, guild=self, data=data)]
+        self._automod_rules = automod_rules = [AutoModRule(state=self._state, guild=self, **rule) for rule in data]
         return automod_rules
 
     async def create_automod_rule(self,
                                   name: str,
                                   event_type: AutoModEventType,
-                                  trigger_type: AutoModTriggerType
-
-                                  ) -> AutoModRule:
+                                  trigger_type: AutoModTriggerType,
+                                  trigger_metadata: AutoModTriggerMetadata,
+                                  actions: List[AutoModAction],
+                                  enabled: bool = True,
+                                  exempt_roles: List['Snowflake'] = [],
+                                  exempt_channels: List['Snowflake'] = []) -> AutoModRule:
         """|coro|
 
         Creates a new AutoMod rule for this guild
@@ -2806,7 +2809,21 @@ class Guild(Hashable):
         -----------
         name: :class:`str`
             The name, the rule should have
-
+        event_type: :class:`~discord.AutoModEventType`
+            Indicates in what event context a rule should be checked
+        trigger_type: :class:`~discord.AutoModTriggerType`
+            Characterizes the type of content which can trigger the rule
+        trigger_metadata: :class:`~discord.AutoModTriggerMetadata`
+            Additional data used to determine whether a rule should be triggered.
+            Different fields are relevant based on the value of :attr:`~Guild.create_automod_rule.trigger_type`.
+        actions: List[:class:`~discord.AutoModAction`]
+            The actions which will execute when the rule is triggered
+        enabled: :class:`bool`
+            Whether the rule is enabled, default ``True``
+        exempt_roles: List[:class:`.Snowflake`]
+            Up to 20 :class:`~discord.Role`'s, that should not be affected by the rule
+        exempt_channels: List[:class:`.Snowflake`]
+            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`'s, that should not be affected by the rule
 
         Returns
         --------
@@ -2817,15 +2834,23 @@ class Guild(Hashable):
         ------
         :exc:`discord.Forbidden`
             The bot is missing permissions to create AutoMod rules
-        :exc:`discord.HTTPException`
+        :exc:`~discord.HTTPException`
             Creating the rule failed
         """
-        # TODO: Get some sleep, continue tomorrow :)
         data = {
             'name': name,
             'event_type': int(event_type),
-            'trigger_t#ype': int(trigger_type)
+            'trigger_type': int(trigger_type),
+            'trigger_metadata': trigger_metadata.to_dict(),
+            'actions': [a.to_dict() for a in actions],
+            'enabled': enabled,
+            'exempt_roles': [str(r.id) for r in exempt_roles]
         }
+        except_channels = [str(c.id) for c in exempt_channels]
+        for action in actions:  # Add the channels where messages should be logged to, to the excepted channels
+            if action.channel_id and str(action.channel_id) not in except_channels:
+                except_channels.append(str(action.channel_id))
+        data['exempt_channels'] = except_channels
         rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data)
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)
         try:
