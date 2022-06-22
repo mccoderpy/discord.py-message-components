@@ -214,6 +214,7 @@ class Guild(Hashable):
         self._channels = {}
         self._members = {}
         self._events = {}
+        self._automod_rules = {}
         self._voice_states = {}
         self._state = state
         self._application_commands = {'chat_input': {}, 'message': {}, 'user': {}}
@@ -238,6 +239,12 @@ class Guild(Hashable):
 
     def _remove_event(self, event):
         self._events.pop(event.id, None)
+
+    def _add_automod_rule(self, rule):
+        self._automod_rules[rule.id] = rule
+
+    def _remove_automod_rule(self, rule):
+        self._automod_rules.pop(rule.id, None)
 
     def _voice_state_for(self, user_id):
         return self._voice_states.get(user_id)
@@ -421,6 +428,16 @@ class Guild(Hashable):
     def events(self):
         """List[:class:`~discord.GuildScheduledEvent`]: A list of events that belong to this guild."""
         return list(self._events.values())
+
+    @property
+    def cached_automod_rules(self):
+        """
+        List[:class:`AutoModRules`]: A list of auto moderation rules that are cached.
+
+        .. note::
+            This may be empty or incomplete if :meth:`~Guild.automod_rules` was not used before.
+        """
+        return list(self._automod_rules.values())
 
     def get_event(self, id: int) -> Optional[GuildScheduledEvent]:
         """
@@ -1558,7 +1575,7 @@ class Guild(Hashable):
     def bans(self,
              limit: Optional[int] = None,
              before: Optional[Union['Snowflake', datetime]] = None,
-             after: Optional[Union['Snowflake', datetime]] = None):
+             after: Optional[Union['Snowflake', datetime]] = None) -> BanIterator:
         """Retrieves an :class:`.AsyncIterator` that enables receiving the guild's bans.
 
         You must have the :attr:`~Permissions.ban_members` permission
@@ -2453,7 +2470,7 @@ class Guild(Hashable):
                              tags: Union[str, List[str]],
                              description: str = None,
                              *,
-                             reason: str = None) -> Optional[GuildSticker]:
+                             reason: str = None) -> GuildSticker:
         """|coro|
 
         Create a new sticker for the guild.
@@ -2479,14 +2496,14 @@ class Guild(Hashable):
         discord.Forbidden:
             You don't have the permissions to upload stickers in this guild.
         discord.HTTPException:
-            Creating the stickers failed.
+            Creating the sticker failed.
         ValueError
-            Any of name, description or tags is to short/long.
+            Any of name, description or tags is too short/long.
 
         Return
         ------
         :class:`GuildSticker`
-            The new GuildSticker object on success.
+            The new GuildSticker created on success.
         """
         if 2 > len(name) > 30:
             raise ValueError(f'The name must be between 2 and 30 characters in length; got {len(name)}.')
@@ -2789,8 +2806,9 @@ class Guild(Hashable):
             A list of AutoMod rules the guild has
         """
         data = await self._state.http.get_automod_rules(guild_id=self.id)
-        self._automod_rules = automod_rules = [AutoModRule(state=self._state, guild=self, **rule) for rule in data]
-        return automod_rules
+        for rule in data:
+            self._add_automod_rule(AutoModRule(state=self._state, guild=self, **rule))
+        return self.cached_automod_rules
 
     async def create_automod_rule(self,
                                   name: str,
@@ -2847,15 +2865,12 @@ class Guild(Hashable):
             'exempt_roles': [str(r.id) for r in exempt_roles]
         }
         except_channels = [str(c.id) for c in exempt_channels]
-        for action in actions:  # Add the channels where messages should be logged to, to the excepted channels
-            if action.channel_id and str(action.channel_id) not in except_channels:
+        for action in actions:  # Add the channels where messages should be logged to, to the exempted channels
+            if action.type.send_alert_message and str(action.channel_id) not in except_channels:
                 except_channels.append(str(action.channel_id))
         data['exempt_channels'] = except_channels
         rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data)
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)
-        try:
-            self._automod_rules.append(rule)
-        except AttributeError:
-            self._automod_rules = [rule]
+        self._add_automod_rule(rule)
         return rule
 
