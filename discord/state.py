@@ -52,7 +52,7 @@ from .raw_models import *
 from .member import Member
 from .role import Role
 from .enums import ChannelType, try_enum, Status, MessageType, ComponentType
-from . import utils
+from . import utils, AutoModRule
 from .flags import Intents, MemberCacheFlags, ApplicationFlags
 from .object import Object
 from .invite import Invite
@@ -1235,6 +1235,51 @@ class ConnectionState:
             if member is not None:
                 timestamp = datetime.datetime.utcfromtimestamp(data.get('timestamp'))
                 self.dispatch('typing', channel, member, timestamp)
+
+    def parse_auto_moderation_rule_create(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            rule = AutoModRule(state=self, guild=guild, **data)
+            try:
+                guild._automod_rules[rule.id] = rule
+            except (AttributeError, TypeError):
+                guild._automod_rules = {rule.id: rule}
+            self.dispatch('automod_rule_create', guild, rule)
+        else:
+            log.debug('AUTO_MODERATION_RULE_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_auto_moderation_rule_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            rule = AutoModRule(state=self, guild=guild, **data)
+            old_rule = guild._automod_rules.pop(rule.id)
+            try:
+                guild._automod_rules[rule.id] = rule
+            except (AttributeError, TypeError):
+                guild._automod_rules = {rule.id: rule}
+            self.dispatch('automod_rule_update', guild, old_rule, rule)
+        else:
+            log.debug('AUTO_MODERATION_RULE_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_auto_moderation_rule_delete(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            rule = AutoModRule(state=self, guild=guild, **data)
+            try:
+                guild._automod_rules.pop(rule.id)
+            except (AttributeError, TypeError, KeyError):
+                pass
+            self.dispatch('automod_rule_delete', guild, rule)
+        else:
+            log.debug('AUTO_MODERATION_RULE_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_auto_moderation_action_execution(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            action = None  # TODO: Sleep
+            self.dispatch('automod_action', guild, action)
+        else:
+            log.debug('AUTO_MODERATION_ACTION_EXECUTION referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def _get_reaction_user(self, channel, user_id):
         if isinstance(channel, TextChannel):
