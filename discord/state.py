@@ -52,10 +52,11 @@ from .raw_models import *
 from .member import Member
 from .role import Role
 from .enums import ChannelType, try_enum, Status, MessageType, ComponentType
-from . import utils, AutoModRule
+from . import utils
 from .flags import Intents, MemberCacheFlags, ApplicationFlags
 from .object import Object
 from .invite import Invite
+from .automod import AutoModRule, AutoModActionPayload
 from .interactions import BaseInteraction, InteractionType
 
 
@@ -480,10 +481,11 @@ class ConnectionState:
         except asyncio.CancelledError:
             pass
         else:
-            # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch ready event
-            await self._get_client()._request_sync_commands()
+
             self.call_handlers('ready')
             self.dispatch('ready')
+            # sync the application-commands
+            await self._get_client()._request_sync_commands()
 
         finally:
             self._ready_task = None
@@ -1240,11 +1242,8 @@ class ConnectionState:
         guild = self._get_guild(int(data['guild_id']))
         if guild is not None:
             rule = AutoModRule(state=self, guild=guild, **data)
-            try:
-                guild._automod_rules[rule.id] = rule
-            except (AttributeError, TypeError):
-                guild._automod_rules = {rule.id: rule}
-            self.dispatch('automod_rule_create', guild, rule)
+            guild._add_automod_rule(rule)
+            self.dispatch('automod_rule_create', rule)
         else:
             log.debug('AUTO_MODERATION_RULE_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
@@ -1253,11 +1252,8 @@ class ConnectionState:
         if guild is not None:
             rule = AutoModRule(state=self, guild=guild, **data)
             old_rule = guild._automod_rules.pop(rule.id)
-            try:
-                guild._automod_rules[rule.id] = rule
-            except (AttributeError, TypeError):
-                guild._automod_rules = {rule.id: rule}
-            self.dispatch('automod_rule_update', guild, old_rule, rule)
+            guild._add_automod_rule(rule)
+            self.dispatch('automod_rule_update', old_rule, rule)
         else:
             log.debug('AUTO_MODERATION_RULE_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
@@ -1265,19 +1261,16 @@ class ConnectionState:
         guild = self._get_guild(int(data['guild_id']))
         if guild is not None:
             rule = AutoModRule(state=self, guild=guild, **data)
-            try:
-                guild._automod_rules.pop(rule.id)
-            except (AttributeError, TypeError, KeyError):
-                pass
-            self.dispatch('automod_rule_delete', guild, rule)
+            guild._remove_automod_rule(rule)
+            self.dispatch('automod_rule_delete', rule)
         else:
             log.debug('AUTO_MODERATION_RULE_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_auto_moderation_action_execution(self, data):
         guild = self._get_guild(int(data['guild_id']))
         if guild is not None:
-            action = None  # TODO: Sleep
-            self.dispatch('automod_action', guild, action)
+            payload = AutoModActionPayload(state=self, data=data)
+            self.dispatch('automod_action', payload)
         else:
             log.debug('AUTO_MODERATION_ACTION_EXECUTION referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
@@ -1409,10 +1402,10 @@ class AutoShardedConnectionState(ConnectionState):
         # clear the current task
         self._ready_task = None
 
-        # sync the application-commands if :attr:`sync_commands` of :attr:`.client` is True and dispatch the event
         self.call_handlers('ready')
         self.dispatch('ready')
-        self.dispatch('request_sync_commands')
+        # sync the application-commands
+        await self._get_client()._request_sync_commands()
 
     def parse_ready(self, data):
         if not hasattr(self, '_ready_state'):
