@@ -846,7 +846,7 @@ class Intents(BaseFlags):
         - :func:`on_raw_message_delete` (cached_message)
         - :func:`on_bulk_message_delete` (content, embeds, attachments, components)
         - :func:`on_raw_bulk_message_delete` (cached_messages)
-        - :func:`on_auto_moderation_action` (message, matched_keyword)
+        - :func:`on_auto_moderation_action` (content, matched_content)
 
         This also corresponds to the following attributes and classes:
 
