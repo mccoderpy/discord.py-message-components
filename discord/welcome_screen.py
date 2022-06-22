@@ -12,19 +12,30 @@ __all__ = (
 
 
 class WelcomeScreenChannel:
-    """
-    Represents a channel shown in a welcome screen.
+    r"""Represents a channel shown in a welcome screen.
 
-    Parameters
+    Attributes
     -----------
     channel: :class:`~discord.Snowflake`
         The channel the welcome screen channel belongs to
     description: :class:`str`
         The description of the welcome screen channel
-    emoji: Optional[Union[:class:`~discord.PartialEmoji`, :class:`str`]
+    emoji: Optional[:class:`~discord.PartialEmoji`]
         The emoji that is shown on the left side of the welcome screen channel
     """
     def __init__(self, channel: 'GuildChannel', description: str = None, emoji: Optional[Union[PartialEmoji, str]] = None):
+        """
+        Represents a channel shown in a welcome screen.
+
+        Parameters
+        -----------
+        channel: :class:`~discord.Snowflake`
+            The channel the welcome screen channel belongs to
+        description: :class:`str`
+            The description of the welcome screen channel
+        emoji: Optional[Union[:class:`~discord.PartialEmoji`, :class:`str`]
+            The emoji that is shown on the left side of the welcome screen channel
+        """
         try:
             self._state = channel._state
         except AttributeError:
@@ -63,10 +74,10 @@ class WelcomeScreenChannel:
 
 class WelcomeScreen:
     """
-    Represents a welcome screen for a guild returned by :meth:`Guild.fetch_welcome_screen`.
+    Represents a welcome screen for a guild returned by :meth:`~Guild.welcome_screen`.
 
     .. warning::
-        Do not initialize this class directly. Use :meth:`guild.fetch_welcome_screen` instead.
+        Do not initialize this class directly. Use :meth:`~Guild.welcome_screen` instead.
 
     Attributes
     -----------
