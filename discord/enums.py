@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import types
-from typing import Union, Any
+from typing import Union, Any, Type
 from collections import namedtuple
 
 
@@ -185,6 +185,12 @@ class Enum(metaclass=EnumMeta):
         except (KeyError, TypeError):
             return value
 
+    def __str__(self) -> str:
+        return self.name
+
+    def __int__(self) -> int:
+        return self.value
+
     @property
     def name(self):
         return getattr(self, 'name')
@@ -192,9 +198,6 @@ class Enum(metaclass=EnumMeta):
     @property
     def value(self):
         return getattr(self, 'value')
-
-    # def __getattribute__(self, item):
-    #     return self._enum_member_map_[item]
 
 
 class ChannelType(Enum):
@@ -968,7 +971,7 @@ class AutoModActionType(Enum):
     timeout_user        = 3
 
 
-def try_enum(cls: Enum, val: Any):
+def try_enum(cls: Type[Enum], val: Any):
     """A function that tries to turn the value into enum ``cls``.
 
     If it fails it returns the value instead.
