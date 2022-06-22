@@ -265,9 +265,9 @@ class MessageFlags(BaseFlags):
 
     @flag_value
     def loading(self):
-        """:class:`bool`: Returns ``True`` if the message is an Interaction Response and the bot is "thinking".
+        """:class:`bool`: Returns ``True`` if the message is an interaction response and the bot is "thinking".
 
-        This message is an Interaction Response and the bot is "thinking"
+        This message is an interaction response and the bot is "thinking"
         """
         return 128
 
