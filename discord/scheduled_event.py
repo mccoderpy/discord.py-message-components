@@ -47,7 +47,8 @@ class GuildScheduledEvent(Hashable):
     Represents a scheduled event in a guild
 
     .. warning::
-        Do not initialize this class manually. Use :meth:`~discord.Guild.fetch_event` or :meth:`~discord.Guild.fetch_events` instead.
+        Do not initialize this class manually. Use :meth:`~discord.Guild.fetch_event`/:meth:`~discord.Guild.fetch_events`
+        or to create one :meth:`~discord.Guild.create_scheduled_event` instead.
 
     Attributes
     -----------
