@@ -39,10 +39,12 @@ from typing import (
 
 import datetime
 
+from . import utils
 from .role import Role
 from .object import Object
 from .abc import GuildChannel
 from .utils import SnowflakeList
+from .errors import ClientException
 from .enums import AutoModEventType, AutoModKeywordPresetType, AutoModActionType, AutoModTriggerType, try_enum
 
 
@@ -50,13 +52,16 @@ if TYPE_CHECKING:
     # Add imports here, that are only used for annotation and would raise CircularImportError otherwise
     from .state import ConnectionState
     from .guild import Guild
+    from .user import User
     from .member import Member
 
 __all__ = (
     'AutoModAction',
     'AutoModTriggerMetadata',
-    'AutoModRule'
+    'AutoModRule',
+    'AutoModActionPayload'
 )
+
 
 class AutoModAction:
     def __init__(self, type: AutoModActionType, **metadata):
@@ -92,7 +97,7 @@ class AutoModAction:
                 raise TypeError('If the type is send_alert_message you must specify a channel_id')
         elif action_type.timeout_user:
             try:
-                timeout_duration: Optional[Union[int, datetime.timedelta]] = metadata.get('timeout_duration', metadata['duration_seconds'])
+                timeout_duration: Optional[Union[int, datetime.timedelta]] = metadata['timeout_duration']
             except KeyError:
                 raise TypeError('If the type is timeout_user you must specify a timeout_duration')
             else:
@@ -113,6 +118,16 @@ class AutoModAction:
             metadata['duration_seconds'] = self.timeout_duration
         base['metadata'] = metadata
         return base
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> AutoModAction:
+        action_type = try_enum(AutoModActionType, data['type'])
+        metadata = data['metadata']
+        if action_type.timeout_user:
+            metadata['timeout_duration'] = metadata.pop('duration_seconds')
+        elif action_type.send_alert_message:
+            metadata['channel_id'] = int(metadata['channel_id'])
+        return cls(action_type, **metadata)
 
 
 class AutoModTriggerMetadata:
@@ -280,7 +295,7 @@ class AutoModRule:
                  **data) -> None:
         """
         .. warning::
-            Do not initialize this class directly. Use :func:`discord.Guild.add_auto_mod_rule` instead.
+            Do not initialize this class directly. Use :meth:`~discord.Guild.create_automod_rule` instead.
 
         Attributes
         -----------
@@ -312,7 +327,7 @@ class AutoModRule:
         self.event_type: AutoModEventType = try_enum(AutoModEventType, data['event_type'])
         self.trigger_type: AutoModTriggerType = try_enum(AutoModTriggerType, data['trigger_type'])
         self.trigger_metadata: AutoModTriggerMetadata = AutoModTriggerMetadata.from_dict(data['trigger_metadata'])
-        self.actions: List[AutoModAction] = [AutoModAction(action['type'], **action['metadata']) for action in data['actions']]
+        self.actions: List[AutoModAction] = [AutoModAction.from_dict(action) for action in data['actions']]
         self.enabled: bool = data['enabled']
         self._exempt_roles: SnowflakeList = SnowflakeList(map(int, data['exempt_roles'])),
         self._exempt_channels: SnowflakeList = SnowflakeList(map(int, data['exempt_channels'])),
@@ -367,16 +382,157 @@ class AutoModRule:
             yield channel or Object(channel_id, _type=GuildChannel, state=self._state)
         
     @property
-    def creator(self) -> Member:
+    def creator(self) -> Optional[Member]:
         """
         Returns the creator of the rule
 
         .. note::
-            The :func:`discord.Intents.members` must be enabled, otherwise this may return `` None``
+            The :attr:`Intents.members` must be enabled, otherwise this may return `` None``
+        
+        Raises
+        -------
+        ClientException:
+            If the member is not found and :attr:`~Intents.members` intent is not enabled.
+        
+        Returns
+        --------
+        Optional[:class:`~discord.Member`}
+            The member, that created the rule.
+        """
+        creator = self.guild.get_member(self.creator_id)
+        # If the member is not found and the members intent is disabled, then raise
+        if not creator and not self._state.intents.members:
+            raise ClientException('Intents.members must be enabled to use this')
+        return creator
+
+    @property
+    def created_at(self) -> datetime.datetime:
+        """:class:`datetime.datetime`: When the rule was created in UTC"""
+        return utils.snowflake_time(self.id)
+
+
+class AutoModActionPayload:
+    """Represents the payload for a :func:`on_automod_action` event
+
+    Attributes
+    -----------
+    guild_id: :class:`int`
+        The id of the guild in which action was executed
+    action: :class:`AutoModAction`
+        The action wich was executed
+    rule_id: :class:`int`
+        The id of the rule which action belongs to
+    rule_trigger_type: :class:`~discord.AutoModTriggerType`
+        The trigger type of rule wich was triggered
+    user_id: :class:`int`
+        The id of the user which generated the content which triggered the rule
+    channel_id: Optional[:class:`int`]
+        The id of the channel in which user content was posted
+    message_id: Optional[:class:`int`]
+        The id of any user message which content belongs to
+
+        .. note::
+            This wil not exists if message was blocked by automod or content was not part of any message
+
+    alert_system_message_id: Optional[:class:`int`]
+        The id of any system auto moderation messages posted as the result of this action
+
+        .. note::
+            This will only exist if the :attr:`~AutoModAction.type` of the :attr:`~AutoModActionPayload.action` is ``send_alert_message``
+
+    content: :class:`str`
+        The user generated text content
+
+        .. important::
+            The :attr:`Intents.message_content` intent is required to get a non-empty value for this field
+
+    matched_keyword: :class:`str`
+        The word ot phrase configured in the rule that triggered the rule
+    matched_content: :class:`str`
+        The substring in :attr:`~AutoModActionPayload.content` that triggered the rule
+
+         .. important::
+            The :attr:`~Intents.message_content` intent is required to get a non-empty value for this field
+
+    """
+    __slots__ = (
+        '_state', 'guild_id', 'action', 'rule_id', 'rule_trigger_type', 'user_id', 'channel_id', 'message_id',
+        'alert_system_message_id', 'content', 'matched_keyword', 'matched_content'
+    )
+
+    def __init__(self, state: ConnectionState, data: Dict[str, Any]) -> None:
+        self._state = state
+        self.guild_id: int = int(data['guild_id'])
+        self.action: AutoModAction = AutoModAction.from_dict(data['action'])
+        self.rule_id: int = int(data['rule_id'])
+        self.rule_trigger_type: AutoModTriggerType = try_enum(AutoModTriggerType, data['rule_trigger_type'])
+        self.user_id: int = int(data['user_id'])
+        self.channel_id: Optional[int] = int(data.get('channel_id', 0))
+        self.message_id: Optional[int] = int(data.get('message_id', 0))
+        self.alert_system_message_id: Optional[int] = int(data.get('alert_system_message_id', 0))
+        self.content: str = data['content']
+        self.matched_keyword: Optional[str] = data.get('matched_keyword', None)
+        self.matched_content: Optional[str] = data.get('matched_content', None)
+
+    @property
+    def guild(self) -> Guild:
+        """
+        The guild in which action was executed
 
         Returns
         --------
-        :class:`~discord.Member`
-            The User, that created the rule.
+        :class:`Guild`
+            The guild object
         """
-        return self.guild.get_member(self.creator_id)
+        return self._state._get_guild(self.guild_id)
+
+    @property
+    def channel(self) -> Optional[GuildChannel]:
+        """
+        The channel in wich user content was posted, if any.
+
+        Returns
+        --------
+        :class:`GuildChannel`
+            A :class:`TextChannel`, :class:`VoiceChannel` or :class:`ThreadChannel`
+        """
+        return self.guild.get_channel(self.channel_id)
+
+    @property
+    def user(self) -> Optional[User]:
+        """
+        The user which content triggered the rule
+
+        .. note::
+            This can return ``None`` if the user is not in the cache
+
+        Returns
+        --------
+        :class:`User`
+            The user that triggered the rule
+        """
+        return self._state.get_user(self.user_id)
+
+    @property
+    def member(self) -> Optional[Member]:
+        """
+        The corresponding :class:`Member` of the :attr:`~AutoModActionPayload.user` in the :attr:`~AutoModActionPayload.guild`.
+
+        .. note::
+            :attr:`Intents.members` must be enabled in order to use this
+
+        Raises
+        -------
+        ClientException:
+            If the member is not found and :attr:`~Intents.members` intent is not enabled.
+
+        Returns
+        --------
+        Optional[Member]
+            The guild member
+        """
+        member = self.guild.get_member(self.user_id)
+        # If the member is not found and the members intent is disabled, then raise
+        if not member and not self._state.intents.members:
+            raise ClientException('Intents.members must be enabled to use this')
+        return member
