@@ -1115,11 +1115,6 @@ class HTTPClient:
             json=data
         )
 
-    def batch_edit_application_command_permissions(self, application_id, guild_id, data):
-        return self.request(
-            Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'),
-            json=data)
-
     # Interaction management
     def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
         r_url = f"/webhooks/{application_id}/{token}/callback" if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback"
