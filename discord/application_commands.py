@@ -484,7 +484,10 @@ class SlashCommandOptionChoice:
 
     @classmethod
     def from_dict(cls, data):
-        return cls(name=data['name'], value=data['value'], name_localizations=Localizations(**data.get('name_localizations', {})))
+        name_localizations = data.get('name_localizations', None)
+        if not name_localizations:
+            name_localizations = {}
+        return cls(name=data['name'], value=data['value'], name_localizations=Localizations(**name_localizations))
 
 
 class SlashCommandOption:
