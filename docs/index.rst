@@ -6,7 +6,7 @@
 |flag_ua| Welcome to discord\.py-message-components |flag_ua|
 ==============================================================
 
-.. figure:: images/banner_dark.png
+.. figure:: ./images/banner_dark.png
    :name: discord.py-message-components
    :align: center
    :alt: Name of the Project (discord.py-message-components)
