@@ -1,5 +1,5 @@
 sphinxcontrib_trio
+sphinxcontrib-contentui==0.2.5
 Jinja2 >.0.3
 Pigments
-aiohttp>=3.6.0,<3.8.0
-sphinxcontrib-contentui==0.2.5
+aiohttp>=3.8.0,<4
