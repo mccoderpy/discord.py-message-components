@@ -288,7 +288,7 @@ to handle it, which defaults to print a traceback and ignoring the exception.
 
 .. function:: on_application_command_error(command, interaction, exception)
 
-    The default error handler when an exception was raised while invoking an :ref:`application-command <./Interactions/>`.
+    The default error handler when an exception was raised while invoking an `application-command <./Interactions/>`_ .
 
     .. note::
         This includes when a :meth:`~ext.commands.check` fails
