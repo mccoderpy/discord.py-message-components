@@ -118,7 +118,7 @@ html_permalinks_icon = '<span class="fa fa-link" aria-hidden="true"></span>'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = '../images/Banner_Konturen.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -157,11 +157,14 @@ html_theme = 'basic'
 # implements a search results scorer. If empty, the default will be used.
 html_search_scorer = '_static/scorer.js'
 
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'friendly'
+
 html_js_files = [
   'custom.js',
   'settings.js',
   'copy.js',
-  'sidebar.js'
+  'sidebar.js',
 ]
 
 # The master toctree document.
