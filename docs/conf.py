@@ -177,4 +177,5 @@ master_doc = 'index'
 html_static_path = ['_static']
 
 def setup(app: 'App'):
-    app.add_css_file('style.css')
+    pass
+    # app.add_css_file('style.css')
