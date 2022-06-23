@@ -51,7 +51,7 @@ branch = 'developer' if version.endswith('a') else 'v' + version
 # ones.
 
 extensions = [
-    'sphinx-rtd-theme',
+    'sphinx_rtd_theme',
     'builder',
     'sphinx.ext.autodoc',
     'sphinx.ext.extlinks',
