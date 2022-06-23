@@ -139,7 +139,7 @@ rst_prolog = """
 """
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -178,4 +178,4 @@ html_static_path = ['_static']
 
 def setup(app: 'App'):
     pass
-    # app.add_css_file('style.css')
+    app.add_css_file('style.css')
