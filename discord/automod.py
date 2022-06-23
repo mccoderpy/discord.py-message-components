@@ -67,7 +67,7 @@ class AutoModAction:
     """
     Represents an action which will execute whenever a rule is triggered.
 
-    Attributes
+    Parameters
     -----------
     type: :class:`AutoModActionType`
         The type of action
@@ -87,28 +87,6 @@ class AutoModAction:
 
     """
     def __init__(self, type: AutoModActionType, **metadata):
-        """
-        Represents an action which will execute whenever a rule is triggered.
-
-        Parameters
-        -----------
-        type: :class:`AutoModActionType`
-            The type of action
-        channel_id: Optional[:class:`int`]
-            The channel to which user content should be logged.
-
-            .. note::
-                This field is only required :attr:`~AutoModAction.type` is :attr:~`AutoModActionType.send_alert_message`
-
-        timeout_duration: Optional[Union[:class:`int`, :class:`datetime.timedelta`]]
-            Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the user should be timeouted.
-
-            **The maximum value is ``2419200`` seconds (4 weeks)**
-
-            .. note::
-               This field is only required if :attr:`type` is :attr:`AutoModActionType.timeout_user`
-
-        """
         self.type: AutoModActionType = try_enum(AutoModActionType, type)
         self.metadata = metadata  # maybe we need this later... idk
         action_type = self.type  # speedup attribute access
@@ -153,10 +131,10 @@ class AutoModAction:
 
 
 class AutoModTriggerMetadata:
-    r"""Additional data used to determine whether a rule should be triggered.
+    """Additional data used to determine whether a rule should be triggered.
     Different fields are relevant based on the value of :attr:`AutoModRule.trigger_type`
 
-    Attributes
+    Parameters
     -----------
     keyword_filter: Optional[List[:class:`str`]]
         Substrings which will be searched for in content
@@ -436,7 +414,7 @@ class AutoModRule:
 
 
 class AutoModActionPayload:
-    """Represents the payload for a :func:`on_automod_action` event
+    """Represents the payload for an :func:`on_automod_action` event
 
     Attributes
     -----------

@@ -171,7 +171,7 @@ class Button:
 
     def disable_if(self, check: Union[bool, Callable], *args):
         """
-        Disables the :class:`discord.Button` if the passed :attr:`check` returns ``True``.
+        Disables the :class:`~discord.Button` if the passed :attr:`check` returns ``True``.
 
         Parameters
         ----------
@@ -522,7 +522,7 @@ class SelectMenu:
 
 class Modal:
     """
-    Represents a `Discord Modal <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-modal>`_
+    Represents a `Modal <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-modal>`_
 
     Parameters
     ----------
@@ -568,7 +568,7 @@ class Modal:
 
 class TextInput:
     """
-    Represents an `Discord-TextInput` <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
+    Represents a `TextInput <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
 
 
     Parameters
@@ -846,7 +846,7 @@ class ActionRow:
 
     def disable_all_buttons(self):
         """
-        Disables all ::class:`discord.Button`'s in this :class:`ActionRow` and returns the action row.
+        Disables all ::class:`~discord.Button`'s in this :class:`ActionRow` and returns the action row.
 
         Returns
         -------
@@ -858,7 +858,7 @@ class ActionRow:
 
     def disable_all_buttons_if(self, check: Union[bool, Callable], *args: Any):
         """
-        Disables all :class:`discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns ``True``.
+        Disables all :class:`~discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns ``True``.
         It returns the action row.
     
         Parameters

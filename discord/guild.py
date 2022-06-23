@@ -2584,7 +2584,7 @@ class Guild(Hashable):
         """|coro|
         
         Schedules a new Event in this guild. Requires ``MANAGE_EVENTS`` at least in the :attr:`channel`
-        or in the entire guild if :attr:`type` is :class:`EventType.external`.
+        or in the entire guild if :attr:`~GuildScheduledEvent.type` is :attr:`~EventType.external`.
         
         Parameters
         ----------
@@ -2592,22 +2592,28 @@ class Guild(Hashable):
             The name of the scheduled event. 1-100 characters long.
         entity_type: :class:`EventEntityType`
             The entity_type of the scheduled event.
-
-            **:attr:`end_time` and :attr:`location` must be provided if entity_type is :class:`EventEntityType.external`, otherwise :attr:`channel`.**
+            
+            .. important::
+                :attr:`end_time` and :attr:`location` must be provided if entity_type is :class:`~EventEntityType.external`, otherwise :attr:`channel`
 
         start_time: :class:`datetime.datetime`
             The time when the event will start. Must be a valid date in the future.
         end_time: Optional[:class:`datetime.datetime`]
             The time when the event will end. Must be a valid date in the future.
-            If :attr:`entity_type` is :class:`EventEntityType.external` this must be provided.
+
+            .. important::
+                If :attr:`entity_type` is :class:`~EventEntityType.external` this must be provided.
         channel: Optional[Union[:class:`StageChannel`, :class:`VoiceChannel`]]
             The channel in which the event takes place.
-            Must be provided if :attr:`entity_type` is :class:`EventEntityType.stage` or :class:`EventEntityType.voice`.
-        description: Optional[:class`str`]
+            Must be provided if :attr:`entity_type` is :class:`~EventEntityType.stage` or :class:`~EventEntityType.voice`.
+        description: Optional[:class:`str`]
             The description of the scheduled event. 1-1000 characters long.
         location: Optional[:class:`str`]
             The location where the event will take place. 1-100 characters long.
-            **Must be provided if :attr:`entity_type` is :class:`EventEntityType.external`**
+
+            .. important::
+                This must be provided if :attr:`~GuildScheduledEvent.entity_type` is :attr:`~EventEntityType.external`
+
         cover_image: Optional[:class:`bytes`]
             The cover image of the scheduled event.
         reason: Optional[:class:`str`]
@@ -2623,8 +2629,8 @@ class Guild(Hashable):
         TypeError:
             Any parameter is of wrong type.
         errors.InvalidArgument:
-            entity_type is :attr:`~EventEntityType.stage` or :attr:`~EventEntityType.voice` but channel is not provided
-            or :attr:`~EventEntityType.external` but no location or end_time provided.
+            entity_type is :attr:`~EventEntityType.stage` or :attr:`~EventEntityType.voice` but ``channel`` is not provided
+            or :attr:`~EventEntityType.external` but no ``location`` and/or ``end_time`` provided.
         ValueError:
             The value of any parameter is invalid. (e.g. to long/short)
         errors.Forbidden:
