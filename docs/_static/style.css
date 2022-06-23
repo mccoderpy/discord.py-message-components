@@ -188,12 +188,12 @@ img[src$="banner_light.png"]  {
   display: none;
 }
 
-:root[data-theme="light"] .figure[id$="discord-py-message-components"] > img {
+:root[data-theme="light"] figure[id$="discord-py-message-components"] > img {
   content: url("../_images/banner_light.png");
   display: inherit;
 }
 
-:root[data-theme="dark"] .figure[id$="discord-py-message-components"] > img {
+:root[data-theme="dark"] figure[id$="discord-py-message-components"] > img {
   content: url("../_images/banner_dark.png");
   display: inherit;
 }
