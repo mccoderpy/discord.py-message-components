@@ -1,1 +1,9 @@
 aiohttp>=3.8.0,<4
+typing-extensions
+yarl
+chardet
+async-timeout
+attrs
+multidict
+idna
+
