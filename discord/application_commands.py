@@ -98,12 +98,12 @@ class Localizations:
     | bg     | Bulgarian               | български           |
     | ru     | Russian                 | Pусский             |
     | uk     | Ukrainian               | Українська          |
-    | hi     | Hindi                   | हिन्दी              |
+    | hi     | Hindi                   | हिन्दी                 |
     | th     | Thai                    | ไทย                 |
-    | zh_CN  | Chinese, China          | 中文                  |
-    | ja     | Japanese                | 日本語                 |
-    | zh_TW  | Chinese, Taiwan         | 繁體中文                |
-    | ko     | Korean                  | 한국어                 |
+    | zh_CN  | Chinese, China          | 中文                 |
+    | ja     | Japanese                | 日本語                |
+    | zh_TW  | Chinese, Taiwan         | 繁體中文              |
+    | ko     | Korean                  | 한국어                |
     +--------+-------------------------+---------------------+
 
     Parameters
@@ -192,7 +192,7 @@ class Localizations:
 
         Return
         ------
-        Union[:class:`str`, :class:`None`]
+        Union[:class:`str`, None]
             The value of the locale or :class:`None` if there is no value for the locale set.
 
         Raises
@@ -236,6 +236,7 @@ class Localizations:
 
 
 class ApplicationCommand:
+    """The base class for application commands"""
     def __init__(self, type: int, *args, **kwargs):
         self._type = type
         self.name = kwargs.get('name', '')
@@ -394,10 +395,12 @@ class ApplicationCommand:
 
     @property
     def id(self):
+        """Optional[:class:`int`]: The id of the command, only set if the bot is running"""
         return getattr(self, '_id', None)
 
     @property
     def created_at(self) -> Optional['datetime']:
+        """Optional[:class:`datetime.datetime`]: The creation time of the command in UTC, only set if the bot is running"""
         if self.id:
             return snowflake_time(self.id)
 
@@ -441,6 +444,10 @@ class ApplicationCommand:
         return sorted_dict
 
     async def delete(self):
+        """|coro|
+
+        Deletes the application command
+        """
         if self.guild_id != 0:
             guild_id = self.guild_id
         else:
@@ -451,20 +458,21 @@ class ApplicationCommand:
 
 
 class SlashCommandOptionChoice:
-    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Optional[Localizations] = Localizations()):
-        """
-        A class representing a choice for a :class:`SelectOption` or :class:`SubCommand`.
+    """
+    A class representing a choice for a :class:`SelectOption` or :class:`SubCommand`.
 
-        Parameters
-        ----------
-        name: :class:`str`
-            The 1-100 characters long name that will shows in the client.
-        value: Union[:class:`str`, :class:`int`, :class:`float`]
-            The value that will send as the options value.
-            Must be of the type the option is of (:class:`str`, :class:`int` or :class:`float`).
-        name_localizations: Optional[:class:`Localizations`]
-            Localized names for the choice.
-        """
+    Parameters
+    -----------
+    name: :class:`str`
+        The 1-100 characters long name that will show in the client.
+    value: Union[:class:`str`, :class:`int`, :class:`float`]
+        The value that will send as the options value.
+        Must be of the type the option is of (:class:`str`, :class:`int` or :class:`float`).
+    name_localizations: Optional[:class:`Localizations`]
+        Localized names for the choice.
+    """
+    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Optional[Localizations] = Localizations()):
+
         if 100 < len(name) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
         self.name = name
@@ -491,7 +499,58 @@ class SlashCommandOptionChoice:
 
 
 class SlashCommandOption:
+    """
+    Representing an option for a :class:`SlashCommand`/:class:`SubCommand`.
 
+    Parameters
+    -----------
+    option_type: Union[:class:`OptionType`, :class:`int`, :class:`type`]
+        Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :class:`type` like
+        :class:`discord.Member`, :class:`discord.TextChannel` or :class:`str`.
+        If the :attr:`option_type` is a :class:`type`, that subclasses :class:`~discord.abc.GuildChannel` the type of the
+        channel would set as the default :attr:`~SlashCommandOption.channel_types`.
+    name: :class:`str`
+        The 1-32 characters long name of the option shows up in discord.
+        The name must be the same as the one of the parameter for the slash-command
+        or connected using :attr:`~SlashCommand.connector` of :class:`SlashCommand`/:class:`SubCommand` or the method
+        that generates one of these.
+    description: :class:`str`
+        The 1-100 characters long description of the option shows up in discord.
+    required: Optional[:class:`bool`]
+        Weather this option must be provided by the user, default ``True``.
+        If ``False``, the parameter of the slash-command that takes this option needs a default value.
+    choices: Optional[List[:class:`SlashCommandOptionChoice`]]
+        A list of up to 25 choices the user could select. Only valid if the :attr:`option_type` is one of
+        :class:`OptionType.string`, :class:`OptionType.integer` or :class:`OptionType.number`.
+        The :attr:`value`'s of the choices must be of the :attr:`~SlashCommandOption.option_type` of this option
+        (e.g. :class:`str`, :class:`int` or :class:`float`).
+        If choices are set they are the only options a user could pass.
+    autocomplete: Optional[:class:`bool`]
+        Whether to enable
+        `autocomplete <https://discord.com/developers/docs/interactions/application-commands#autocomplete>`_
+        interactions for this option, default ``False``.
+        With autocomplete, you can check the user's input and send matching choices to the client.
+        **Autocomplete can only be used with options of the type** ``string``, ``integer`` or ``number``.
+        **If autocomplete is activated, the option cannot have** :attr:`~SlashCommandOption.choices` **.**
+    min_value: Optional[Union[:class:`int`, :class:`float`]]
+        If the :attr:`~SlashCommandOption.option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
+        this is the minimum value the users input must be of.
+    max_value: Optional[Union[:class:`int`, :class:`float`]]
+        If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
+        this is the maximum value the users input could be of.
+    channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
+        A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
+        Only valid if :attr:`~SlashCommandOption.option_type` is :class:`OptionType.channel`.
+    default: Optional[Any]
+        The default value that should be passed to the function if the option is not provided, default ``None``.
+        Usually used for autocomplete callback.
+    converter: Optional[Union[:class:`discord.ext.commands.Greedy`, :class:`discord.ext.commands.Converter`]]
+        A subclass of :class:`~discord.ext.commands.Converter` to use for converting the value.
+        Only valid for option_type :attr:`~OptionType.string` or :attr:`~OptionType.integer`
+    ignore_conversion_failures: Optional[:class:`bool`]
+        Whether conversion failures should be ignored and the value should be passed without conversion instead.
+        Default ``False``
+    """
     def __init__(self,
                  option_type: Union[OptionType, int, type],
                  name: str,
@@ -508,58 +567,6 @@ class SlashCommandOption:
                  converter: Optional['Converter'] = None,
                  ignore_conversion_failures: Optional[bool] = False,
                  **kwargs) -> None:
-        """
-        Representing an option for a :class:`SlashCommand`/:class:`SubCommand`.
-
-        Parameters
-        ----------
-        option_type: Union[:class:`OptionType`, :class:`int`, :class:`type`]
-            Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :class:`type` like
-            :class:`discord.Member`, :class:`discord.TextChannel` or :class:`str`.
-            If the :attr:`option_type` is a :class:`type`, that subclasses :class:`~discord.abc.GuildChannel` the type of the
-            channel would set as the default :attr:`channel_types`.
-        name: :class:`str`
-            The 1-32 characters long name of the option shows up in discord.
-            The name must be the same as the one of the parameter for the slash-command
-            or connected using :attr:`connector` of :class:`SlashCommand`/:class:`SubCommand` or the method
-            that generates one of these.
-        description: :class:`str`
-            The 1-100 characters long description of the option shows up in discord.
-        required: Optional[:class:`bool`]
-            Weather this option must be provided by the user, default ``True``.
-            If ``False``, the parameter of the slash-command that takes this option needs a default value.
-        choices: Optional[List[:class:`SlashCommandOptionChoice`]]
-            A list of up to 25 choices the user could select. Only valid if the :attr:`option_type` is one of
-            :class:`OptionType.string`, :class:`OptionType.integer` or :class:`OptionType.number`.
-            The :attr:`value`'s of the choices must be of the :attr:`option_type` of this option
-            (e.g. :class:`str`, :class:`int` or :class:`float`).
-            If choices are set they are the only options a user could pass.
-        autocomplete: Optional[:class:`bool`]
-            Whether to enable
-            `autocomplete <https://discord.com/developers/docs/interactions/application-commands#autocomplete>`_
-            interactions for this option, default ``False``.
-            With autocomplete, you can check the user's input and send matching choices to the client.
-            **Autocomplete can only be used with options of the type** ``string``, ``integer`` or ``number``.
-            **If autocomplete is activated, the option cannot have** :attr:`choices` **.**
-        min_value: Optional[Union[:class:`int`, :class:`float`]]
-            If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
-            this is the minimum value the users input must be of.
-        max_value: Optional[Union[:class:`int`, :class:`float`]]
-            If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
-            this is the maximum value the users input could be of.
-        channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
-            A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
-            Only valid if :attr:`option_type` is :class:`OptionType.channel`.
-        default: Optional[Any]
-            The default value that should be passed to the function if the option is not provided, default ``None``.
-            Usually used for autocomplete callback.
-        converter: Optional[Union[:class:`discord.ext.commands.Greedy`, :class:`discord.ext.commands.Converter`]]
-            A subclass of :class:`discord.ext.commands.Converter` to use for converting the value.
-            Only valid for :class:`OptionType.string` or :class:`OptionType.integer`
-        ignore_conversion_failures: Optional[:class:`bool`]
-            Whether conversion failures should be ignored and the value should be passed without conversion instead.
-            Default ``False``
-        """
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
             if issubclass(option_type, Converter) or converter is Greedy:
@@ -615,8 +622,8 @@ class SlashCommandOption:
         With autocomplete, you can check the user's input and send matching choices to the client.
 
         .. note::
-            Autocomplete can only be used with options of the type :class:`OptionType.string`,
-            :class:`OptionType.integer` or :class:`OptionType.number`.
+            Autocomplete can only be used with options of the type :attr:`~OptionType.string`,
+            :attr:`~OptionType.integer` or :attr:`~OptionType.number`.
             If autocomplete is activated, the option cannot have :attr:`choices`.
         """
         return getattr(self, '_autocomplete', False)
@@ -928,6 +935,33 @@ class GuildOnlySubCommand(SubCommand):
 
 
 class SlashCommand(ApplicationCommand):
+    """
+    Represents a slash-command.
+
+    .. note::
+        You should use :func:`discord.Client.slash_command` or in cogs :func:`~discord.ext.commands.Cog.slash_command`
+        decorator by default to create this.
+
+    Parameters
+    -----------
+    name: :class:`str`
+        The name of the slash-command. Must be between 1 and 32 characters long and oly contain a-z, _ and -.
+    description: :class:`str`
+        The description of the command shows up in discord. Between 1 and 100 characters long.
+    allow_dm: Optional[:class:`bool`]
+        Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+        By default, commands are visible.
+    default_member_permissions: Optional[Union[:class:`~discord.Permissions`, :class:`int`]]
+         Permissions that a Member needs by default to execute(see) the command.
+    options: Optional[List[:class:`SlashCommandOption`]]
+        A list of max. 25 options for the command.
+        Required options **must** be listed before optional ones.
+    connector: Optional[Dict[:class:`str`, :class:`str`]]
+        A dictionary containing the name of function-parameters as keys and the name of the option as values.
+        Useful for using non-ascii Letters in your option names without getting ide-errors.
+    **kwargs:
+        Keyword arguments used for internal handling.
+    """
     def __init__(self,
                  name: str,
                  description: str,
@@ -938,31 +972,6 @@ class SlashCommand(ApplicationCommand):
                  options: List[SlashCommandOption] = [],
                  connector: Dict[str, str] = {},
                  **kwargs):
-        """
-        Represents a slash-command.
-        You should use the :class:`discord.Client.slash_command` or :class:`discord.ext.commands.Cog.slash_command`
-        decorator by default to create this.
-
-        Parameters
-        ----------
-        name: :class:`str`
-            The name of the slash-command. Must be between 1 and 32 characters long and oly contain a-z, _ and -.
-        description: :class:`str`
-            The description of the command shows up in discord. Between 1 and 100 characters long.
-        allow_dm: Optional[:class:`bool`]
-            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
-            By default, commands are visible.
-        default_member_permissions: Optional[Union[:class:`discord.Permissions`, :class:`int`]]
-             Permissions that a Member needs by default to execute(see) the command.
-        options: Optional[List[:class:`SlashCommandOption`]]
-            A list of max. 25 options for the command.
-            Required options **must** be listed before optional ones.
-        connector: Optional[Dict[:class:`str`, :class:`str`]]
-            A dictionary containing the name of function-parameters as keys and the name of the option as values.
-            Useful for using non-ascii Letters in your option names without getting ide-errors.
-        kwargs:
-            Keyword arguments used for internal handling.
-        """
         self.autocomplete_func = None
         super().__init__(1,
                          name=name,
@@ -1019,6 +1028,7 @@ class SlashCommand(ApplicationCommand):
 
     @property
     def cog(self) -> Optional['Cog']:
+        """Optional[:class:`ext.commands.Cog`]: The cog the slash command belongs to"""
         return getattr(self, '_cog', None)
 
     @cog.setter
@@ -1045,8 +1055,8 @@ class SlashCommand(ApplicationCommand):
 
         Parameters
         ----------
-        coro: Callable[Any, Any, Awaitable]
-            The function that should be set as autocomplete_func for this command.
+        coro: Callable[Any, Any, :class:`Awaitable`]
+            The function that should be set as :attr:`SlashCommand.autocomplete_func` for this command.
             Must take the same amount of params the command itself takes.
 
         """
@@ -1352,6 +1362,24 @@ class GuildOnlySlashCommand(SlashCommand):
 
 
 class UserCommand(ApplicationCommand):
+    """
+    Represents a user context-menu command
+
+    .. note::
+        You should use :func:`discord.Client.user_command` or in cogs :func:`~discord.ext.commands.Cog.user_command`
+        decorator by default to create this.
+
+    Parameters
+    ----------
+    name: Optional[:class:`str`]
+        The name of the user-command, default to the functions name.
+        Must be between 1-32 characters long.
+    default_required_permissions: Optional[:class:`~discord.Permissions`]
+        Permissions that a Member needs by default to execute(see) the command.
+    allow_dm:  :class:`bool`
+        Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+
+    """
     def __init__(self,
                  name: str,
                  name_localizations: Optional[Localizations] = None,
@@ -1379,6 +1407,24 @@ class UserCommand(ApplicationCommand):
 
 
 class MessageCommand(ApplicationCommand):
+    """
+    Represents a message context-menu command
+
+    .. note::
+        You should use :func:`discord.Client.message_command` or in cogs :func:`~discord.ext.commands.Cog.message_command`
+        decorator by default to create this.
+
+    Parameters
+    ----------
+    name: Optional[:class:`str`]
+        The name of the message-command, default to the functions name.
+        Must be between 1-32 characters long.
+    default_required_permissions: Optional[:class:`Permissions`]
+        Permissions that a Member needs by default to execute(see) the command.
+    allow_dm: Optional[:class:`~discord.Permissions`]
+        Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+        By default, commands are visible.
+    """
     def __init__(self,
                  name: str,
                  name_localizations: Optional[Localizations] = Localizations(),
