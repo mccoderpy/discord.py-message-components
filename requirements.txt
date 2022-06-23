@@ -6,4 +6,3 @@ async-timeout
 attrs
 multidict
 idna
-

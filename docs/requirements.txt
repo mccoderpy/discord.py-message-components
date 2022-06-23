@@ -2,4 +2,5 @@ sphinxcontrib_trio
 sphinxcontrib-contentui==0.2.5
 Jinja2 >.0.3
 Pigments
+typing-extensions
 aiohttp>=3.8.0,<4
