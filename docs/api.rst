@@ -288,7 +288,7 @@ to handle it, which defaults to print a traceback and ignoring the exception.
 
 .. function:: on_application_command_error(command, interaction, exception)
 
-    The default error handler when an exception was raised while invoking an :ref:`application-command </interactions/>`.
+    The default error handler when an exception was raised while invoking an :ref:`application-command <./Interactions/>`.
 
     .. note::
         This includes when a :meth:`~ext.commands.check` fails
@@ -2230,7 +2230,7 @@ of :class:`enum.Enum`.
 
     .. note::
 
-        \* Once :attr:`~GuildScheduledEvent.status` is set to ``completed` or ``canceled``, the ``status`` can no longer be updated
+        \* Once :attr:`~GuildScheduledEvent.status` is set to ``completed`` or ``canceled``, the ``status`` can no longer be updated
 
     Valid Guild Scheduled Event Status Transitions
 
@@ -2306,6 +2306,78 @@ of :class:`enum.Enum`.
         .. note::
 
             This can only be used when the :attr:`~AutoModRule.trigger_type` is ``keyword``
+
+.. class:: TextInputStyle
+
+    The style a :class:`TextInput` should have
+
+    .. attribute:: short
+
+        A single-line input
+
+    .. attribute:: singleline
+
+        An aliase for :attr:`~TextInputStyle.short`
+
+    .. attribute:: paragraph
+
+        A multi-line input
+
+    .. attribute:: multiline
+
+        An aliase for :attr:`~TextInputStyle.paragraph`
+
+.. class:: OptionType
+
+    Option types for :class:`SlashCommandOption`
+
+    .. attribute:: sub_command
+
+        A sub command. Internal use only.
+
+    .. attribute:: sub_command_group
+
+        A sub command group. Internal use only.
+
+    .. attribute:: string
+
+        A string (:class:`str`)
+
+    .. attribute:: integer
+
+       	Any integer between -2^53 and 2^53 (:class:`int`)
+
+    .. attribute:: boolean
+
+        A boolean (:class:`bool`)
+
+    .. attribute:: user
+
+        A user/member (:class:`~discord.User`/:class:`Member`)
+
+    .. attribute:: channel
+
+        Includes all channel types + categories
+
+        .. note::
+
+            To only accept specific channel types use :attr:`SlashCommandOption.channel_types`
+
+    .. attribute:: role
+
+        A role (:class:`Role`)
+
+    .. attribute:: mentionable
+
+        Includes user and roles (:class:`~discord.User`/:class:`Member` & :class:`Role`)
+
+    .. attribute:: number
+
+        Any double between -2^53 and 2^53 (:class:`float`)
+
+    .. attribute:: attachment
+
+        An :class:`Attachment`
 
 
 Async Iterator
@@ -3099,7 +3171,7 @@ GuildScheduledEvent
 AutoModRule
 ~~~~~~~~~~~~~~~~
 
-.. attributetable:: AutoModRule()
+.. attributetable:: AutoModRule
 
 .. autoclass:: AutoModRule()
     :members:
@@ -3107,7 +3179,7 @@ AutoModRule
 AutoModActionPayload
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. attributetable:: AutoModActionPayload()
+.. attributetable:: AutoModActionPayload
 
 .. autoclass:: AutoModActionPayload()
     :members:
