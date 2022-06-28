@@ -331,8 +331,8 @@ class AutoModRule:
         self.trigger_metadata: AutoModTriggerMetadata = AutoModTriggerMetadata.from_dict(data['trigger_metadata'])
         self.actions: List[AutoModAction] = [AutoModAction.from_dict(action) for action in data['actions']]
         self.enabled: bool = data['enabled']
-        self._exempt_roles: SnowflakeList = SnowflakeList(map(int, data['exempt_roles'])),
-        self._exempt_channels: SnowflakeList = SnowflakeList(map(int, data['exempt_channels'])),
+        self._exempt_roles: SnowflakeList = SnowflakeList(map(int, data['exempt_roles']))
+        self._exempt_channels: SnowflakeList = SnowflakeList(map(int, data['exempt_channels']))
 
     def __repr__(self) -> str:
         return f'<AutoModRule "{self.name}" guild_id={self.guild.id} creator_id={self.creator_id}>'
