@@ -61,7 +61,7 @@ class EphemeralMessage:
         self.channel = channel
         self._update(data)
 
-    def _update(self, data, /):
+    def _update(self, data):
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
         self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
         self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
