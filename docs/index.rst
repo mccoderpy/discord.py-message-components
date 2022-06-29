@@ -41,13 +41,13 @@
      New features are also implemented. It's not an extension!
      The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet.
 
-.. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
-   :name: discord.py-message-components documentation
-   :alt: Link to the documentation of discord.py-message-components
-   :align: center
-   :target: https://discordpy-message-components.readthedocs.io/en/developer/
+.. |PyPI| image:: https://cdn.discordapp.com/emojis/854380926548967444.png?v=1
+   :alt: PyPI Logo
+   :width: 30px
+   :target: https://pypi.org
 
-   **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/developer/>`_
+.. centered::
+   **Visit on** |PyPI| **PyPI** `here <https://pypi.org/project/discord.py-message-components>`_
 
 
 discord.py-message-components is a modern, easy to use, feature-rich, and async ready API wrapper

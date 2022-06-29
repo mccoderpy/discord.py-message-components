@@ -48,6 +48,9 @@ For a Debian-based system, the following command will get these dependencies:
 
 **Remember to check your permissions!**
 
+Installing the developer version
+---------------------------------
+
 To install the developer (alpha/beta) version from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ use:
 
 .. code-block:: sh

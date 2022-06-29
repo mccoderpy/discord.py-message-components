@@ -652,8 +652,57 @@ class Member(discord.abc.Messageable, _BaseUser):
     def communication_disabled_until(self) -> Optional[datetime.datetime]:
         return datetime.datetime.fromisoformat(self._communication_disabled_until) if self._communication_disabled_until else None
 
+    @utils.deprecated('Member.timeout')
     async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None):
         await self.edit(communication_disabled_until=until, reason=reason)
+
+    async def timeout(self, until: datetime.datetime, *, reason: Optional[str] = None) -> None:
+        """|coro|
+
+        A shortcut method to timeout a member.
+
+        The :attr:`~Permissions.moderate_members` permission is needed to do this.
+
+        Parameters
+        -----------
+        until: :class:`datetime.datetime`
+            Until when the member should be timeouted
+            
+            .. note::
+                This can be max 28 days from current time!
+                
+        reason: Optional[:class:`str`]
+            The reason for sending the member to timeout - Shows up in the audit-log
+        
+        Raises
+        -------
+        Forbidden:
+            The bot missing access to timeout this member
+        HTTPException:
+            Timeouting the member failed
+        """
+        await self.edit(communication_disabled_until=until, reason=reason)
+
+    async def remove_timeout(self, *, reason: Optional[str] = None) -> None:
+        """|coro|
+
+        A shortcut method to remove a member from timeout.
+
+        The :attr:`~Permissions.moderate_members` permission is needed to do this.
+
+        Parameters
+        -----------
+        reason: Optional[:class:`str`]
+            The reason for removing the member from timeout - Shows up in the audit-log
+
+        Raises
+        -------
+        Forbidden:
+            The bot missing access to remove this member from timeout
+        HTTPException:
+            Removing the member from timeout failed
+        """
+        await self.edit(communication_disabled_until=None, reason=reason)
 
     async def ban(self, **kwargs):
         """|coro|
@@ -796,7 +845,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         except KeyError:
             pass
         else:
-            if communication_disabled_until is not None:
+            if communication_disabled_until:
                 payload['communication_disabled_until'] = communication_disabled_until.isoformat()
             else:
                 payload['communication_disabled_until'] = None
