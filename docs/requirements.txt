@@ -1,5 +1,6 @@
 sphinxcontrib_trio
 sphinxcontrib-contentui==0.2.5
+sphinxext-opengraph
 Jinja2 >.0.3
 Pigments
 typing-extensions

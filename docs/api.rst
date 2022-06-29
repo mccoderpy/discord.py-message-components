@@ -944,6 +944,64 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param payload: The payload containing all the information
     :type payload: :class:`AutoModActionPayload`
 
+.. function:: on_button_click(interaction, button)
+
+    Called when a :class:`Button`, that is attached to a :class:`Message` **wich is in the internal cache**, is pressed.
+
+    .. note::
+        In general it is more efficient to use :func:`~Client.on_click`/:func:`ext.commands.Cog.on_click` instead of this and :func:`on_raw_button_click` to make a callback for buttons
+
+    :param interaction: The Interaction-object with all his attributes and methods to respond to the interaction
+    :type interaction: :class:`~discord.ComponentInteraction`
+    :param button: The button that was pressed. (this is also available under :attr:`discord.ComponentInteraction.component`).
+    :type button: :class:`Button`
+
+.. function:: on_raw_button_click(interaction, button)
+
+    Called when a :class:`Button`, that is attached to **any** :class:`Message` of the bot, is pressed.
+
+    .. warning::
+        This may be removed and be included in :func:`on_button_click` in a future release
+
+    :param interaction: The Interaction-object with all his attributes and methods to respond to the interaction
+    :type interaction: :class:`~discord.ComponentInteraction`
+    :param button: The button that was pressed. (this is also available under :attr:`discord.ComponentInteraction.component`).
+    :type button: :class:`Button`
+
+.. function:: on_selection_select(interaction, select_menu)
+
+    Called when a :class:`SelectMenu`, that is attached to a :class:`Message` **wich is in the internal cache**, is used.
+
+    .. note::
+        In general it is more efficient to use :func:`~Client.on_select`/:func:`ext.commands.Cog.on_select` instead of this and :func:`on_raw_selection_select` to make a callback for select menus
+
+    :param interaction: The Interaction-object with all his attributes and methods to respond to the interaction
+    :type interaction: :class:`~discord.ComponentInteraction`
+    :param select_menu: The :class:`SelectMenu` but with the :attr:`SelectMenu.values` set wich contains a list of the selected :attr:`~SelectMenu.options`. (this is also available under :attr:`discord.ComponentInteraction.component`).
+    :type select_menu: :class:`SelectMenu`
+
+.. function:: on_raw_selection_select(interaction, select_menu)
+
+    Called when a :class:`SelectMenu`, that is attached to **any** :class:`Message` of the bot, is used.
+
+    .. warning::
+        This may be removed and be included in :func:`on_selection_select` in a future release
+
+    :param interaction: The Interaction-object with all his attributes and methods to respond to the interaction
+    :type interaction: :class:`~discord.ComponentInteraction`
+    :param select_menu: The :class:`SelectMenu` but with the :attr:`SelectMenu.values` set wich contains a list of the selected :attr:`~SelectMenu.options`. (this is also available under :attr:`discord.ComponentInteraction.component`).
+    :type select_menu: :class:`SelectMenu`
+
+.. function:: on_modal_submit(interaction)
+
+    Called when a user press the ``Submit`` button in a :class:`Modal`.
+
+    .. note::
+        In general it is more efficient to use :func:`~Client.on_submit`/:func:`ext.commands.Cog.on_submit` instead of this to make a callback for modals
+
+    :param interaction: he Interaction-object with all his attributes and methods to respond to the interaction
+    :type interaction: :class:`~discord.ModalSubmitInteraction`
+
 .. _discord-api-utils:
 
 Utility Functions

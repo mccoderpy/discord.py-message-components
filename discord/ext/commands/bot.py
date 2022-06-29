@@ -432,7 +432,7 @@ class BotBase(GroupMixin):
         This adds an interaction(decorator) like :meth:`on_click` or :meth:`on_select` to the client listeners.
 
         .. note::
-            This should not use manuel; only cogs use this to register them.
+            This should not use directly; only cogs use this to register them.
 
         """
         try:
@@ -450,7 +450,7 @@ class BotBase(GroupMixin):
         This removes an interaction(decorator) like :meth:`on_click` or :meth:`on_select` from the client listeners.
 
         .. note::
-            This should not use manuel; only cogs use this to remove them.
+            This should not use directly; only cogs use this to remove them.
             
         """
         try:

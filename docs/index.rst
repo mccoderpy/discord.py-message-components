@@ -47,7 +47,7 @@
    :target: https://pypi.org
 
 .. centered::
-   **Visit on** |PyPI| **PyPI** `here <https://pypi.org/project/discord.py-message-components>`_
+    **Visit on** |PyPI| **PyPI** `here <https://pypi.org/project/discord.py-message-components>`_
 
 
 discord.py-message-components is a modern, easy to use, feature-rich, and async ready API wrapper

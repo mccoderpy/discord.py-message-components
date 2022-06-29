@@ -755,7 +755,7 @@ class BaseInteraction:
         """
         The channel where the interaction was invoked in.
 
-        :returns: Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class`~discord.VoiceChannel`]
+        :returns: Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`]
         """
         return getattr(self, '_channel', self.guild.get_channel(self.channel_id)
         if self.guild_id else self._state.get_channel(self.channel_id))
@@ -781,7 +781,7 @@ class BaseInteraction:
 
     @property
     def bot(self):
-        """Union[:class:`~discord.Client`/:class:`~discord.ext.commands.Bot`]: The :class:`~discord.Client`/:class:`~discord.ext.commands.Bot` instance of the bot."""
+        """Union[:class:`~discord.Client`, :class:`~discord.ext.commands.Bot`]: The :class:`~discord.Client`/:class:`~discord.ext.commands.Bot` instance of the bot."""
         return self._state._get_client()
 
     @classmethod
@@ -798,6 +798,9 @@ class BaseInteraction:
 
 
 class ApplicationCommandInteraction(BaseInteraction):
+    """
+    Represents the data of an interaction that will be received when a :class:`discord.SlashCommand`, :class:`discord.UserCommand` or :class:`discord.MessageCommand` is used.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.data.type.user:
@@ -834,8 +837,12 @@ class ApplicationCommandInteraction(BaseInteraction):
 
 
 class ComponentInteraction(BaseInteraction):
+    """
+    Represents the data of an interaction which will be received when a :class:`~discord.SelectMenu` or :class:`~discord.Button` is used.
+    """
     @property
     def component(self) -> Union[Button, SelectMenu]:
+        """Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]: The component that was used"""
         if self._component is None:
             custom_id = self.data.custom_id
             if custom_id:
@@ -864,18 +871,21 @@ class ComponentInteraction(BaseInteraction):
             Weather only the author of the command should see this, default :obj:`True`
 
              .. note::
-                Only for :class:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``).
+                Only for :attr:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``).
 
         Returns
         -------
         Optional[Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]]:
-            The message containing the loading-state if `class`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``) is used, else :obj:`None`.
+            The message containing the loading-state if :class:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``) is used, else :obj:`None`.
         """
         data = await super()._defer(type, hidden)
         return data
 
 
 class AutocompleteInteraction(BaseInteraction):
+    """
+    Represents the data of an interaction that will be received when autocomplete for a :class:`discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` set to :obj:`True`.
+    """
     @property
     def focused_option(self) -> 'InteractionDataOption':
         """:class:`~discord.InteractionDataOption`: Returns the currently focused option."""
@@ -916,7 +926,7 @@ class AutocompleteInteraction(BaseInteraction):
 
     @utils.copy_doc(send_choices)
     async def suggest(self, choices: List[SlashCommandOptionChoice]) -> None:
-        """An aliase for :meth:`send_choices`"""
+        """An aliase for :meth:`.send_choices`"""
         return await self.send_choices(choices)
 
     async def respond(self, *args, **kwargs):
@@ -927,6 +937,9 @@ class AutocompleteInteraction(BaseInteraction):
 
 
 class ModalSubmitInteraction(BaseInteraction):
+    """
+    Represents the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is pressed.
+    """
     def get_field(self, custom_id) -> Union['TextInput', None]:
         """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`~discord.TextInput.custom_id` match or :class:`None`"""
         for ar in self.data.components:

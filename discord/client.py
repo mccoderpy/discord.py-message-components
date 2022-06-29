@@ -1159,7 +1159,7 @@ class Client:
         if so, the decorated function is called.
 
         The function this is attached to must take the same parameters as a
-        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_raw_button_click>`_.
+        :func:`on_raw_button_click` event.
 
         .. important::
             The function decorated must be a coroutine, if not, :exc:`TypeError` is raised.
@@ -1226,7 +1226,7 @@ class Client:
         A decorator with which you can assign a function to a specific :class:`~discord.SelectMenu` (or its custom_id).
 
         The function this is attached to must take the same parameters as a
-        `raw_selection_select-Event <https://discordpy-message-components.rtfd.io/en/latest/additions.html#on_raw_selection_select>`_.
+        :func:`on_raw_selection_select` event.
 
         .. important::
             The decorated function must be a coroutine, if not, :exc:`TypeError` is raised.
@@ -1284,11 +1284,11 @@ class Client:
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-        A decorator that registers an on_modal_submit event that checks on execution if the ``custom_id's`` are the same;
+        A decorator that registers an :func:`on_modal_submit` event that checks on execution if the ``custom_id's`` are the same;
         if so, the decorated function is called.
 
         The function this is attached to must take the same parameters as a
-        `raw_button_click-Event <https://discordpy-message-components.rtfd.io/en/latest/addition.html#on_modal_submit>`_.
+        :func`on_modal_submit` event.
 
         .. important::
             The decorated function must be a coroutine, if not, :exc:`TypeError` is raised.

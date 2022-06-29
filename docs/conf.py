@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 sys.setrecursionlimit(15000)
 
-
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.append(os.path.abspath('extensions'))
 
@@ -57,6 +56,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinxcontrib.contentui',
     'sphinx.ext.napoleon',
+    'sphinxext.opengraph',
     'sphinxcontrib_trio',
     'details',
     'exception_hierarchy',
