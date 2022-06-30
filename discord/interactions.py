@@ -12,6 +12,7 @@ from .member import Member
 from .http import HTTPClient
 from .reaction import Reaction
 from .flags import MessageFlags
+from .permissions import Permissions
 from .mentions import AllowedMentions
 from typing_extensions import Literal
 from .message import Message, Attachment
@@ -283,6 +284,7 @@ class BaseInteraction:
         self.user_id = int(self._user['id'])
         self.author_locale: Locale = try_enum(Locale, data['locale'])
         self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale', None))
+        self.app_permissions: Permissions = Permissions(int(data['app_permissions']))
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
