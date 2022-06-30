@@ -176,4 +176,5 @@ master_doc = 'index'
 html_static_path = ['_static']
 
 def setup(app: 'App'):
+    app.setup_extension("sphinxext.opengraph")
     app.add_css_file('style.css')

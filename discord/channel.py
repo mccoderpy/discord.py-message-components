@@ -1909,6 +1909,17 @@ class GroupChannel(abc.Messageable, Hashable):
         await self._state.http.leave_group(self.id)
 
 
+class ForumChannel(Hashable):
+    def __init__(self, *, state, guild, data) -> None:
+        self._state = state
+        self.guild = guild
+        self.id = int(data['id'])
+        self._posts = {}
+
+    def _add_thread(self, thread: ThreadChannel) -> None:
+        self._posts[thread.id] = thread
+
+
 class PartialMessageable(abc.Messageable, Hashable):
     """Represents a partial messageable to aid with working messageable channels when
     only a channel ID are present.
@@ -2016,6 +2027,8 @@ def _channel_factory(channel_type):
         return StageChannel, value
     elif value is ChannelType.public_thread:
         return ThreadChannel, value
+    elif value is ChannelType.forum_channel:
+        return ForumChannel,  value
     else:
         return None, value
 

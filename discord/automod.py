@@ -284,7 +284,7 @@ class AutoModTriggerMetadata:
         if presets:
             self.presets = data['presets']
         else:
-            self.keyword_filter = data['keyword_filter']
+            self.keyword_filter = data.get('keyword_filter', None)
         return self
 
 

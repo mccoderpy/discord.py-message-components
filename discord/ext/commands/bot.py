@@ -33,7 +33,19 @@ import re
 import sys
 import traceback
 import types
-from typing import Optional, Union, Pattern, Match, AnyStr, Callable, Awaitable, Any
+from typing import (
+    Optional,
+    Union,
+    Dict,
+    Pattern,
+    Match,
+    AnyStr,
+    Callable,
+    Awaitable,
+    Any,
+    Iterable,
+    Mapping
+)
 
 import discord
 
@@ -619,7 +631,7 @@ class BotBase(GroupMixin):
         cog._eject(self)
 
     @property
-    def cogs(self):
+    def cogs(self) -> Dict[str, Cog]:
         """Mapping[:class:`str`, :class:`Cog`]: A read-only mapping of cog name to cog."""
         return types.MappingProxyType(self.__cogs)
 
