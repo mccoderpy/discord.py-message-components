@@ -1249,9 +1249,10 @@ class ConnectionState:
 
     def parse_auto_moderation_rule_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
+        rule_id = int(data['id'])
         if guild is not None:
+            old_rule = guild._automod_rules.pop(rule_id, None)
             rule = AutoModRule(state=self, guild=guild, **data)
-            old_rule = guild._automod_rules.pop(rule.id)
             guild._add_automod_rule(rule)
             self.dispatch('automod_rule_update', old_rule, rule)
         else:
