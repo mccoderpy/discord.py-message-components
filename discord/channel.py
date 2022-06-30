@@ -1919,6 +1919,9 @@ class ForumChannel(Hashable):
     def _add_thread(self, thread: ThreadChannel) -> None:
         self._posts[thread.id] = thread
 
+    def _remove_thread(self, thread: ThreadChannel) -> None:
+        self._posts.pop(thread.id, None)
+
 
 class PartialMessageable(abc.Messageable, Hashable):
     """Represents a partial messageable to aid with working messageable channels when
