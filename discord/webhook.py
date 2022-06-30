@@ -99,11 +99,17 @@ class WebhookAdapter:
     def edit_webhook(self, *, reason=None, **payload):
         return self.request('PATCH', self._request_url, payload=payload, reason=reason)
 
-    def edit_webhook_message(self, message_id, payload):
-        return self.request('PATCH', '{}/messages/{}'.format(self._request_url, message_id), payload=payload)
+    def edit_webhook_message(self, message_id, payload, thread_id: int = None):
+        url = '{}/messages/{}'.format(self._request_url, message_id)
+        if thread_id:
+            url += f'?thread_id={thread_id}'
+        return self.request('PATCH', url, payload=payload)
 
-    def delete_webhook_message(self, message_id):
-        return self.request('DELETE', '{}/messages/{}'.format(self._request_url, message_id))
+    def delete_webhook_message(self, message_id, thread_id: int = None):
+        url = '{}/messages/{}'.format(self._request_url, message_id)
+        if thread_id:
+            url += f'?thread_id={thread_id}'
+        return self.request('DELETE', url)
 
     def handle_execution_response(self, data, *, wait):
         """Transforms the webhook execution response into something
@@ -129,7 +135,7 @@ class WebhookAdapter:
         finally:
             cleanup()
 
-    def execute_webhook(self, *, payload, wait=False, file=None, files=None):
+    def execute_webhook(self, *, payload, wait=False, thread_id: int = None, file=None, files=None):
         cleanup = None
         if file is not None:
             multipart = {
@@ -159,6 +165,8 @@ class WebhookAdapter:
             files_to_pass = None
 
         url = '%s?wait=%d' % (self._request_url, wait)
+        if thread_id:
+            url += f'&thread_id={thread_id}'
         maybe_coro = None
         try:
             maybe_coro = self.request('POST', url, multipart=multipart, payload=data, files=files_to_pass)
@@ -241,7 +249,7 @@ class AsyncWebhookAdapter(WebhookAdapter):
                         # Banned by Cloudflare more than likely.
                         raise HTTPException(r, data)
 
-                    retry_after = response['retry_after'] / 1000.0
+                    retry_after = response['retry_after']
                     log.warning('Webhook ID %s is rate limited. Retrying in %.2f seconds', _id, retry_after)
                     await asyncio.sleep(retry_after)
                     continue
@@ -344,7 +352,7 @@ class RequestsWebhookAdapter(WebhookAdapter):
                         # Banned by Cloudflare more than likely.
                         raise HTTPException(r, data)
 
-                    retry_after = response['retry_after'] / 1000.0
+                    retry_after = response['retry_after']
                     log.warning('Webhook ID %s is rate limited. Retrying in %.2f seconds', _id, retry_after)
                     time.sleep(retry_after)
                     continue
@@ -730,7 +738,7 @@ class Webhook(Hashable):
 
     @property
     def channel(self):
-        """Optional[:class:`TextChannel`]: The text channel this webhook belongs to.
+        """Optional[:class:`TextChannel`, :class:`ForumChannel`]: The text or forum channel this webhook belongs to.
 
         If this is a partial webhook, then this will always return ``None``.
         """
@@ -882,7 +890,7 @@ class Webhook(Hashable):
 
         return self._adapter.edit_webhook(reason=reason, **payload)
 
-    def send(self, content=None, *, wait=False, username=None, avatar_url=None, tts=False,
+    def send(self, content=None, *, wait=False, thread_id: int = None, username=None, avatar_url=None, tts=False,
                                     file=None, files=None, embed=None, embeds=None, allowed_mentions=None):
         """|maybecoro|
 
@@ -986,7 +994,7 @@ class Webhook(Hashable):
         elif previous_mentions is not None:
             payload['allowed_mentions'] = previous_mentions.to_dict()
 
-        return self._adapter.execute_webhook(wait=wait, file=file, files=files, payload=payload)
+        return self._adapter.execute_webhook(wait=wait, thread_id=thread_id, file=file, files=files, payload=payload)
 
     def execute(self, *args, **kwargs):
         """An alias for :meth:`~.Webhook.send`."""
