@@ -563,8 +563,12 @@ class SlashCommandOption:
         If the :attr:`~SlashCommandOption.option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
         this is the minimum value the users input must be of.
     max_value: Optional[Union[:class:`int`, :class:`float`]]
-        If the :attr:`option_type` is one of :class:`OptionType.integer` or :class:`OptionType.number`
+        If the :attr:`option_type` is one of :class:`~OptionType.integer` or :class:`~OptionType.number`
         this is the maximum value the users input could be of.
+    min_length: :class:`int`
+        If the :attr:`option_type` is :class:`~OptionType.string`, this is the minimum length (min. of ``0``)
+    max_length: :class:`int`
+        If the :attr:`option_type` is :class:`~OptionType.string`, this is the maximum length (min. of ``1``)
     channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
         A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
         Only valid if :attr:`~SlashCommandOption.option_type` is :class:`OptionType.channel`.
@@ -589,6 +593,8 @@ class SlashCommandOption:
                  autocomplete: bool = False,
                  min_value: Optional[Union[int, float]] = None,
                  max_value: Optional[Union[int, float]] = None,
+                 min_length: int = None,
+                 max_length: int = None,
                  channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
                  default: Optional[Any] = None,
                  converter: Optional['Converter'] = None,
@@ -626,6 +632,8 @@ class SlashCommandOption:
         self.autocomplete: bool = autocomplete
         self.min_value: Optional[Union[int, float]] = min_value
         self.max_value: Optional[Union[int, float]] = max_value
+        self.min_length: int = min_length
+        self.max_length: int = max_length
         for index, choice in enumerate(choices):  # TODO: find a more efficient way to do this
             if not isinstance(choice, SlashCommandOptionChoice):
                 choices[index] = SlashCommandOptionChoice(choice)
@@ -769,6 +777,13 @@ class SlashCommandOption:
             base['min_value'] = self.min_value
         if self.max_value is not None:
             base['max_value'] = self.max_value
+        if self.type.string:
+            min_length = self.min_length
+            max_length = self.max_length
+            if min_length:
+                base['min_length'] = min_length
+            if max_length:
+                base['max_length'] = max_length
         if self.channel_types:
             base['channel_types'] = [int(ch_type) for ch_type in self.channel_types]
         return base
@@ -790,7 +805,9 @@ class SlashCommandOption:
             choices=[SlashCommandOptionChoice.from_dict(c) for c in data.get('choices', [])],
             autocomplete=data.get('autocomplete', False),
             min_value=data.get('min_value', None),
-            max_value=data.get('max_value', None)
+            max_value=data.get('max_value', None),
+            min_length=data.get('min_length', None),
+            max_length=data.get('max_length', None)
         )
 
 
