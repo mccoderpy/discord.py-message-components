@@ -31,15 +31,16 @@ from typing import Union, Optional, Callable, TYPE_CHECKING, Any
 import discord
 from .object import Object
 
+
 from .permissions import Permissions
 from .enums import ChannelType, try_enum, VoiceRegion, AutoArchiveDuration
 from .mixins import Hashable
 from . import utils, abc
 from .asset import Asset
-from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived, MissingPermissionsToCreateThread
+from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived, MissingPermissionsToCreateThread, \
+    Forbidden, HTTPException
 
 if TYPE_CHECKING:
-    from .state import ConnectionState
     from .member import Member
     from .guild import Guild
 
@@ -55,6 +56,8 @@ __all__ = (
     'GroupChannel',
     'PartialMessageable',
     '_channel_factory',
+    'ForumPost',
+    'ForumChannel'
 )
 
 async def _single_delete_strategy(messages):
@@ -174,7 +177,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         return list(self._threads.values())
 
     @utils.copy_doc(abc.GuildChannel.permissions_for)
-    def permissions_for(self, member):
+    def permissions_for(self, member) -> discord.permissions:
         base = super().permissions_for(member)
 
         # text channels do not have voice related permissions
@@ -1909,15 +1912,381 @@ class GroupChannel(abc.Messageable, Hashable):
         await self._state.http.leave_group(self.id)
 
 
-class ForumChannel(Hashable):
-    def __init__(self, *, state, guild, data) -> None:
+class ForumPost(ThreadChannel):
+    def __init__(self, *, state, guild, data: dict) -> None:
         self._state = state
         self.guild = guild
         self.id = int(data['id'])
-        self._posts = {}
+        self._applied_tags: list[int] = data.get("applied_tags",[])
+        super().__init__(state=self._state, guild=self.guild, data=data)
 
-    def _add_thread(self, thread: ThreadChannel) -> None:
-        self._posts[thread.id] = thread
+
+    def get_tags(self):
+        return self._applied_tags
+
+
+
+class ForumTag(Hashable):
+    def __init__(self, *, guild, data):
+        self.guild = guild
+        self.id = int(data['id'])
+
+
+class ForumChannel(abc.GuildChannel, Hashable):
+
+
+    """Represents a Discord guild text channel.
+
+        .. container:: operations
+
+            .. describe:: x == y
+
+                Checks if two channels are equal.
+
+            .. describe:: x != y
+
+                Checks if two channels are not equal.
+
+            .. describe:: hash(x)
+
+                Returns the channel's hash.
+
+            .. describe:: str(x)
+
+                Returns the channel's name.
+
+        Attributes
+        -----------
+        name: :class:`str`
+            The channel name.
+        guild: :class:`Guild`
+            The guild the channel belongs to.
+        id: :class:`int`
+            The channel ID.
+        category_id: Optional[:class:`int`]
+            The category channel ID this channel belongs to, if applicable.
+        topic: Optional[:class:`str`]
+            The channel's topic. ``None`` if it doesn't exist.
+        position: :class:`int`
+            The position in the channel list. This is a number that starts at 0. e.g. the
+            top channel is position 0.
+        last_message_id: Optional[:class:`int`]
+            The last message ID of the message sent to this channel. It may
+            *not* point to an existing or valid message.
+        slowmode_delay: :class:`int`
+            The number of seconds a member must wait between sending messages
+            in this channel. A value of `0` denotes that it is disabled.
+            Bots and users with :attr:`~Permissions.manage_channels` or
+            :attr:`~Permissions.manage_messages` bypass slowmode.
+        """
+
+    __slots__ = ('name', 'id', 'guild', 'topic', '_state', 'nsfw',
+                 'category_id', 'position', 'slowmode_delay', '_overwrites',
+                 '_type', 'last_message_id', '_threads', 'default_auto_archive_duration',
+                 '_posts', '_tags', 'last_post_id')
+
+
+
+
+
+
+    def __init__(self, *, state, guild, data):
+        self._state = state
+        self.id = int(data['id'])
+        self._type = data["type"]
+        self._posts: dict[int, ForumPost] = {}
+        self._tags: dict[int, ForumTag] = {}
+        self.last_post_id = None
+        self._update(guild, data)
+
+    def __repr__(self):
+        attrs = [
+            ('id', self.id),
+            ('name', self.name),
+            ('position', self.position),
+            ('nsfw', self.nsfw),
+            ('category_id', self.category_id)
+        ]
+        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+
+    def _update(self, guild, data):
+        self.guild = guild
+        self.name = data['name']
+        self.category_id = utils._get_as_snowflake(data, 'parent_id')
+        self.topic = data.get('topic')
+        self.position = data['position']
+        self.nsfw = data.get('nsfw', False)
+        # Does this need coercion into `int`? No idea yet.
+        self.slowmode_delay = data.get('rate_limit_per_user', 0)
+        self._type = data.get('type', self._type)
+        self.last_post_id = utils._get_as_snowflake(data, 'last_message_id')
+        self.default_auto_archive_duration = try_enum(AutoArchiveDuration,
+                                                      data.get('default_auto_archive_duration', 1440))
+        self._fill_overwrites(data)
+        self._fill_tags(data)
+        print(self._tags)
+
+    def _fill_tags(self,data:dict):
+        tags = data.get('available_tags', [])
+        for t in tags:
+            self._tags[t['id']] = ForumTag(guild=self.guild,data=t)
+
+    async def _get_channel(self):
+        return self
+
+    @property
+    def type(self) -> ChannelType:
+        """:class:`ChannelType`: The channel's Discord type."""
+        return try_enum(ChannelType, self._type)
+
+    @staticmethod
+    def channel_type() -> ChannelType.forum_channel:
+        return ChannelType.forum_channel
+
+    @property
+    def _sorting_bucket(self):
+        return ChannelType.forum_channel.value
+
+    def _add_post(self, post: ForumPost) -> None:
+        self._posts[post.id] = post
+
+    def _remove_post(self, post: ForumPost) -> None:
+        return self._posts.pop(post.id, None)
+
+    def get_post(self, post_id: int) -> ForumPost:
+        return self._posts.get(int(post_id), None)
+
+    @property
+    def posts(self) -> list[ForumPost]:
+        return list(self._posts.values())
+
+    def _add_tag(self, tag: ForumTag) -> None:
+        self._tags[tag.id] = tag
+
+    def _remove_tag(self, tag: ForumTag) -> None:
+        return self._tags.pop(tag.id, None)
+
+    def get_tag(self, tag_id: int) -> ForumTag:
+        return self._tags.get(int(tag_id), None)
+
+    @property
+    def available_tags(self) -> list[ForumTag]:
+        return list(self._tags.values())
+
+    @utils.copy_doc(abc.GuildChannel.permissions_for)
+    def permissions_for(self, member) -> discord.permissions:
+        base = super().permissions_for(member)
+
+        # text channels do not have voice related permissions
+        denied = Permissions.voice()
+        base.value &= ~denied.value
+        return base
+
+    @property
+    def members(self):
+        """List[:class:`Member`]: Returns all members that can see this channel."""
+        return [m for m in self.guild.members if self.permissions_for(m).read_messages]
+
+    def is_nsfw(self) -> bool:
+        """:class:`bool`: Checks if the channel is NSFW."""
+        return self.nsfw
+
+
+
+
+
+    @property
+    def last_post(self) -> ForumPost:
+        """Fetches the last message from this channel in cache.
+
+        The message might not be valid or point to an existing message.
+
+        .. admonition:: Reliable Fetching
+            :class: helpful
+
+            For a slightly more reliable method of fetching the
+            last message, consider using either :meth:`history`
+            or :meth:`fetch_message` with the :attr:`last_message_id`
+            attribute.
+
+        Returns
+        ---------
+        Optional[:class:`Message`]
+            The last message in this channel or ``None`` if not found.
+        """
+        return self._posts.get(self.last_post_id) if self.last_post_id else None
+
+    async def edit(self, *, reason=None, **options) -> None:
+        """|coro|
+
+        Edits the channel.
+
+        You must have the :attr:`~Permissions.manage_channels` permission to
+        use this.
+
+        .. versionchanged:: 1.3
+            The ``overwrites`` keyword-only parameter was added.
+
+        .. versionchanged:: 1.4
+            The ``type`` keyword-only parameter was added.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The new channel name.
+        topic: :class:`str`
+            The new channel's topic.
+        position: :class:`int`
+            The new channel's position.
+        nsfw: :class:`bool`
+            To mark the channel as NSFW or not.
+        sync_permissions: :class:`bool`
+            Whether to sync permissions with the channel's new or pre-existing
+            category. Defaults to ``False``.
+        category: Optional[:class:`CategoryChannel`]
+            The new category for this channel. Can be ``None`` to remove the
+            category.
+        slowmode_delay: :class:`int`
+            Specifies the slowmode rate limit for user in this channel, in seconds.
+            A value of `0` disables slowmode. The maximum value possible is `21600`.
+        type: :class:`ChannelType`
+            Change the type of this text channel. Currently, only conversion between
+            :attr:`ChannelType.text` and :attr:`ChannelType.news` is supported. This
+            is only available to guilds that contain ``NEWS`` in :attr:`Guild.features`.
+        reason: Optional[:class:`str`]
+            The reason for editing this channel. Shows up on the audit log.
+        overwrites: :class:`dict`
+            A :class:`dict` of target (either a role or a member) to
+            :class:`PermissionOverwrite` to apply to the channel.
+
+        Raises
+        ------
+        InvalidArgument
+            If position is less than 0 or greater than the number of channels, or if
+            the permission overwrite information is not in proper form.
+        Forbidden
+            You do not have permissions to edit the channel.
+        HTTPException
+            Editing the channel failed.
+        """
+        await self._edit(options, reason=reason)
+
+    @utils.copy_doc(abc.GuildChannel.clone)
+    async def clone(self, *, name=None, reason=None):
+        return await self._clone_impl({
+            'topic': self.topic,
+            'nsfw': self.nsfw,
+            'rate_limit_per_user': self.slowmode_delay
+        }, name=name, reason=reason)
+
+    async def webhooks(self):
+        """|coro|
+
+        Gets the list of webhooks from this channel.
+
+        Requires :attr:`~.Permissions.manage_webhooks` permissions.
+
+        Raises
+        -------
+        Forbidden
+            You don't have permissions to get the webhooks.
+
+        Returns
+        --------
+        List[:class:`Webhook`]
+            The webhooks for this channel.
+        """
+
+
+        data = await self._state.http.channel_webhooks(self.id)
+        return [discord.Webhook.from_state(d, state=self._state) for d in data]
+
+
+    async def create_webhook(self, *, name, avatar=None, reason=None):
+        """|coro|
+
+        Creates a webhook for this channel.
+
+        Requires :attr:`~.Permissions.manage_webhooks` permissions.
+
+        .. versionchanged:: 1.1
+            Added the ``reason`` keyword-only parameter.
+
+        Parameters
+        -------------
+        name: :class:`str`
+            The webhook's name.
+        avatar: Optional[:class:`bytes`]
+            A :term:`py:bytes-like object` representing the webhook's default avatar.
+            This operates similarly to :meth:`~ClientUser.edit`.
+        reason: Optional[:class:`str`]
+            The reason for creating this webhook. Shows up in the audit logs.
+
+        Raises
+        -------
+        HTTPException
+            Creating the webhook failed.
+        Forbidden
+            You do not have permissions to create a webhook.
+
+        Returns
+        --------
+        :class:`Webhook`
+            The created webhook.
+        """
+
+        from .webhook import Webhook
+        if avatar is not None:
+            avatar = utils._bytes_to_base64_data(avatar)
+
+        data = await self._state.http.create_webhook(self.id, name=str(name), avatar=avatar, reason=reason)
+        return Webhook.from_state(data, state=self._state)
+
+
+
+
+
+    async def create_post(self,
+                            name: str,
+                            content: str = None,
+                            tags: list[ForumPost | int] = [],
+                            embed = None,
+                            embeds = None,
+                            auto_archive_duration: AutoArchiveDuration = None,
+                            reason: str = None) -> ForumPost:
+        """|coro|
+
+        Creates a new post in this forum.
+
+        You must have the :attr:`~Permissions.send_messages` permission to
+        use this.
+
+
+        """
+        embed_list = []
+
+        if embed is not None:
+            embed_list.append(embed.to_dict())
+
+        if embeds:
+            embed_list.extend([e.to_dict() for e in embeds])
+
+        tags = [str(i) if type(i) == int else str(i.id) for i in tags]
+
+        embeds = embed_list
+
+        if len(name) > 100 or len(name) < 1:
+            raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
+        aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration,
+                                                                                             auto_archive_duration)).value
+        _type = ChannelType.public_thread
+        data = await self._state.http.create_post(self.id, name=name, content=content, auto_archive_duration=aad,
+                                                    reason=reason)
+        print(data)
+        post = ForumPost(state=self._state, guild=self.guild, data=data)
+
+        self._posts[post.id] = post
+        return post
 
 
 class PartialMessageable(abc.Messageable, Hashable):
