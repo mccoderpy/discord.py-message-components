@@ -142,7 +142,6 @@ class HTTPClient:
         bucket = route.bucket
         method = route.method
         url = route.url
-
         lock = self._locks.get(bucket)
         if lock is None:
             lock = asyncio.Lock()
@@ -524,7 +523,20 @@ class HTTPClient:
         }
         return self.request(r, json=params, reason=reason)
 
-    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, reason=None):
+    def create_post(self, channel_id, name, content, *, auto_archive_duration, reason=None):
+        r = Route('POST', '/channels/{channel_id}/threads', channel_id = channel_id,)
+        params = {
+            'name': str(name),
+            'rate_limit_per_user': 0,
+            'auto_archive_duration': int(auto_archive_duration),
+            'message' : {
+                'content': content
+            }
+        }
+
+        return self.request(r, json=params, reason=reason)
+
+    def edit_thread(self, channel_id, *, name=None,  auto_archive_duration=None, archived=None, locked=None, reason=None):
         r = Route('PATCH', f'/channels/{channel_id}')
         params = {}
         if name:
