@@ -563,15 +563,15 @@ class SlashCommandOption:
         If the :attr:`~SlashCommandOption.option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
         this is the minimum value the users input must be of.
     max_value: Optional[Union[:class:`int`, :class:`float`]]
-        If the :attr:`option_type` is one of :class:`~OptionType.integer` or :class:`~OptionType.number`
+        If the :attr:`option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
         this is the maximum value the users input could be of.
     min_length: :class:`int`
-        If the :attr:`option_type` is :class:`~OptionType.string`, this is the minimum length (min. of ``0``)
+        If the :attr:`option_type` is :attr:`~OptionType.string`, this is the minimum length (min. of ``0``)
     max_length: :class:`int`
-        If the :attr:`option_type` is :class:`~OptionType.string`, this is the maximum length (min. of ``1``)
+        If the :attr:`option_type` is :attr:`~OptionType.string`, this is the maximum length (min. of ``1``)
     channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
         A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
-        Only valid if :attr:`~SlashCommandOption.option_type` is :class:`OptionType.channel`.
+        Only valid if :attr:`~SlashCommandOption.option_type` is :attr:`~OptionType.channel`.
     default: Optional[Any]
         The default value that should be passed to the function if the option is not provided, default ``None``.
         Usually used for autocomplete callback.
