@@ -3485,13 +3485,28 @@ Widget
 .. autoclass:: Widget()
     :members:
 
+StickerPack
+~~~~~~~~~~~~
+
+.. attributetable:: StickerPack
+
+.. autoclass:: StickerPack()
+    :members:
+
 Sticker
-~~~~~~~~~~~~~~~
+~~~~~~~~
 
 .. attributetable:: Sticker
 
 .. autoclass:: Sticker()
     :members:
+
+.. attributetable:: GuildSticker
+
+.. autoclass:: GuildSticker()
+    :inherited-members:
+    :members:
+    :exclude-members: pack, pack_id, sort_value
 
 RawMessageDeleteEvent
 ~~~~~~~~~~~~~~~~~~~~~~~

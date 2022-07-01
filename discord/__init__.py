@@ -65,7 +65,7 @@ from .voice_client import VoiceClient, VoiceProtocol
 from .audit_logs import AuditLogChanges, AuditLogEntry, AuditLogDiff
 from .raw_models import *
 from .team import *
-from .sticker import Sticker, GuildSticker
+from .sticker import Sticker, GuildSticker, StickerPack
 from .scheduled_event import GuildScheduledEvent
 from .automod import *
 

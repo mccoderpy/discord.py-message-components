@@ -23,9 +23,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from typing import Optional, List, Tuple, TYPE_CHECKING, Union, Dict
+from __future__ import annotations
 
-from multidict import MultiDict
+from typing import (
+    Optional,
+    List,
+    Tuple,
+    TYPE_CHECKING,
+    Union
+)
 
 from .mixins import Hashable
 from .asset import Asset
@@ -33,11 +39,15 @@ from .utils import snowflake_time, get as utils_get
 from .enums import StickerType, try_enum
 
 if TYPE_CHECKING:
+    from datetime import datetime
+    
+    from .guild import Guild
+    from .user import User
     from .state import ConnectionState
 
 
 class StickerPack(Hashable):
-    """Represents a Sticker Pack object.
+    """Represents a pack of build-in stickers
 
     Attributes
     ----------
@@ -53,9 +63,8 @@ class StickerPack(Hashable):
         The id of the sticker pack's banner image.
     cover_sticker_id: Optional[:class:`int`]
         The id of a sticker in the pack which is shown in the client as the pack's icon.
-
     """
-    def __init__(self, state: 'ConnectionState', data):
+    def __init__(self, state: ConnectionState, data) -> None:
         self._state = state
         self.id = int(data['id'])
         self.name: str = data['name']
@@ -66,7 +75,8 @@ class StickerPack(Hashable):
         self.__stickers: Tuple[Sticker] = tuple(map(lambda d: state.store_sticker(d, self), data['stickers']))
 
     @property
-    def stickers(self) -> Tuple['Sticker']:
+    def stickers(self) -> Tuple[Sticker]:
+        "Tuple[:class:`Sticker`]: The stickers of the pack"
         return self.__stickers
 
     @stickers.setter
@@ -74,13 +84,47 @@ class StickerPack(Hashable):
         raise TypeError('Sticker Packs are immutable.')
 
     @property
-    def banner_url(self):
+    def banner_url(self) -> Asset:
+        """Returns an :class:`Asset` for the sticker pack's banner.
+
+        Returns
+        -------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
         return self.banner_url_as()
 
-    def banner_url_as(self, format: str = 'png', size=1024):
+    def banner_url_as(self, format: str = 'png', size=1024) -> Asset:
+        """Returns an :class:`Asset` for the sticker pack's banner.
+
+        The size must be a power of 2 between 16 and 4096.
+
+        Returns
+        -------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
         return Asset._from_sticker_pack(self._state, self, format=format, size=size)
 
-    def get_sticker(self, id: int) -> Optional['Sticker']:
+    @property
+    def cover_sticker(self) -> Sticker:
+        """:class:`Sticker`: Returns the sticker in the pack which is shown in the client as the pack's icon."""
+        return self.get_sticker(self.cover_sticker_id)
+
+    def get_sticker(self, id: int) -> Optional[Sticker]:
+        """
+        Returns a sticker of the pack with the given id or :obj:`None` if not found.
+        
+        Parameters
+        -----------
+        id: :class:`int`
+            The id of the sticker to get 
+        
+        Returns
+        --------
+        Optional[:class:`Sticker`]
+            The sticker or ``None`` if not found.
+        """
         return utils_get(self.stickers, id=id)
 
 
@@ -117,10 +161,14 @@ class Sticker(Hashable):
         The format for the sticker's image.
     tags: List[:class:`str`]
         A list of tags for the sticker.
+    pack: Optional[:class:`StickerPack`]
+        The pack the sticker belongs to. Could be :obj:`None` even if :attr:`Sticker.pack_id` is present.
+    sort_value: :class:`int`
+        The sticker's sort order within its :attr:`Sticker.pack`.
     """
-    __slots__ = ('_state', 'id', 'name', 'description', 'pack_id', 'format', 'tags', 'sort_value', 'available', 'pack')
+    __slots__ = ('_state', 'id', 'name', 'description', 'pack_id', 'format', 'tags', 'sort_value' , 'pack')
 
-    def __init__(self, *, state, data, pack: Optional[StickerPack] = None):
+    def __init__(self, *, state, data, pack: Optional[StickerPack] = None) -> None:
         self._state = state
         self.id = int(data['id'])
         self.name: str = data['name']
@@ -128,7 +176,6 @@ class Sticker(Hashable):
         self.pack_id: int = int(data.get('pack_id', 0))
         self.format: StickerType = try_enum(StickerType, data['format_type'])
         self.sort_value = data.get('sort_value', 0)
-        self.available = data.get('available', True)
         try:
             self.tags = [tag.strip() for tag in data['tags'].split(',')]
         except KeyError:
@@ -142,12 +189,12 @@ class Sticker(Hashable):
         return self.name
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime:
         """:class:`datetime.datetime`: Returns the sticker's creation time in UTC as a naive datetime."""
         return snowflake_time(self.id)
 
     @property
-    def image_url(self):
+    def image_url(self) -> Asset:
         """Returns an :class:`Asset` for the sticker's image.
 
         .. note::
@@ -160,7 +207,7 @@ class Sticker(Hashable):
         """
         return self.image_url_as()
 
-    def image_url_as(self):
+    def image_url_as(self) -> Asset:
         """Optionally returns an :class:`Asset` for the sticker's image.
 
         The size must be a power of 2 between 16 and 4096.
@@ -180,19 +227,44 @@ class Sticker(Hashable):
 
 
 class GuildSticker(Sticker):
-    """Represents a "custom" Sticker in a guild"""
-    def __init__(self, *, state: 'ConnectionState', data):
+    """
+    Represents a "custom" sticker in a guild
+
+    Attributes
+    ----------
+    name: :class:`str`
+        The sticker's name.
+    id: :class:`int`
+        The id of the sticker.
+    description: :class:`str`
+        The description of the sticker.
+    format: :class:`StickerType`
+        The format for the sticker's image.
+    tags: List[:class:`str`]
+        A list of tags for the sticker.
+    guild_id: :class:`int`
+        The id of the guild wich this sticker belongs to.
+    available: :class:`bool`
+        Whether this guild sticker can be used, may be :obj:`False` due to loss of Server Boosts
+    user: :class:`User`
+        The user that uploaded the guild sticker
+    """
+    __slots__ = ('_state', 'id', 'name', 'description', 'format', 'tags', 'available', 'guild_id', 'user')
+
+    def __init__(self, *, state: ConnectionState, data) -> None:
         super().__init__(state=state, data=data)
-        self.guild_id = int(data['guild_id'])
+        self.guild_id: int = int(data['guild_id'])
+        self.available = data.get('available', True)
         try:
             user = data['user']
         except KeyError:
-            self.user = None
+            self.user: Optional[User] = None
         else:
-            self.user = state.store_user(user)
+            self.user: Optional[User] = state.store_user(user)
 
     @property
-    def guild(self):
+    def guild(self) -> Guild:
+        """:class:`Guild`: The guild the sticker belongs to"""
         return self._state._get_guild(self.guild_id)
 
     def _update(self, data):
@@ -200,7 +272,7 @@ class GuildSticker(Sticker):
             setattr(self, k, v)
         return self
 
-    async def edit(self, *, reason: Optional[str] = None, **fields):
+    async def edit(self, *, reason: Optional[str] = None, **fields) -> GuildSticker:
         """|coro|
 
         Modify the sticker.
@@ -263,7 +335,7 @@ class GuildSticker(Sticker):
         data = await self._state.http.edit_guild_sticker(guild_id=self.guild_id, sticker_id=self.id, data=fields, reason=reason)
         return self._update(data)
 
-    async def delete(self, *, reason: Optional[str]):
+    async def delete(self, *, reason: Optional[str]) -> GuildSticker:
         """|coro|
 
         Delete the sticker.
@@ -271,7 +343,7 @@ class GuildSticker(Sticker):
         Requires the ``MANAGE_EMOJIS_AND_STICKERS`` permission.
 
         Parameters
-        ----------
+        -----------
         reason: Optional[:class:`str`]
             The reason for deleting the sticker, shows up in the audit-log.
 
@@ -282,8 +354,8 @@ class GuildSticker(Sticker):
         discord.HTTPException:
             Deleting the sticker failed.
 
-        Return
-        ------
+        Returns
+        -------
         discord.GuildSticker:
             The sticker that was deleted.
         """
