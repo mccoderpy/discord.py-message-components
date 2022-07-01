@@ -448,7 +448,7 @@ class BaseInteraction:
                 keep_original_files: Optional[bool] = fields.pop('keep_original_files', False)
                 if keep_original_files:
                     for index, file in enumerate(self.message.attachments):
-                        _files.append({'id': index, **file.to_dict()})
+                        _files.append({'id': index, **file._to_minimal_dict()})
                 _id = len(_files)  # to continue the file id count
                 for index, file in enumerate(files):
                     _files.append(
