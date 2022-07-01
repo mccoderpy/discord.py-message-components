@@ -358,21 +358,24 @@ class ApplicationCommand:
         return self
 
     async def can_run(self, *args, **kwargs) -> bool:
+        #if self.cog:
+        #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
         checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
         if not checks:
             return True
-
         return await async_all(check(*args) for check in checks)
 
     async def invoke(self, interaction, *args, **kwargs):
-        if self.cog is not None:
-            args = (self.cog, interaction, *args)
-        else:
-            args = (interaction, *args)
+        if not self.func:
+            return
+        args = (interaction, *args)
         try:
             if await self.can_run(*args):
-                await self.func(*args, **kwargs)
+                if self.cog:
+                    await self.func(self.cog, *args, **kwargs)
+                else:
+                    await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
                 if self.cog is not None:
@@ -840,8 +843,8 @@ class SubCommand(SlashCommandOption):
         return base
 
     async def can_run(self, *args, **kwargs):
-        if self.cog is not None:
-            args = (self.cog, *args)
+        # if self.cog is not None:
+        #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
         checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
         if not checks:
@@ -850,13 +853,15 @@ class SubCommand(SlashCommandOption):
         return await async_all(check(*args, **kwargs) for check in checks)
 
     async def invoke(self, interaction, *args, **kwargs):
-        if self.cog is not None:
-            args = (self.cog, interaction, *args)
-        else:
-            args = (interaction, *args)
+        if not self.func:
+            return
+        args = (interaction, *args)
         try:
             if await self.can_run(*args):
-                await self.func(*args, **kwargs)
+                if self.cog:
+                    await self.func(self.cog, *args, **kwargs)
+                else:
+                    await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
                 if self.cog is not None:
@@ -886,10 +891,7 @@ class SubCommand(SlashCommandOption):
             warnings.warn(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
             return
 
-        if self.cog is not None:
-            args = (self.cog, interaction, *args)
-        else:
-            args = (interaction, *args)
+        args = (interaction, *args)
         try:
             if await self.can_run(*args, __func=self.autocomplete_func):
                 await self.autocomplete_func(*args, **kwargs)
@@ -1096,10 +1098,7 @@ class SlashCommand(ApplicationCommand):
         if self.autocomplete_func is None:
             warnings.warn(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
             return
-        if self.cog is not None:
-            args = (self.cog, interaction, *args)
-        else:
-            args = (interaction, *args)
+        args = (interaction, *args)
 
         try:
             if await self.can_run(*args, __func=self.autocomplete_func):
@@ -1154,14 +1153,13 @@ class SlashCommand(ApplicationCommand):
     async def invoke(self, interaction, *args, **kwargs):
         if not self.func:
             return
-        if self.cog is not None:
-            args = (self.cog, interaction, *args)
-        else:
-            args = (interaction, *args)
-
+        args = (interaction, *args)
         try:
             if await self.can_run(*args):
-                await self.func(*args, **kwargs)
+                if self.cog:
+                    await self.func(self.cog, *args, **kwargs)
+                else:
+                    await self.func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
                 if self.cog is not None:
