@@ -23,7 +23,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
+from typing import (
+    Union,
+    Optional,
+    List,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    Coroutine,
+    Awaitable
+)
+
+from typing_extensions import Literal
 
 import re
 import copy
@@ -33,16 +46,14 @@ import warnings
 from types import FunctionType
 
 from .utils import async_all, find, get, snowflake_time
-from typing_extensions import Literal
 from .abc import GuildChannel
-from typing import Union, Optional, List, Dict, Any, TYPE_CHECKING, Coroutine, Awaitable
 from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
 
 if TYPE_CHECKING:
-    from .ext.commands import Cog, Converter
     from datetime import datetime
     from .guild import Guild
+    from .ext.commands import Cog, Greedy, Converter
     from .interactions import BaseInteraction
 
 __all__ = (
@@ -64,7 +75,7 @@ __all__ = (
 api_docs = 'https://discord.com/developers/docs'
 
 
-# TODO: Add a (optional) feature for auto generated name_localizations & description_localizations by a translator
+# TODO: Add a (optional) feature for auto generated localizations by a translator
 
 class Localizations:
     """
@@ -160,7 +171,7 @@ class Localizations:
             raise KeyError(f'There is no locale value set for {locale.name}.')
 
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self.__languages_dict__[Locale[key].value] = value
 
     def __bool__(self) -> bool:
@@ -174,10 +185,11 @@ class Localizations:
         data = data or {}
         return cls(**{try_enum(Locale, key): value for key, value in data.items()})
 
-    def update(self, __m: 'Localizations'):
+    def update(self, __m: 'Localizations') -> None:
+        """Similar to :meth:`dict.update`"""
         self.__languages_dict__.update(__m.__languages_dict__)
 
-    def from_target(self, target: Union['Guild', 'BaseInteraction'], *, default: Any = None):
+    def from_target(self, target: Union[Guild, BaseInteraction], *, default: Any = None):
         """
         Returns the value for the local of the object (if it's set), or :attr:`default`(:class:`None`)
 
@@ -190,17 +202,16 @@ class Localizations:
             The value or an object to return by default if there is no value for the locale of :attr:`target` set.
             Default to :class:`None` or :class:`~discord.Locale.english_US`/:class:`~discord.Locale.english_GB`
 
-        Return
-        ------
+        Returns
+        -------
         Union[:class:`str`, None]
-            The value of the locale or :class:`None` if there is no value for the locale set.
+            The value of the locale or :obj:`None` if there is no value for the locale set.
 
         Raises
         ------
         :exc:`TypeError`
             If :attr:`target` is of the wrong type.
         """
-        return_default = False
         if hasattr(target, 'preferred_locale'):
             try:
                 return self[target.preferred_locale.value]
@@ -255,7 +266,7 @@ class ApplicationCommand:
         self.name_localizations: Localizations = kwargs.get('name_localizations', Localizations())
         self.description_localizations: Localizations = kwargs.get('description_localizations', Localizations())
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         return getattr(self, item)
 
     @property
@@ -268,22 +279,23 @@ class ApplicationCommand:
 
     @property
     def cog(self) -> Optional['Cog']:
+        """Optional[:class:`~discord.ext.commands.Cog`]: The cog associated with this command if any."""
         return getattr(self, '_cog', None)
 
     @cog.setter
-    def cog(self, __cog: 'Cog'):
+    def cog(self, __cog: 'Cog') -> None:
         setattr(self, '_cog', __cog)
 
-    def _set_cog(self, cog: 'Cog', recursive: bool = False):
+    def _set_cog(self, cog: 'Cog', recursive: bool = False) -> None:
         self.cog = cog
 
     def __call__(self, *args, **kwargs):
         return super().__init__(self, *args, **kwargs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<%s name=%s, id=%s, disabled=%s>' % (self.__class__.__name__, self.name, self.id, self.disabled)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
             other = other.to_dict()
         if isinstance(other, dict):
@@ -335,19 +347,19 @@ class ApplicationCommand:
                         and check_options(options, other.get('options', [])))
         return False
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def _fill_data(self, data):
+    def _fill_data(self, data) -> ApplicationCommand:
         self._id = int(data.get('id', 0))
         self.application_id = int(data.get('application_id', 0))
         self._guild_id = int(data.get('guild_id', 0))
         self._permissions = data.get('permissions', {})
         return self
 
-    async def can_run(self, *args, **kwargs):
+    async def can_run(self, *args, **kwargs) -> bool:
         check_func = kwargs.pop('__func', self)
-        checks = getattr(check_func, '__command_checks__', getattr(self.func, '__command_checks__', None))
+        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
         if not checks:
             return True
 
@@ -370,13 +382,14 @@ class ApplicationCommand:
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
-    def error(self, coro):
+    def error(self, coro) -> Coroutine:
+        """A decorator to set an error handler for this command similar to :func:`on_application_command_error` but only for this command"""
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The error handler must be a coroutine.')
         self.on_error = coro
         return coro
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         base = {
             'type': int(self.type),
             'name': str(self.name),
@@ -394,22 +407,24 @@ class ApplicationCommand:
         return base
 
     @property
-    def id(self):
+    def id(self) -> Optional[int]:
         """Optional[:class:`int`]: The id of the command, only set if the bot is running"""
         return getattr(self, '_id', None)
 
     @property
-    def created_at(self) -> Optional['datetime']:
+    def created_at(self) -> Optional[datetime]:
         """Optional[:class:`datetime.datetime`]: The creation time of the command in UTC, only set if the bot is running"""
         if self.id:
             return snowflake_time(self.id)
 
     @property
     def type(self) -> ApplicationCommandType:
+        """:class:`ApplicationCommandType`: The type of the command"""
         return try_enum(ApplicationCommandType, self._type)
 
     @property
-    def guild_id(self):
+    def guild_id(self) -> Optional[int]:
+        """Optional[:class:`int`]: Th id this command belongs to, if any"""
         return self._guild_id
 
     @property
@@ -443,7 +458,7 @@ class ApplicationCommand:
             sorted_dict[predicate].append(cmd)
         return sorted_dict
 
-    async def delete(self):
+    async def delete(self) -> None:
         """|coro|
 
         Deletes the application command
@@ -463,19 +478,23 @@ class SlashCommandOptionChoice:
 
     Parameters
     -----------
-    name: :class:`str`
+    name: Union[:class:`str`, :class:`int`, :class:`float`]
         The 1-100 characters long name that will show in the client.
-    value: Union[:class:`str`, :class:`int`, :class:`float`]
+    value: Union[:class:`str`, :class:`int`, :class:`float`, :obj:`None`]
         The value that will send as the options value.
-        Must be of the type the option is of (:class:`str`, :class:`int` or :class:`float`).
+        Must be of the type the :class:`SlashCommandOption` is of (:class:`str`, :class:`int` or :class:`float`).
+
+        .. note::
+            If this is left empty it takes the :attr:`~SlashCommandOption.name` as value.
+            
     name_localizations: Optional[:class:`Localizations`]
         Localized names for the choice.
     """
-    def __init__(self, name: str, value: Union[str, int, float] = None, name_localizations: Optional[Localizations] = Localizations()):
+    def __init__(self, name: Union[str, int, float], value: Union[str, int, float] = None, name_localizations: Optional[Localizations] = Localizations()):
 
-        if 100 < len(name) < 1:
+        if 100 < len(str(name)) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
-        self.name = name
+        self.name = str(name)
         self.value = value if value is not None else name
         self.name_localizations = name_localizations
 
@@ -519,10 +538,14 @@ class SlashCommandOption:
     required: Optional[:class:`bool`]
         Weather this option must be provided by the user, default ``True``.
         If ``False``, the parameter of the slash-command that takes this option needs a default value.
-    choices: Optional[List[:class:`SlashCommandOptionChoice`]]
+    choices: Optional[List[Union[:class:`SlashCommandOptionChoice`, :class:`str`, :class:`int`, :class:`float`]]]
         A list of up to 25 choices the user could select. Only valid if the :attr:`option_type` is one of
-        :class:`OptionType.string`, :class:`OptionType.integer` or :class:`OptionType.number`.
-        The :attr:`value`'s of the choices must be of the :attr:`~SlashCommandOption.option_type` of this option
+        :attr:`~OptionType.string`, :attr:`~OptionType.integer` or :attr:`~OptionType.number`.
+
+        .. note::
+            If you want to have values that are not the same as their name, you can use :class:`SlashCommandOptionChoice`
+
+        The :attr:`~SlashCommandOptionChoice.value`'s of the choices must be of the :attr:`~SlashCommandOption.option_type` of this option
         (e.g. :class:`str`, :class:`int` or :class:`float`).
         If choices are set they are the only options a user could pass.
     autocomplete: Optional[:class:`bool`]
@@ -530,8 +553,9 @@ class SlashCommandOption:
         `autocomplete <https://discord.com/developers/docs/interactions/application-commands#autocomplete>`_
         interactions for this option, default ``False``.
         With autocomplete, you can check the user's input and send matching choices to the client.
-        **Autocomplete can only be used with options of the type** ``string``, ``integer`` or ``number``.
-        **If autocomplete is activated, the option cannot have** :attr:`~SlashCommandOption.choices` **.**
+        .. note::
+            Autocomplete can only be used with options of the type :attr:`~OptionType.string`, :attr:`~OptionType.integer` or :attr:`~OptionType.number`.
+            **If autocomplete is activated, the option cannot have** :attr:`~SlashCommandOption.choices` **.**
     min_value: Optional[Union[:class:`int`, :class:`float`]]
         If the :attr:`~SlashCommandOption.option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
         this is the minimum value the users input must be of.
@@ -558,7 +582,7 @@ class SlashCommandOption:
                  name_localizations: Optional[Localizations] = Localizations(),
                  description_localizations: Optional[Localizations] = Localizations(),
                  required: bool = True,
-                 choices: Optional[List[SlashCommandOptionChoice]] = [],
+                 choices: Optional[List[Union[SlashCommandOptionChoice, str, int, float]]] = [],
                  autocomplete: bool = False,
                  min_value: Optional[Union[int, float]] = None,
                  max_value: Optional[Union[int, float]] = None,
@@ -585,13 +609,13 @@ class SlashCommandOption:
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
                 f'Got "{name}" with length {len(name)}.'
             )
-        self.name = name
+        self.name: str = name
         self.name_localizations: Localizations = name_localizations
         if 100 < len(description) < 1:
             raise ValueError('The description must be between 1 and 100 characters long, got %s.' % len(description))
-        self.description = description
+        self.description: str = description
         self.description_localizations: Localizations = description_localizations
-        self.required = required
+        self.required: bool = required
         options = kwargs.get('__options', [])
         if self.type == 2 and (not options):
             raise ValueError('You need to pass __options if the option_type is subcommand_group.')
@@ -599,13 +623,16 @@ class SlashCommandOption:
         self.autocomplete: bool = autocomplete
         self.min_value: Optional[Union[int, float]] = min_value
         self.max_value: Optional[Union[int, float]] = max_value
-        self.choices: Optional[List[SlashCommandOptionChoice]] = choices
+        for index, choice in enumerate(choices):  # TODO: find a more efficient way to do this
+            if not isinstance(choice, SlashCommandOptionChoice):
+                choices[index] = SlashCommandOptionChoice(choice)
+        self.choices: List[SlashCommandOptionChoice] = choices
         self.channel_types: Optional[List[Union[GuildChannel, ChannelType, int]]] = channel_types
-        self.default = default
-        self.converter = converter
-        self.ignore_conversion_failures = ignore_conversion_failures
+        self.default: Any = default
+        self.converter: Union[Greedy, Converter] = converter
+        self.ignore_conversion_failures: bool = ignore_conversion_failures
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>'\
                % (self.type,
                   self.name,
@@ -744,7 +771,7 @@ class SlashCommandOption:
         return base
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data) -> SlashCommandOption:
         option_type: OptionType = try_enum(OptionType, data['type'])
         if option_type.sub_command_group:
             return SubCommandGroup.from_dict(data)
@@ -815,7 +842,8 @@ class SubCommand(SlashCommandOption):
     async def can_run(self, *args, **kwargs):
         if self.cog is not None:
             args = (self.cog, *args)
-        checks = getattr(self, '__command_checks__', [])
+        check_func = kwargs.pop('__func', self)
+        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
         if not checks:
             return True
 
