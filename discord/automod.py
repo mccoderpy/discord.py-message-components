@@ -147,11 +147,16 @@ class AutoModTriggerMetadata:
 
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword_preset`
+    exempt_words: Optional[List[str]]
+        Substrings which should be excluded from the blacklist.
 
+        .. note::
+            This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword_preset`
     """
     def __init__(self,
                  keyword_filter: Optional[List[str]] = None,
-                 presets: Optional[List[AutoModKeywordPresetType]] = None) -> None:
+                 presets: Optional[List[AutoModKeywordPresetType]] = None,
+                 exempt_words: Optional[List[str]] = None) -> None:
         """Additional data used to determine whether a rule should be triggered.
         Different fields are relevant based on the value of :attr:`AutoModRule.trigger_type`
 
@@ -161,13 +166,19 @@ class AutoModTriggerMetadata:
             Substrings which will be searched for in content
 
             .. note::
-                This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword`
+                This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
 
         presets: Optional[List[:class:`AutoModKeywordPresetType`]]
             The internally pre-defined wordsets which will be searched for in content
 
             .. note::
-                This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword_preset`
+                This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
+
+        exempt_words: Optional[List[str]]
+            Substrings which should be excluded from the blacklist.
+
+            .. note::
+                This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
 
         Raises
         -------
@@ -178,6 +189,9 @@ class AutoModTriggerMetadata:
             raise TypeError('Only one of keyword_filter or presets are accepted.')
         self.keyword_filter: Optional[List[str]] = keyword_filter or []
         self.presets: Optional[List[AutoModKeywordPresetType]] = presets or []
+        if exempt_words and not presets:
+            raise TypeError('exempt_words can only be used with presets')
+        self.exempt_words: Optional[List[str]] = exempt_words
 
     @property
     def prefix_keywords(self) -> Iterator[str]:
@@ -275,7 +289,10 @@ class AutoModTriggerMetadata:
         if self.keyword_filter:
             return {'keyword_filter': self.keyword_filter}
         else:
-            return {'presets': [int(p) for p in self.presets]}
+            base = {'presets': [int(p) for p in self.presets]}
+            if self.exempt_words:
+                base['allow_list'] = self.exempt_words
+            return base
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> AutoModTriggerMetadata:
@@ -283,6 +300,7 @@ class AutoModTriggerMetadata:
         presets = data.get('presets', None)
         if presets:
             self.presets = data['presets']
+            self.exempt_words = data.get('allow_list', [])
         else:
             self.keyword_filter = data.get('keyword_filter', None)
         return self
