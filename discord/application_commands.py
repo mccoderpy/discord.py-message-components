@@ -1439,7 +1439,7 @@ class UserCommand(ApplicationCommand):
         return cls(
             name=data.pop('name'),
             name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
-            default_member_permissions=int(dmp) if dmp else None,
+            default_member_permissions=Permissions(int(dmp)) if dmp else None,
             allow_dm=data.get('dm_permission', True),
             state=state,
             **data
@@ -1484,7 +1484,7 @@ class MessageCommand(ApplicationCommand):
         return cls(
             name=data.pop('name'),
             name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
-            default_member_permissions=int(dmp) if dmp else None,
+            default_member_permissions=Permissions(int(dmp)) if dmp else None,
             allow_dm=data.get('dm_permission', True),
             state=state,
             **data
