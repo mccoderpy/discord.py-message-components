@@ -516,7 +516,10 @@ class HTTPClient:
 
     # Thread management
     def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, reason=None):
-        r = Route('POST', f'/channels/{channel_id}{f"/messages/{message_id}" if message_id else ""}/threads')
+        if message_id:
+            r = Route('POST', '/channels/{channel_id}/messages/{message_id}', channel_id=channel_id, message_id=message_id)
+        else:
+            r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
         params = {
             'type': int(type),
             'name': str(name),
@@ -525,7 +528,7 @@ class HTTPClient:
         return self.request(r, json=params, reason=reason)
 
     def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, reason=None):
-        r = Route('PATCH', f'/channels/{channel_id}')
+        r = Route('PATCH', '/channels/{channel_id}', channel_id=channel_id)
         params = {}
         if name:
             params['name'] = str(name)
@@ -537,21 +540,24 @@ class HTTPClient:
             params['locked'] = bool(locked)
         return self.request(r, json=params, reason=reason)
 
-    def add_thread_member(self, channeL_id, member_id='@me'):
-        r = Route('PUT', f'/channels/{channeL_id}/thread-members/{member_id}')
+    def add_thread_member(self, channel_id, member_id='@me'):
+        r = Route('PUT', '/channels/{channel_id}/thread-members/{member_id}', channel_id=channel_id, member_id=member_id)
         return self.request(r)
 
     def remove_thread_member(self, channel_id, member_id='@me'):
-        r = Route('DELETE', f'/channels/{channel_id}/thread-members/{member_id}')
+        r = Route('DELETE', '/channels/{channel_id}/thread-members/{member_id}', channel_id=channel_id, member_id=member_id)
         return self.request(r)
 
     def list_thread_members(self, channel_id):
-        return self.request(Route('GET', f'/channels/{channel_id}/thread-members'))
+        return self.request(Route('GET', '/channels/{channel_id}/thread-members', channel_id=channel_id))
 
     def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
         if type not in ('public', 'privat'):
             raise ValueError('type must be public or privat, not %s' % type)
-        r = Route('GET', f'/channels/{channel_id}{"/users/@me" if joined_privat else ""}/threads/archived/{type}')
+        if joined_privat:
+            r = Route('GET', '/channels/{channel_id}/users/@me', channel_id=channel_id)
+        else:
+            r = Route('GET', '/channels/{channel_id}/threads/archived/{type}', channel_id=channel_id, type=type)
         params = {
             'before': before,
             'limit': int(limit)
@@ -734,10 +740,10 @@ class HTTPClient:
         return self.request(Route('PATCH', '/guilds/{guild_id}', guild_id=guild_id), json=payload, reason=reason)
 
     def get_welcome_screen(self, guild_id):
-        return self.request(Route('GET', f'/guilds/{guild_id}/welcome-screen'))
+        return self.request(Route('GET', '/guilds/{guild_id}/welcome-screen', guild_id=guild_id))
 
     def edit_welcome_screen(self, guild_id, reason, **fields):
-        r = Route('PATCH', f'/guilds/{guild_id}/welcome-screen')
+        r = Route('PATCH', '/guilds/{guild_id}/welcome-screen', guild_id=guild_id)
         return self.request(r, json=fields, reason=reason)
 
     def get_template(self, code):
@@ -857,7 +863,7 @@ class HTTPClient:
         return self.request(r, json=payload, reason=reason)
 
     def create_guild_sticker(self, guild_id, file, reason=None, **fields):
-        r = Route('POST', f'/guilds/{guild_id}/stickers')
+        r = Route('POST', '/guilds/{guild_id}/stickers', guild_id=guild_id)
         initial_bytes = file.fp.read(16)
 
         try:
@@ -890,10 +896,12 @@ class HTTPClient:
         return self.request(r, form=form, files=[file], reason=reason)
 
     def edit_guild_sticker(self, guild_id, sticker_id, data, reason=None):
-        return self.request(Route('PATCH', f'/guilds/{guild_id}/stickers/{sticker_id}'), json=data, reason=reason)
+        r = Route('PATCH', '/guilds/{guild_id}/stickers/{sticker_id}', guild_id=guild_id, sticker_id=sticker_id)
+        return self.request(r, json=data, reason=reason)
 
     def delete_guild_sticker(self, guild_id, sticker_id, reason=None):
-        return self.request(Route('DELETE', f'/guilds/{guild_id}/stickers/{sticker_id}'), reason=reason)
+        r = Route('DELETE', '/guilds/{guild_id}/stickers/{sticker_id}', guild_id=guild_id, sticker_id=sticker_id)
+        return self.request(r, reason=reason)
 
     def get_all_integrations(self, guild_id):
         r = Route('GET', '/guilds/{guild_id}/integrations', guild_id=guild_id)
@@ -981,25 +989,33 @@ class HTTPClient:
     # Event management
 
     def get_guild_event(self, guild_id, event_id, with_user_count=True):
-        r = Route('GET', f'/guilds/{guild_id}/scheduled-events/{event_id}?with_user_count={str(with_user_count).lower()}')
+        with_user_count = str(with_user_count).lower()
+        r = Route(
+            'GET', '/guilds/{guild_id}/scheduled-events/{event_id}?with_user_count={with_user_count}',
+            guild_id=guild_id, event_id=event_id, with_user_count=with_user_count
+        )
         return self.request(r)
 
     def get_guild_events(self, guild_id, with_user_count=True):
-        r = Route('GET', f'/guilds/{guild_id}/scheduled-events?with_user_count={str(with_user_count).lower()}')
+        r = Route(
+            'GET', '/guilds/{guild_id}/scheduled-events/{event_id}?with_user_count={with_user_count}',
+            guild_id=guild_id, with_user_count=with_user_count
+        )
         return self.request(r)
 
     def get_guild_event_users(self, guild_id, event_id, limit=100, before=None, after=None, with_member=False):
-        url = f'/guilds/{guild_id}/scheduled-events/{event_id}/users?limit={limit}'
+        url = '/guilds/{guild_id}/scheduled-events/{event_id}/users?limit={limit}'
         if before:
             url += f'&before={before}'
         elif after:
             url += f'&after={after}'
         if with_member:
             url += '&with_member=true'
-        return self.request(Route('GET', url))
+        return self.request(Route('GET', url, guild_id=guild_id, event_id=event_id, limit=limit))
 
     def create_guild_event(self, guild_id, fields, *, reason=None):
-        return self.request(Route('POST', f'/guilds/{guild_id}/scheduled-events'), json=fields, reason=reason)
+        r = Route('POST', '/guilds/{guild_id}/scheduled-events', guild_id=guild_id)
+        return self.request(r, json=fields, reason=reason)
 
     def edit_guild_event(self, guild_id, event_id, *, reason=None, **fields):
         valid_keys = ('name', 'description', 'entity_type', 'privacy_level', 'entity_metadata',
@@ -1007,10 +1023,12 @@ class HTTPClient:
         payload = {
             k: v for k, v in fields.items() if k in valid_keys
         }
-        return self.request(Route('PATCH', f'/guilds/{guild_id}/scheduled-events/{event_id}'), json=payload, reason=reason)
+        r = Route('PATCH', '/guilds/{guild_id}/scheduled-events/{event_id}', guild_id=guild_id, event_id=event_id)
+        return self.request(r, json=payload, reason=reason)
 
     def delete_guild_event(self, guild_id, event_id, *, reason=None):
-        return self.request(Route('DELETE', f'/guilds/{guild_id}/scheduled-events/{event_id}'), reason=reason)
+        r = Route('DELETE', '/guilds/{guild_id}/scheduled-events/{event_id}', guild_id=guild_id, event_id=event_id)
+        return self.request(r, reason=reason)
 
     # Role management
 
@@ -1071,49 +1089,75 @@ class HTTPClient:
 
     # application-command's management
     def get_application_commands(self, application_id, command_id=None, guild_id=None):
-        return self.request(Route('GET',
-                                  f'/applications/{application_id}{f"/guilds/{guild_id}" if guild_id else ""}/commands{f"/{command_id}" if command_id else ""}?with_localizations=true'))
+        if guild_id:
+            url = '/applications/{application_id}/guilds/{guild_id}/commands'
+            if command_id:
+                url += f'/{command_id}'
+                r = Route('GET', f'{url}?with_localizations=true', application_id=application_id, guild_id=guild_id, command_id=command_id)
+            else:
+                r = Route('GET', f'{url}?with_localizations=true', application_id=application_id, guild_id=guild_id)
+        else:
+            url = '/applications/{application_id}/commands'
+            if command_id:
+                url += f'/{command_id}'
+                r = Route('GET', f'{url}?with_localizations=true', application_id=application_id, command_id=command_id)
+            else:
+                r = Route('GET', f'{url}?with_localizations=true', application_id=application_id)
+        return self.request(r)
 
     def create_application_command(self, application_id, data, guild_id=None):
         if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
+            r = Route('POST', '/applications/{application_id}/guilds/{guild_id}/commands', application_id=application_id, guild_id=guild_id)
         else:
-            url = f'/applications/{application_id}/commands'
-        return self.request(Route('POST', url), json=data)
+            r = Route('POST', '/applications/{application_id}/commands', application_id=application_id)
+        return self.request(r, json=data)
 
     def edit_application_command(self, application_id, command_id, data, guild_id=None):
         if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
+            r = Route('PATCH', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
+                      application_id=application_id, guild_id=guild_id, command_id=command_id
+                      )
         else:
-            url = f'/applications/{application_id}/commands/{command_id}'
-        return self.request(Route('PATCH', url), json=data)
+            r = Route('PATCH', '/applications/{application_id}/commands/{command_id}',
+                      application_id=application_id, command_id=command_id
+                      )
+        return self.request(r, json=data)
 
     def delete_application_command(self, application_id, command_id, guild_id=None):
         if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}'
+            r = Route('DELETE', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}',
+                      application_id=application_id, guild_id=guild_id, command_id=command_id
+                      )
         else:
-            url = f'/applications/{application_id}/commands/{command_id}'
-        return self.request(Route('DELETE', url))
+            r = Route('DELETE', '/applications/{application_id}/commands/{command_id}',
+                      application_id=application_id, command_id=command_id
+                      )
+        return self.request(r)
 
     def bulk_overwrite_application_commands(self, application_id, data, guild_id=None):
         if guild_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands'
+            r = Route('PUT', '/applications/{application_id}/guilds/{guild_id}/commands',
+                      application_id=application_id, guild_id=guild_id
+                      )
         else:
-            url = f'/applications/{application_id}/commands'
-        return self.request(Route('PUT', url), json=data)
+            r = Route('PUT', '/applications/{application_id}/commands',application_id=application_id)
+        return self.request(r, json=data)
 
     def get_guild_application_command_permissions(self, application_id, guild_id, command_id=None):
         if command_id:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'
+            r = Route('GET', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+                      application_id=application_id, guild_id=guild_id, command_id=command_id
+                      )
         else:
-            url = f'/applications/{application_id}/guilds/{guild_id}/commands/permissions'
-        return self.request(Route('GET', url))
+            r = Route('GET', '/applications/{application_id}/guilds/{guild_id}/commands/permissions',
+                      application_id=application_id, guild_id=guild_id
+                      )
+        return self.request(r)
 
     def edit_application_command_permissions(self, application_id, guild_id, command_id, data):
-        return self.request(
-            Route('PUT', f'/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions'),
-            json=data
-        )
+        r = Route('PUT', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+                  application_id=application_id, guild_id=guild_id, command_id=command_id)
+        return self.request(r,json=data)
 
     # Interaction management
     def post_initial_response(self, use_webhook, _resp, interaction_id, token, application_id):
@@ -1235,19 +1279,19 @@ class HTTPClient:
 
     # AutoMod management
     def get_automod_rules(self, guild_id: int):
-        return self.request(Route('GET', f'/guilds/{guild_id}/auto-moderation/rules'))
+        return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id))
 
     def get_automod_rule(self, guild_id: int, rule_id: int):
-        return self.request(Route('GET', f'/guilds/{guild_id}/auto-moderation/rules/{rule_id}'))
+        return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id))
 
     def create_automod_rule(self, guild_id: int, data: dict):
-        return self.request(Route('POST', f'/guilds/{guild_id}/auto-moderation/rules'), json=data)
+        return self.request(Route('POST', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id), json=data)
 
     def edit_automod_rule(self, guild_id: int, rule_id: int, data: dict):
-        return self.request(Route('PATCH', f'/guilds/{guild_id}/auto-moderation/rules/{rule_id}'), json=data)
+        return self.request(Route('PATCH', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id), json=data)
 
     def delete_automod_rule(self, guild_id: int, rule_id: int):
-        return self.request(Route('DELETE', f'/guilds/{guild_id}/auto-moderation/rules/{rule_id}'))
+        return self.request(Route('DELETE', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id))
 
     # Misc
     def application_info(self):
