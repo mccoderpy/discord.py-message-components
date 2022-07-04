@@ -2334,7 +2334,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             'embeds': embeds,
             'allowed_mentions': allowed_mentions,
             'components' : components,
-            'sticker_ids': [str(sticker.id) for sticker in stickers],
+            'sticker_ids': [str(sticker.id) for sticker in stickers] if stickers else None,
             'attachments': [{'id': index,
                              'description': file.description,
                              'filename': file.filename
