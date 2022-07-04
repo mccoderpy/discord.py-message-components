@@ -37,6 +37,8 @@ from .enums import ChannelType, try_enum, VoiceRegion, AutoArchiveDuration
 from .components import Button, SelectMenu, ActionRow
 from .mixins import Hashable
 from . import utils, abc
+from .file import File
+from .mentions import AllowedMentions
 from .asset import Asset
 from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived, MissingPermissionsToCreateThread, \
     Forbidden, HTTPException
@@ -1939,6 +1941,19 @@ class ForumTag(Hashable):
         self.moderated = data.get("moderated")
         self.name = data.get("name")
 
+    def __repr__(self):
+        attrs = [
+            ('id', self.id),
+            ('name', self.name),
+            ('emoji_id', self.emoji_id),
+            ('emoji_name', self.emoji_name),
+            ('moderated', self.moderated)
+        ]
+        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class ForumChannel(abc.GuildChannel, Hashable):
 
@@ -2032,7 +2047,6 @@ class ForumChannel(abc.GuildChannel, Hashable):
                                                       data.get('default_auto_archive_duration', 1440))
         self._fill_overwrites(data)
         self._fill_tags(data)
-        print(self._tags)
 
     def _fill_tags(self,data:dict):
         tags = data.get('available_tags', [])
@@ -2259,11 +2273,11 @@ class ForumChannel(abc.GuildChannel, Hashable):
                             content: Any = None,
                             embed: Optional['Embed'] = None,
                             embeds: Optional[List['Embed']] = None,
-                            components: Optional[List[Union[discord.ActionRow, List[Union[discord.Button, discord.SelectMenu]]]]] = None,
-                            file: Optional[discord.File] = None,
-                            files: Optional[List[discord.File]] = None,
+                            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+                            file: Optional[File] = None,
+                            files: Optional[List[File]] = None,
                             stickers: Optional[List['GuildSticker']] = None,
-                            allowed_mentions: Optional[discord.AllowedMentions] = None,
+                            allowed_mentions: Optional[AllowedMentions] = None,
                             supress: bool = False,
                             auto_archive_duration: AutoArchiveDuration = None,
                             reason: str = None) -> ForumPost:
@@ -2335,7 +2349,6 @@ class ForumChannel(abc.GuildChannel, Hashable):
         _type = ChannelType.public_thread
         data = await self._state.http.create_post(self.id, name=name, message = message, auto_archive_duration=aad,
                                                     reason=reason)
-        print(data)
         post = ForumPost(state=self._state, guild=self.guild, data=data)
 
         self._posts[post.id] = post
