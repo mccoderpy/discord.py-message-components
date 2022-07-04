@@ -556,9 +556,11 @@ class SlashCommandOption:
         `autocomplete <https://discord.com/developers/docs/interactions/application-commands#autocomplete>`_
         interactions for this option, default ``False``.
         With autocomplete, you can check the user's input and send matching choices to the client.
+
         .. note::
             Autocomplete can only be used with options of the type :attr:`~OptionType.string`, :attr:`~OptionType.integer` or :attr:`~OptionType.number`.
             **If autocomplete is activated, the option cannot have** :attr:`~SlashCommandOption.choices` **.**
+
     min_value: Optional[Union[:class:`int`, :class:`float`]]
         If the :attr:`~SlashCommandOption.option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
         this is the minimum value the users input must be of.

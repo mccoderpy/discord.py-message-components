@@ -236,8 +236,7 @@ class Client:
         in the code anymore if :attr:`delete_not_existing_commands` is set to :obj:`True` what it is by default.
 
     delete_not_existing_commands: :class:`bool`
-        Whether to remove global and guild-only application-commands that are not in the code anymore, default :obj:`True`
-        `.
+        Whether to remove global and guild-only application-commands that are not in the code anymore, default :obj:`True`.
 
     Attributes
     -----------
