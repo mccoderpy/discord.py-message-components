@@ -557,8 +557,8 @@ class Cog(metaclass=CogMeta):
 
         .. note::
 
-            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
+            :attr:`~Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
+            to register a command if he not already exists and update him if changes where made.
 
         Parameters
         -----------
@@ -822,8 +822,8 @@ class Cog(metaclass=CogMeta):
 
         .. note::
 
-            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
+            :attr:`~<Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
+            to register a command if he not already exists and update him if changes where made.
 
         Parameters
         ----------
@@ -893,8 +893,8 @@ class Cog(metaclass=CogMeta):
 
        .. note::
 
-           :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-           must be set to ``True`` to register a command if he not already exists and update him if changes where made.
+            :attr:`~Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
+            to register a command if he not already exists and update him if changes where made.
 
        Parameters
        ----------

@@ -1378,8 +1378,8 @@ class Client:
 
         .. note::
 
-            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
+            :attr:`~discord.Client.sync_commands` of the :class:`Client` instance  must be set to :obj:`True`
+            to register a command if he not already exists and update him if changes where made.
 
         Parameters
         -----------
@@ -1628,8 +1628,8 @@ class Client:
 
         .. note::
 
-            :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-            must be set to ``True`` to register a command if he not already exists and update him if changes where made.
+            :attr:`~discord.Client.sync_commands` of the :class:`Client` instance  must be set to :obj:`True`
+            to register a command if he not already exists and update him if changes where made.
 
         Parameters
         ----------
@@ -1693,8 +1693,8 @@ class Client:
 
        .. note::
 
-           :attr:`sync_commands` of the :class:`Client`-instance or the class, that inherits from it
-           must be set to ``True`` to register a command if he not already exists and update him if changes where made.
+            :attr:`~discord.Client.sync_commands` of the :class:`Client` instance  must be set to :obj:`True`
+            to register a command if he not already exists and update him if changes where made.
 
        Parameters
        ----------
