@@ -342,10 +342,11 @@ class Cog(metaclass=CogMeta):
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
         if so, the :func:`func` is called.
 
-        The function this is attached to must take the same parameters as a
-        :func:`on_raw_button_click` event.
-
         .. important::
+            The function this is attached to must take the same parameters as a
+            :func:`~discord.on_raw_button_click` event.
+
+        .. warning::
             The func must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
@@ -354,6 +355,11 @@ class Cog(metaclass=CogMeta):
             If the :attr:`custom_id` of the :class:`discord.Button` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
+
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
 
         Example
         -------
@@ -396,12 +402,13 @@ class Cog(metaclass=CogMeta):
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-        A decorator with which you can assign a function to a specific :class:`SelectMenu` (or its custom_id).
-
-        The function this is attached to must take the same parameters as a
-        :func:`on_raw_selection_select` event.
+        A decorator with which you can assign a function to a specific :class:`~SelectMenu` (or its custom_id).
 
         .. important::
+            The function this is attached to must take the same parameters as a
+            :func:`~discord.on_raw_selection_select` event.
+
+        .. warning::
             The func must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
@@ -410,6 +417,11 @@ class Cog(metaclass=CogMeta):
             If the :attr:`custom_id` of the :class:`discord.SelectMenu` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
+
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
 
         Example
         -------
@@ -459,10 +471,11 @@ class Cog(metaclass=CogMeta):
         A decorator that registers an :attr:`on_modal_submit` event that checks on execution if the ``custom_id's`` are the same;
          if so, the :func:`func` is called.
 
-        The function this is attached to must take the same parameters as a
-        :func:`on_modal_submit`.
-
         .. important::
+            The function this is attached to must take the same parameters as a
+            :func:`~discord.on_modal_submit` event.
+
+        .. warning::
             The func must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
@@ -471,6 +484,11 @@ class Cog(metaclass=CogMeta):
             If the :attr:`custom_id` of the :class:`discord.Modal` could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
+
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
 
         Example
         -------
