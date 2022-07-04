@@ -1149,9 +1149,7 @@ class Client:
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-
-        A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
-        if so, the decorated function is called.
+         A decorator with wich you can assign a function to a specific :class:`~discord.Button` (or its custom_id).
 
         .. important::
             The function this is attached to must take the same parameters as a
@@ -1167,10 +1165,11 @@ class Client:
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
-        .. note::
-            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
-            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
-            Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
+            .. note::
+                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                put ``^`` in front and ``$`` at the end
+                of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+                Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
 
         Example
         -------
@@ -1234,10 +1233,11 @@ class Client:
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
-        .. note::
-            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
-            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
-            Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
+            .. note::
+                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                put ``^`` in front and ``$`` at the end
+                of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+                Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
 
         Example
         -------
@@ -1284,8 +1284,7 @@ class Client:
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
-        A decorator that registers an :func:`on_modal_submit` event that checks on execution if the ``custom_id's`` are the same;
-        if so, the decorated function is called.
+         A decorator with wich you can assign a function to a specific :class:`~discord.Modal` (or its custom_id).
 
         .. important::
             The function this is attached to must take the same parameters as a
@@ -1302,10 +1301,11 @@ class Client:
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
-        .. note::
-            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
-            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
-            Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
+            .. note::
+                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                put ``^`` in front and ``$`` at the end of the :attr:`custom_id` if you want that the custom_id must
+                exactly match the specified value.
+                Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
 
         Example
         -------
