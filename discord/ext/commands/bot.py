@@ -1332,10 +1332,6 @@ class Bot(BotBase, discord.Client):
         that are not registered yet, update changes and remove application-commands that could not be found
         in the code anymore if :attr:`delete_not_existing_commands` is set to ``True`` what it is by default.
 
-        .. note::
-            It can take up to an hour until updates on global application-commands are available
-            in all guilds the bot is in due to global caching on discords side.
-            For testing purposes it is recommended to use guild-only commands because they are available immediately.
     delete_not_existing_commands: :class:`bool`
         Whether to remove global and guild-only application-commands that are not in the code anymore, default ``True``.
     sync_commands_on_cog_reload: :class:`bool`

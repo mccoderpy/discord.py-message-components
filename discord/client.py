@@ -229,19 +229,15 @@ class Client:
         .. versionadded:: 1.3
 
     sync_commands: :class:`bool`
-        Whether to sync application-commands on startup, default ``False``.
+        Whether to sync application-commands on startup, default :obj:`False`.
 
         This will register global and guild application-commands(slash-, user- and message-commands)
         that are not registered yet, update changes and remove application-commands that could not be found
-        in the code anymore if :attr:`delete_not_existing_commands` is set to ``True`` what it is by default.
-
-        .. note::
-            It can take up to an hour until updates on global application-commands are available
-            in all guilds the bot is in due to global caching on discords side.
-            For testing purposes it is recommended to use guild-only commands because they are available immediately.
+        in the code anymore if :attr:`delete_not_existing_commands` is set to :obj:`True` what it is by default.
 
     delete_not_existing_commands: :class:`bool`
-        Whether to remove global and guild-only application-commands that are not in the code anymore, default ``True``.
+        Whether to remove global and guild-only application-commands that are not in the code anymore, default :obj:`True`
+        `.
 
     Attributes
     -----------
@@ -1158,16 +1154,12 @@ class Client:
         A decorator that registers a raw_button_click event that checks on execution if the ``custom_id's`` are the same;
         if so, the decorated function is called.
 
-        The function this is attached to must take the same parameters as a
-        :func:`on_raw_button_click` event.
-
         .. important::
-            The function decorated must be a coroutine, if not, :exc:`TypeError` is raised.
+            The function this is attached to must take the same parameters as a
+            :func:`~discord.on_raw_button_click` event.
 
-        .. note::
-            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
-            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
-            Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
+        .. warning::
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
         ----------
@@ -1176,6 +1168,10 @@ class Client:
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
 
         Example
         -------
@@ -1225,11 +1221,12 @@ class Client:
         """
         A decorator with which you can assign a function to a specific :class:`~discord.SelectMenu` (or its custom_id).
 
-        The function this is attached to must take the same parameters as a
-        :func:`on_raw_selection_select` event.
-
         .. important::
-            The decorated function must be a coroutine, if not, :exc:`TypeError` is raised.
+            The function this is attached to must take the same parameters as a
+            :func:`~discord.on_raw_selection_select` event.
+
+        .. warning::
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
 
         Parameters
         -----------
@@ -1238,6 +1235,10 @@ class Client:
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
 
         Example
         -------
@@ -1287,11 +1288,13 @@ class Client:
         A decorator that registers an :func:`on_modal_submit` event that checks on execution if the ``custom_id's`` are the same;
         if so, the decorated function is called.
 
-        The function this is attached to must take the same parameters as a
-        :func`on_modal_submit` event.
-
         .. important::
-            The decorated function must be a coroutine, if not, :exc:`TypeError` is raised.
+            The function this is attached to must take the same parameters as a
+            :func:`~discord.on_modal_submit` event.
+
+        .. warning::
+            The func must be a coroutine, if not, :exc:`TypeError` is raised.
+
 
         Parameters
         ----------
@@ -1299,6 +1302,11 @@ class Client:
             If the `custom_id` of the :class:`~discord.Modal` could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
+
+        .. note::
+            As the :attr:`custom_id` is converted to a :class:`re.Pattern` put ``^`` in front and ``$`` at the end
+            of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
+            Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
 
         Example
         -------
