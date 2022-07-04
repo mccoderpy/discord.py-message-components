@@ -523,15 +523,13 @@ class HTTPClient:
         }
         return self.request(r, json=params, reason=reason)
 
-    def create_post(self, channel_id, name, content, *, auto_archive_duration, reason=None):
+    def create_post(self, channel_id, name, message, *, auto_archive_duration, reason=None):
         r = Route('POST', '/channels/{channel_id}/threads', channel_id = channel_id,)
         params = {
             'name': str(name),
             'rate_limit_per_user': 0,
             'auto_archive_duration': int(auto_archive_duration),
-            'message' : {
-                'content': content
-            }
+            'message' : message
         }
 
         return self.request(r, json=params, reason=reason)

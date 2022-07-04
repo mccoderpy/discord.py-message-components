@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 import datetime
 import time
 import asyncio
-from typing import Union, Optional, Callable, TYPE_CHECKING, Any
+from typing import Union, Optional, Callable, TYPE_CHECKING, Any, List
 
 import discord
 from .object import Object
@@ -34,6 +34,7 @@ from .object import Object
 
 from .permissions import Permissions
 from .enums import ChannelType, try_enum, VoiceRegion, AutoArchiveDuration
+from .components import Button, SelectMenu, ActionRow
 from .mixins import Hashable
 from . import utils, abc
 from .asset import Asset
@@ -41,7 +42,10 @@ from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchi
     Forbidden, HTTPException
 
 if TYPE_CHECKING:
+    from .embeds import Embed
+    from .sticker import GuildSticker
     from .member import Member
+    from .message import Message, MessageReference
     from .guild import Guild
 
 
@@ -1930,6 +1934,10 @@ class ForumTag(Hashable):
     def __init__(self, *, guild, data):
         self.guild = guild
         self.id = int(data['id'])
+        self.emoji_id = data.get("emoji_id")
+        self.emoji_name = data.get("emoji_name")
+        self.moderated = data.get("moderated")
+        self.name = data.get("name")
 
 
 class ForumChannel(abc.GuildChannel, Hashable):
@@ -2248,10 +2256,15 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     async def create_post(self,
                             name: str,
-                            content: str = None,
-                            tags: list[ForumPost | int] = [],
-                            embed = None,
-                            embeds = None,
+                            content: Any = None,
+                            embed: Optional['Embed'] = None,
+                            embeds: Optional[List['Embed']] = None,
+                            components: Optional[List[Union[discord.ActionRow, List[Union[discord.Button, discord.SelectMenu]]]]] = None,
+                            file: Optional[discord.File] = None,
+                            files: Optional[List[discord.File]] = None,
+                            stickers: Optional[List['GuildSticker']] = None,
+                            allowed_mentions: Optional[discord.AllowedMentions] = None,
+                            supress: bool = False,
                             auto_archive_duration: AutoArchiveDuration = None,
                             reason: str = None) -> ForumPost:
         """|coro|
@@ -2263,6 +2276,10 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
 
         """
+
+        state = self._state
+
+        content = str(content) if content is not None else None
         embed_list = []
 
         if embed is not None:
@@ -2271,16 +2288,52 @@ class ForumChannel(abc.GuildChannel, Hashable):
         if embeds:
             embed_list.extend([e.to_dict() for e in embeds])
 
-        tags = [str(i) if type(i) == int else str(i.id) for i in tags]
-
         embeds = embed_list
+
+        if len(embeds) > 10:
+            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embeds)}')
+
+        if components:
+            _components = []
+            for component in ([components] if not isinstance(components, list) else components):
+                if isinstance(component, (Button, SelectMenu)):
+                    _components.extend(ActionRow(component).to_dict())
+                elif isinstance(component, ActionRow):
+                    _components.extend(component.to_dict())
+                elif isinstance(component, list):
+                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
+            components = _components
+
+        if allowed_mentions is not None:
+            if state.allowed_mentions is not None:
+                allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
+            else:
+                allowed_mentions = allowed_mentions.to_dict()
+        else:
+            allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
+
+        if file is not None and files is not None:
+            raise InvalidArgument('cannot pass both file and files parameter to send()')
+
+        message = {
+            'content': content,
+            'embeds': embeds,
+            'allowed_mentions': allowed_mentions,
+            'components' : components,
+            'sticker_ids': [str(sticker.id) for sticker in stickers],
+            'attachments': [{'id': index,
+                             'description': file.description,
+                             'filename': file.filename
+                             } for index, file in enumerate(files)] if files and len(files) else None,
+            'flags': 4 if supress else None
+        }
 
         if len(name) > 100 or len(name) < 1:
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
         aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration,
                                                                                              auto_archive_duration)).value
         _type = ChannelType.public_thread
-        data = await self._state.http.create_post(self.id, name=name, content=content, auto_archive_duration=aad,
+        data = await self._state.http.create_post(self.id, name=name, message = message, auto_archive_duration=aad,
                                                     reason=reason)
         print(data)
         post = ForumPost(state=self._state, guild=self.guild, data=data)
