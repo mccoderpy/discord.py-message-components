@@ -620,14 +620,25 @@ class BaseInteraction:
             flags.suppress_embeds = True
         data['flags'] = flags.value
         if self.deferred and self.callback_message and self.callback_message.flags.loading:
-            method = state.http.edit_interaction_response(
-                token=self._token,
-                interaction_id=self.id,
-                application_id=self._application_id,
-                data=data,
-                files=files,
-                deferred=self.deferred
-            )
+            if not self.messages:
+                method = state.http.edit_interaction_response(
+                    token=self._token,
+                    interaction_id=self.id,
+                    application_id=self._application_id,
+                    data=data,
+                    files=files,
+                    deferred=self.deferred
+                )
+            else:
+                method = state.http.send_interaction_response(
+                    token=self._token,
+                    interaction_id=self.id,
+                    application_id=self._application_id,
+                    data=data,
+                    files=files,
+                    followup=True,
+                    deferred=self.deferred,
+                )
         else:
             if not self.callback_message:
                 method = state.http.send_interaction_response(
