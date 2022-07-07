@@ -16,9 +16,11 @@ __author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015-2021 Rapptz & 2021-present mccoderpy'
 __version__ = '1.8a'
+
 try:
     with open('./version.txt') as fp:
         __version__ = fp.read()
+    del fp
 except Exception:
     pass
 
