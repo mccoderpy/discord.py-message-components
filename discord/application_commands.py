@@ -567,10 +567,10 @@ class SlashCommandOption:
     max_value: Optional[Union[:class:`int`, :class:`float`]]
         If the :attr:`option_type` is one of :attr:`~OptionType.integer` or :attr:`~OptionType.number`
         this is the maximum value the users input could be of.
-    min_length: :class:`int`
-        If the :attr:`option_type` is :attr:`~OptionType.string`, this is the minimum length (min. of ``0``)
-    max_length: :class:`int`
-        If the :attr:`option_type` is :attr:`~OptionType.string`, this is the maximum length (min. of ``1``)
+    min_length: Optional[:class:`int`]
+        If the :attr:`option_type` is :attr:`~OptionType.string`, this is the minimum length (minimum of ``0``, maximum of ``6000``)
+    max_length: Optional[:class:`int`]
+        If the :attr:`option_type` is :attr:`~OptionType.string`, this is the maximum length (minimum of ``1``, maximum of ``6000``)
     channel_types: Optional[List[Union[:class:`abc.GuildChannel`, :class:`ChannelType`, :class:`int`]]]
         A list of :class:`ChannelType` or the type itself like ``TextChannel`` or ``StageChannel`` the user could select.
         Only valid if :attr:`~SlashCommandOption.option_type` is :attr:`~OptionType.channel`.
@@ -595,8 +595,8 @@ class SlashCommandOption:
                  autocomplete: bool = False,
                  min_value: Optional[Union[int, float]] = None,
                  max_value: Optional[Union[int, float]] = None,
-                 min_length: int = None,
-                 max_length: int = None,
+                 min_length: Optional[int] = None,
+                 max_length: Optional[int] = None,
                  channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
                  default: Optional[Any] = None,
                  converter: Optional['Converter'] = None,
