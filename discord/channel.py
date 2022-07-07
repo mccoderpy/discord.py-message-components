@@ -1934,16 +1934,17 @@ class ForumPost(ThreadChannel):
         self._state = state
         self.guild = guild
         self.id = int(data['id'])
-        self._applied_tags: SnowflakeList = SnowflakeList(data.get("applied_tags",[]))
+        self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(data.get("applied_tags",[]))
         super().__init__(state=self._state, guild=self.guild, data=data)
 
     def get_tags(self) -> List[ForumTag]:
-        # TODO: implemt this to get the tags from the parent and return them
+        # TODO: implement this to get the tags from the parent and return them
         return self._applied_tags
 
 
 class ForumTag(Hashable):
-    def __init__(self, *, guild, data):
+    def __init__(self, *, state, guild, data):
+        self._state = state
         self.guild = guild
         self.id = int(data['id'])
         self.emoji_id = data.get("emoji_id")
@@ -1966,8 +1967,6 @@ class ForumTag(Hashable):
 
 
 class ForumChannel(abc.GuildChannel, Hashable):
-
-
     """Represents a Discord guild forum channel.
 
         .. container:: operations
