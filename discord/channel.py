@@ -2261,7 +2261,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
                             components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
                             file: Optional[File] = None,
                             files: Optional[List[File]] = None,
-                            stickers: Optional[List['GuildSticker']] = None,
+                            stickers: Optional[List[GuildSticker]] = None,
                             allowed_mentions: Optional[AllowedMentions] = None,
                             supress: bool = False,
                             auto_archive_duration: AutoArchiveDuration = None,
