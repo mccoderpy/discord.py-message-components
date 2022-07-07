@@ -1934,7 +1934,7 @@ class ForumPost(ThreadChannel):
         self._state = state
         self.guild = guild
         self.id = int(data['id'])
-        self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(data.get("applied_tags",[]))
+        self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(map(int, data.get("applied_tags",[])))
         super().__init__(state=self._state, guild=self.guild, data=data)
 
     def get_tags(self) -> List[ForumTag]:
