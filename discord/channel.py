@@ -2030,8 +2030,10 @@ def _channel_factory(channel_type):
         return StageChannel, value
     elif value is ChannelType.public_thread:
         return ThreadChannel, value
+    elif value is ChannelType.private_thread:
+        return ThreadChannel, value
     elif value is ChannelType.forum_channel:
-        return ForumChannel,  value
+        return ForumChannel, value
     else:
         return None, value
 
