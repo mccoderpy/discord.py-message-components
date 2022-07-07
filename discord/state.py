@@ -611,24 +611,40 @@ class ConnectionState:
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = ThreadChannel(state=self, guild=guild, data=data)
-        guild._add_thread(thread)
-        self.dispatch('thread_create', thread)
+        if isinstance(thread.parent_channel, ForumChannel):
+            post = ForumPost(state=self, guild=guild, data=data)
+            guild._add_post(post)
+            self.dispatch('post_create', post)
+        else:
+            guild._add_thread(thread)
+            self.dispatch('thread_create', thread)
 
     def parse_thread_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = guild.get_channel(int(data['id']))
         if not thread:
             thread = ThreadChannel(state=self, guild=guild, data=data)
-            guild._add_thread(thread)
+            if isinstance(thread.parent_channel, ForumChannel):
+                post = ForumPost(state=self, guild=guild, data=data)
+                guild._add_post(post)
+            else:
+                guild._add_thread(thread)
         old_thread = copy.copy(thread)
         thread._update(guild, data)
-        self.dispatch('thread_update', old_thread, thread)
+        if isinstance(thread.parent_channel, ForumChannel):
+            self.dispatch('post_update', old_thread, thread)
+        else:
+            self.dispatch('thread_update', old_thread, thread)
 
     def parse_thread_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = guild.get_channel(int(data['id']))
-        guild._remove_thread(thread)
-        self.dispatch('thread_delete', thread)
+        if isinstance(thread.parent_channel, ForumChannel):
+            guild._remove_post(thread)
+            self.dispatch('post_delete', thread)
+        else:
+            guild._remove_thread(thread)
+            self.dispatch('thread_delete', thread)
 
 
     def parse_thread_member_update(self, data):
@@ -637,7 +653,10 @@ class ConnectionState:
         if thread:
             old_thread = copy.copy(thread)
             thread._add_self(data)
-            self.dispatch('thread_member_update', old_thread, thread)
+            if isinstance(thread, ForumPost):
+                self.dispatch('post_member_update', old_thread, thread)
+            else:
+                self.dispatch('thread_member_update', old_thread, thread)
 
 
     def parse_thread_members_update(self, data):
@@ -646,7 +665,11 @@ class ConnectionState:
         if thread:
             old_thread = copy.copy(thread)
             thread._sync_from_members_update(data)
-            self.dispatch('thread_members_update', old_thread, thread)
+
+            if isinstance(thread, ForumPost):
+                self.dispatch('post_members_update', old_thread, thread)
+            else:
+                self.dispatch('thread_members_update', old_thread, thread)
 
     def parse_thread_list_sync(self, data):
         guild = self._get_guild(int(data['guild_id']))

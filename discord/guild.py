@@ -234,6 +234,15 @@ class Guild(Hashable):
         self._channels.pop(thread.id, None)
         thread.parent_channel._remove_thread(thread)
 
+    def _add_post(self, post):
+        self._channels[post.id] = post
+        post.parent_channel._add_post(post)
+
+    def _remove_post(self, post):
+        self._channels.pop(post.id, None)
+        post.parent_channel._remove_post(post)
+
+
     def _add_event(self, event):
         self._events[event.id] = event
 
@@ -406,8 +415,13 @@ class Guild(Hashable):
                 if factory:
                     parent_channel = self.get_channel(int(t['parent_id']))
                     thread = factory(guild=self, data=t, state=self._state)
-                    self._add_channel(thread)
-                    parent_channel._add_thread(thread)
+                    if isinstance(parent_channel, ForumChannel):
+                        post = ForumPost(state=self._state, guild=self, data=t)
+                        self._add_channel(post)
+                        parent_channel._add_post(post)
+                    else:
+                        self._add_channel(thread)
+                        parent_channel._add_thread(thread)
 
     @property
     def application_commands(self):
