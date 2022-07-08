@@ -1,8 +1,42 @@
+# -*- coding: utf-8 -*-
+
+"""
+The MIT License (MIT)
+
+Copyright (c) 2021-present mccoderpy
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+"""
+from __future__ import annotations
+
+from typing import (
+    Union,
+    Optional,
+    List,
+    Dict,
+    Any,
+    TYPE_CHECKING
+)
+
 import logging
 
-from . import abc
-
-from . import utils
+from . import abc, utils
 from .role import Role
 from .user import User
 from .file import File
@@ -17,13 +51,6 @@ from .mentions import AllowedMentions
 from typing_extensions import Literal
 from .message import Message, Attachment
 from .application_commands import OptionType, SlashCommandOptionChoice
-from typing import (Union,
-                    List,
-                    Optional,
-                    Dict,
-                    Any,
-                    TYPE_CHECKING
-)
 
 from .components import Button, SelectMenu, ActionRow, Modal, TextInput
 from .channel import  _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
@@ -832,7 +859,7 @@ class ApplicationCommandInteraction(BaseInteraction):
 
     @property
     def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
-        """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked if any."""
+        """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked."""
         if getattr(self, '_command', None) is not None:
             return self._command
         return self._state._get_client()._get_application_command(self.data.id) \
@@ -904,8 +931,17 @@ class ComponentInteraction(BaseInteraction):
 
 class AutocompleteInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when autocomplete for a :class:`discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` set to :obj:`True`.
+    Represents the data of an interaction that will be received when autocomplete for a :class:`~discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` set to :obj:`True`.
     """
+
+    @property
+    def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
+        """Optional[:class:`~discord.SlashCommand`]: The slash-command for wich autocomplete was triggered."""
+        if getattr(self, '_command', None) is not None:
+            return self._command
+        return self._state._get_client()._get_application_command(self.data.id) \
+            if (self.type.ApplicationCommand or self.type.ApplicationCommandAutocomplete) else None
+
     @property
     def focused_option(self) -> 'InteractionDataOption':
         """:class:`~discord.InteractionDataOption`: Returns the currently focused option."""

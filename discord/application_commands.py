@@ -893,13 +893,13 @@ class SubCommand(SlashCommandOption):
     def autocomplete_callback(self, coro):
         """
         A decorator that sets a coroutine function as the function that will be called
-        when discord sends an autocomplete interaction for this command.
+        when discord sends an autocomplete interaction for this sub-command.
 
         Parameters
         ----------
         coro: Callable[Any, Any, Coroutine]
             The function that should be set as autocomplete_func for this command.
-            Must take the same amount of params the command itself takes.
+            Must take the same amount of params the sub-command itself takes.
         """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
@@ -907,13 +907,16 @@ class SubCommand(SlashCommandOption):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
-            warnings.warn(f'Sub-Command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(f'Sub-command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
             return
 
         args = (interaction, *args)
         try:
             if await self.can_run(*args, __func=self.autocomplete_func):
-                await self.autocomplete_func(*args, **kwargs)
+                if self.cog is not None:
+                    await self.autocomplete_func(self.cog, *args, **kwargs)
+                else:
+                    await self.autocomplete_func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
                 if self.cog is not None:
@@ -1121,7 +1124,10 @@ class SlashCommand(ApplicationCommand):
 
         try:
             if await self.can_run(*args, __func=self.autocomplete_func):
-                await self.autocomplete_func(*args, **kwargs)
+                if self.cog is not None:
+                    await self.autocomplete_func(self.cog, *args, **kwargs)
+                else:
+                    await self.autocomplete_func(*args, **kwargs)
         except Exception as exc:
             if hasattr(self, 'on_error'):
                 if self.cog is not None:

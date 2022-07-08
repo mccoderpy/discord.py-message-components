@@ -463,11 +463,14 @@ class Client:
             else:
                 name = f'sub-command {cmd.name} of command {cmd.parent.name}'
         else:
-            name = cmd.name
-        print('Ignoring exception in {type} {name}({id})'.format(type=interaction.command.type,
-                                                                 name=name,
-                                                                 id=interaction.command.id),
-        file=sys.stderr)
+            name = f'command {cmd.name}'
+        print('Ignoring exception in {type} {name}({id})'.format(
+            type=str(interaction.command.type).upper(),
+            name=name,
+            id=interaction.command.id
+        ),
+            file=sys.stderr
+        )
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     async def _request_sync_commands(self, is_cog_reload: bool = False):
