@@ -23,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import asyncio
 from collections import deque, OrderedDict
@@ -36,7 +37,7 @@ import inspect
 import gc
 
 import os
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 from .guild import Guild
 from .activity import BaseActivity
@@ -58,6 +59,10 @@ from .object import Object
 from .invite import Invite
 from .automod import AutoModRule, AutoModActionPayload
 from .interactions import BaseInteraction, InteractionType
+
+
+if TYPE_CHECKING:
+    from .http import HTTPClient
 
 
 class ChunkRequest:
@@ -114,7 +119,7 @@ async def logging_coroutine(coroutine, *, info):
 class ConnectionState:
     def __init__(self, *, dispatch, handlers, hooks, syncer, http, loop, **options):
         self.loop = loop
-        self.http = http
+        self.http: HTTPClient = http
         self.max_messages = options.get('max_messages', 1000)
         if self.max_messages is not None and self.max_messages <= 0:
             self.max_messages = 1000
@@ -1313,9 +1318,9 @@ class ConnectionState:
             if channel is not None:
                 return channel
 
-
     def create_message(self, *, channel, data):
         return Message(state=self, channel=channel, data=data)
+
 
 class AutoShardedConnectionState(ConnectionState):
     def __init__(self, *args, **kwargs):
