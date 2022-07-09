@@ -324,7 +324,8 @@ class ApplicationCommand:
                         if not check_options(option.get('options', []), opt.get('options', [])):
                             return False
                     for key in ('type', 'name', 'name_localizations', 'description', 'description_localizations',
-                                'required', 'choices', 'min_value', 'max_value', 'autocomplete'):
+                                'required', 'choices', 'min_value', 'max_value', 'min_length', 'max_length',
+                                'autocomplete'):
                         current_value = option.get(key, None)
                         if current_value != opt.get(key, None):
                             return False
