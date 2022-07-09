@@ -1284,14 +1284,17 @@ class HTTPClient:
     def get_automod_rule(self, guild_id: int, rule_id: int):
         return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id))
 
-    def create_automod_rule(self, guild_id: int, data: dict):
-        return self.request(Route('POST', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id), json=data)
+    def create_automod_rule(self, guild_id: int, data: dict, reason: str = None):
+        r = Route('POST', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id)
+        return self.request(r, json=data, reason=reason)
 
-    def edit_automod_rule(self, guild_id: int, rule_id: int, data: dict):
-        return self.request(Route('PATCH', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id), json=data)
+    def edit_automod_rule(self, guild_id: int, rule_id: int, data: dict, reason: str = None):
+        r = Route('PATCH', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)
+        return self.request(r, json=data, reason=reason)
 
-    def delete_automod_rule(self, guild_id: int, rule_id: int):
-        return self.request(Route('DELETE', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id))
+    def delete_automod_rule(self, guild_id: int, rule_id: int, reason: str = None):
+        r = Route('DELETE', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)
+        return self.request(r, reason=reason)
 
     # Misc
     def application_info(self):

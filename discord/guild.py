@@ -2824,7 +2824,8 @@ class Guild(Hashable):
                                   actions: List[AutoModAction],
                                   enabled: bool = True,
                                   exempt_roles: List['Snowflake'] = [],
-                                  exempt_channels: List['Snowflake'] = []) -> AutoModRule:
+                                  exempt_channels: List['Snowflake'] = [],
+                                  *, reason: Optional[str] = None) -> AutoModRule:
         """|coro|
 
         Creates a new AutoMod rule for this guild
@@ -2832,27 +2833,24 @@ class Guild(Hashable):
         Parameters
         -----------
         name: :class:`str`
-            The name, the rule should have
+            The name, the rule should have. Only valid if it's not a preset rule.
         event_type: :class:`~discord.AutoModEventType`
-            Indicates in what event context a rule should be checked
+            Indicates in what event context a rule should be checked.
         trigger_type: :class:`~discord.AutoModTriggerType`
-            Characterizes the type of content which can trigger the rule
+            Characterizes the type of content which can trigger the rule.
         trigger_metadata: :class:`~discord.AutoModTriggerMetadata`
             Additional data used to determine whether a rule should be triggered.
-            Different fields are relevant based on the value of :attr:`~Guild.create_automod_rule.trigger_type`.
+            Different fields are relevant based on the value of :attr:`~AutoModRule.trigger_type`.
         actions: List[:class:`~discord.AutoModAction`]
-            The actions which will execute when the rule is triggered
+            The actions which will execute when the rule is triggered.
         enabled: :class:`bool`
-            Whether the rule is enabled, default ``True``
+            Whether the rule is enabled, default :obj:`True`.
         exempt_roles: List[:class:`.Snowflake`]
-            Up to 20 :class:`~discord.Role`'s, that should not be affected by the rule
+            Up to 20 :class:`~discord.Role`'s, that should not be affected by the rule.
         exempt_channels: List[:class:`.Snowflake`]
-            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`'s, that should not be affected by the rule
-
-        Returns
-        --------
-        :class:`~discord.AutoModRule`
-            The AutoMod rule created
+            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`'s, that should not be affected by the rule.
+        reason: Optional[:class:`str`]
+            The reason for creating the rule. Shows up in the audit log.
 
         Raises
         ------
@@ -2860,6 +2858,11 @@ class Guild(Hashable):
             The bot is missing permissions to create AutoMod rules
         :exc:`~discord.HTTPException`
             Creating the rule failed
+
+        Returns
+        --------
+        :class:`~discord.AutoModRule`
+            The AutoMod rule created
         """
         data = {
             'name': name,
@@ -2870,12 +2873,12 @@ class Guild(Hashable):
             'enabled': enabled,
             'exempt_roles': [str(r.id) for r in exempt_roles]
         }
-        except_channels = [str(c.id) for c in exempt_channels]
+        exempt_channels = [str(c.id) for c in exempt_channels]
         for action in actions:  # Add the channels where messages should be logged to, to the exempted channels
-            if action.type.send_alert_message and str(action.channel_id) not in except_channels:
-                except_channels.append(str(action.channel_id))
-        data['exempt_channels'] = except_channels
-        rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data)
+            if action.type.send_alert_message and str(action.channel_id) not in exempt_channels:
+                exempt_channels.append(str(action.channel_id))
+        data['exempt_channels'] = exempt_channels
+        rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data, reason=reason)
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)
         self._add_automod_rule(rule)
         return rule
