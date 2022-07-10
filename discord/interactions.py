@@ -945,9 +945,7 @@ class AutocompleteInteraction(BaseInteraction):
     @property
     def focused_option(self) -> 'InteractionDataOption':
         """:class:`~discord.InteractionDataOption`: Returns the currently focused option."""
-        for option in self.data.options:
-            if option.focused:
-                return option
+        return self.focused
 
     @property
     def focused_option_name(self) -> str:
@@ -1120,6 +1118,18 @@ class option_float(float):
 
 
 class InteractionDataOption:
+    """
+    Represents a slash-command option passed via a command.
+    By default, you only get in contact with this using :attr:`~discord.AutoCompleteInteraction.focused_option`.
+
+    Attributes
+    -----------
+    name: :class:`str`
+        The name of the option
+    type: :class:`~discord.OptionType`
+        The type of the option
+
+    """
     def __init__(self, *, state, data, guild=None, **kwargs):
         self._state = state
         self._data = data
@@ -1130,6 +1140,7 @@ class InteractionDataOption:
 
     @property
     def value(self) -> Optional[Union[str, int, float]]:
+        """Union[:class:`str`, :class:`int`, :class:`float`]: Returns the value of the option (what the user passed)"""
         value = self._data.get('value', None)
         if value:
             if isinstance(value, bool): # because booleans are integers too
@@ -1144,10 +1155,12 @@ class InteractionDataOption:
 
     @property
     def focused(self) -> bool:
-        return bool(self._data.get('focused', False))
+        """:class:`bool`: Whether this option is currently focused (for autocomplete)"""
+        return self._data.get('focused', False)
 
     @property
     def options(self) -> Optional[List['InteractionDataOption']]:
+        """Optional[List[:class:`InteractionDataOption`]]: For sub-command (groups) the sub-command or the actual options"""
         options = self._data.get('options', [])
         return [InteractionDataOption(state=self._state, data=option, guild=self._guild) for option in options]
 

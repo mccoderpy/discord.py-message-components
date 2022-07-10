@@ -49,7 +49,6 @@ ModalSubmitInteraction
     :inherited-members:
     :exclude-members: defer, respond_with_modal, from_type
 
-
 Localizations
 ~~~~~~~~~~~~~~~
 
@@ -58,3 +57,11 @@ Localizations
 .. autoclass:: Localizations()
     :members:
     :inherited-members:
+
+InteractionDataOption
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attibutetable:: discord.interactions.InteractionDataOption
+
+.. autoclass:: discord.interactions.InteractionDataOption()
+    :members:
