@@ -37,7 +37,7 @@ AutocompleteInteraction
 .. autoclass:: AutocompleteInteraction()
     :members:
     :inherited-members:
-    :exclude-members: defer, respond_with_modal, from_type
+    :exclude-members: defer, respond, edit, respond_with_modal, from_type, get_followup, message_is_hidden
 
 ModalSubmitInteraction
 ~~~~~~~~~~~~~~~~~~~~~~~

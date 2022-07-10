@@ -944,7 +944,7 @@ class AutocompleteInteraction(BaseInteraction):
 
     @property
     def focused_option(self) -> 'InteractionDataOption':
-        """:class:`~discord.InteractionDataOption`: Returns the currently focused option."""
+        """:class:`~discord.interactions.InteractionDataOption`: Returns the currently focused option."""
         return self.focused
 
     @property
@@ -1120,7 +1120,7 @@ class option_float(float):
 class InteractionDataOption:
     """
     Represents a slash-command option passed via a command.
-    By default, you only get in contact with this using :attr:`~discord.AutoCompleteInteraction.focused_option`.
+    By default, you only get in contact with this using :attr:`~discord.AutocompleteInteraction.focused_option`.
 
     Attributes
     -----------
