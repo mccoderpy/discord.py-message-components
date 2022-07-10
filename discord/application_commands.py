@@ -642,7 +642,7 @@ class SlashCommandOption:
                 choices[index] = SlashCommandOptionChoice(choice)
         self.choices: List[SlashCommandOptionChoice] = choices
         self.channel_types: Optional[List[Union[GuildChannel, ChannelType, int]]] = channel_types
-        self.default: Any = default
+        self.default: Optional[Any] = default
         self.converter: Union[Greedy, Converter] = converter
         self.ignore_conversion_failures: bool = ignore_conversion_failures
 
@@ -1252,7 +1252,7 @@ class SlashCommand(ApplicationCommand):
         connector = to_invoke.connector
         for o in to_invoke.options:
             name = connector.get(o.name, o.name)
-            if name not in params and o.default is not None:
+            if (name not in params or params[name] is None) and o.default != None:
                 params[name] = o.default
 
         interaction._command = self
