@@ -61,7 +61,7 @@ Localizations
 InteractionDataOption
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. attibutetable:: discord.interactions.InteractionDataOption
+.. attributetable:: discord.interactions.InteractionDataOption
 
 .. autoclass:: discord.interactions.InteractionDataOption()
     :members:
