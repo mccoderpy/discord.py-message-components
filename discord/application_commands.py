@@ -840,6 +840,7 @@ class SubCommand(SlashCommandOption):
         self.cog = kwargs.get('cog', None)
         self.connector = kwargs.get('connector', {})
         self.guild_id = kwargs.get('guild_id', parent.guild_id)
+        self.autocomplete_func = None
         super().__init__(OptionType.sub_command, name=name, description=description,
                          name_localizations=name_localizations, description_localizations=description_localizations,
                          __options=options)
