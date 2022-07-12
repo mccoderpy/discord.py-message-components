@@ -5,7 +5,7 @@ There are two versions of this calculator. [One](./calculator_ansi.py) that uses
 
 # NOTE
 ```markdown
-Currently (on 12.07.2022) the ansi syntax higligth is not available on all clients. So if you'r on PC it should work. But if you want, that mobile users can use it too its better to use the version without ansi.
+Currently (on 12.07.2022) the ansi syntax highlight is not available on all clients. So if you're on PC it should work. But if you want, that mobile users can use it too it's better to use the version without ansi.
 ```
 
 ### Usage examples
