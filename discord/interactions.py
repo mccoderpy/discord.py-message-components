@@ -313,7 +313,11 @@ class BaseInteraction:
         self.user_id = int(self._user['id'])
         self.author_locale: Locale = try_enum(Locale, data['locale'])
         self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale', None))
-        self.app_permissions: Permissions = Permissions(int(data['app_permissions']))
+        app_permissions = data.get('app_permissions', None)
+        if app_permissions:
+            self.app_permissions: Optional[Permissions] = Permissions(int(app_permissions))
+        else:
+            self.app_permissions = None
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
