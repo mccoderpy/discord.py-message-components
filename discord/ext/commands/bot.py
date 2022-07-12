@@ -37,14 +37,7 @@ from typing import (
     Optional,
     Union,
     Dict,
-    Pattern,
-    Match,
-    AnyStr,
-    Callable,
-    Awaitable,
-    Any,
-    Iterable,
-    Mapping
+    Tuple
 )
 
 import discord
@@ -55,7 +48,6 @@ from .context import Context
 from . import errors
 from .help import HelpCommand, DefaultHelpCommand
 from .cog import Cog
-from ... import ApplicationCommand
 
 
 def when_mentioned(bot, msg):
@@ -871,6 +863,20 @@ class BotBase(GroupMixin):
             raise
         else:
              self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
+
+    def reload_extensions(self, *names: Tuple[str], package: Optional[str] = None) -> None:
+        """
+        Same behaviour as :meth:`.reload_extension` excepts that it reloads multiple extensions
+        and triggers application commands syncing after all has been reloaded
+        """
+        before_sync = copy.copy(self.sync_commands_on_cog_reload)
+        self.sync_commands_on_cog_reload = False
+        try:
+            for name in names:
+                self.reload_extension(name, package=package)
+        finally:
+            self.sync_commands_on_cog_reload = before_sync
+            self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
 
     @property
     def extensions(self):
