@@ -632,7 +632,10 @@ class ConnectionState:
     def parse_thread_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = guild.get_channel(int(data['id']))
-        guild._remove_thread(thread)
+        if not thread:
+            thread = ThreadChannel(state=self, guild=guild, data=data)
+        else:
+            guild._remove_thread(thread)
         self.dispatch('thread_delete', thread)
 
 
