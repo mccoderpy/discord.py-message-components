@@ -1009,7 +1009,13 @@ class Guild(Hashable):
         return self._state.http.create_channel(self.id, channel_type.value, name=name, parent_id=parent_id,
                                                permission_overwrites=perms, **options)
 
-    async def create_text_channel(self, name, *, overwrites=None, category=None, reason=None, **options):
+    async def create_text_channel(self,
+                                  name: str,
+                                  *,
+                                  overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
+                                  category: Optional[CategoryChannel] = None,
+                                  reason: Optional[str] = None,
+                                  **options):
         """|coro|
 
         Creates a :class:`TextChannel` for the guild.
@@ -1094,7 +1100,13 @@ class Guild(Hashable):
         self._channels[channel.id] = channel
         return channel
 
-    async def create_voice_channel(self, name, *, overwrites=None, category=None, reason=None, **options):
+    async def create_voice_channel(self,
+                                   name: str,
+                                   *,
+                                   overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
+                                   category: Optional[CategoryChannel] = None,
+                                   reason: Optional[str] = None,
+                                   **options):
         """|coro|
 
         This is similar to :meth:`create_text_channel` except makes a :class:`VoiceChannel` instead, in addition
@@ -1133,10 +1145,23 @@ class Guild(Hashable):
         self._channels[channel.id] = channel
         return channel
 
-    async def create_stage_channel(self, name, *, topic=None, category=None, overwrites=None, reason=None, position=None):
+    async def create_stage_channel(self,
+                                   name: str,
+                                   *,
+                                   topic: Optional[str] = None,
+                                   category: Optional[CategoryChannel] = None,
+                                   overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
+                                   reason: Optional[str] = None,
+                                   position: Optional[int] = None):
         """|coro|
 
-        This is similar to :meth:`create_text_channel` except makes a :class:`StageChannel` instead.
+        This is similar to :meth:`create_text_channel` except makes a :class:`StageChannel` instead, in addition
+        to having the following new parameters.
+
+        Parameters
+        ----------
+        topic: Optional[:class:`str`]
+            The topic of the Stage instance (1-120 characters)
 
         .. note::
 
@@ -1165,7 +1190,12 @@ class Guild(Hashable):
         self._channels[channel.id] = channel
         return channel
 
-    async def create_category(self, name, *, overwrites=None, reason=None, position=None):
+    async def create_category(self,
+                              name: str,
+                              *,
+                              overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
+                              reason: Optional[str] = None,
+                              position: Optional[int] = None):
         """|coro|
 
         Same as :meth:`create_text_channel` except makes a :class:`CategoryChannel` instead.
@@ -1231,7 +1261,7 @@ class Guild(Hashable):
 
         await self._state.http.delete_guild(self.id)
 
-    async def edit(self, *, reason=None, **fields):
+    async def edit(self, *, reason: Optional[str] = None, **fields):
         """|coro|
 
         Edits the guild.
