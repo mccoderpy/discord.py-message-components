@@ -24,6 +24,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+from __future__ import annotations
+
 import array
 import asyncio
 import collections.abc
@@ -31,7 +33,6 @@ import unicodedata
 from base64 import b64encode
 from bisect import bisect_left
 import datetime
-import typing
 from .enums import TimestampStyle
 import functools
 from inspect import isawaitable as _isawaitable, signature as _signature
@@ -42,8 +43,17 @@ import warnings
 
 from .errors import InvalidArgument
 
-if typing.TYPE_CHECKING:
+from typing import (
+    Union,
+    Optional,
+    Iterable,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from .guild import Guild
     from .channel import VoiceChannel
+    from .permissions import Permissions
 
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
@@ -147,7 +157,12 @@ def deprecated(instead=None):
     return actual_decorator
 
 
-def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None, scopes=None):
+def oauth_url(
+        client_id: str,
+        permissions: Optional[Permissions] = None,
+        guild: Optional[Guild] = None,
+        redirect_uri: Optional[str] = None,
+        scopes: Iterable[str] = ('bot',)):
     """A helper function that returns the OAuth2 URL for inviting the bot
     into guilds.
 
@@ -173,7 +188,7 @@ def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None, scopes
         The OAuth2 URL for inviting the bot into guilds.
     """
     url = 'https://discord.com/oauth2/authorize?client_id={}'.format(client_id)
-    url = url + '&scope=' + '+'.join(scopes or ('bot', 'application.commands'))
+    url = url + '&scope=' + '+'.join(scopes or ('bot',))
     if permissions is not None:
         url = url + '&permissions=' + str(permissions.value)
     if guild is not None:
@@ -312,7 +327,7 @@ def get(iterable, **attrs):
     return None
 
 
-def styled_timestamp(timestamp: typing.Union[datetime.datetime, int], style: typing.Union[TimestampStyle, str] = TimestampStyle.short):
+def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[TimestampStyle, str] = TimestampStyle.short):
     """
     A small function that returns a styled timestamp for discord, this will be displayed accordingly in the Discord client depending on the :attr:`style` specified.
 
