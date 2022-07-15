@@ -517,7 +517,7 @@ class HTTPClient:
     # Thread management
     def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, reason=None):
         if message_id:
-            r = Route('POST', '/channels/{channel_id}/messages/{message_id}', channel_id=channel_id, message_id=message_id)
+            r = Route('POST', '/channels/{channel_id}/messages/{message_id}/threads', channel_id=channel_id, message_id=message_id)
         else:
             r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
         params = {
