@@ -672,6 +672,14 @@ class ThreadChannel(abc.Messageable, Hashable):
             self._members[self._state.self_id] = ThreadMember._from_thread(thread=self, data=me)
         return self
 
+    @classmethod
+    def _from_partial(cls, state: ConnectionState, guild: Guild, data: Dict[str, Any]) -> ThreadChannel:
+        self = cls.__new__(cls)
+        self.id = int(data['id'])
+        self.guild = guild
+        self._type = try_enum(ChannelType, data['type'])
+        self.parent_id = int(data['parent_id'])
+
     def _sync_from_members_update(self, data):
         self.member_count = data.get('member_count', self.member_count)
         for new_member in data.get('added_members', []):
