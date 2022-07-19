@@ -676,7 +676,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         self.total_message_sent: int = data.get('total_message_sent', self.message_count)
         self.member_count = data.get('member_count', 0)
         self.last_message_id: int = utils._get_as_snowflake(data, 'last_message_id')
-        self.slowmode_delay = int(data.get('rate_limit_per_user', 0))
+        self.slowmode_delay: int = int(data.get('rate_limit_per_user', 0))
         self._thread_meta = data.get('thread_metadata', {})
         me = data.get('member', None)
         if me:
