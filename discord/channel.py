@@ -654,7 +654,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         self._state = state
         self.id = int(data['id'])
         self._type = ChannelType.try_value(data['type'])
-        self._members = {}
+        self._members: Dict[int, ThreadMember] = {}
         self._update(guild, data)
 
     @staticmethod
@@ -666,15 +666,16 @@ class ThreadChannel(abc.Messageable, Hashable):
         return ChannelType.public_thread.value
 
     def _update(self, guild, data):
-        self.guild = guild
-        self.parent_id = int(data['parent_id'])
-        self.owner_id = int(data['owner_id'])
+        self.guild: Guild = guild
+        self.parent_id: int = int(data['parent_id'])
+        self.owner_id: int = int(data['owner_id'])
         if not self._members:
             self._members = {self.owner_id: self.owner}
-        self.name = data['name']
-        self.message_count = data.get('message_count', 0)
+        self.name: str = data['name']
+        self.message_count: int = data.get('message_count', 0)
+        self.total_message_sent: int = data.get('total_message_sent', self.message_count)
         self.member_count = data.get('member_count', 0)
-        self.last_message_id = utils._get_as_snowflake(data, 'last_message_id')
+        self.last_message_id: int = utils._get_as_snowflake(data, 'last_message_id')
         self.slowmode_delay = int(data.get('rate_limit_per_user', 0))
         self._thread_meta = data.get('thread_metadata', {})
         me = data.get('member', None)
