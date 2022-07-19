@@ -57,6 +57,9 @@ class EmbedProxy:
     def __getattr__(self, attr):
         return EmptyEmbed
 
+    def __setattr__(self, key, value):
+        self.__dict__[key] = value
+
 
 class Embed:
     """Represents a Discord embed.

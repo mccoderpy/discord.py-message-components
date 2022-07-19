@@ -42,7 +42,7 @@ import discord
 from .object import Object
 
 from .permissions import Permissions
-from .enums import ChannelType, try_enum, VoiceRegion, AutoArchiveDuration
+from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, try_enum
 from .mixins import Hashable
 from . import utils, abc
 from .asset import Asset
