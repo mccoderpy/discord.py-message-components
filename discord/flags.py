@@ -249,7 +249,7 @@ class MessageFlags(BaseFlags):
 
     @flag_value
     def has_thread(self):
-        """:class:`bool`: Returns ``True`` if the source message is associated with an thread.
+        """:class:`bool`: Returns ``True`` if the source message is associated with a thread.
 
         This message has an associated thread, with the same id as the message.
         """
@@ -270,6 +270,11 @@ class MessageFlags(BaseFlags):
         This message is an interaction response and the bot is "thinking"
         """
         return 128
+
+    @flag_value
+    def failed_to_mention_some_roles_in_thread(self):
+        """:class:`bool`: Returns ``True`` if the message failed to mention some roles and add their members to the thread."""
+        return 256
 
 
 @fill_with_flags()
