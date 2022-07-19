@@ -51,6 +51,7 @@ from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchi
 if TYPE_CHECKING:
     from .state import ConnectionState
     from .member import Member
+    from .message import Message, PartialMessage
     from .guild import Guild
 
 
@@ -591,12 +592,14 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                             name: str,
                             auto_archive_duration: AutoArchiveDuration = None,
                             private: bool = False,
+                            invitable: bool = True,
+                            *,
                             reason: str = None):
         """|coro|
 
         Creates a new thread in this channel.
 
-        You must have the :attr:`~Permissions.manage_channels` permission to
+        You must have the :attr:`~Permissions.create_puplic_threads` or for private :attr:`~Permissions.create_private_threads` permission to
         use this.
 
 
@@ -611,10 +614,10 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
         aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration)).value
         _type = ChannelType.private_thread if private is True else ChannelType.public_thread
-        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, reason=reason)
+        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, inviteable=invitable, reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
 
-        self._threads[thread.id] = thread
+        self.guild._add_thread(thread)
         return thread
 
 
@@ -650,10 +653,11 @@ class ThreadMember:
 
 
 class ThreadChannel(abc.Messageable, Hashable):
+    """Represents a thread in a guild"""
     def __init__(self, *, state, guild, data):
-        self._state = state
+        self._state: ConnectionState = state
         self.id = int(data['id'])
-        self._type = ChannelType.try_value(data['type'])
+        self.type: ChannelType = ChannelType.try_value(data['type'])
         self._members: Dict[int, ThreadMember] = {}
         self._update(guild, data)
 
@@ -688,18 +692,20 @@ class ThreadChannel(abc.Messageable, Hashable):
         self = cls.__new__(cls)
         self.id = int(data['id'])
         self.guild = guild
-        self._type = try_enum(ChannelType, data['type'])
+        self.type = try_enum(ChannelType, data['type'])
         self.parent_id = int(data['parent_id'])
 
     def _sync_from_members_update(self, data):
         self.member_count = data.get('member_count', self.member_count)
+        joined = self._state.member_cache_flags.joined
         for new_member in data.get('added_members', []):
-            if not self.guild.get_member(int(new_member['user_id'])):
-                # This should be only the case if the ``GUILD_MEMBER`` Intent is disabled.
-                # But we use the data discord send us to add him to cache.
-                # NOTE: This may be removed later
-                from .member import Member
-                self.guild._add_member(Member(data=new_member, guild=self.guild, state=self._state))
+            if joined:
+                if not self.guild.get_member(int(new_member['user_id'])):
+                    # This should be only the case if the ``GUILD_MEMBER`` Intent is disabled.
+                    # But we use the data discord send us to add him to cache.
+                    # NOTE: This may be removed later
+                    from .member import Member
+                    self.guild._add_member(Member(data=new_member, guild=self.guild, state=self._state))
             self._add_member(ThreadMember(state=self._state, guild=self.guild, data=new_member))
         for removed_id in data.get('removed_member_ids', []):
             member = self.get_member(int(removed_id))
@@ -719,13 +725,9 @@ class ThreadChannel(abc.Messageable, Hashable):
         self._members.pop(member.id, None)
 
     @property
-    def starter_message(self):
+    def starter_message(self) -> Optional[Message]:
         original_message = self._state._get_message(self.id)
-        return original_message or self.id
-
-    @property
-    def type(self):
-        return try_enum(ChannelType, self._type)
+        return original_message
 
     @property
     def owner(self):
@@ -748,6 +750,10 @@ class ThreadChannel(abc.Messageable, Hashable):
         return self._thread_meta.get('archived', True)
 
     @property
+    def invitable(self):
+        return self._thread_meta.get('invitable', False)
+
+    @property
     def last_update_time(self):
         return datetime.datetime.fromisoformat(self._thread_meta.get('archive_timestamp', ''))
 
@@ -763,15 +769,15 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def created_at(self) -> Optional[datetime.datetime]:
-        """An aware timestamp of when the thread was created in UTC.
+        """Optional[:class:`datetime.datetime`]: An aware timestamp of when the thread was created in UTC.
 
         .. note::
 
             This timestamp only exists for threads created after 9 January 2022, otherwise returns ``None``.
-
-        :return: Optional[:class:`datetime.datetime`]
         """
-        return datetime.datetime.fromisoformat(self._thread_meta.get('create_timestamp'))
+        create_timestamp = self._thread_meta.get('create_timestamp', None)
+        if create_timestamp:
+            return datetime.datetime.fromisoformat(create_timestamp)
 
     @property
     def mention(self) -> str:
@@ -904,7 +910,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     async def _fetch_members(self):
         if not self._state._intents.members:
             raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this API-call.')
-        r =  await self._state.http.list_thread_members(channel_id=self.id)
+        r = await self._state.http.list_thread_members(channel_id=self.id)
         for thread_member in r:
             if not self.get_member(int(thread_member['user_id'])):
                 self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
@@ -1005,6 +1011,90 @@ class ThreadChannel(abc.Messageable, Hashable):
             result.append(Invite(state=state, data=invite))
 
         return result
+
+    async def edit(self, *, reason: Optional[str] = None, **fields) -> ThreadChannel:
+        """|coro|
+
+        Edits the thread. In order to unarchive it, you must already be a member of it.
+
+        Parameters
+        ----------
+        name: Optional[:class:`str`]
+        	The channel name. Must be 1-100 characters long
+        archived: Optional[:class:`bool`]
+            Whether the thread is archived
+        auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
+            Duration in minutes to automatically archive the thread after recent activity
+        locked: Optional[:clas:`bool`]
+            Whether the thread is locked; when a thread is locked, only users with :attr:`Permissions.manage_threads` can unarchive it
+        invitable: Optional[:clas:`bool`]
+        	Whether non-moderators can add other non-moderators to a thread; only available on private threads
+        rate_limit_per_user: :Optional[:class:`int`]
+            Amount of seconds a user has to wait before sending another message (0-21600);
+            bots, as well as users with the permission :attr:`Permissions.manage_messages`,
+            :attr:`Permissions.manage_thread`, or :attr:`Permissions.manage_channel`, are unaffected
+
+        Raises
+        ------
+        ~discord.Forbidden:
+            The bot missing permissions to edit the thread or the specific field
+        ~discord.HTTPException:
+            Editing the thread failed
+
+        Returns
+        -------
+        ThreadChannel:
+            The updated thread on success
+        """
+        payload = {}
+
+        try:
+            name: Optional[str] = fields['name']
+        except KeyError:
+            pass
+        else:
+            payload['name'] = name
+
+        try:
+            archived: Optional[bool] = fields['archived']
+        except KeyError:
+            pass
+        else:
+            payload['archived'] = archived
+
+        try:
+            auto_archive_duration: Optional[AutoArchiveDuration] = fields['auto_archive_duration']
+        except KeyError:
+            pass
+        else:
+            payload['auto_archive_duration'] = int(auto_archive_duration)
+
+        try:
+            locked: Optional[bool] = fields['locked']
+        except KeyError:
+            pass
+        else:
+            payload['locked'] = locked
+
+        try:
+            invitable: Optional[bool] = fields['invitable']
+        except KeyError:
+            pass
+        else:
+            if self.type.private_thread:
+                payload['invitable'] = invitable
+
+        try:
+            rate_limit_per_user: Optional[int] = fields['rate_limit_per_user']
+        except KeyError:
+            pass
+        else:
+            payload['rate_limit_per_user'] = rate_limit_per_user
+
+        data = await self._state.http.edit_thread(self.id, **payload, reason=reason)
+        self._update(self.guild, data)
+        return self
+
 
 
 class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
@@ -2014,7 +2104,7 @@ class PartialMessageable(abc.Messageable, Hashable):
 
         return Permissions.none()
 
-    def get_partial_message(self, message_id: int) -> 'PartialMessageable':
+    def get_partial_message(self, message_id: int) -> PartialMessage:
         """Creates a :class:`PartialMessage` from the message ID.
         This is useful if you want to work with a message and only have its ID without
         doing an unnecessary API call.

@@ -515,7 +515,7 @@ class HTTPClient:
         return self.request(Route('GET', '/channels/{channel_id}/pins', channel_id=channel_id))
 
     # Thread management
-    def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, reason=None):
+    def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, invitable=None, reason=None):
         if message_id:
             r = Route('POST', '/channels/{channel_id}/messages/{message_id}/threads', channel_id=channel_id, message_id=message_id)
         else:
@@ -525,9 +525,11 @@ class HTTPClient:
             'name': str(name),
             'auto_archive_duration': int(auto_archive_duration)
         }
+        if not message_id:
+            params['invitable'] = invitable
         return self.request(r, json=params, reason=reason)
 
-    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, reason=None):
+    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, invitable=None, reason=None):
         r = Route('PATCH', '/channels/{channel_id}', channel_id=channel_id)
         params = {}
         if name:
@@ -538,6 +540,8 @@ class HTTPClient:
             params['archived'] = bool(archived)
         if locked:
             params['locked'] = bool(locked)
+        if invitable is not None:
+            params['invitable'] = invitable
         return self.request(r, json=params, reason=reason)
 
     def add_thread_member(self, channel_id, member_id='@me'):
