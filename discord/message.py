@@ -37,7 +37,7 @@ from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
-from .errors import InvalidArgument, ClientException, HTTPException, NotFound, MissingPermissionsToCreateThread
+from .errors import InvalidArgument, HTTPException, NotFound
 from .embeds import Embed
 from .components import Button, SelectMenu, ActionRow
 from .member import Member
@@ -568,9 +568,8 @@ class Message(Hashable):
         self.channel = channel
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
-        self._thread = data.get('thread', None)
         self.pinned = data['pinned']
-        self.mention_everyone: bool  = data['mention_everyone']
+        self.mention_everyone: bool = data['mention_everyone']
         self.tts: bool = data['tts']
         self.content: Optional[str] = data['content']
         self.nonce = data.get('nonce')
@@ -1016,6 +1015,7 @@ class Message(Hashable):
 
     @property
     def thread(self) -> Optional[ThreadChannel]:
+        """Optional[:class:`ThreadChannel`]: The thread that belongs to this message, if there is one"""
         return getattr(self, '_thread', None)
 
     async def delete(self, *, delay: Optional[float] = None):
@@ -1023,7 +1023,7 @@ class Message(Hashable):
 
         Deletes the message.
 
-        Your own messages could be deleted without any proper permissions. However to
+        Your own messages could be deleted without any proper permissions. However, to
         delete other people's messages, you need the :attr:`~Permissions.manage_messages`
         permission.
 
@@ -1432,21 +1432,20 @@ class Message(Hashable):
 
     async def create_thread(self,
                             name: str,
-                            auto_archive_duration: AutoArchiveDuration = None,
-                            private: bool = False,
-                            reason: str = None):
+                            auto_archive_duration: Optional[AutoArchiveDuration] = None,
+                            private: Optional[bool] = False,
+                            reason: Optional[str] = None) -> ThreadChannel:
         """|coro|
 
         Creates a new thread in the channel of the message with this Message as the Starter-Message.
         """
         if self.channel.type not in (ChannelType.text, ChannelType.news):
             raise Exception('You could not create a thread inside a %s.' % self.channel.__class__.__name__)
-        if private is True and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).create_private_threads:
-            raise MissingPermissionsToCreateThread('create_private_threads', 'send_messages_in_threads',
-                                                   type=ChannelType.private_thread)
-        elif private is False and not self.channel.permissions_for(self.guild.get_member(self._state.self_id)).create_public_threads:
-            raise MissingPermissionsToCreateThread('create_public_threads', 'send_messages_in_threads',
-                                                   type=ChannelType.public_thread)
+        if self.thread:
+            raise TypeError('There is already a thread associated with this message')
+        if private:
+            import warnings
+            warnings.warn('You can\'t create a private thread from a message and this parameter will be removed in a future release.',category=DeprecationWarning, stacklevel=4)
         if len(name) > 100 or len(name) < 1:
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
         aad = (self.channel.default_auto_archive_duration if not auto_archive_duration else
@@ -1460,7 +1459,8 @@ class Message(Hashable):
                                                     reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
 
-        self.channel._threads[thread.id] = thread
+        self.channel.guild._add_thread(thread)
+        self._thread = thread
         return thread
 
 

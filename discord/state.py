@@ -616,6 +616,9 @@ class ConnectionState:
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = ThreadChannel(state=self, guild=guild, data=data)
+        message = self._get_message(thread.id)
+        if message:
+            message._thread = thread
         guild._add_thread(thread)
         self.dispatch('thread_create', thread)
 
@@ -635,6 +638,8 @@ class ConnectionState:
         if not thread:
             thread = ThreadChannel._from_partial(state=self, guild=guild, data=data)
         else:
+            if thread.starter_message:
+                thread.starter_message._thread = None
             guild._remove_thread(thread)
         self.dispatch('thread_delete', thread)
 
