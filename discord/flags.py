@@ -1143,3 +1143,8 @@ class ApplicationFlags(BaseFlags):
         """:class:`bool`: Returns ``True`` if the privileged gateway message-content-intent
         is enabled in the application in the developer-portal."""
         return 1 << 19
+
+    @flag_value
+    def application_commands_badge(self):
+        """:class:`bool`: Returns ``True`` if the app has at least one global `application-command <application_commands>`_ registered."""
+        return 1 << 23

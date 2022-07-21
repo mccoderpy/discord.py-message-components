@@ -23,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import datetime
 import inspect
@@ -653,10 +654,10 @@ class Member(discord.abc.Messageable, _BaseUser):
         return datetime.datetime.fromisoformat(self._communication_disabled_until) if self._communication_disabled_until else None
 
     @utils.deprecated('Member.timeout')
-    async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None):
+    async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
         await self.edit(communication_disabled_until=until, reason=reason)
 
-    async def timeout(self, until: datetime.datetime, *, reason: Optional[str] = None) -> None:
+    async def timeout(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
         """|coro|
 
         A shortcut method to timeout a member.
@@ -681,7 +682,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         HTTPException:
             Timeouting the member failed
         """
-        await self.edit(communication_disabled_until=until, reason=reason)
+        return await self.edit(communication_disabled_until=until, reason=reason)
 
     async def remove_timeout(self, *, reason: Optional[str] = None) -> None:
         """|coro|
@@ -702,7 +703,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         HTTPException:
             Removing the member from timeout failed
         """
-        await self.edit(communication_disabled_until=None, reason=reason)
+        return await self.edit(communication_disabled_until=None, reason=reason)
 
     async def ban(self, **kwargs):
         """|coro|
