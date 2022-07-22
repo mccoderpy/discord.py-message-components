@@ -2056,7 +2056,7 @@ class PartialMessageable(abc.Messageable, Hashable):
     """
 
     def __init__(self, state: 'ConnectionState', id: int, type: Optional[ChannelType] = None, *, guild_id: int = None):
-        self._state: 'ConnectionState' = state
+        self._state: ConnectionState = state
         self.id: int = id
         self.guild_id: Optional[int] = guild_id
         self.type: Optional[ChannelType] = type
@@ -2064,7 +2064,7 @@ class PartialMessageable(abc.Messageable, Hashable):
     def __repr__(self) -> str:
         return f'<PartialMessageable id={self.id} type={self.type!r}{f" guild_id={self.guild_id}" if self.guild_id else ""}>'
 
-    async def _get_channel(self) -> 'PartialMessageable':
+    async def _get_channel(self) -> PartialMessageable:
         return self
 
     @property

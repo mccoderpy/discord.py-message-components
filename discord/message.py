@@ -720,7 +720,7 @@ class Message(Hashable):
         pass
 
     def _handle_thread(self, value):
-        thread = self.channel.get_thread(self.id)
+        thread = self.guild.get_channel(self.id)
         if thread:
             self._thread = thread._update(self.guild, value)
         else:

@@ -280,6 +280,7 @@ class AsyncWebhookAdapter(WebhookAdapter):
         state = _PartialWebhookState(self, self.webhook, parent=self.webhook._state)
         return WebhookMessage(data=data, state=state, channel=self.webhook.channel)
 
+
 class RequestsWebhookAdapter(WebhookAdapter):
     """A webhook adapter suited for use with ``requests``.
 
