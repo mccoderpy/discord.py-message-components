@@ -106,7 +106,7 @@ class EphemeralMessage:
         self.tts = data['tts']
         self.content = data['content']
 
-        for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'interaction', 'thread'):
+        for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'interaction'):
             try:
                 getattr(self, '_handle_%s' % handler)(data[handler])
             except KeyError:
@@ -141,14 +141,6 @@ class EphemeralMessage:
 
     def _handle_interaction(self, value):
         pass
-
-    def _handle_thread(self, value):
-        thread = self.channel.get_thread(self.id)
-        if thread:
-            thread._update(value)
-        else:
-            thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
-            self.channel.guild._add_thread(thread)
 
     def _handle_components(self, value):
         self.components = [ActionRow.from_dict(data) for data in value]
