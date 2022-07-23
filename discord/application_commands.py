@@ -365,7 +365,7 @@ class ApplicationCommand:
         checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
         if not checks:
             return True
-        return await async_all(check(*args) for check in checks)
+        return await async_all(check(args[0]) for check in checks)
 
     async def invoke(self, interaction, *args, **kwargs):
         if not self.func:
@@ -870,8 +870,7 @@ class SubCommand(SlashCommandOption):
         checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
         if not checks:
             return True
-
-        return await async_all(check(*args, **kwargs) for check in checks)
+        return await async_all(check(args[0]) for check in checks)
 
     async def invoke(self, interaction, *args, **kwargs):
         if not self.func:
