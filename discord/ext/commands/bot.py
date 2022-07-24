@@ -154,6 +154,10 @@ class BotBase(GroupMixin):
                 self._schedule_event(func, ev, *args, **kwargs)
 
     async def close(self):
+        """|coro|
+
+        This has the same behaviour as :meth:`discord.Client.close` except that it unload all extensions and cogs first.
+        """
         for extension in tuple(self.__extensions):
             try:
                 self.unload_extension(extension)
