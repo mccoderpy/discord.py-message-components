@@ -130,7 +130,7 @@ class Localizations:
 
     """
 
-    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])
+    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])  # type: ignore
 
     def __init__(self, **localizations) -> None:
 
@@ -144,7 +144,7 @@ class Localizations:
                 self.__languages_dict__[Locale[locale].value] = localized_text
 
     def __repr__(self) -> str:
-        return '<Localizations: %s>' % (", ".join([Locale.try_value(l) for l in self.__languages_dict__]) if self.__languages_dict__ else 'None')
+        return '<Localizations: %s>' % (", ".join([Locale.try_value(locale) for locale in self.__languages_dict__]) if self.__languages_dict__ else 'None')
 
     def __getitem__(self, item) -> Optional[str]:
         if isinstance(item, Locale):
@@ -166,12 +166,11 @@ class Localizations:
             except:
                 raise
         except (KeyError, AttributeError):
-            if (locale.value not in self.__slots__  if isinstance(locale, Locale) else locale not in self.__slots__):
+            if (locale.value not in self.__slots__) if isinstance(locale, Locale) else (locale not in self.__slots__):
                 raise KeyError(f'Unknown locale "{locale}". See {api_docs}reference#locales for a list of locales.')
             raise KeyError(f'There is no locale value set for {locale.name}.')
 
-
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(self, key: Union[Locale, str], value: str) -> None:
         self.__languages_dict__[Locale[key].value] = value
 
     def __bool__(self) -> bool:
@@ -181,7 +180,7 @@ class Localizations:
         return self.__languages_dict__ if self.__languages_dict__ else None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, str]) -> 'Localizations':
+    def from_dict(cls, data: Dict[str, str]) -> Localizations:
         data = data or {}
         return cls(**{try_enum(Locale, key): value for key, value in data.items()})
 
@@ -216,7 +215,7 @@ class Localizations:
             try:
                 return self[target.preferred_locale.value]
             except KeyError as exc:
-                if exc.args and exc.args[0].startswith('U'): # just the first letter because it's enough to identify wich one it is
+                if exc.args and exc.args[0].startswith('U'):  # just the first letter because it's enough to identify wich one it is
                     pass
                 return_default = True
         elif hasattr(target, 'author_locale'):
@@ -242,7 +241,7 @@ class Localizations:
                     else:
                         try:
                             self[default.value if default is Locale else default]
-                        except KeyError: # not a locale so return it
+                        except KeyError:  # not a locale so return it
                             return default
 
 
@@ -278,15 +277,15 @@ class ApplicationCommand:
         setattr(self, '_state_', value)
 
     @property
-    def cog(self) -> Optional['Cog']:
+    def cog(self) -> Optional[Cog]:
         """Optional[:class:`~discord.ext.commands.Cog`]: The cog associated with this command if any."""
         return getattr(self, '_cog', None)
 
     @cog.setter
-    def cog(self, __cog: 'Cog') -> None:
+    def cog(self, __cog: Cog) -> None:
         setattr(self, '_cog', __cog)
 
-    def _set_cog(self, cog: 'Cog', recursive: bool = False) -> None:
+    def _set_cog(self, cog: Cog, recursive: bool = False) -> None:
         self.cog = cog
 
     def __call__(self, *args, **kwargs):
@@ -359,7 +358,7 @@ class ApplicationCommand:
         return self
 
     async def can_run(self, *args, **kwargs) -> bool:
-        #if self.cog:
+        # if self.cog:
         #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
         checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
@@ -498,9 +497,9 @@ class SlashCommandOptionChoice:
 
         if 100 < len(str(name)) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
-        self.name = str(name)
-        self.value = value if value is not None else name
-        self.name_localizations = name_localizations
+        self.name: str = str(name)
+        self.value: Union[str, int, float] = value if value is not None else name
+        self.name_localizations: Optional[Localizations] = name_localizations
 
     def __repr__(self):
         return '<SlashCommandOptionChoice name=%s, value=%s>' % (self.name, self.value)
@@ -600,7 +599,7 @@ class SlashCommandOption:
                  max_length: Optional[int] = None,
                  channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
                  default: Optional[Any] = None,
-                 converter: Optional['Converter'] = None,
+                 converter: Optional[Converter] = None,
                  ignore_conversion_failures: Optional[bool] = False,
                  **kwargs) -> None:
         from .ext.commands import Converter, Greedy
@@ -1659,7 +1658,7 @@ def generate_options(
 
         if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):  # Skip parameters like *args and **kwargs
             continue
-        if param.default is not inspect._empty:
+        if param.default is not inspect._empty:  # type: ignore
             # If a default value for the parameter is set, then the option is not required.
             required = False
             default = param.default
@@ -1669,7 +1668,7 @@ def generate_options(
         if isinstance(param.annotation, str):
             param: inspect.Parameter = param.replace(annotation=eval(param.annotation, func.__globals__))
         annotation = param.annotation
-        if annotation is inspect._empty:
+        if annotation is inspect._empty:  # type: ignore
             # The parameter is not annotated.
             # Since we can't know what the person wants, we assume it's a string, add the option and continue.
             options.append(
@@ -1689,7 +1688,10 @@ def generate_options(
             annotation.name = name
             options.append(annotation)
             continue
+        module = annotation.__module__
         if type(annotation) is _Greedy:
+            converter = annotation
+        elif module.startswith('discord.') and not any([m in module for m in {'application_commands', 'enums'}]):
             converter = annotation
         elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
