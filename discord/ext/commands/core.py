@@ -1158,6 +1158,30 @@ class GroupMixin:
                 raise CommandRegistrationError(alias, alias_conflict=True)
             self.all_commands[alias] = command
 
+    def add_commands(self, *commands):
+        """
+        Similar to :meth:`.add_command` but you can pass multiple commands at once.
+
+        Parameters
+        ----------
+        commands: Tuple[:class:`.Command`]
+            The commands to add
+
+        Parameters
+        -----------
+        command: :class:`Command`
+            The command to add.
+
+        Raises
+        -------
+        :exc:`.CommandRegistrationError`
+            If any of the commands or its alias is already registered by different command.
+        TypeError
+            If any of the commands passed is not a subclass of :class:`.Command`.
+        """
+        for command in commands:
+            self.add_command(command)
+
     def remove_command(self, name):
         """Remove a :class:`.Command` from the internal list
         of commands.
