@@ -582,12 +582,7 @@ class HTTPClient:
         params = {
             'delete_message_days': delete_message_days,
         }
-
-        if reason:
-            # thanks aiohttp
-            r.url = '{0.url}?reason={1}'.format(r, _uriquote(reason))
-
-        return self.request(r, params=params)
+        return self.request(r, params=params, reason=reason)
 
     def unban(self, user_id, guild_id, *, reason=None):
         r = Route('DELETE', '/guilds/{guild_id}/bans/{user_id}', guild_id=guild_id, user_id=user_id)
