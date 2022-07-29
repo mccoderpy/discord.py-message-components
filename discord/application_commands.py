@@ -1171,10 +1171,6 @@ class SlashCommand(ApplicationCommand):
             self._options = {option.name: option for option in options}
         return self
 
-    @staticmethod
-    def _filter_id_out(argument):
-        return int(argument.strip('<!@&#>'))
-
     async def invoke(self, interaction, *args, **kwargs):
         if not self.func:
             return
@@ -1210,41 +1206,39 @@ class SlashCommand(ApplicationCommand):
                     options = options[0].options
                 to_invoke = sub_command
             connector = to_invoke.connector
+            resolved = interaction.data.resolved  # speedup attribute access
             for option in options:
                 # as we can't use - in argument names replace this by default,
                 # so you don't have to specify it in the connector for some-option -> some_option
                 name = connector.get(option.name) or option.name.replace('-', '_')
                 if option.type in (OptionType.string, OptionType.integer, OptionType.boolean, OptionType.number):
-                    orgin_option = get(to_invoke.options, name=option.name)
-                    converter = orgin_option.converter
+                    origin_option = get(to_invoke.options, name=option.name)
+                    converter = origin_option.converter
                     if converter:
                         try:
-                            params[name] = await transform(interaction, orgin_option, converter, str(option.value))
+                            params[name] = await transform(interaction, origin_option, converter, str(option.value))
                         except Exception as exc:
-                            if orgin_option.ignore_conversion_failures:
+                            if origin_option.ignore_conversion_failures:
                                 params[name] = option.value
                             else:
                                 raise exc from exc
                     else:
                         params[name] = option.value
-                elif option.type == OptionType.user:
-                    _id = self._filter_id_out(option.value)
-                    params[name] = interaction.guild.get_member(_id) or interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
-                elif option.type == OptionType.role:
-                    _id = self._filter_id_out(option.value)
-                    params[name] = interaction.data.resolved.roles[_id] or option.value
-                elif option.type == OptionType.channel:
-                    _id = self._filter_id_out(option.value)
-                    params[name] = interaction.guild.get_channel(_id) or interaction.data.resolved.channels[_id] or option.value
-                elif option.type == OptionType.mentionable:
-                    _id = self._filter_id_out(option.value)
-                    if '&' in option.value:
-                        params[name] = interaction.data.resolved.roles[_id] or option.value
-                    else:
-                        params[name] = interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
-                elif option.type == OptionType.attachment:
-                    _id = self._filter_id_out(option.value)
-                    params[name] = interaction.data.resolved.attachments[_id] or option.value
+                else:
+                    _id = int(option.value)
+                    if option.type == OptionType.user:
+                        params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[_id] or _id
+                    elif option.type == OptionType.role:
+                        params[name] = resolved.roles[_id] or _id
+                    elif option.type == OptionType.channel:
+                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or _id
+                    elif option.type == OptionType.mentionable:
+                        try:
+                            params[name] = resolved.roles[_id]
+                        except KeyError:
+                            params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[_id] or _id
+                    elif option.type == OptionType.attachment:
+                        params[name] = resolved.attachments[_id] or _id
 
         # pass the default values of the options to the params if they are not provided (usually used for autocomplete)
         connector = to_invoke.connector
