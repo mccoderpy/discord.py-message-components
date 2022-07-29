@@ -424,6 +424,13 @@ class OptionType(Enum):
     def from_type(cls, t):
         from .abc import User, GuildChannel, Role
         from .message import Attachment
+        if getattr(t, '__origin__', None) is Union:
+            # print(t.__origin__, dir(t.__origin__))
+            args = getattr(t, '__args__', [])
+            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
+                return cls.mentionable, None
+            else:
+                t = args[0]  # not the best solution, but we shall not get here
         if isinstance(t, int):
             return cls.try_value(t)
         elif isinstance(t, str):
@@ -445,10 +452,6 @@ class OptionType(Enum):
             return cls.role, None
         if issubclass(t, Attachment):
             return cls.attachment, None
-        if getattr(t, '__origin__', None) is Union:
-            args = getattr(t.annotation, '__args__', [])
-            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
-                return cls.mentionable, None
         return t, None
 
 
