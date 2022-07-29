@@ -1207,7 +1207,7 @@ class SlashCommand(ApplicationCommand):
                     options = options[0].options
                 to_invoke = sub_command
             connector = to_invoke.connector
-            resolved = interaction.data.resolved  # speedup attribute access
+            resolved = interaction.data.resolved or None # speedup attribute access | None is when ther are no options
             for option in options:
                 # as we can't use - in argument names replace this by default,
                 # so you don't have to specify it in the connector for some-option -> some_option

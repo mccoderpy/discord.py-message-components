@@ -56,7 +56,6 @@ if version.endswith(('a', 'b', 'rc', 'dev')):
 
 
 # The text of the README file
-
 readme = Path('./README.rst').read_text(encoding='utf-8')
 
 #
