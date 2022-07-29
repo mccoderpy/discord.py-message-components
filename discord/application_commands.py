@@ -1232,7 +1232,8 @@ class SlashCommand(ApplicationCommand):
                     elif option.type == OptionType.role:
                         params[name] = resolved.roles[_id] or _id
                     elif option.type == OptionType.channel:
-                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or interaction._state.get_channel(_id) or PartialMessageable(interaction._state, _id, guild_id=interaction.guild)
+                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or interaction._state.get_channel(_id) \
+                                       or PartialMessageable(interaction._state, _id, guild_id=interaction.guild)
                     elif option.type == OptionType.mentionable:
                         try:
                             params[name] = resolved.roles[_id]
