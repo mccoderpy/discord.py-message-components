@@ -1229,13 +1229,13 @@ class SlashCommand(ApplicationCommand):
                         params[name] = option.value
                 elif option.type == OptionType.user:
                     _id = self._filter_id_out(option.value)
-                    params[name] = interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
+                    params[name] = interaction.guild.get_member(_id) or interaction.data.resolved.members[_id] or interaction.data.resolved.users[_id] or option.value
                 elif option.type == OptionType.role:
                     _id = self._filter_id_out(option.value)
                     params[name] = interaction.data.resolved.roles[_id] or option.value
                 elif option.type == OptionType.channel:
                     _id = self._filter_id_out(option.value)
-                    params[name] = interaction.data.resolved.channels[_id] or option.value
+                    params[name] = interaction.guild.get_channel(_id) or interaction.data.resolved.channels[_id] or option.value
                 elif option.type == OptionType.mentionable:
                     _id = self._filter_id_out(option.value)
                     if '&' in option.value:
@@ -1250,7 +1250,7 @@ class SlashCommand(ApplicationCommand):
         connector = to_invoke.connector
         for o in to_invoke.options:
             name = connector.get(o.name, o.name)
-            if (name not in params or params[name] is None) and o.default != None:
+            if (name not in params or params[name] is None) and o.default is not None:
                 params[name] = o.default
 
         interaction._command = self
@@ -1695,7 +1695,7 @@ def generate_options(
             converter = annotation
         elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
-            args = getattr(annotation, '__args__', [])
+            args: List = getattr(annotation, '__args__', [])
             union: List[Any] = []
             _remove_none = []
             if isinstance(args, tuple):
@@ -1723,9 +1723,12 @@ def generate_options(
                             if module.startswith('discord.') and module.endswith('converter'):
                                 pass
                             else:
-                                conv = getattr(converters, arg.__name__ + 'Converter', arg)
-                                if conv:
-                                    union.append(conv)
+                                if hasattr(arg, 'convert'):
+                                    union.append(arg)
+                                else:
+                                    conv = getattr(converters, arg.__name__ + 'Converter', arg)
+                                    if conv:
+                                        union.append(conv)
             # remove NoneType's
             [args.remove(rn) for rn in _remove_none]
             if all([isinstance(a, ChannelType) for a in args]):
@@ -1741,9 +1744,11 @@ def generate_options(
                                        default=default)
                 )
                 continue
+            elif all([tp.__name__ in ['MemberConverter', 'UserConverter', 'RoleConverter'] for tp in union]):
+                pass
             else:
                 if union:
-                    converter = Union.__getitem__(*union) # type: ignore
+                    converter = Union[tuple(union)]  # type: ignore
                 options.append(
                     SlashCommandOption(option_type=str,
                                        name=name,
@@ -1771,7 +1776,7 @@ def generate_options(
             except Exception:
                 raise ValueError(
                     'If you use Literal to declare choices for the Option you could only use the following schemas:'
-                    '[name, value], (name, value) or {one_name: one_value, other_name: other_value, ...}'
+                    '[name, value], (name, value), {one_name: one_value, other_name: other_value, ...} or the values (will be used as name)'
                     'The way you do it is not supportet.'
                 )
             if all([isinstance(c, type(values[0])) for c in values]):
