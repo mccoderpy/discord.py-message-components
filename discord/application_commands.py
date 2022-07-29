@@ -47,6 +47,7 @@ from types import FunctionType
 
 from .utils import async_all, find, get, snowflake_time
 from .abc import GuildChannel
+from .channel import PartialMessageable
 from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
 
@@ -1190,7 +1191,7 @@ class SlashCommand(ApplicationCommand):
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
-    async def _parse_arguments(self, interaction):
+    async def _parse_arguments(self, interaction: BaseInteraction):
         to_invoke = self
         params = {}
         options = interaction.data.options
@@ -1231,7 +1232,7 @@ class SlashCommand(ApplicationCommand):
                     elif option.type == OptionType.role:
                         params[name] = resolved.roles[_id] or _id
                     elif option.type == OptionType.channel:
-                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or _id
+                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or interaction._state.get_channel(_id) or PartialMessageable(interaction._state, _id, guild_id=interaction.guild)
                     elif option.type == OptionType.mentionable:
                         try:
                             params[name] = resolved.roles[_id]
@@ -1250,7 +1251,7 @@ class SlashCommand(ApplicationCommand):
         interaction._command = self
         interaction.params = params
         if interaction.type == InteractionType.ApplicationCommandAutocomplete:
-            interaction.focused = find(lambda o: (o.__getattribute__('focused') or None) is True, options)
+            interaction.focused = find(lambda opt: (opt.__getattribute__('focused') or None) is True, options)
             return await to_invoke.invoke_autocomplete(interaction, **params)
         return await to_invoke.invoke(interaction, **params)
 

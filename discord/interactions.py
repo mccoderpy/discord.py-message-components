@@ -60,6 +60,7 @@ from .enums import InteractionType, ApplicationCommandType, ComponentType, Inter
 
 if TYPE_CHECKING:
     import datetime
+    from .state import ConnectionState
     from .application_commands import SlashCommand, MessageCommand, UserCommand
 
 
@@ -82,9 +83,9 @@ class EphemeralMessage:
     """
     Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
     """
-
+    # This class will be removed in the future when we switched to use a Webhook message model instead
     def __init__(self, *, state, channel, data, interaction):
-        self._state = state
+        self._state: ConnectionState = state
         self.__interaction__ = interaction
         self.id = int(data.get('id', 0))
         self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
@@ -282,7 +283,7 @@ class BaseInteraction:
 
     def __init__(self, state, data):
         self._data = data
-        self._state = state
+        self._state: ConnectionState = state
         self._http: HTTPClient = state.http
         self.type: InteractionType = InteractionType.try_value(data['type'])
         self._application_id = int(data.get('application_id'))
@@ -470,8 +471,8 @@ class BaseInteraction:
                 _files = []
                 keep_original_files: Optional[bool] = fields.pop('keep_original_files', False)
                 if keep_original_files:
-                    for index, file in enumerate(self.message.attachments):
-                        _files.append({'id': index, **file._to_minimal_dict()})
+                    for index, attachment in enumerate(self.message.attachments):
+                        _files.append({'id': index, **attachment._to_minimal_dict()})
                 _id = len(_files)  # to continue the file id count
                 for index, file in enumerate(files):
                     _files.append(
@@ -854,7 +855,7 @@ class ApplicationCommandInteraction(BaseInteraction):
             self.target = None
 
     @property
-    def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
+    def command(self) -> Optional[Union[SlashCommand, MessageCommand, UserCommand]]:
         """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked."""
         if getattr(self, '_command', None) is not None:
             return self._command
@@ -931,7 +932,7 @@ class AutocompleteInteraction(BaseInteraction):
     """
 
     @property
-    def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
+    def command(self) -> Optional[Union[SlashCommand, MessageCommand, UserCommand]]:
         """Optional[:class:`~discord.SlashCommand`]: The slash-command for wich autocomplete was triggered."""
         if getattr(self, '_command', None) is not None:
             return self._command
@@ -941,13 +942,12 @@ class AutocompleteInteraction(BaseInteraction):
     @property
     def focused_option(self) -> 'InteractionDataOption':
         """:class:`~discord.interactions.InteractionDataOption`: Returns the currently focused option."""
-        return self.focused
+        return self.focused  # type: ignore
 
     @property
     def focused_option_name(self) -> str:
         """:class:`str`: Returns the name of the currently focused option."""
         return self.focused_option.name
-
 
     async def send_choices(self, choices: List[SlashCommandOptionChoice]) -> None:
         """
@@ -990,7 +990,7 @@ class ModalSubmitInteraction(BaseInteraction):
     """
     Represents the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is pressed.
     """
-    def get_field(self, custom_id) -> Union['TextInput', None]:
+    def get_field(self, custom_id) -> Union[TextInput, None]:
         """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`~discord.TextInput.custom_id` match or :class:`None`"""
         for ar in self.data.components:
             for c in ar:
@@ -999,7 +999,7 @@ class ModalSubmitInteraction(BaseInteraction):
         return None
 
     @property
-    def fields(self) -> List['TextInput']:
+    def fields(self) -> List[TextInput]:
         """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the :class:`~discord.Modal`."""
         field_list = []
         for ar in self.data.components:
@@ -1042,7 +1042,7 @@ class ModalSubmitInteraction(BaseInteraction):
 class InteractionData:
     def __init__(self, *, state, data, guild=None, **kwargs):
         self._data = data
-        self._state = state
+        self._state: ConnectionState = state
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
         resolved = data.get('resolved', None)
@@ -1127,7 +1127,7 @@ class InteractionDataOption:
 
     """
     def __init__(self, *, state, data, guild=None, **kwargs):
-        self._state = state
+        self._state: ConnectionState = state
         self._data = data
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
@@ -1155,7 +1155,7 @@ class InteractionDataOption:
         return self._data.get('focused', False)
 
     @property
-    def options(self) -> Optional[List['InteractionDataOption']]:
+    def options(self) -> Optional[List[InteractionDataOption]]:
         """Optional[List[:class:`InteractionDataOption`]]: For sub-command (groups) the sub-command or the actual options"""
         options = self._data.get('options', [])
         return [InteractionDataOption(state=self._state, data=option, guild=self._guild) for option in options]
@@ -1163,7 +1163,7 @@ class InteractionDataOption:
 
 class ResolvedData:
     def __init__(self, *, state, data, guild=None, **kwargs):
-        self._state = state
+        self._state: ConnectionState = state
         self._data = data
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
@@ -1172,6 +1172,7 @@ class ResolvedData:
             value = data.get(attr, None)
             if value is not None:
                 getattr(self, f'_{self.__class__.__name__}__handle_{attr}')(value)
+        del self._data  # No longer needed
 
     @property
     def users(self) -> Optional[Dict[int, User]]:
