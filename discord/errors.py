@@ -231,15 +231,11 @@ class PrivilegedIntentsRequired(ClientException):
         return '\n'.join(self.args)
 
 
-
-class InvalidButtonUrl(DiscordException):
-    """Exception that's thrown when the URL passed in an :class:`discord.Button` do not match the Format ``http``
-    or ``https``
+class RecordingException(ClientException):
+    """Exception that's thrown when there is an error while trying to record
+    audio from a voice channel.
     """
-    def __init__(self, url):
-        self._inavlid_url = url
-        msg = "The specified URL %s does not match the format `http` or `https`."
-        super().__init__(msg % self._inavlid_url)
+    pass
 
 
 class URLAndCustomIDNotAlowed(DiscordException):
@@ -260,7 +256,7 @@ class EmptyActionRow(DiscordException):
     Exception that's thrown when there is an empty :class:`~discord.ActionRow` in your message.
     """
     def __init__(self):
-        msg = 'The Discord-API does not allows you to send an empty ActionRow, you have to parse at least one component'
+        msg = 'The Discord-API does not allow you to send an empty ActionRow, you have to parse at least one component'
         super().__init__(msg)
 
 
@@ -278,7 +274,7 @@ class AlreadyResponded(DiscordException):
     """
     Exception thrown when attempting to send the callback for an interaction that has already been responded to.'
     """
-    def  __init__(self, interaction_id):
+    def __init__(self, interaction_id):
         msg = f'You have already send a callback(using defer or respond_with_modal) to this interaction ({interaction_id}) '
         super().__init__(msg)
 

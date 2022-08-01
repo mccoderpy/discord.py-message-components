@@ -29,7 +29,7 @@ from .emoji import Emoji
 from typing import Union, List, Optional, Any, Callable
 from typing_extensions import Literal
 from .partial_emoji import PartialEmoji
-from .errors import InvalidArgument, InvalidButtonUrl, URLAndCustomIDNotAlowed, EmptyActionRow
+from .errors import InvalidArgument, URLAndCustomIDNotAlowed, EmptyActionRow
 
 __all__ = ('Button', 'SelectMenu', 'TextInputStyle', 'ActionRow', 'SelectOption')
 
@@ -62,9 +62,9 @@ class Button:
                  emoji: Union[PartialEmoji, Emoji, str] = None,
                  url: str = None,
                  disabled: bool = False):
-        if url and not url.startswith(('http', 'discord://')):
-            raise InvalidButtonUrl(url)
-        self.url = url
+        if url and not url.startswith(('http://', 'https://', 'discord://')):
+            raise ValueError(f'"{url}" is not a valid protocol. Only http(s) or discord protocol is supported')
+        self.url: Optional[str] = url
         if isinstance(style, int):
             style = ButtonStyle.from_value(style)
         if not isinstance(style, ButtonStyle):
@@ -128,7 +128,6 @@ class Button:
         """
         Sets the url of the :class:`Button`
 
-
         url: :class:`str`
             The url to replace the old one with
 
@@ -137,8 +136,8 @@ class Button:
         :class:`~discord.Button`
             The updated instance
         """
-        if not url.startswith('http'):
-            raise InvalidButtonUrl(url)
+        if not url.startswith(('http://', 'https://', 'discord://')):
+            raise ValueError(f'"{url}" is not a valid protocol. Only http(s) or discord protocol is supported')
         self.url = url
         return self
 
