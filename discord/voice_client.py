@@ -46,14 +46,24 @@ import socket
 import logging
 import struct
 import threading
+import select
+import time
 
-from typing import Any, Callable, List, Optional, TYPE_CHECKING, Tuple
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Tuple
+)
 
 from . import opus, utils
 from .backoff import ExponentialBackoff
 from .gateway import *
-from .errors import ClientException, ConnectionClosed
+from .errors import ClientException, ConnectionClosed, RecordingException
 from .player import AudioPlayer, AudioSource
+from .sink import Sink, RawData
 
 try:
     import nacl.secret
@@ -224,8 +234,16 @@ class VoiceClient(VoiceProtocol):
         self._runner = None
         self._player = None
         self.encoder = None
+        self.decoder = None
         self._lite_nonce = 0
-        self.ws = None
+        self.ws: DiscordVoiceWebSocket = None
+
+        self.paused = False
+        self.recording = False
+        self.user_timestamps = {}
+        self.sink = None
+        self.starting_time = None
+        self.stopping_time = None
 
     warn_nacl = not has_nacl
     supported_modes = (
@@ -685,3 +703,149 @@ class VoiceClient(VoiceProtocol):
             log.warning('A packet has been dropped (seq: %s, timestamp: %s)', self.sequence, self.timestamp)
 
         self.checked_add('timestamp', opus.Encoder.SAMPLES_PER_FRAME, 4294967295)
+
+    def unpack_audio(self, data):
+        """Takes an audio packet received from Discord and decodes it into pcm audio data.
+        If there are no users talking in the channel, `None` will be returned.
+        You must be connected to receive audio.
+        Parameters
+        ---------
+        data: :class:`bytes`
+            Bytes received by Discord via the UDP connection used for sending and receiving voice data.
+        """
+        if 200 <= data[1] <= 204:
+            # RTCP received.
+            # RTCP provides information about the connection
+            # as opposed to actual audio data, so it's not
+            # important at the moment.
+            return
+        if self.paused:
+            return
+
+        data = RawData(data, self)
+
+        if data.decrypted_data == b'\xf8\xff\xfe':  # Frame of silence
+            return
+
+        self.decoder.decode(data)
+
+    def start_recording(self, sink, callback, *args):
+        """The bot will begin recording audio from the current voice channel it is in.
+        This function uses a thread so the current code line will not be stopped.
+        Must be in a voice channel to use.
+        Must not be already recording.
+        Parameters
+        ----------
+        sink: :class:`Sink`
+            A Sink which will "store" all the audio data.
+        callback: :class:`asynchronous function`
+            A function which is called after the bot has stopped recording.
+        *args:
+            Args which will be passed to the callback function.
+        Raises
+        ------
+        RecordingException
+            Not connected to a voice channel.
+        RecordingException
+            Already recording.
+        RecordingException
+            Must provide a Sink object.
+        """
+        if not self.is_connected():
+            raise RecordingException('Not connected to voice channel.')
+        if self.recording:
+            raise RecordingException("Already recording.")
+        if not isinstance(sink, Sink):
+            raise RecordingException("Must provide a Sink object.")
+
+        self.empty_socket()
+
+        self.decoder = opus.DecodeManager(self)
+        self.decoder.start()
+        self.recording = True
+        self.sink = sink
+        sink.init(self)
+
+        t = threading.Thread(target=self.recv_audio, args=(sink, callback, *args,))
+        t.start()
+
+    def stop_recording(self):
+        """Stops the recording.
+        Must be already recording.
+        Raises
+        ------
+        RecordingException
+            Not currently recording.
+        """
+        if not self.recording:
+            raise RecordingException("Not currently recording audio.")
+        self.decoder.stop()
+        self.recording = False
+        self.paused = False
+
+    def toggle_pause(self):
+        """Pauses or unpauses the recording.
+        Must be already recording.
+        Raises
+        ------
+        RecordingException
+            Not currently recording.
+         """
+        if not self.recording:
+            raise RecordingException("Not currently recording audio.")
+        self.paused = not self.paused
+
+    def empty_socket(self):
+        while True:
+            ready, _, _ = select.select([self.socket], [], [], 0.0)
+            if not ready:
+                break
+            for s in ready:
+                s.recv(4096)
+
+    def recv_audio(self, sink, callback, *args):
+        #  Gets data from _recv_audio and sorts
+        #  it by user, handles pcm files and
+        #  silence that should be added.
+
+        self.user_timestamps = {}
+        self.starting_time = time.perf_counter()
+        while self.recording:
+            ready, _, err = select.select([self.socket], [],
+                                          [self.socket], 0.01)
+            if not ready:
+                if err:
+                    print(f"Socket error: {err}")
+                continue
+
+            try:
+                data = self.socket.recv(4096)
+            except OSError:
+                self.stop_recording()
+                continue
+
+            self.unpack_audio(data)
+
+        self.stopping_time = time.perf_counter()
+        self.sink.cleanup()
+        callback = asyncio.run_coroutine_threadsafe(callback(self.sink, *args), self.loop)
+        result = callback.result()
+
+        if result is not None:
+            print(result)
+
+    def recv_decoded_audio(self, data):
+        if data.ssrc not in self.user_timestamps:
+            self.user_timestamps.update({data.ssrc: data.timestamp})
+            # Add silence of when they were not being recorded.
+            data.decoded_data = struct.pack('<h', 0) * round(
+                self.decoder.CHANNELS * self.decoder.SAMPLING_RATE * (time.perf_counter() - self.starting_time)
+            ) + data.decoded_data
+        else:
+            self.user_timestamps[data.ssrc] = data.timestamp
+
+        silence = data.timestamp - self.user_timestamps[data.ssrc] - 960
+        data.decoded_data = struct.pack('<h', 0) * silence + data.decoded_data
+        while data.ssrc not in self.ws.ssrc_map:
+            time.sleep(0.05)
+        self.sink.write(data.decoded_data, self.ws.ssrc_map[data.ssrc]['user_id'])

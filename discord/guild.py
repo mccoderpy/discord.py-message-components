@@ -523,8 +523,8 @@ class Guild(Hashable):
         This is sorted by the position of the threads :attr:`~discord.ThreadChannel.parent` and are in UI order from top to bottom.
         """
         r = list()
-        [r.extend(ch.threads)  for ch in self._channels.values() if isinstance(ch, TextChannel)]
-        r.sort(key=lambda t: (t.parent.position, t.id))
+        [r.extend(ch.threads) for ch in self._channels.values() if isinstance(ch, TextChannel)]
+        r.sort(key=lambda t: (t.parent_channel.position, t.id))
         return r
 
     @property

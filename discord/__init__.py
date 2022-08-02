@@ -64,6 +64,7 @@ from .player import *
 from .webhook import *
 from .welcome_screen import *
 from .voice_client import VoiceClient, VoiceProtocol
+from .sink import *
 from .audit_logs import AuditLogChanges, AuditLogEntry, AuditLogDiff
 from .raw_models import *
 from .team import *
