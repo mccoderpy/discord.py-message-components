@@ -599,7 +599,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
         Creates a new thread in this channel.
 
-        You must have the :attr:`~Permissions.create_puplic_threads` or for private :attr:`~Permissions.create_private_threads` permission to
+        You must have the :attr:`~Permissions.create_public_threads` or for private :attr:`~Permissions.create_private_threads` permission to
         use this.
 
 
