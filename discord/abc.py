@@ -29,7 +29,7 @@ import sys
 import copy
 import asyncio
 
-from typing import Union, Optional, List, Any, TYPE_CHECKING
+from typing import Union, Optional, List, Any, TYPE_CHECKING, Coroutine
 
 from .iterators import HistoryIterator
 from .context_managers import Typing
@@ -1368,6 +1368,9 @@ class Connectable(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _get_voice_state_pair(self):
         raise NotImplementedError
+
+    def __call__(self, *, timeout=60.0, reconnect=True, cls=VoiceClient) -> Optional[Coroutine[None, None, VoiceProtocol]]:
+        return self.connect(timeout=timeout, reconnect=reconnect, cls=cls)
 
     async def connect(self, *, timeout=60.0, reconnect=True, cls=VoiceClient):
         """|coro|

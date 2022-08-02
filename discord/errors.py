@@ -238,6 +238,12 @@ class RecordingException(ClientException):
     pass
 
 
+class NotInVoiceChannel(ClientException):
+    """Exception that's thrown when trying to access the channel of a VoiceState from a user that is not connected to voice"""
+    def __init__(self):
+        super().__init__('Can\'t connect to the channel because the user is not in one or the bot has no access to the channel.')
+
+
 class URLAndCustomIDNotAlowed(DiscordException):
     """Exception that's thrown when there is an ``url`` and an ``custom_id`` passed in a :class:`discord.Button`,
     what is not supportet by the Discord-API.
