@@ -30,7 +30,13 @@ import inspect
 import itertools
 import sys
 from operator import attrgetter
-from typing import Optional
+
+from typing import (
+    Optional,
+    Union,
+    Coroutine,
+    TYPE_CHECKING
+)
 
 from typing_extensions import Literal
 
@@ -41,9 +47,14 @@ from .asset import Asset
 from .user import BaseUser, User
 from .activity import create_activity
 from .permissions import Permissions
+from .voice_client import VoiceProtocol, VoiceClient
 from .enums import Status, try_enum
 from .colour import Colour
 from .object import Object
+from .errors import NotInVoiceChannel
+
+if TYPE_CHECKING:
+    from .abc import Connectable
 
 
 class VoiceState:
@@ -107,7 +118,7 @@ class VoiceState:
         self.deaf = data.get('deaf', False)
         self.suppress = data.get('suppress', False)
         self.requested_to_speak_at = utils.parse_time(data.get('request_to_speak_timestamp'))
-        self.channel = channel
+        self.channel: Optional[Connectable] = channel
 
     def __repr__(self):
         attrs = [
@@ -119,6 +130,12 @@ class VoiceState:
             ('channel', self.channel)
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+
+    def __call__(self, *, timeout: Optional[float] = 60.0, reconnect: bool = True, cls: VoiceProtocol = VoiceClient) -> Optional[Coroutine[None, None, VoiceProtocol]]:
+        channel = self.channel
+        if not channel:
+            raise NotInVoiceChannel()
+        return channel.connect(timeout=timeout, reconnect=reconnect, cls=cls)
 
 
 def flatten_user(cls):
