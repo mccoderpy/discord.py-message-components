@@ -1693,12 +1693,10 @@ def generate_options(
             # The parameter is annotated with a Union so multiple types are possible.
             args: List = getattr(annotation, '__args__', [])
             union: List[Any] = []
-            _remove_none = []
             if isinstance(args, tuple):
                 args = list(args)
             for index, arg in enumerate(args):
                 if isinstance(arg, _NoneType):  # If one of the types is NoneType, then the option is also not required.
-                    _remove_none.append(arg)
                     required = False
                 elif issubclass(arg, GuildChannel) or isinstance(arg, ChannelType):
                     # If you use Union to define the types of channels you can choose from.
@@ -1726,7 +1724,7 @@ def generate_options(
                                     if conv:
                                         union.append(conv)
             # remove NoneType's
-            [args.remove(rn) for rn in _remove_none]
+            [args.remove(rn) for rn in args if rn is _NoneType]
             if all([isinstance(a, ChannelType) for a in args]):
                 is_channel = True
             if is_channel:
