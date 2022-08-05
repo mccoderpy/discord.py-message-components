@@ -1802,7 +1802,7 @@ class Client:
                     if len(to_maybe_remove) > 0:
                         log.info(
                             'Removing %s global application-command(s) that isn\'t/arent used in this code anymore.'
-                            ' To prevent this set `remove_not_existing_commands` of %s to False',
+                            ' To prevent this set `delete_not_existing_commands` of %s to False',
                             len(to_maybe_remove), self.__class__.__name__
                         )
                 to_send.extend(to_cep)
@@ -1898,7 +1898,7 @@ class Client:
                         if len(to_maybe_remove) > 0:
                             log.info(
                                 'Removing %s application-command(s) from guild %s (%s) that isn\'t/arent used in this code anymore.'
-                                 'To prevent this set `remove_not_existing_commands` of %s to False',
+                                 'To prevent this set `delete_not_existing_commands` of %s to False',
                                 len(to_maybe_remove),
                                 self.get_guild(int(guild_id)),
                                 guild_id,

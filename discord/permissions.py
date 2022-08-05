@@ -516,7 +516,7 @@ class Permissions(BaseFlags):
     @flag_value
     def send_messages_in_threads(self):
         """:class:`bool`: Returns ``True`` if a user can send messages in threads."""
-        return  1 << 38
+        return 1 << 38
 
     @make_permission_alias('send_messages_in_threads')
     def send_thread_messages(self):
