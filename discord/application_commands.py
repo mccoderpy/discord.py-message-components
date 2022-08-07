@@ -353,16 +353,14 @@ class ApplicationCommand:
 
     def _fill_data(self, data) -> ApplicationCommand:
         self._id = int(data.get('id', 0))
-        self.application_id = int(data.get('application_id', 0))
         self._guild_id = int(data.get('guild_id', 0))
-        self._permissions = data.get('permissions', {})
         return self
 
     async def can_run(self, *args, **kwargs) -> bool:
         # if self.cog:
         #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
-        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
+        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', []))
         if not checks:
             return True
         return await async_all(check(args[0]) for check in checks)
@@ -432,8 +430,12 @@ class ApplicationCommand:
         return self._guild_id
 
     @property
-    def guild_ids(self):
+    def guild_ids(self) -> Optional[List[int]]:
         return self._guild_ids
+
+    @property
+    def application_id(self) -> int:
+        return self._state._get_client().app.id
 
     @classmethod
     def _from_type(cls, state, data):
@@ -447,8 +449,8 @@ class ApplicationCommand:
         else:
             return None
 
-    @classmethod
-    def _sorted_by_type(cls, commands):
+    @staticmethod
+    def _sorted_by_type(commands):
         sorted_dict = {'chat_input': [], 'user': [], 'message': []}
         for cmd in commands:
             if cmd['type'] == 1:
@@ -457,7 +459,7 @@ class ApplicationCommand:
                 predicate = 'user'
             elif cmd['type'] == 3:
                 predicate = 'message'
-            else:
+            else:  # Should not be the case
                 continue
             sorted_dict[predicate].append(cmd)
         return sorted_dict
@@ -615,9 +617,9 @@ class SlashCommandOption:
                 channel_types = channel_type
         self.type = option_type
 
-        if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE):
+        if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE):
             raise ValueError(
-                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
                 f'Got "{name}" with length {len(name)}.'
             )
@@ -824,9 +826,9 @@ class SubCommand(SlashCommandOption):
                  options: List[SlashCommandOption] = [],
                  **kwargs):
         self.parent: Union[SubCommandGroup, SubCommand] = parent
-        if not re.match('^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+        if not re.match('^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
-                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
                 f'Got "{name}" with length {len(name)}.'
             )
@@ -1036,9 +1038,9 @@ class SlashCommand(ApplicationCommand):
                          options=options,
                          connector=connector,
                          **kwargs)
-        if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+        if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
-                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
                 f'Got "{name}" with length {len(name)}.'
             )
@@ -1170,6 +1172,7 @@ class SlashCommand(ApplicationCommand):
                               (OptionType.sub_command, OptionType.sub_command_group)}
         if not self._sub_commands:
             self._options = {option.name: option for option in options}
+        self._fill_data(data)
         return self
 
     async def invoke(self, interaction, *args, **kwargs):
@@ -1447,7 +1450,7 @@ class UserCommand(ApplicationCommand):
             allow_dm=data.get('dm_permission', True),
             state=state,
             **data
-        )
+        )._fill_data(data)
 
     async def _parse_arguments(self, interaction):
         await self.invoke(interaction, interaction.target)
@@ -1492,7 +1495,7 @@ class MessageCommand(ApplicationCommand):
             allow_dm=data.get('dm_permission', True),
             state=state,
             **data
-        )
+        )._fill_data(data)
 
     async def _parse_arguments(self, interaction):
         await self.invoke(interaction, interaction.target)
@@ -1508,9 +1511,9 @@ class SubCommandGroup(SlashCommandOption):
                  commands: List[SubCommand] = [],
                  **kwargs):
         self.cog = kwargs.get('cog', None)
-        if not re.match(r'^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+        if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
-                r'Command names and options must follow the regex "^[-_\w\d\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
+                r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
                 f'Got "{name}" with length {len(name)}.'
             )

@@ -250,7 +250,7 @@ class Client:
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop() if loop is None else loop
         self._listeners = {}
         self.sync_commands: bool = options.get('sync_commands', False)
-        self.delete_not_existing_commands: bool = options.pop('delete_not_existing_commands', True)
+        self.delete_not_existing_commands: bool = options.get('delete_not_existing_commands', True)
         self._application_commands_by_type: Dict[str, Dict[str, Union[SlashCommand, UserCommand, MessageCommand]]] = {
             'chat_input': {}, 'message': {}, 'user': {}
         }
@@ -473,7 +473,7 @@ class Client:
         )
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
-    async def _request_sync_commands(self, is_cog_reload: bool = False):
+    async def _request_sync_commands(self, is_cog_reload: bool = False, *, cog=None):
         """Used to sync commands if the ``GUILD_CREATE`` stream is over or a :class:`~discord.ext.commands.Cog` was reloaded.
 
         .. warning::
@@ -483,41 +483,123 @@ class Client:
         if not hasattr(self, 'app'):
             await self.application_info()
         if (is_cog_reload and getattr(self, 'sync_commands_on_cog_reload', False) is True) or (not is_cog_reload and self.sync_commands is True):
-            await self._sync_commands()
-        else:
-            log.info('Collecting application-commands for Application %s (%s)', self.app.name, self.app.id)
-            global_registered_raw = await self.http.get_application_commands(self.app.id)
+            return await self._sync_commands()
+        state = self._connection  # Speedup attribute access
+        app_id = self.app.id
+        get_commands = self.http.get_application_commands
+        if not is_cog_reload:
+            log.info('Collecting global application-commands for application %s (%s)', self.app.name, self.app.id)
+
+            self._minimal_registered_global_commands_raw = minimal_registered_global_commands_raw = []
+            global_registered_raw = await get_commands(app_id)
+
             for raw_command in global_registered_raw:
+                command_type = str(ApplicationCommandType.try_value(raw_command['type']))
+                minimal_registered_global_commands_raw.append({'id': int(raw_command['id']), 'type': command_type, 'name': raw_command['name']})
                 try:
-                    command = self._application_commands_by_type[str(ApplicationCommandType.try_value(raw_command['type']))][raw_command['name']]
+                    command = self._application_commands_by_type[command_type][raw_command['name']]
                 except KeyError:
-                    command = ApplicationCommand._from_type(self._connection, data=raw_command)
-                    command._fill_data(raw_command)
-                    self._application_commands[command.id] = command
+                    command = ApplicationCommand._from_type(state, data=raw_command)
+                    command.func = None
+                    self._application_commands[command.id] = self._application_commands_by_type[command_type][command.name] = command
                 else:
                     command._fill_data(raw_command)
-                    command._state = self._connection
+                    command._state = state
                     self._application_commands[command.id] = command
+
+            log.info('Done! Cached %s global application-commands', sum([len(cmds) for cmds in self._application_commands_by_type.values()]))
+            log.info('Collecting guild-specific application-commands for application %s (%s)', self.app.name, app_id)
+
+            self._minimal_registered_guild_commands_raw = minimal_registered_guild_commands_raw = {}
+
             for guild in self.guilds:
                 try:
-                    registered_guild_commands_raw = await self.http.get_application_commands(self.app.id, guild_id=guild.id)
-                except HTTPException:
+                    registered_guild_commands_raw = await get_commands(app_id, guild_id=guild.id)
+                except Forbidden:
                     log.info(
                         'Missing access to guild %s (%s) or don\'t have the application.commands scope in there, '
                         'skipping!' % (guild.name, guild.id))
                     continue
-                for updated in registered_guild_commands_raw:
+                except HTTPException:
+                    raise
+                if registered_guild_commands_raw:
+                    minimal_registered_guild_commands_raw[guild.id] = minimal_registered_guild_commands = []
                     try:
-                        command = self._guild_specific_application_commands[guild.id][
-                            str(ApplicationCommandType.try_value(int(updated['type'])))][updated['name']]
+                        guild_commands = self._guild_specific_application_commands[guild.id]
                     except KeyError:
-                        command = ApplicationCommand._from_type(self._connection, data=updated)
-                        command._fill_data(updated)
-                        self._application_commands[command.id] = guild._application_commands[command.id] = command
+                        self._guild_specific_application_commands[guild.id] = guild_commands = {'chat_input': {}, 'user': {}, 'message': {}}
+                    for raw_command in registered_guild_commands_raw:
+                        command_type = str(ApplicationCommandType.try_value(raw_command['type']))
+                        minimal_registered_guild_commands.append({'id': int(raw_command['id']), 'type': command_type, 'name': raw_command['name']})
+                        try:
+                            command = guild_commands[command_type][raw_command['name']]
+                        except KeyError:
+                            command = ApplicationCommand._from_type(state, data=raw_command)
+                            command.func = None
+                            self._application_commands[command.id] = guild._application_commands[command.id] = guild_commands[command_type][command.name] = command
+                        else:
+                            command._fill_data(raw_command)
+                            command._state = state
+                            self._application_commands[command.id] = guild._application_commands[command.id] = command
+
+            log.info('Done! Cached %s commands for %s guilds', sum([len(commands) for commands in list(minimal_registered_guild_commands_raw.values())]), len(minimal_registered_guild_commands_raw.keys()))
+
+        else:
+            # re-assign metadata to the commands (for commands added from cogs)
+            log.info('Re-assigning metadata to commands')
+            # For logging purposes
+            no_longer_in_code_global = 0
+            no_longer_in_code_guild_specific = 0
+            no_longer_in_code_guilds = set()
+
+            for raw_command in self._minimal_registered_global_commands_raw:
+                command_type = raw_command['type']
+                try:
+                    command = self._application_commands_by_type[command_type][raw_command['name']]
+                except KeyError:
+                    no_longer_in_code_global += 1
+                    self._application_commands[raw_command['id']].func = None
+                    continue  # Should already be cached in self._application_commands so skip that part here
+                else:
+                    if command.disabled:
+                        no_longer_in_code_global += 1
                     else:
-                        command._fill_data(updated)
-                        command._state = self._connection
-                        self._application_commands[command.id] = guild._application_commands[command.id] = command
+                        command._fill_data(raw_command)
+                        command._state = state
+                        self._application_commands[command.id] = command
+            for guild_id, raw_commands in self._minimal_registered_guild_commands_raw.items():
+                try:
+                    guild_commands = self._guild_specific_application_commands[guild_id]
+                except KeyError:
+                    no_longer_in_code_guilds += 1
+                    no_longer_in_code_guild_specific += len(raw_commands)
+                    continue  # Should already be cached in self._application_commands so skip that part here again
+                else:
+                    guild = self.get_guild(guild_id)
+                    for raw_command in raw_commands:
+                        command_type = raw_command['type']
+                        try:
+                            command = guild_commands[command_type][raw_command['name']]
+                        except KeyError:
+                            if guild_id not in no_longer_in_code_guilds:
+                                no_longer_in_code_guilds.add(guild_id)
+                            no_longer_in_code_guild_specific += 1
+                            self._application_commands[raw_command['id']].func = None
+                            pass  # Should already be cached in self._application_commands so skip that part here another once again
+                        else:
+                            if command.disabled:
+                                no_longer_in_code_guild_specific += 1
+                            else:
+                                command._fill_data(raw_command)
+                                command._state = state
+                                self._application_commands[command.id] = guild._application_commands[command.id] = command
+            log.info('Done!')
+            if no_longer_in_code_global:
+                log.warning('%s global application-commands where removed from code but are still registered in discord', no_longer_in_code_global)
+            if no_longer_in_code_guild_specific:
+                log.warning('In total %s guild-specific application-commands from %s guild(s) where removed from code but are still registered in discord', no_longer_in_code_guild_specific, len(no_longer_in_code_guilds))
+            if no_longer_in_code_global or no_longer_in_code_guild_specific:
+                log.warning('To prevent the above, set `sync_commands_on_cog_reload` of %s to True', self.__class__.__name__)
 
     @utils.deprecated('Guild.chunk')
     async def request_offline_members(self, *guilds):
@@ -1751,7 +1833,9 @@ class Client:
     async def _sync_commands(self):
         if not hasattr(self, 'app'):
             await self.application_info()
-        log.info('Checking for changes on application-commands for application %s (%s)...', self.app.name, self.app.id)
+        state = self._connection  # Speedup attribute access
+        get_commands = self.http.get_application_commands
+        application_id = self.app.id
 
         to_send = []
         to_cep = []
@@ -1760,10 +1844,11 @@ class Client:
         any_changed = False
         has_update = False
 
-        application_id = self.app.id
+        log.info('Checking for changes on application-commands for application %s (%s)...', self.app.name, application_id)
 
-        global_registered_raw: List[Dict] = await self.http.get_application_commands(self.app.id)
+        global_registered_raw: List[Dict] = await get_commands(application_id)
         global_registered: Dict[str, List[ApplicationCommand]] = ApplicationCommand._sorted_by_type(global_registered_raw)
+        self._minimal_registered_global_commands_raw = minimal_registered_global_commands_raw = []
 
         for x, commands in global_registered.items():
             for command in commands:
@@ -1814,20 +1899,23 @@ class Client:
             log.info('No Changes on global application-commands found.')
 
         for updated in global_registered_raw:
-            command = self._application_commands_by_type[ApplicationCommandType.try_value(updated['type']).name]\
-                .get(updated['name'], None)
-            if command:
-                command._fill_data(updated)
-                command._state = self._connection
+            command_type = str(ApplicationCommandType.try_value(updated['type']))
+            minimal_registered_global_commands_raw.append({'id': int(updated['id']), 'type': command_type, 'name': updated['name']})
+            try:
+                command = self._application_commands_by_type[command_type][updated['name']]
+            except KeyError:
+                command = ApplicationCommand._from_type(state, data=updated)
+                command.func = None
                 self._application_commands[command.id] = command
             else:
-                command = ApplicationCommand._from_type(self._connection, data=updated)
                 command._fill_data(updated)
+                command._state = state
                 self._application_commands[command.id] = command
 
         log.info('Checking for changes on guild-specific application-commands...')
 
         any_guild_commands_changed = False
+        self._minimal_registered_guild_commands_raw = minimal_registered_guild_commands_raw = {}
 
         for guild_id, command_types in self._guild_specific_application_commands.items():
             to_send = []
@@ -1846,6 +1934,7 @@ class Client:
                     % guild_id
                 )
                 continue
+            minimal_registered_guild_commands_raw[int(guild_id)] = minimal_registered_guild_commands = []
             registered_guild_commands = ApplicationCommand._sorted_by_type(registered_guild_commands_raw)
 
             for x, commands in registered_guild_commands.items():
@@ -1862,9 +1951,9 @@ class Client:
                     else:
                         to_maybe_remove.append(command)
                         any_changed = True
-
+                cmd_names = [c['name'] for c in commands]
                 for command in self._guild_specific_application_commands[guild_id][x].values():
-                    if command.name not in [c['name'] for c in commands]:
+                    if command.name not in cmd_names:
                         any_changed = True
                         to_send.append(command.to_dict())
 
@@ -1893,7 +1982,8 @@ class Client:
                     updated = await self.http.create_application_command(application_id, to_send[0], guild_id)
                 else:
                     if not self.delete_not_existing_commands:
-                        to_send.extend(to_maybe_remove)
+                        if to_send:
+                            to_send.extend(to_maybe_remove)
                     else:
                         if len(to_maybe_remove) > 0:
                             log.info(
@@ -1904,14 +1994,13 @@ class Client:
                                 guild_id,
                                 self.__class__.__name__
                             )
-
                     if len(to_send) != 0:
-                            log.info(
-                                'Detected %s updated/new application-command(s) for guild %s (%s), bulk overwriting them...',
-                                len(to_send),
-                                self.get_guild(int(guild_id)),
-                                guild_id
-                            )
+                        log.info(
+                            'Detected %s updated/new application-command(s) for guild %s (%s), bulk overwriting them...',
+                            len(to_send),
+                            self.get_guild(int(guild_id)),
+                            guild_id
+                        )
                     to_send.extend(to_cep)
                     registered_guild_commands_raw = await self.http.bulk_overwrite_application_commands(
                         application_id,
@@ -1927,17 +2016,19 @@ class Client:
                 any_guild_commands_changed = True
 
             for updated in registered_guild_commands_raw:
-                command = self._guild_specific_application_commands[int(guild_id)][
-                    ApplicationCommandType.try_value(updated['type']).name].get(updated['name'], None)
-                if command:
+                command_type = str(ApplicationCommandType.try_value(updated['type']))
+                minimal_registered_guild_commands.append({'id': int(updated['id']), 'type': command_type, 'name': updated['name']})
+                try:
+                    command = self._guild_specific_application_commands[int(guild_id)][command_type][updated['name']]
+                except KeyError:
+                    command = ApplicationCommand._from_type(state, data=updated)
+                    command.func = None
+                    self._application_commands[command.id] = command
+                    self.get_guild(int(guild_id))._application_commands[command.id] = command
+                else:
                     command._fill_data(updated)
                     command._state = self._connection
                     self._application_commands[command.id] = command
-                else:
-                    command = ApplicationCommand._from_type(self._connection, data=updated)
-                    command._fill_data(updated)
-                    self._application_commands[command.id] = command
-                    self.get_guild(int(guild_id))._application_commands[command.id] = command
 
         if not any_guild_commands_changed:
             log.info('No Changes on guild-specific application-commands found.')
@@ -1972,7 +2063,6 @@ class Client:
                     self._guild_specific_application_commands[command.guild_id][command.type.name].pop(command.name)
                 else:
                     self._application_commands_by_type[command.type.name].pop(command.name)
-
 
     @property
     def application_commands(self):

@@ -159,7 +159,7 @@ class ConnectionState:
             else:
                 status = str(status)
 
-        intents = options.get('intents', None)
+        intents: Intents = options.get('intents', None)
         if intents is not None:
             if not isinstance(intents, Intents):
                 raise TypeError('intents parameter must be Intent not %r' % type(intents))
