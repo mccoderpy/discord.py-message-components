@@ -2060,9 +2060,9 @@ class Client:
                 command.disabled = True
                 self._application_commands[command.id] = copy.copy(command)
                 if command.guild_id:
-                    self._guild_specific_application_commands[command.guild_id][command.type.name].pop(command.name)
+                    self._guild_specific_application_commands[command.guild_id][command.type.name].pop(command.name, None)
                 else:
-                    self._application_commands_by_type[command.type.name].pop(command.name)
+                    self._application_commands_by_type[command.type.name].pop(command.name, None)
 
     @property
     def application_commands(self):

@@ -331,7 +331,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return ch
 
     def _update_roles(self, data):
-        self._roles = utils.SnowflakeList(map(int, data['roles']))
+        self._roles = utils.SnowflakeList(map(int, data.get('roles', [])))
 
     def _update(self, data):
         # the nickname change is optional,
