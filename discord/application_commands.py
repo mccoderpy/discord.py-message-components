@@ -480,7 +480,7 @@ class ApplicationCommand:
 
 class SlashCommandOptionChoice:
     """
-    A class representing a choice for a :class:`SelectOption` or :class:`SubCommand`.
+    A class representing a choice for a :class:`SlashCommandOption` or to use in :meth:`AutocompleteInteraction.send_choices`
 
     Parameters
     -----------

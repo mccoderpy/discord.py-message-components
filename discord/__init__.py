@@ -21,7 +21,7 @@ try:
     with open('./version.txt') as fp:
         __version__ = fp.read()
     del fp
-except Exception:
+except FileNotFoundError:
     pass
 
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
