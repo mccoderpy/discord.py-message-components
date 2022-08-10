@@ -168,7 +168,7 @@ class Localizations:
                 raise
         except (KeyError, AttributeError):
             if (locale.value not in self.__slots__) if isinstance(locale, Locale) else (locale not in self.__slots__):
-                raise KeyError(f'Unknown locale "{locale}". See {api_docs}reference#locales for a list of locales.')
+                raise KeyError(f'Unknown locale "{locale}". See {api_docs}/reference#locales for a list of locales.')
             raise KeyError(f'There is no locale value set for {locale.name}.')
 
     def __setitem__(self, key: Union[Locale, str], value: str) -> None:
@@ -183,7 +183,7 @@ class Localizations:
     @classmethod
     def from_dict(cls, data: Dict[str, str]) -> Localizations:
         data = data or {}
-        return cls(**{str(try_enum(Locale, key)): value for key, value in data.items()})
+        return cls(**{try_enum(Locale, key).name: value for key, value in data.items()})
 
     def update(self, __m: 'Localizations') -> None:
         """Similar to :meth:`dict.update`"""
