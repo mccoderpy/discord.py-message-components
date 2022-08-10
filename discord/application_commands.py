@@ -183,7 +183,7 @@ class Localizations:
     @classmethod
     def from_dict(cls, data: Dict[str, str]) -> Localizations:
         data = data or {}
-        return cls(**{try_enum(Locale, key): value for key, value in data.items()})
+        return cls(**{str(try_enum(Locale, key)): value for key, value in data.items()})
 
     def update(self, __m: 'Localizations') -> None:
         """Similar to :meth:`dict.update`"""
