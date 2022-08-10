@@ -131,7 +131,8 @@ class Localizations:
 
     """
 
-    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__'])  # type: ignore
+    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__']
+                      )  # type: ignore
 
     def __init__(self, **localizations) -> None:
 
@@ -145,7 +146,8 @@ class Localizations:
                 self.__languages_dict__[Locale[locale].value] = localized_text
 
     def __repr__(self) -> str:
-        return '<Localizations: %s>' % (", ".join([Locale.try_value(locale) for locale in self.__languages_dict__]) if self.__languages_dict__ else 'None')
+        return '<Localizations: %s>' % (", ".join([Locale.try_value(locale) for locale in self.__languages_dict__]
+                                                  ) if self.__languages_dict__ else 'None')
 
     def __getitem__(self, item) -> Optional[str]:
         if isinstance(item, Locale):
@@ -216,14 +218,16 @@ class Localizations:
             try:
                 return self[target.preferred_locale.value]
             except KeyError as exc:
-                if exc.args and exc.args[0].startswith('U'):  # just the first letter because it's enough to identify wich one it is
+                if exc.args and exc.args[0].startswith('U'
+                                                       ):  # just the first letter because it's enough to identify wich one it is
                     pass
                 return_default = True
         elif hasattr(target, 'author_locale'):
             try:
                 return self[target.author_locale.value]
             except KeyError as exc:
-                if exc.args and exc.args[0].startswith('U'):  # just the first letter because it's enough to identify wich one it is
+                if exc.args and exc.args[0].startswith('U'
+                                                       ):  # just the first letter because it's enough to identify wich one it is
                     pass
                 return_default = True
         else:
@@ -248,6 +252,7 @@ class Localizations:
 
 class ApplicationCommand:
     """The base class for application commands"""
+
     def __init__(self, type: int, *args, **kwargs):
         self._type = type
         self.name = kwargs.get('name', '')
@@ -258,9 +263,12 @@ class ApplicationCommand:
         self.cog = kwargs.get('cog', None)
         dp = kwargs.get('default_permission', None)
         if dp is not None:
-            warnings.warn('default_permission is deprecated, use default_member_permissions and allow_dm instead.', stacklevel=3, category=DeprecationWarning)
+            warnings.warn('default_permission is deprecated, use default_member_permissions and allow_dm instead.',
+                          stacklevel=3, category=DeprecationWarning
+                          )
         dmp = kwargs.get('default_member_permissions', None)
-        self.default_member_permissions: Optional[Permissions] = (Permissions(int(dmp)) if dmp is not None else None) if not isinstance(dmp, Permissions) else dmp
+        self.default_member_permissions: Optional[Permissions] = (
+            Permissions(int(dmp)) if dmp is not None else None) if not isinstance(dmp, Permissions) else dmp
         self.disabled: bool = False
         self.allow_dm = kwargs.get('allow_dm', True)
         self.name_localizations: Localizations = kwargs.get('name_localizations', Localizations())
@@ -332,6 +340,7 @@ class ApplicationCommand:
                     if sorted(opt.get('channel_types', [])) != sorted(option.get('channel_types', [])):
                         return False
                 return True
+
             if hasattr(self, 'options') and self.options:
                 options = [o.to_dict() for o in self.options]
             elif hasattr(self, 'sub_commands') and self.sub_commands:
@@ -345,7 +354,8 @@ class ApplicationCommand:
                         and self.description_localizations.to_dict() == other.get('description_localizations', None)
                         and dmp == other.get('default_member_permissions', None)
                         and self.allow_dm == other.get('dm_permission', True)
-                        and check_options(options, other.get('options', [])))
+                        and check_options(options, other.get('options', []))
+                        )
         return False
 
     def __ne__(self, other) -> bool:
@@ -398,7 +408,8 @@ class ApplicationCommand:
             'name_localizations': self.name_localizations.to_dict(),
             'description': getattr(self, 'description', ''),
             'description_localizations': self.description_localizations.to_dict(),
-            'default_member_permissions': str(self.default_member_permissions.value) if self.default_member_permissions else None
+            'default_member_permissions': str(self.default_member_permissions.value
+                                              ) if self.default_member_permissions else None
         }
         if not self.guild_id:
             base['dm_permission'] = self.allow_dm
@@ -492,11 +503,15 @@ class SlashCommandOptionChoice:
 
         .. note::
             If this is left empty it takes the :attr:`~SlashCommandOption.name` as value.
-            
+
     name_localizations: Optional[:class:`Localizations`]
         Localized names for the choice.
     """
-    def __init__(self, name: Union[str, int, float], value: Union[str, int, float] = None, name_localizations: Optional[Localizations] = Localizations()):
+
+    def __init__(
+            self, name: Union[str, int, float], value: Union[str, int, float] = None,
+            name_localizations: Optional[Localizations] = Localizations()
+            ):
 
         if 100 < len(str(name)) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
@@ -517,9 +532,7 @@ class SlashCommandOptionChoice:
 
     @classmethod
     def from_dict(cls, data):
-        name_localizations = data.get('name_localizations', None)
-        if not name_localizations:
-            name_localizations = {}
+        name_localizations = data.pop('name_localizations', None) or {}
         return cls(name=data['name'], value=data['value'], name_localizations=Localizations(**name_localizations))
 
 
@@ -587,24 +600,27 @@ class SlashCommandOption:
         Whether conversion failures should be ignored and the value should be passed without conversion instead.
         Default ``False``
     """
-    def __init__(self,
-                 option_type: Union[OptionType, int, type],
-                 name: str,
-                 description: str,
-                 name_localizations: Optional[Localizations] = Localizations(),
-                 description_localizations: Optional[Localizations] = Localizations(),
-                 required: bool = True,
-                 choices: Optional[List[Union[SlashCommandOptionChoice, str, int, float]]] = [],
-                 autocomplete: bool = False,
-                 min_value: Optional[Union[int, float]] = None,
-                 max_value: Optional[Union[int, float]] = None,
-                 min_length: Optional[int] = None,
-                 max_length: Optional[int] = None,
-                 channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
-                 default: Optional[Any] = None,
-                 converter: Optional[Converter] = None,
-                 ignore_conversion_failures: Optional[bool] = False,
-                 **kwargs) -> None:
+
+    def __init__(
+            self,
+            option_type: Union[OptionType, int, type],
+            name: str,
+            description: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description_localizations: Optional[Localizations] = Localizations(),
+            required: bool = True,
+            choices: Optional[List[Union[SlashCommandOptionChoice, str, int, float]]] = [],
+            autocomplete: bool = False,
+            min_value: Optional[Union[int, float]] = None,
+            max_value: Optional[Union[int, float]] = None,
+            min_length: Optional[int] = None,
+            max_length: Optional[int] = None,
+            channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
+            default: Optional[Any] = None,
+            converter: Optional[Converter] = None,
+            ignore_conversion_failures: Optional[bool] = False,
+            **kwargs
+            ) -> None:
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
             if issubclass(option_type, Converter) or converter is Greedy:
@@ -649,7 +665,7 @@ class SlashCommandOption:
         self.ignore_conversion_failures: bool = ignore_conversion_failures
 
     def __repr__(self) -> str:
-        return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>'\
+        return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>' \
                % (self.type,
                   self.name,
                   self.description,
@@ -700,7 +716,8 @@ class SlashCommandOption:
                 raise TypeError('Options with autocomplete could not have choices.')
         if len(value) > 25:
             raise ValueError('The maximum of choices per Option is 25, got %s.'
-                             'It is recommended to use autocomplete if you have more than 25 options.' % len(value))
+                             'It is recommended to use autocomplete if you have more than 25 options.' % len(value)
+                             )
         self._choices = value
 
     @property
@@ -817,14 +834,16 @@ class SlashCommandOption:
 
 
 class SubCommand(SlashCommandOption):
-    def __init__(self,
-                 parent,
-                 name: str,
-                 description: str,
-                 name_localizations: Optional[Localizations] = Localizations(),
-                 description_localizations: Optional[Localizations] = Localizations(),
-                 options: List[SlashCommandOption] = [],
-                 **kwargs):
+    def __init__(
+            self,
+            parent,
+            name: str,
+            description: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description_localizations: Optional[Localizations] = Localizations(),
+            options: List[SlashCommandOption] = [],
+            **kwargs
+            ):
         self.parent: Union[SubCommandGroup, SubCommand] = parent
         if not re.match('^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
@@ -834,7 +853,9 @@ class SubCommand(SlashCommandOption):
             )
         self.name = name
         if 100 < len(description) < 1:
-            raise ValueError('The description of the Sub-Command must be 1-100 characters long, got %s.' % len(description))
+            raise ValueError(
+                'The description of the Sub-Command must be 1-100 characters long, got %s.' % len(description)
+                )
         if len(options) > 25:
             raise ValueError('The maximum of options per Sub-Command is 25, got %s.' % len(options))
         self.options = options
@@ -845,7 +866,8 @@ class SubCommand(SlashCommandOption):
         self.autocomplete_func = None
         super().__init__(OptionType.sub_command, name=name, description=description,
                          name_localizations=name_localizations, description_localizations=description_localizations,
-                         __options=options)
+                         __options=options
+                         )
 
     def __repr__(self):
         return '<SubCommand parent=%s, name=%s, description=%s, options=%s>' \
@@ -910,7 +932,9 @@ class SubCommand(SlashCommandOption):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
-            warnings.warn(f'Sub-command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(
+                f'Sub-command {self.name} of {self.parent} has options with autocomplete enabled but no autocomplete function.'
+                )
             return
 
         args = (interaction, *args)
@@ -949,6 +973,7 @@ class SubCommand(SlashCommandOption):
 
 class GuildOnlySubCommand(SubCommand):
     """Represents a :class:`SubCommand` for multiple guilds with the same function."""
+
     def __init__(self, *args, guild_ids: List[int] = None, **kwargs):
         parent = kwargs.get('parent', None)
         self.guild_ids = guild_ids or parent.guild_ids if parent else []
@@ -956,7 +981,7 @@ class GuildOnlySubCommand(SubCommand):
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
-        return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>'\
+        return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>' \
                % (self.parent.name,
                   self.name,
                   self.description,
@@ -1017,16 +1042,19 @@ class SlashCommand(ApplicationCommand):
     **kwargs:
         Keyword arguments used for internal handling.
     """
-    def __init__(self,
-                 name: str,
-                 description: str,
-                 name_localizations: Optional[Localizations] = Localizations(),
-                 description_localizations: Optional[Localizations] = Localizations(),
-                 default_member_permissions: Optional[Union[Permissions, int]] = None,
-                 allow_dm: Optional[bool] = True,
-                 options: List[SlashCommandOption] = [],
-                 connector: Dict[str, str] = {},
-                 **kwargs):
+
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description_localizations: Optional[Localizations] = Localizations(),
+            default_member_permissions: Optional[Union[Permissions, int]] = None,
+            allow_dm: Optional[bool] = True,
+            options: List[SlashCommandOption] = [],
+            connector: Dict[str, str] = {},
+            **kwargs
+            ):
         self.autocomplete_func = None
         super().__init__(1,
                          name=name,
@@ -1037,7 +1065,8 @@ class SlashCommand(ApplicationCommand):
                          allow_dm=allow_dm,
                          options=options,
                          connector=connector,
-                         **kwargs)
+                         **kwargs
+                         )
         if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
                 r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
@@ -1051,7 +1080,8 @@ class SlashCommand(ApplicationCommand):
         if len(options) > 25:
             raise ValueError('The maximum of options per command is 25, got %s' % len(options))
         self.connector = connector
-        self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in (OptionType.sub_command, OptionType.sub_command_group)}
+        self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in (
+        OptionType.sub_command, OptionType.sub_command_group)}
         if not self._sub_commands:
             self._options = {option.name: option for option in options}
         for sc in self.sub_commands:
@@ -1121,7 +1151,9 @@ class SlashCommand(ApplicationCommand):
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if self.autocomplete_func is None:
-            warnings.warn(f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.')
+            warnings.warn(
+                f'Application Command {self.name} has options with autocomplete enabled but no autocomplete function.'
+                )
             return
         args = (interaction, *args)
 
@@ -1210,7 +1242,8 @@ class SlashCommand(ApplicationCommand):
                     options = options[0].options
                 to_invoke = sub_command
             connector = to_invoke.connector
-            resolved = getattr(interaction.data, 'resolved', None)  # speedup attribute access | None is when there are no options
+            resolved = getattr(interaction.data, 'resolved', None
+                               )  # speedup attribute access | None is when there are no options
             for option in options:
                 # as we can't use - in argument names replace this by default,
                 # so you don't have to specify it in the connector for some-option -> some_option
@@ -1231,17 +1264,20 @@ class SlashCommand(ApplicationCommand):
                 else:
                     _id = int(option.value)
                     if option.type == OptionType.user:
-                        params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[_id] or _id
+                        params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[
+                            _id] or _id
                     elif option.type == OptionType.role:
                         params[name] = resolved.roles[_id] or _id
                     elif option.type == OptionType.channel:
-                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or interaction._state.get_channel(_id) \
+                        params[name] = interaction.guild.get_channel(_id) or resolved.channels[
+                            _id] or interaction._state.get_channel(_id) \
                                        or PartialMessageable(interaction._state, _id, guild_id=interaction.guild)
                     elif option.type == OptionType.mentionable:
                         try:
                             params[name] = resolved.roles[_id]
                         except KeyError:
-                            params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[_id] or _id
+                            params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[
+                                _id] or _id
                     elif option.type == OptionType.attachment:
                         params[name] = resolved.attachments[_id] or _id
 
@@ -1378,7 +1414,7 @@ class GuildOnlySlashCommand(SlashCommand):
         self._commands = kwargs.get('commands', [])
 
     def __repr__(self):
-        return '<GuildOnlySlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_ids=%s>'\
+        return '<GuildOnlySlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_ids=%s>' \
                % (self.name,
                   self.description,
                   self.default_member_permissions,
@@ -1430,19 +1466,25 @@ class UserCommand(ApplicationCommand):
         Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
 
     """
-    def __init__(self,
-                 name: str,
-                 name_localizations: Optional[Localizations] = None,
-                 default_member_permissions: Optional[Union[Permissions, int]] = None,
-                 allow_dm: Optional[bool] = True,
-                 **kwargs):
+
+    def __init__(
+            self,
+            name: str,
+            name_localizations: Optional[Localizations] = None,
+            default_member_permissions: Optional[Union[Permissions, int]] = None,
+            allow_dm: Optional[bool] = True,
+            **kwargs
+            ):
         if 32 < len(name) < 1:
             raise ValueError('The name of the User-Command has to be 1-32 characters long, got %s.' % len(name))
-        super().__init__(2, name=name, name_localizations=name_localizations, default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs)
-    
+        super().__init__(2, name=name, name_localizations=name_localizations,
+                         default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs
+                         )
+
     @classmethod
     def from_dict(cls, state, data):
-        dmp = data.get('default_member_permissions', None)
+        dmp = data.pop('default_member_permissions', None)
+        data.pop('type')
         return cls(
             name=data.pop('name'),
             name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
@@ -1475,22 +1517,28 @@ class MessageCommand(ApplicationCommand):
         Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
         By default, commands are visible.
     """
-    def __init__(self,
-                 name: str,
-                 name_localizations: Optional[Localizations] = Localizations(),
-                 default_member_permissions: Optional[Union[Permissions, int]] = None,
-                 allow_dm: Optional[bool] = True,
-                 **kwargs):
+
+    def __init__(
+            self,
+            name: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            default_member_permissions: Optional[Union[Permissions, int]] = None,
+            allow_dm: Optional[bool] = True,
+            **kwargs
+            ):
         if 32 < len(name) < 1:
             raise ValueError('The name of the Message-Command has to be 1-32 characters long, got %s.' % len(name))
-        super().__init__(3, name=name, name_localizations=name_localizations, default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs)
+        super().__init__(3, name=name, name_localizations=name_localizations,
+                         default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs
+                         )
 
     @classmethod
     def from_dict(cls, state, data):
-        dmp = data.get('default_member_permissions', None)
+        dmp = data.pop('default_member_permissions', None)
+        data.pop('type')
         return cls(
             name=data.pop('name'),
-            name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
+            name_localizations=Localizations.from_dict(data.pop('name_localizations', {})),
             default_member_permissions=Permissions(int(dmp)) if dmp else None,
             allow_dm=data.get('dm_permission', True),
             state=state,
@@ -1502,14 +1550,16 @@ class MessageCommand(ApplicationCommand):
 
 
 class SubCommandGroup(SlashCommandOption):
-    def __init__(self,
-                 parent: Union[SlashCommand, GuildOnlySlashCommand],
-                 name: str,
-                 description: str,
-                 name_localizations: Optional[Localizations] = Localizations(),
-                 description_localizations: Optional[Localizations] = Localizations(),
-                 commands: List[SubCommand] = [],
-                 **kwargs):
+    def __init__(
+            self,
+            parent: Union[SlashCommand, GuildOnlySlashCommand],
+            name: str,
+            description: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description_localizations: Optional[Localizations] = Localizations(),
+            commands: List[SubCommand] = [],
+            **kwargs
+            ):
         self.cog = kwargs.get('cog', None)
         if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
             raise ValueError(
@@ -1519,7 +1569,9 @@ class SubCommandGroup(SlashCommandOption):
             )
         self.name = name
         if 100 < len(description) < 1:
-            raise ValueError('The description of the Sub-Command-Group must be 1-100 characters long, got %s.' % len(description))
+            raise ValueError(
+                'The description of the Sub-Command-Group must be 1-100 characters long, got %s.' % len(description)
+                )
         if 25 < len(commands) < 1:
             raise ValueError('A Sub-Command-Group needs 1-25 sub-sub_commands, got %s.' % len(commands))
         self.guild_ids = kwargs.get('guild_ids', parent.guild_ids)
@@ -1527,7 +1579,8 @@ class SubCommandGroup(SlashCommandOption):
         self.func = kwargs.get('func', None)
         super().__init__(OptionType.sub_command_group, name=name, name_localizations=name_localizations,
                          description=description, description_localizations=description_localizations,
-                         __options=commands)
+                         __options=commands
+                         )
         self._sub_commands = {command.name: command for command in commands}
         for sub_command in self.sub_commands:
             sub_command.parent = self
@@ -1580,7 +1633,7 @@ class SubCommandGroup(SlashCommandOption):
 
 
 class GuildOnlySubCommandGroup(SubCommandGroup):
-    def __init__(self,  *args, guild_ids: List[int] = None, **kwargs):
+    def __init__(self, *args, guild_ids: List[int] = None, **kwargs):
         super().__init__(*args, **kwargs, guild_ids=guild_ids)
 
     def __repr__(self):
@@ -1598,7 +1651,8 @@ def generate_options(
         descriptions: dict = {},
         descriptions_localizations: Dict[str, Localizations] = {},
         connector: dict = {},
-        is_cog: bool = False):
+        is_cog: bool = False
+):
     """
     This function is used to create the options for a :class:`SlashCommand`/:class:`SubCommand`
     out of the parameters of a function if no options are provided in the decorator.
@@ -1639,13 +1693,16 @@ def generate_options(
     if (not parameters) or is_cog and len(parameters) < 2:
         raise TypeError(f'The {"method" if is_cog else "function"} for the slash-command must take at least '
                         f'{"two parameters" if is_cog else "one parameter"}; {"self and " if is_cog else ""} a parameter'
-                        f'that takes the Interaction object.')
+                        f'that takes the Interaction object.'
+                        )
     parameters = parameters.__iter__()
     if next(parameters).name in ('self', 'cls'):
         next(parameters)
 
     for param in parameters:
-        description_localizations = descriptions_localizations.get(connector.get(param.name, param.name), Localizations())
+        description_localizations = descriptions_localizations.get(connector.get(param.name, param.name),
+                                                                   Localizations()
+                                                                   )
         description = descriptions.get(param.name, descriptions.get(connector.get(param.name, ''), 'No Description'))
         name = connector.get(param.name, param.name)
         choices = []
@@ -1676,7 +1733,8 @@ def generate_options(
                                    description=description,
                                    description_localizations=description_localizations,
                                    required=required,
-                                   default=default)
+                                   default=default
+                                   )
             )
             continue
         if annotation is Greedy:
@@ -1738,7 +1796,8 @@ def generate_options(
                                        channel_types=channel_types,
                                        description=description,
                                        description_localizations=description_localizations,
-                                       default=default)
+                                       default=default
+                                       )
                 )
                 continue
             elif all([tp.__name__ in ['MemberConverter', 'UserConverter', 'RoleConverter'] for tp in union]):
@@ -1754,7 +1813,8 @@ def generate_options(
                                        required=required,
                                        choices=choices,
                                        default=default,
-                                       converter=converter)
+                                       converter=converter
+                                       )
                 )
                 continue
         elif getattr(annotation, '__origin__', None) is Literal:
@@ -1778,7 +1838,8 @@ def generate_options(
                 )
             if all([isinstance(c, type(values[0])) for c in values]):
                 # Find out what type of option it is; string, integer or number. Default to string.
-                option_type: Union[str, int, float] = type(values[0]) if isinstance(values[0], (str, int, float)) else str
+                option_type: Union[str, int, float] = type(values[0]) if isinstance(values[0], (str, int, float)
+                                                                                    ) else str
             else:
                 option_type = str
             for arg in args:
@@ -1797,7 +1858,8 @@ def generate_options(
                     description_localizations=description_localizations,
                     requiered=required,
                     choices=choices,
-                    default=default)
+                    default=default
+                )
             )
             continue
         elif isinstance(annotation, dict):
@@ -1817,7 +1879,8 @@ def generate_options(
                                    description_localizations=description_localizations,
                                    requiered=required,
                                    choices=choices,
-                                   default=default)
+                                   default=default
+                                   )
             )
             continue
         _type, channel_types = OptionType.from_type(annotation) or (OptionType.string, None)
@@ -1830,6 +1893,7 @@ def generate_options(
                                choices=choices,
                                channel_types=channel_types,
                                default=default,
-                               converter=converter)
+                               converter=converter
+                               )
         )
     return options
