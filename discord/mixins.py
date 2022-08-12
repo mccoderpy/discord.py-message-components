@@ -36,6 +36,7 @@ class EqualityComparable:
             return other.id != self.id
         return True
 
+
 class Hashable(EqualityComparable):
     __slots__ = ()
 

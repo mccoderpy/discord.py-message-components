@@ -750,7 +750,7 @@ class Client:
             except ReconnectWebSocket as e:
                 log.info('Got a request to %s the websocket.', e.op)
                 self.dispatch('disconnect')
-                ws_params.update(sequence=self.ws.sequence, resume=e.resume, session=self.ws.session_id)
+                ws_params.update(sequence=self.ws.sequence, resume=e.resume, session=self.ws.session_id, resume_gateway_url=self.ws.resume_gateway_url if e.resume else None)
                 continue
             except (OSError,
                     HTTPException,
@@ -772,7 +772,7 @@ class Client:
 
                 # If we get connection reset by peer then try to RESUME
                 if isinstance(exc, OSError) and exc.errno in (54, 10054):
-                    ws_params.update(sequence=self.ws.sequence, initial=False, resume=True, session=self.ws.session_id)
+                    ws_params.update(sequence=self.ws.sequence, initial=False, resume=True, session=self.ws.session_id, resume_gateway_url=self.ws.resume_gateway_url)
                     continue
 
                 # We should only get this when an unhandled close code happens,
@@ -796,7 +796,7 @@ class Client:
                 # Always try to RESUME the connection
                 # If the connection is not RESUME-able then the gateway will invalidate the _session.
                 # This is apparently what the official Discord client does.
-                ws_params.update(sequence=self.ws.sequence, resume=True, session=self.ws.session_id)
+                ws_params.update(sequence=self.ws.sequence, resume=True, session=self.ws.session_id, resume_gateway_url=self.ws.resume_gateway_url)
 
     async def close(self):
         """|coro|

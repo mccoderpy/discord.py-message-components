@@ -504,15 +504,12 @@ class ConnectionState:
         self.user = user = ClientUser(state=self, data=data['user'])
         self._users[user.id] = user
 
-
-
         for guild_data in data['guilds']:
             self._add_guild_from_data(guild_data)
 
         for pm in data.get('private_channels', []):
             factory, _ = _channel_factory(pm['type'])
             self._add_private_channel(factory(me=user, data=pm, state=self))
-
 
         if self.application_id is None:
             try:
