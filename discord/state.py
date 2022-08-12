@@ -423,7 +423,7 @@ class ConnectionState:
         else:
             channel = guild and guild.get_channel(channel_id)
 
-        return channel or Object(id=channel_id), guild
+        return channel or PartialMessageable(self, channel_id, guild_id=guild.id if guild else None), guild
 
     async def chunker(self, guild_id, query='', limit=0, presences=False, *, nonce=None):
         ws = self._get_websocket(guild_id) # This is ignored upstream
@@ -1322,6 +1322,8 @@ class ConnectionState:
             channel = guild.get_channel(id)
             if channel is not None:
                 return channel
+
+        # We assume it is an uncached privat channel here, this may be false
 
     def create_message(self, *, channel, data):
         return Message(state=self, channel=channel, data=data)
