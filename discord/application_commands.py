@@ -442,7 +442,7 @@ class ApplicationCommand:
 
     @property
     def guild_ids(self) -> Optional[List[int]]:
-        return self._guild_ids
+        return getattr(self, '_guild_ids', self.guild_id)
 
     @property
     def application_id(self) -> int:
@@ -1199,7 +1199,7 @@ class SlashCommand(ApplicationCommand):
         self._state_ = state
         for opt in data.get('options', []):
             opt['parent'] = self
-        options = [SlashCommandOption.from_dict(opt) for opt in data.pop('options', [])]
+        options = [SlashCommandOption.from_dict({'parent': self, **opt}) for opt in data.pop('options', [])]
         self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in
                               (OptionType.sub_command, OptionType.sub_command_group)}
         if not self._sub_commands:
@@ -1622,13 +1622,14 @@ class SubCommandGroup(SlashCommandOption):
 
     @classmethod
     def from_dict(cls, data):
+        parent = data.get('parent', None)
         return cls(
-            parent=data.get('parent', None),
+            parent=parent,
             name=data['name'],
             name_localizations=Localizations.from_dict(data.get('name_localizations', {})),
             description=data.get('description', 'No description'),
             description_localizations=Localizations.from_dict(data.get('description_localizations', {})),
-            options=[SubCommand.from_dict(c) for c in data.get('options', [])]
+            options=[SubCommand.from_dict({'parent': parent, **c}) for c in data.get('options', [])]
         )
 
 
