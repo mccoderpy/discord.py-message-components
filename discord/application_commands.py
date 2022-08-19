@@ -413,7 +413,7 @@ class ApplicationCommand:
         }
         if not self.guild_id:
             base['dm_permission'] = self.allow_dm
-        if hasattr(self, 'options') and self.options:
+        if hasattr(self, 'options'):
             base['options'] = [o.to_dict() for o in self.options]
         elif hasattr(self, 'sub_commands') and self.sub_commands:
             base['options'] = [sc.to_dict() for sc in self.sub_commands]
