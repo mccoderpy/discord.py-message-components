@@ -23,7 +23,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
+import aiohttp
 import asyncio
 import copy
 import inspect
@@ -33,15 +35,22 @@ import sys
 import re
 import traceback
 import warnings
-from typing import List, Union, Optional, Dict, Any, Awaitable, AnyStr, Pattern, Callable, TYPE_CHECKING, overload
 
-import discord
+from typing import (
+    List,
+    Union,
+    Optional,
+    Dict,
+    Any,
+    Awaitable,
+    AnyStr,
+    Pattern,
+    Callable,
+    TYPE_CHECKING
+)
 
-if TYPE_CHECKING:
-    from .permissions import Permissions
-    from .message import Message
 
-import aiohttp
+
 from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
@@ -67,6 +76,10 @@ from .appinfo import AppInfo
 from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
     GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType, \
     Localizations
+
+if TYPE_CHECKING:
+    from .permissions import Permissions
+    from .message import Message
 
 log = logging.getLogger(__name__)
 
@@ -966,7 +979,7 @@ class Client:
         return list(self._connection._users.values())
 
     def get_message(self, id: int) -> Optional[Message]:
-        """Returns a :class:`Message` with the given ID if it exists in the cache, else :obj:`None`"""
+        """Returns a :class:`~discord.Message` with the given ID if it exists in the cache, else :obj:`None`"""
         return self._connection._get_message(id)
 
     def get_channel(self, id):
