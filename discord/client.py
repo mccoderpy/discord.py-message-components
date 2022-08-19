@@ -39,6 +39,7 @@ import discord
 
 if TYPE_CHECKING:
     from .permissions import Permissions
+    from .message import Message
 
 import aiohttp
 from .sticker import StickerPack
@@ -963,6 +964,10 @@ class Client:
     def users(self):
         """List[:class:`~discord.User`]: Returns a list of all the users the bot can see."""
         return list(self._connection._users.values())
+
+    def get_message(self, id: int) -> Optional[Message]:
+        """Returns a :class:`Message` with the given ID if it exists in the cache, else :obj:`None`"""
+        return self._connection._get_message(id)
 
     def get_channel(self, id):
         """Returns a channel with the given ID.
