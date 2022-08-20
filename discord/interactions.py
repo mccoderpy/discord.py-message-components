@@ -33,6 +33,7 @@ from typing import (
     Any,
     TYPE_CHECKING
 )
+from typing_extensions import Literal
 
 import logging
 
@@ -48,20 +49,28 @@ from .reaction import Reaction
 from .flags import MessageFlags
 from .permissions import Permissions
 from .mentions import AllowedMentions
-from typing_extensions import Literal
+
 from .message import Message, Attachment
-from .application_commands import OptionType, SlashCommandOptionChoice
+
 
 from .components import Button, SelectMenu, ActionRow, Modal, TextInput
-from .channel import  _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
+from .channel import _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
 from .errors import NotFound, InvalidArgument, AlreadyResponded, UnknownInteraction
-from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType, \
+from .enums import (
+    InteractionType,
+    ApplicationCommandType,
+    ComponentType,
+    InteractionCallbackType,
+    Locale,
+    MessageType,
+    OptionType,
     try_enum
+)
 
 if TYPE_CHECKING:
     import datetime
     from .state import ConnectionState
-    from .application_commands import SlashCommand, MessageCommand, UserCommand
+    from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
 
 
 log = logging.getLogger(__name__)
