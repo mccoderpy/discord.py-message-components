@@ -318,7 +318,7 @@ class ConnectionState:
             self._events[event_id] = event = GuildScheduledEvent(state=self, guild=guild, data=data)
         try:
             guild._add_event(event)
-        except AttributeError: # If it is a PartialInviteGuild
+        except AttributeError:  # If it is a PartialInviteGuild
             pass
         return event
 
@@ -326,7 +326,7 @@ class ConnectionState:
     def guilds(self):
         return list(self._guilds.values())
 
-    def _get_guild(self, guild_id):
+    def _get_guild(self, guild_id) -> Guild:
         return self._guilds.get(guild_id)
 
     def _add_guild(self, guild):
@@ -337,6 +337,9 @@ class ConnectionState:
 
         for emoji in guild.emojis:
             self._emojis.pop(emoji.id, None)
+
+        for event in guild.scheduled_events:
+            self._events.pop(event.id, None)
 
         del guild
 
@@ -673,11 +676,15 @@ class ConnectionState:
 
     def parse_thread_list_sync(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        old_guild = copy.copy(guild.thread_channels)
+        old_guild = copy.copy(guild)
         channel_ids = [int(c) for c in data.get('channel_ids', [])]
         for t in data['threads']:
-            thread = ThreadChannel(state=self, guild=guild, data=t)
-            guild._add_thread(thread)
+            _, factory = _channel_factory(t['type'])
+            thread = factory(state=self, guild=guild, data=t)
+            if isinstance(thread.parent_channel, ForumChannel):
+                guild._add_post(thread)
+            else:
+                guild._add_thread(thread)
             try:
                 channel_ids.remove(thread.parent_id)
             except ValueError:
