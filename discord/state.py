@@ -343,6 +343,9 @@ class ConnectionState:
         for emoji in guild.emojis:
             self._emojis.pop(emoji.id, None)
 
+        for event in guild.scheduled_events:
+            self._events.pop(event.id, None)
+
         del guild
 
         # Much like clear(), if we have a massive deallocation
@@ -660,10 +663,11 @@ class ConnectionState:
 
     def parse_thread_list_sync(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        old_guild = copy.copy(guild.thread_channels)
+        old_guild = copy.copy(guild)
         channel_ids = [int(c) for c in data.get('channel_ids', [])]
         for t in data['threads']:
-            thread = ThreadChannel(state=self, guild=guild, data=t)
+            _, factory = _channel_factory(t['type'])
+            thread = factory(state=self, guild=guild, data=t)
             guild._add_thread(thread)
             try:
                 channel_ids.remove(thread.parent_id)
