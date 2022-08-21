@@ -564,6 +564,13 @@ class HTTPClient:
         }
         return self.request(r, json=params)
 
+    def create_post(self, channel_id, *, message, file=None, files=None, embed=None, tts=False, nonce=None,
+                    pinned=False, timestamp=None, avatar_url=None, username=None, reason=None):
+        r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
+        # TODO: implement this
+        params = {}
+        return self.request(r, json=params, reason=reason)
+
     # Member management
     def kick(self, user_id, guild_id, reason=None):
         r = Route('DELETE', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)

@@ -242,7 +242,6 @@ class Guild(Hashable):
         self._channels.pop(post.id, None)
         post.parent_channel._remove_post(post)
 
-
     def _add_event(self, event):
         self._events[event.id] = event
 

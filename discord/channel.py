@@ -1938,11 +1938,33 @@ class ForumPost(ThreadChannel):
         super().__init__(state=self._state, guild=self.guild, data=data)
 
     def get_tags(self) -> List[ForumTag]:
-        # TODO: implement this to get the tags from the parent and return them
-        return self._applied_tags
+        """List[:class:`ForumTag`]: Returns a list of tags applied to this post."""
+        tags = []
+        for tag_id in self._applied_tags:
+            tags.append(self.parent_channel.get_tag(tag_id))
+        return tags
 
 
 class ForumTag(Hashable):
+    """
+    Represents a tag in a forum.
+
+    Attributes
+    -----------
+    id: :class:`int`
+        The ID of the tag
+    guild: :class:`Guild`
+        The guild the tag belongs to.
+    name: :class:`str`
+        The name of the tag.
+    emoji_id: :class:`int`
+        The ID of the custom-emoji the tag uses if any.
+    emoji_name: :class:`str`
+        The default-emoji the tag uses if any.
+    moderated: :class:`bool`
+        Whether only moderators can apply this tag to a post.
+    """
+
     def __init__(self, *, state, guild, data):
         self._state = state
         self.guild = guild
@@ -1967,7 +1989,7 @@ class ForumTag(Hashable):
 
 
 class ForumChannel(abc.GuildChannel, Hashable):
-    """Represents a Discord guild forum channel.
+    """Represents a forum channel.
 
         .. container:: operations
 
@@ -2017,7 +2039,6 @@ class ForumChannel(abc.GuildChannel, Hashable):
                  '_type', 'last_message_id', '_threads', 'default_auto_archive_duration',
                  '_posts', '_tags', 'last_post_id')
 
-
     def __init__(self, *, state, guild, data):
         self._state = state
         self.id = int(data['id'])
@@ -2065,7 +2086,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     @property
     def type(self) -> ChannelType:
-        """:class:`ChannelType`: The channel's Discord type."""
+        """:class:`ChannelType`: The channel's type."""
         return try_enum(ChannelType, self._type)
 
     @staticmethod
@@ -2082,11 +2103,13 @@ class ForumChannel(abc.GuildChannel, Hashable):
     def _remove_post(self, post: ForumPost) -> Optional[ForumPost]:
         return self._posts.pop(post.id, None)
 
-    def get_post(self, post_id: int) -> Optional[ForumPost]:
-        return self._posts.get(int(post_id), None)
+    def get_post(self, id: int) -> Optional[ForumPost]:
+        """Optional[:class:`ForumPost`]: Returns a post in the forum with the given ID. or None when not found."""
+        return self._posts.get(int(id), None)
 
     @property
     def posts(self) -> List[ForumPost]:
+        """List[:class:`ForumPost`]: A list of all posts in the forum."""
         return list(self._posts.values())
 
     def _add_tag(self, tag: ForumTag) -> None:
@@ -2096,10 +2119,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return self._tags.pop(tag.id, None)
 
     def get_tag(self, tag_id: int) -> Optional[ForumTag]:
+        """Optional[:class:`ForumTag`]: Returns a tag with the given ID in the forum, or :obj:`None when not found."""
         return self._tags.get(tag_id, None)
 
     @property
     def available_tags(self) -> List[ForumTag]:
+        """List[:class:`ForumTag`]: A list of all tags available in the forum."""
         return list(self._tags.values())
 
     @utils.copy_doc(abc.GuildChannel.permissions_for)
@@ -2208,9 +2233,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The webhooks for this channel.
         """
 
-
+        from .webhook import Webhook
         data = await self._state.http.channel_webhooks(self.id)
-        return [discord.Webhook.from_state(d, state=self._state) for d in data]
+        return [Webhook.from_state(d, state=self._state) for d in data]
 
     async def create_webhook(self, *, name, avatar=None, reason=None):
         """|coro|
@@ -2218,9 +2243,6 @@ class ForumChannel(abc.GuildChannel, Hashable):
         Creates a webhook for this channel.
 
         Requires :attr:`~.Permissions.manage_webhooks` permissions.
-
-        .. versionchanged:: 1.1
-            Added the ``reason`` keyword-only parameter.
 
         Parameters
         -------------
@@ -2252,19 +2274,22 @@ class ForumChannel(abc.GuildChannel, Hashable):
         data = await self._state.http.create_webhook(self.id, name=str(name), avatar=avatar, reason=reason)
         return Webhook.from_state(data, state=self._state)
 
-    async def create_post(self,
-                            name: str,
-                            content: Any = None,
-                            embed: Optional[Embed] = None,
-                            embeds: Optional[List[Embed]] = None,
-                            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
-                            file: Optional[File] = None,
-                            files: Optional[List[File]] = None,
-                            stickers: Optional[List[GuildSticker]] = None,
-                            allowed_mentions: Optional[AllowedMentions] = None,
-                            supress: bool = False,
-                            auto_archive_duration: AutoArchiveDuration = None,
-                            reason: str = None) -> ForumPost:
+    async def create_post(
+            self,
+            name: str,
+            content: Any = None,
+            embed: Optional[Embed] = None,
+            embeds: Optional[List[Embed]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+            file: Optional[File] = None,
+            files: Optional[List[File]] = None,
+            stickers: Optional[List[GuildSticker]] = None,
+            allowed_mentions: Optional[AllowedMentions] = None,
+            supress: bool = False,
+            auto_archive_duration: Optional[AutoArchiveDuration] = None,
+            slowmode_delay: int = 0,
+            reason: Optional[str] = None
+    ) -> ForumPost:
         """|coro|
 
         Creates a new post in this forum.
@@ -2272,7 +2297,34 @@ class ForumChannel(abc.GuildChannel, Hashable):
         You must have the :attr:`~Permissions.create_posts` permission to
         use this.
 
-
+        Parameters
+        -----------
+        name: :class:`str`
+            The name of the post.
+        content: :class:`str`
+            The content of the post starter-message.
+        embed: Optional[:class:`Embed`]
+            A embed of the post starter-message.
+        embeds: List[:class:`Embed`]
+            A list of up to 10 embeds to include in the post starter-message.
+        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
+            A list of components to include in the post starter-message.
+        file: Optional[class:`File`]
+            A file to include in the post starter-message.
+        files: List[:class:`File`]
+            A list of files to include in the post starter-message.
+        stickers: List[:class:`GuildSticker`]
+            A list of up to 3 stickers to include in the post starter-message.
+        allowed_mentions: Optional[:class:`AllowedMentions`]
+            The allowed mentions for the post.
+        supress: Optional[:class:`bool`]
+            Whether to supress embeds in the thread starter-message.
+        auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
+            The duration after the post will be archived automatically when inactive.
+        slowmode_delay: Optional[:class:`int`]
+            The amount of seconds a user has to wait before sending another message (0-21600)
+        reason: Optional[:class:`str`]
+            The reason for creating this post. Shows up in the audit logs.
         """
 
         state = self._state
@@ -2327,20 +2379,22 @@ class ForumChannel(abc.GuildChannel, Hashable):
         }
 
         if len(name) > 100 or len(name) < 1:
-            raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
+            raise AttributeError('The name of the post must bee between 1-100 characters; got %s' % len(name))
         aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration,
                                                                                              auto_archive_duration)).value
         _type = ChannelType.public_thread
-        data = await self._state.http.create_post(self.id, name=name, message = message, auto_archive_duration=aad,
-                                                    reason=reason)
+        data = await self._state.http.create_post(
+            self.id,
+            name=name,
+            message=message,
+            auto_archive_duration=aad,
+            rate_limit_per_user=slowmode_delay,
+            reason=reason
+        )
         post = ForumPost(state=self._state, guild=self.guild, data=data)
-
-        self._posts[post.id] = post
+        self._add_post(post)
         # TODO: wait for ws event
         return post
-
-    def _remove_thread(self, thread: ThreadChannel) -> None:
-        self._posts.pop(thread.id, None)
 
 
 class PartialMessageable(abc.Messageable, Hashable):
@@ -2432,6 +2486,7 @@ class PartialMessageable(abc.Messageable, Hashable):
 
         return PartialMessage(channel=self, id=message_id)
 
+
 def _channel_factory(channel_type):
     value = try_enum(ChannelType, channel_type)
     if value is ChannelType.text:
@@ -2456,6 +2511,7 @@ def _channel_factory(channel_type):
         return ForumChannel, value
     else:
         return None, value
+
 
 def _check_channel_type(obj, types) -> bool:
     """Just something to check channel instances without circular imports."""
