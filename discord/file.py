@@ -60,7 +60,7 @@ class File:
         The filename to display when uploading to Discord.
         If this is not given then it defaults to ``fp.name`` or if ``fp`` is
         a string then the ``filename`` will default to the string given.
-    spoiler: :class:`bool`
+    spoiler: Optional[:class:`bool`]
         Whether the attachment is a spoiler.
     """
 
