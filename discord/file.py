@@ -62,6 +62,8 @@ class File:
         a string then the ``filename`` will default to the string given.
     spoiler: Optional[:class:`bool`]
         Whether the attachment is a spoiler.
+    description: Optional[:class:`str`:]
+        The file description can be set to attached Images to show a alternative Text.
     """
 
     __slots__ = ('fp', 'filename', 'description', 'spoiler', '_original_pos', '_owner', '_closer')
