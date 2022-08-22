@@ -60,10 +60,10 @@ class File:
         The filename to display when uploading to Discord.
         If this is not given then it defaults to ``fp.name`` or if ``fp`` is
         a string then the ``filename`` will default to the string given.
-    spoiler: Optional[:class:`bool`]
+    spoiler: :class:`bool`
         Whether the attachment is a spoiler.
     description: Optional[:class:`str`:]
-        The file description can be set to attached Images to show a alternative Text.
+        The file description can be set to attached images to show a alternative text.
     """
 
     __slots__ = ('fp', 'filename', 'description', 'spoiler', '_original_pos', '_owner', '_closer')
