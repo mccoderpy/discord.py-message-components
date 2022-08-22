@@ -614,7 +614,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
         aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration)).value
         _type = ChannelType.private_thread if private is True else ChannelType.public_thread
-        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, inviteable=invitable, reason=reason)
+        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, invitable=invitable, reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
 
         self.guild._add_thread(thread)
