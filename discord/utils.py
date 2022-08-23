@@ -23,7 +23,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
 from __future__ import annotations
 
 import array
@@ -57,6 +56,28 @@ if TYPE_CHECKING:
 
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
+
+
+class _MISSING:
+    """
+    A placeholder object for missing attributes.
+    """
+    __slots__ = ()
+
+    def __repr__(self):
+        return 'MISSING'
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __eq__(self, other) -> bool:
+        return False
+
+    def __hash__(self):
+        return 0
+
+
+MISSING = _MISSING()
 
 
 class cached_property:
