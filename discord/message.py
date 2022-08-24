@@ -23,13 +23,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import asyncio
 import datetime
 import re
 import io
 
-from typing import Union, Optional, List
+from typing import (
+    TYPE_CHECKING,
+    Union,
+    Optional,
+    Sequence,
+    List,
+    Any
+)
 
 from . import utils
 from .channel import ThreadChannel
@@ -47,6 +55,12 @@ from .utils import escape_mentions
 from .guild import Guild
 from .mixins import Hashable
 from .sticker import Sticker
+from .http import handle_message_parameters
+
+if TYPE_CHECKING:
+    from .state import ConnectionState
+    from .mentions import AllowedMentions
+
 
 __all__ = (
     'Attachment',
@@ -55,6 +69,9 @@ __all__ = (
     'MessageReference',
     'DeletedReferencedMessage',
 )
+
+
+MISSING = utils.MISSING
 
 
 def convert_emoji_reaction(emoji):
@@ -154,6 +171,8 @@ class Attachment(Hashable):
     def _to_minimal_dict(self):
         """:class:`dict`: A minimal dictionary containing the filename and description of the attachment."""
         return {'filename': self.filename, 'description': self.description}
+
+    to_dict = _to_minimal_dict
 
     async def save(self, fp, *, seek_begin=True, use_cached=False):
         """|coro|
@@ -690,7 +709,7 @@ class Message(Hashable):
         self.pinned = value
 
     def _handle_flags(self, value):
-        self.flags = MessageFlags._from_value(value)
+        self.flags: MessageFlags = MessageFlags._from_value(value)
 
     def _handle_application(self, value):
         self.application = value
@@ -699,7 +718,7 @@ class Message(Hashable):
         self.activity = value
 
     def _handle_mention_everyone(self, value):
-        self.mention_everyone = value
+        self.mention_everyone: bool = value
 
     def _handle_tts(self, value):
         self.tts = value
@@ -708,16 +727,16 @@ class Message(Hashable):
         self.type = try_enum(MessageType, value)
 
     def _handle_content(self, value):
-        self.content = value
+        self.content: str = value
 
     def _handle_attachments(self, value):
-        self.attachments = [Attachment(data=a, state=self._state) for a in value]
+        self.attachments: List[Attachment] = [Attachment(data=a, state=self._state) for a in value]
 
     def _handle_embeds(self, value):
-        self.embeds = [Embed.from_dict(data) for data in value]
+        self.embeds: List[Embed] = [Embed.from_dict(data) for data in value]
 
     def _handle_interaction(self, value):
-        pass
+        self.interaction = value  # TODO: implement interaction-model for message
 
     def _handle_thread(self, value):
         thread = self.guild.get_channel(self.id)
@@ -1057,7 +1076,19 @@ class Message(Hashable):
         else:
             await self._state.http.delete_message(self.channel.id, self.id)
 
-    async def edit(self, **fields):
+    async def edit(
+            self,
+            *,
+            content: Any = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Sequence[Embed] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            attachments: Sequence[Union[Attachment, File]] = MISSING,
+            keep_existing_attachments: bool = False,
+            delete_after: Optional[float] = None,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
+            suppress: Optional[bool] = False
+    ):
         """|coro|
 
         Edits the message.
@@ -1077,13 +1108,30 @@ class Message(Hashable):
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
-        components: List[Union[:class:`discord.ActionRow`, List]]
-            A list of :class:`discord.ActionRow`'s or a Lists with :class:`Button`'s or :class:`SelectMenu`.
+        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
+            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        attachments: List[Union[:class:`Attachment`, :class:`File`]]
+            A list containing previous attachments to keep as well as new files to upload.
+            You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
+            If  an empty list (``[]``) is passed, all attachment will be removed.
+            
+            .. note::
+                
+                New files will always appear under existing ones.
+
+        keep_existing_attachments: :class:`bool`
+            Whether to auto-add existing attachments to ``attachments``, default :obj:`False`.
+
+            .. note::
+
+                Only needed when ``attachments`` are passed, otherwise will be ignored.
+
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
             this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~.Permissions.manage_messages`.
+            Using this parameter requires :attr:`~.Permissions.manage_messages` for messages that aren't from the bot.
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
             before deleting the message we just edited. If the deletion fails,
@@ -1107,102 +1155,58 @@ class Message(Hashable):
             edited a message's content or embed that isn't yours.
         """
 
-        try:
-            content = fields['content']
-        except KeyError:
-            pass
-        else:
-            if content is not None:
-                fields['content'] = str(content)
-        raw_embeds = []
-
-        try:
-            embed = fields.pop('embed')
-        except KeyError:
-            pass
-        else:
-            if embed is not None:
-                raw_embeds.append(embed.to_dict())
-
-        try:
-            embeds = fields.pop('embeds')
-        except KeyError:
-            pass
-        else:
-            if embeds is not None:
-                raw_embeds.extend([e.to_dict() for e in embeds])
-        
-        if raw_embeds:
-            fields['embeds'] = raw_embeds
-
-        try:
-            components = fields['components']
-        except KeyError:
-            pass
-        else:
-            _components = []
-            if components is not None and not isinstance(components, list):
-                components = [components]
-            if components is not None:
-                for index, component in enumerate(components):
-                    if isinstance(component, (SelectMenu, Button)):
-                        components[index] = ActionRow(component)
-                    elif isinstance(component, list):
-                        components[index] = ActionRow(*component)
-                [_components.extend(*[c.to_dict()]) for c in components]
-                fields['components'] = _components
-        try:
-            suppress = fields.pop('suppress')
-        except KeyError:
-            pass
-        else:
-            flags = MessageFlags._from_value(self.flags.value)
-            flags.suppress_embeds = suppress
-            fields['flags'] = flags.value
-
-        delete_after = fields.pop('delete_after', None)
-
-        try:
-            allowed_mentions = fields.pop('allowed_mentions')
-        except KeyError:
-            pass
-        else:
-            if allowed_mentions is not None:
-                if self._state.allowed_mentions is not None:
-                    allowed_mentions = self._state.allowed_mentions.merge(allowed_mentions).to_dict()
-                else:
-                    allowed_mentions = allowed_mentions.to_dict()
-                fields['allowed_mentions'] = allowed_mentions
-
         # TODO: Make it possible to edit attachments
-        is_interaction_response = fields.pop('__is_interaction_response', None)
-        if is_interaction_response is True:
-            deferred = fields.pop('__deferred', False)
-            use_webhook = fields.pop('__use_webhook', False)
-            interaction_id = fields.pop('__interaction_id', None)
-            interaction_token = fields.pop('__interaction_token', None)
-            application_id = fields.pop('__application_id', None)
-            files = fields.pop('files', fields.pop('file', None))
-            if files and not isinstance(files, list):
-                files = [files]
-            if fields:
-                try:
-                    payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
-                                                                               interaction_id=interaction_id,
-                                                                               token=interaction_token,
-                                                                               application_id=application_id,
-                                                                               deferred=deferred, files=files, **fields)
-                except NotFound:
-                    is_interaction_response = None
-                else:
-                    if payload:
-                        self._update(payload)
-                    else:
-                        self._update(fields)
+        # is_interaction_response = fields.pop('__is_interaction_response', None)
+        # if is_interaction_response is True:
+        #     deferred = fields.pop('__deferred', False)
+        #     use_webhook = fields.pop('__use_webhook', False)
+        #     interaction_id = fields.pop('__interaction_id', None)
+        #     interaction_token = fields.pop('__interaction_token', None)
+        #     application_id = fields.pop('__application_id', None)
+        #     files = fields.pop('files', fields.pop('file', None))
+        #     if files and not isinstance(files, list):
+        #         files = [files]
+        #     if fields:
+        #         try:
+        #             payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
+        #                                                                        interaction_id=interaction_id,
+        #                                                                        token=interaction_token,
+        #                                                                        application_id=application_id,
+        #                                                                        deferred=deferred, files=files, **fields)
+        #         except NotFound:
+        #             is_interaction_response = None
+        #         else:
+        #             if payload:
+        #                 self._update(payload)
+        #             else:
+        #                 self._update(fields)
+        #
+        # if is_interaction_response is None:
+        if content is not MISSING:
+            previous_allowed_mentions = self._state.previous_allowed_mentions
+        else:
+            previous_allowed_mentions = None
 
-        if is_interaction_response is None:
-            payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
-            self._update(payload)
+        if keep_existing_attachments and attachments is not MISSING:
+            attachments = [*self.attachments, *attachments]
+
+        if suppress:
+            flags = MessageFlags._from_value(self.flags.value)
+            flags.suppress_embeds = True
+        else:
+            flags = MISSING
+        with handle_message_parameters(
+                content=content,
+                flags=flags,
+                embed=embed if embed is not None else MISSING,
+                embeds=embeds if embeds is not None else MISSING,
+                attachments=attachments,
+                components=components,
+                allowed_mentions=allowed_mentions,
+                previous_allowed_mentions=previous_allowed_mentions
+        ) as params:
+            data = await self._state.http.edit_message(self.channel.id, self.id, params=params)
+        self._update(data)
 
         if delete_after is not None:
             await self.delete(delay=delete_after)

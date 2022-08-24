@@ -348,7 +348,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                     check: Callable = None,
                     before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
                     after: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
-                    around: Optional[Union[abc.Snowflake, datetime.datetime]]=  None,
+                    around: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
                     oldest_first: Optional[bool] = False,
                     bulk: Optional[bool] = True):
         """|coro|
