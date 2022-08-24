@@ -239,9 +239,14 @@ class RecordingException(ClientException):
 
 
 class NotInVoiceChannel(ClientException):
-    """Exception that's thrown when trying to access the channel of a VoiceState from a user that is not connected to voice"""
+    """
+    Exception that's thrown when trying to connect of a :class:`~discord.VoiceState`
+    using `await user.voice()` from a user that is not connected to a channel the bot has access to
+    """
     def __init__(self):
-        super().__init__('Can\'t connect to the channel because the user is not in one or the bot has no access to the channel.')
+        super().__init__(
+            'Can\'t connect to channel because the user is not in one or the bot has no access to the channel.'
+        )
 
 
 class URLAndCustomIDNotAlowed(DiscordException):
@@ -252,9 +257,9 @@ class URLAndCustomIDNotAlowed(DiscordException):
          :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` don't send any Interaction to Discord when they are clicked.
     """
     def __init__(self, custom_id):
-        msg = f"custom_id's ({custom_id}) are not allowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` because Discord don't send any Interaction when clicking on a Link-Button." \
+        msg = f"custom_id's (%s) are not allowed in :class:`discord.Button` with the style :class:`discord.ButtonStyle.url` because Discord don't send any Interaction when clicking on a Link-Button." \
               f"For More Information visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#buttons>`_."
-        super().__init__(msg)
+        super().__init__(msg % custom_id)
 
 
 class EmptyActionRow(DiscordException):
@@ -281,7 +286,7 @@ class AlreadyResponded(DiscordException):
     Exception thrown when attempting to send the callback for an interaction that has already been responded to.'
     """
     def __init__(self, interaction_id):
-        msg = f'You have already send a callback(using defer or respond_with_modal) to this interaction ({interaction_id}) '
+        msg = f'You have already send a callback(using defer, respond or respond_with_modal) to this interaction ({interaction_id}) '
         super().__init__(msg)
 
 
