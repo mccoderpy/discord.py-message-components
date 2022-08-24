@@ -126,6 +126,13 @@ class File:
         if self._owner:
             self._closer()
 
+    def to_dict(self, file_index: int) -> dict:
+        return {
+            'id': file_index,
+            'description': self.description,
+            'filename': self.filename
+        }
+
 
 class UploadFile(File):
     """An Object used for Upload files like Stickers.
