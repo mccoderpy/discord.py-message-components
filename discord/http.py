@@ -77,10 +77,10 @@ async def json_or_text(response):
 
 class MultipartParameters:
     def __init__(
-        self,
-        payload: Optional[Dict[str, Any]] = None,
-        multipart: Optional[List[Dict[str, Any]]] = None,
-        files: Optional[Sequence[File]] = None
+            self,
+            payload: Optional[Dict[str, Any]] = None,
+            multipart: Optional[List[Dict[str, Any]]] = None,
+            files: Optional[Sequence[File]] = None
     ):
         self.payload = payload
         self.multipart = multipart
@@ -96,26 +96,26 @@ class MultipartParameters:
 
 
 def handle_message_parameters(
-    content: Optional[str] = MISSING,
-    *,
-    username: str = MISSING,
-    avatar_url: Any = MISSING,
-    tts: bool = False,
-    nonce: Optional[Union[int, str]] = None,
-    flags: MessageFlags = MISSING,
-    file: Optional[File] = MISSING,
-    files: Sequence[File] = MISSING,
-    embed: Optional[Embed] = MISSING,
-    embeds: Sequence[Embed] = MISSING,
-    attachments: Sequence[Union[Attachment, File]] = MISSING,
-    components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
-    allowed_mentions: Optional[AllowedMentions] = MISSING,
-    message_reference: Optional[MessageReference] = MISSING,
-    stickers: Optional[SnowflakeList] = MISSING,
-    previous_allowed_mentions: Optional[AllowedMentions] = None,
-    mention_author: Optional[bool] = None,
-    thread_name: str = MISSING,
-    channel_payload: Dict[str, Any] = MISSING
+        content: Optional[str] = MISSING,
+        *,
+        username: str = MISSING,
+        avatar_url: Any = MISSING,
+        tts: bool = False,
+        nonce: Optional[Union[int, str]] = None,
+        flags: MessageFlags = MISSING,
+        file: Optional[File] = MISSING,
+        files: Sequence[File] = MISSING,
+        embed: Optional[Embed] = MISSING,
+        embeds: Sequence[Embed] = MISSING,
+        attachments: Sequence[Union[Attachment, File]] = MISSING,
+        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+        allowed_mentions: Optional[AllowedMentions] = MISSING,
+        message_reference: Optional[MessageReference] = MISSING,
+        stickers: Optional[SnowflakeList] = MISSING,
+        previous_allowed_mentions: Optional[AllowedMentions] = None,
+        mention_author: Optional[bool] = None,
+        thread_name: str = MISSING,
+        channel_payload: Dict[str, Any] = MISSING
 ) -> MultipartParameters:
     """
     Helper function to handle message parameters.
@@ -126,7 +126,7 @@ def handle_message_parameters(
         _embeds = []
         if embed not in {MISSING, None}:
             _embeds.append(embed.to_dict())
-        if embeds not in {MISSING, None}:
+        if embeds is not MISSING and embeds is not None:
             _embeds.extend([e.to_dict() for e in embeds])
         if len(_embeds) > 10:
             raise TypeError(f"Only can send up to 10 embeds per message; got {len(embeds)}")
@@ -194,7 +194,7 @@ def handle_message_parameters(
         payload['allowed_mentions']['replied_user'] = mention_author
 
     if file is not MISSING:
-        if files not in {MISSING, None}:
+        if files is not MISSING and files is not None:
             files = [file, *files]
         else:
             files = [file]
@@ -214,7 +214,7 @@ def handle_message_parameters(
             else:
                 attachments_payload.append(attachment.to_dict())  # type: ignore
         payload['attachments'] = attachments_payload
-    
+
     if channel_payload is not MISSING:
         payload = {
             'message': payload,
@@ -266,7 +266,7 @@ def handle_interaction_message_parameters(
         _embeds = []
         if embed not in {MISSING, None}:
             _embeds.append(embed.to_dict())
-        if embeds not in {MISSING, None}:
+        if embeds is not MISSING and embeds is not None:
             _embeds.extend([e.to_dict() for e in embeds])
         if len(_embeds) > 10:
             raise TypeError(f"Only can send up to 10 embeds per message; got {len(embeds)}")
@@ -291,7 +291,7 @@ def handle_interaction_message_parameters(
                 elif isinstance(component, list):
                     _components.extend(
                         ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict()
-                        )
+                    )
             if len(_components) > 5:
                 raise TypeError(f"Only can send up to 5 ActionRows per message; got {len(_components)}")
             payload['components'] = _components
@@ -327,7 +327,7 @@ def handle_interaction_message_parameters(
         payload['allowed_mentions']['replied_user'] = mention_author
 
     if file is not MISSING:
-        if files not in {MISSING, None}:
+        if files is not MISSING and files is not None:
             files = [file, *files]
         else:
             files = [file]
@@ -403,6 +403,7 @@ class MaybeUnlock:
         if self._unlock:
             self.lock.release()
 
+
 # For some reason, the Discord voice websocket expects this header to be
 # completely lowercase while aiohttp respects spec and does it as case-insensitive
 
@@ -434,7 +435,9 @@ class HTTPClient:
 
     def recreate(self):
         if self.__session.closed:
-            self.__session = aiohttp.ClientSession(connector=self.connector, ws_response_class=DiscordClientWebSocketResponse)
+            self.__session = aiohttp.ClientSession(connector=self.connector,
+                                                   ws_response_class=DiscordClientWebSocketResponse
+                                                   )
 
     async def ws_connect(self, url, *, compress=0):
         kwargs = {
@@ -508,7 +511,6 @@ class HTTPClient:
                     for params in form:
                         form_data.add_field(**params)
                     kwargs['data'] = form_data
-
 
                 try:
                     async with self.__session.request(method, url, **kwargs) as r:
@@ -680,7 +682,12 @@ class HTTPClient:
         return self.request(Route('POST', '/channels/{channel_id}/typing', channel_id=channel_id))
 
     def delete_message(self, channel_id, message_id, *, reason=None):
-        r = Route('DELETE', '/channels/{channel_id}/messages/{message_id}', channel_id=channel_id, message_id=message_id)
+        r = Route(
+            'DELETE',
+            '/channels/{channel_id}/messages/{message_id}',
+            channel_id=channel_id,
+             message_id=message_id
+        )
         return self.request(r, reason=reason)
 
     def delete_messages(self, channel_id, message_ids, *, reason=None):
@@ -698,23 +705,44 @@ class HTTPClient:
             return self.request(r, json=params.payload)
 
     def add_reaction(self, channel_id, message_id, emoji):
-        r = Route('PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
-                  channel_id=channel_id, message_id=message_id, emoji=emoji)
+        r = Route(
+            'PUT',
+            '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
+            channel_id=channel_id,
+            message_id=message_id,
+            emoji=emoji
+        )
         return self.request(r)
 
     def remove_reaction(self, channel_id, message_id, emoji, member_id):
-        r = Route('DELETE', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{member_id}',
-                  channel_id=channel_id, message_id=message_id, member_id=member_id, emoji=emoji)
+        r = Route(
+            'DELETE',
+            '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{member_id}',
+            channel_id=channel_id,
+            message_id=message_id,
+            member_id=member_id,
+            emoji=emoji
+        )
         return self.request(r)
 
     def remove_own_reaction(self, channel_id, message_id, emoji):
-        r = Route('DELETE', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
-                  channel_id=channel_id, message_id=message_id, emoji=emoji)
+        r = Route(
+            'DELETE',
+            '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me',
+            channel_id=channel_id,
+            message_id=message_id,
+            emoji=emoji
+        )
         return self.request(r)
 
     def get_reaction_users(self, channel_id, message_id, emoji, limit, after=None):
-        r = Route('GET', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}',
-                  channel_id=channel_id, message_id=message_id, emoji=emoji)
+        r = Route(
+            'GET',
+            '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}',
+            channel_id=channel_id,
+            message_id=message_id,
+            emoji=emoji
+        )
 
         params = {'limit': limit}
         if after:
@@ -722,14 +750,23 @@ class HTTPClient:
         return self.request(r, params=params)
 
     def clear_reactions(self, channel_id, message_id):
-        r = Route('DELETE', '/channels/{channel_id}/messages/{message_id}/reactions',
-                  channel_id=channel_id, message_id=message_id)
+        r = Route(
+            'DELETE',
+            '/channels/{channel_id}/messages/{message_id}/reactions',
+            channel_id=channel_id,
+            message_id=message_id
+        )
 
         return self.request(r)
 
     def clear_single_reaction(self, channel_id, message_id, emoji):
-        r = Route('DELETE', '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}',
-                  channel_id=channel_id, message_id=message_id, emoji=emoji)
+        r = Route(
+            'DELETE',
+            '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}',
+            channel_id=channel_id,
+            message_id=message_id,
+            emoji=emoji
+        )
         return self.request(r)
 
     def get_message(self, channel_id, message_id):
@@ -754,24 +791,59 @@ class HTTPClient:
         return self.request(Route('GET', '/channels/{channel_id}/messages', channel_id=channel_id), params=params)
 
     def publish_message(self, channel_id, message_id):
-        return self.request(Route('POST', '/channels/{channel_id}/messages/{message_id}/crosspost',
-                                  channel_id=channel_id, message_id=message_id))
+        return self.request(
+            Route(
+                'POST',
+                '/channels/{channel_id}/messages/{message_id}/crosspost',
+                channel_id=channel_id,
+                message_id=message_id
+            )
+        )
 
     def pin_message(self, channel_id, message_id, reason=None):
-        return self.request(Route('PUT', '/channels/{channel_id}/pins/{message_id}',
-                                  channel_id=channel_id, message_id=message_id), reason=reason)
+        return self.request(
+            Route(
+                'PUT',
+                '/channels/{channel_id}/pins/{message_id}',
+                channel_id=channel_id,
+                message_id=message_id
+            ),
+            reason=reason
+        )
 
     def unpin_message(self, channel_id, message_id, reason=None):
-        return self.request(Route('DELETE', '/channels/{channel_id}/pins/{message_id}',
-                                  channel_id=channel_id, message_id=message_id), reason=reason)
+        return self.request(
+            Route(
+                'DELETE',
+                '/channels/{channel_id}/pins/{message_id}',
+                channel_id=channel_id,
+                message_id=message_id
+            ),
+            reason=reason
+        )
 
     def pins_from(self, channel_id):
         return self.request(Route('GET', '/channels/{channel_id}/pins', channel_id=channel_id))
 
     # Thread management
-    def create_thread(self, channel_id, *, name, auto_archive_duration, type, message_id=None, invitable=None, reason=None):
+    def create_thread(
+            self,
+            channel_id,
+            *,
+            name,
+            auto_archive_duration,
+            type,
+            message_id=None,
+            invitable=None,
+            reason=None
+        ):
         if message_id:
-            r = Route('POST', '/channels/{channel_id}/messages/{message_id}/threads', channel_id=channel_id, message_id=message_id)
+            r = Route(
+                'POST',
+                '/channels/{channel_id}/messages/{message_id}/threads',
+                channel_id=channel_id,
+                message_id=message_id
+            )
         else:
             r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
         params = {
@@ -791,7 +863,17 @@ class HTTPClient:
         else:
             return self.request(r, json=params.payload, params=query_params, reason=reason)
 
-    def edit_thread(self, channel_id, *, name=None, auto_archive_duration=None, archived=None, locked=None, invitable=None, reason=None):
+    def edit_thread(
+            self,
+            channel_id,
+            *,
+            name=None,
+            auto_archive_duration=None,
+            archived=None,
+            locked=None,
+            invitable=None,
+            reason=None
+        ):
         r = Route('PATCH', '/channels/{channel_id}', channel_id=channel_id)
         params = {}
         if name:
@@ -807,11 +889,21 @@ class HTTPClient:
         return self.request(r, json=params, reason=reason)
 
     def add_thread_member(self, channel_id, member_id='@me'):
-        r = Route('PUT', '/channels/{channel_id}/thread-members/{member_id}', channel_id=channel_id, member_id=member_id)
+        r = Route(
+            'PUT',
+            '/channels/{channel_id}/thread-members/{member_id}',
+            channel_id=channel_id,
+            member_id=member_id
+        )
         return self.request(r)
 
     def remove_thread_member(self, channel_id, member_id='@me'):
-        r = Route('DELETE', '/channels/{channel_id}/thread-members/{member_id}', channel_id=channel_id, member_id=member_id)
+        r = Route(
+            'DELETE',
+            '/channels/{channel_id}/thread-members/{member_id}',
+            channel_id=channel_id,
+            member_id=member_id
+        )
         return self.request(r)
 
     def list_thread_members(self, channel_id):
@@ -829,6 +921,13 @@ class HTTPClient:
             'limit': int(limit)
         }
         return self.request(r, json=params)
+
+    def create_post(self, channel_id: int, params: MultipartParameters, reason: Optional[str] = None):
+        r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
+        if params.files:
+            return self.request(r, files=params.files, form=params.multipart)
+        else:
+            return self.request(r, json=params.payload, reason=reason)
 
     # Member management
     def kick(self, user_id, guild_id, reason=None):
@@ -898,9 +997,21 @@ class HTTPClient:
 
     def edit_channel(self, channel_id, *, reason=None, **options):
         r = Route('PATCH', '/channels/{channel_id}', channel_id=channel_id)
-        valid_keys = ('name', 'parent_id', 'topic', 'bitrate', 'nsfw',
-                      'user_limit', 'position', 'permission_overwrites', 'rate_limit_per_user',
-                      'type', 'rtc_region')
+        valid_keys = (
+            'name',
+            'parent_id',
+            'topic',
+            'bitrate',
+            'nsfw',
+            'flags',
+            'default_auto_archive_duration',
+            'user_limit',
+            'position',
+            'permission_overwrites',
+            'rate_limit_per_user',
+            'type',
+            'rtc_region'
+        )
         payload = {
             k: v for k, v in options.items() if k in valid_keys
         }
@@ -918,11 +1029,21 @@ class HTTPClient:
         valid_keys = ('name', 'parent_id', 'topic', 'bitrate', 'nsfw',
                       'user_limit', 'position', 'permission_overwrites', 'rate_limit_per_user',
                       'rtc_region')
-        payload.update({
-            k: v for k, v in options.items() if k in valid_keys and v is not None
-        })
+        payload.update(
+            {
+                k: v for k, v in options.items() if k in valid_keys and v is not None
+            }
+        )
 
-        return self.request(Route('POST', '/guilds/{guild_id}/channels', guild_id=guild_id), json=payload, reason=reason)
+        return self.request(
+            Route(
+                'POST',
+                '/guilds/{guild_id}/channels',
+                guild_id=guild_id
+            ),
+            json=payload,
+            reason=reason
+        )
 
     def delete_channel(self, channel_id, *, reason=None):
         return self.request(Route('DELETE', '/channels/{channel_id}', channel_id=channel_id), reason=reason)
@@ -952,7 +1073,15 @@ class HTTPClient:
         payload = {
             'webhook_channel_id': str(webhook_channel_id)
         }
-        return self.request(Route('POST', '/channels/{channel_id}/followers', channel_id=channel_id), json=payload, reason=reason)
+        return self.request(
+            Route(
+                'POST',
+                '/channels/{channel_id}/followers',
+                channel_id=channel_id
+            ),
+            json=payload,
+            reason=reason
+        )
 
     # Guild management
 
@@ -1027,7 +1156,15 @@ class HTTPClient:
         payload = {
             k: v for k, v in payload.items() if k in valid_keys
         }
-        return self.request(Route('PATCH', '/guilds/{guild_id}/templates/{code}', guild_id=guild_id, code=code), json=payload)
+        return self.request(
+            Route(
+                'PATCH',
+                '/guilds/{guild_id}/templates/{code}',
+                guild_id=guild_id,
+                code=code
+            ),
+            json=payload
+        )
 
     def delete_template(self, guild_id, code):
         return self.request(Route('DELETE', '/guilds/{guild_id}/templates/{code}', guild_id=guild_id, code=code))
@@ -1058,7 +1195,15 @@ class HTTPClient:
 
     def change_vanity_code(self, guild_id, code, *, reason=None):
         payload = {'code': code}
-        return self.request(Route('PATCH', '/guilds/{guild_id}/vanity-url', guild_id=guild_id), json=payload, reason=reason)
+        return self.request(
+            Route(
+                'PATCH',
+                '/guilds/{guild_id}/vanity-url',
+                guild_id=guild_id
+            ),
+            json=payload,
+            reason=reason
+        )
 
     def get_all_guild_channels(self, guild_id):
         return self.request(Route('GET', '/guilds/{guild_id}/channels', guild_id=guild_id))
@@ -1074,7 +1219,9 @@ class HTTPClient:
         return self.request(r, params=params)
 
     def get_member(self, guild_id, member_id):
-        return self.request(Route('GET', '/guilds/{guild_id}/members/{member_id}', guild_id=guild_id, member_id=member_id))
+        return self.request(
+            Route('GET', '/guilds/{guild_id}/members/{member_id}', guild_id=guild_id, member_id=member_id)
+            )
 
     def prune_members(self, guild_id, days, compute_prune_count, roles, *, reason=None):
         payload = {
@@ -1139,10 +1286,10 @@ class HTTPClient:
 
         form = [
             {
-            'name': 'file',
-            'value': file.fp,
-            'filename': file.filename,
-            'content_type': mime_type
+                'name': 'file',
+                'value': file.fp,
+                'filename': file.filename,
+                'content_type': mime_type
             }
         ]
         for k, v in fields.items():
@@ -1151,7 +1298,7 @@ class HTTPClient:
                     {
                         'name': k,
                         'value': str(v)
-                     }
+                    }
                 )
 
         return self.request(r, form=form, files=[file], reason=reason)
@@ -1179,20 +1326,32 @@ class HTTPClient:
         return self.request(r, json=payload)
 
     def edit_integration(self, guild_id, integration_id, **payload):
-        r = Route('PATCH', '/guilds/{guild_id}/integrations/{integration_id}', guild_id=guild_id,
-                  integration_id=integration_id)
+        r = Route(
+            'PATCH',
+            '/guilds/{guild_id}/integrations/{integration_id}',
+            guild_id=guild_id,
+            integration_id=integration_id
+        )
 
         return self.request(r, json=payload)
 
     def sync_integration(self, guild_id, integration_id):
-        r = Route('POST', '/guilds/{guild_id}/integrations/{integration_id}/sync', guild_id=guild_id,
-                  integration_id=integration_id)
+        r = Route(
+            'POST',
+            '/guilds/{guild_id}/integrations/{integration_id}/sync',
+            guild_id=guild_id,
+            integration_id=integration_id
+        )
 
         return self.request(r)
 
     def delete_integration(self, guild_id, integration_id):
-        r = Route('DELETE', '/guilds/{guild_id}/integrations/{integration_id}', guild_id=guild_id,
-                  integration_id=integration_id)
+        r = Route(
+            'DELETE',
+            '/guilds/{guild_id}/integrations/{integration_id}',
+            guild_id=guild_id,
+            integration_id=integration_id
+        )
 
         return self.request(r)
 
@@ -1279,8 +1438,18 @@ class HTTPClient:
         return self.request(r, json=fields, reason=reason)
 
     def edit_guild_event(self, guild_id, event_id, *, reason=None, **fields):
-        valid_keys = ('name', 'description', 'entity_type', 'privacy_level', 'entity_metadata',
-                      'channel_id', 'scheduled_start_time', 'scheduled_end_time', 'status', 'image')
+        valid_keys = (
+            'name',
+            'description',
+            'entity_type',
+            'privacy_level',
+            'entity_metadata',
+            'channel_id',
+            'scheduled_start_time',
+            'scheduled_end_time',
+            'status',
+            'image'
+        )
         payload = {
             k: v for k, v in fields.items() if k in valid_keys
         }
@@ -1320,13 +1489,23 @@ class HTTPClient:
         return self.request(r, json=positions, reason=reason)
 
     def add_role(self, guild_id, user_id, role_id, *, reason=None):
-        r = Route('PUT', '/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
-                  guild_id=guild_id, user_id=user_id, role_id=role_id)
+        r = Route(
+            'PUT',
+            '/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
+            guild_id=guild_id,
+            user_id=user_id,
+            role_id=role_id
+        )
         return self.request(r, reason=reason)
 
     def remove_role(self, guild_id, user_id, role_id, *, reason=None):
-        r = Route('DELETE', '/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
-                  guild_id=guild_id, user_id=user_id, role_id=role_id)
+        r = Route(
+            'DELETE',
+            '/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
+            guild_id=guild_id,
+            user_id=user_id,
+            role_id=role_id
+        )
         return self.request(r, reason=reason)
 
     def edit_channel_permissions(self, channel_id, target, allow, deny, type, *, reason=None):
@@ -1354,7 +1533,13 @@ class HTTPClient:
             url = '/applications/{application_id}/guilds/{guild_id}/commands'
             if command_id:
                 url += f'/{command_id}'
-                r = Route('GET', f'{url}?with_localizations=true', application_id=application_id, guild_id=guild_id, command_id=command_id)
+                r = Route(
+                    'GET',
+                    f'{url}?with_localizations=true',
+                    application_id=application_id,
+                    guild_id=guild_id,
+                    command_id=command_id
+                )
             else:
                 r = Route('GET', f'{url}?with_localizations=true', application_id=application_id, guild_id=guild_id)
         else:
@@ -1368,7 +1553,12 @@ class HTTPClient:
 
     def create_application_command(self, application_id, data, guild_id=None):
         if guild_id:
-            r = Route('POST', '/applications/{application_id}/guilds/{guild_id}/commands', application_id=application_id, guild_id=guild_id)
+            r = Route(
+                'POST',
+                '/applications/{application_id}/guilds/{guild_id}/commands',
+                application_id=application_id,
+                guild_id=guild_id
+            )
         else:
             r = Route('POST', '/applications/{application_id}/commands', application_id=application_id)
         return self.request(r, json=data)
@@ -1401,7 +1591,7 @@ class HTTPClient:
                       application_id=application_id, guild_id=guild_id
                       )
         else:
-            r = Route('PUT', '/applications/{application_id}/commands',application_id=application_id)
+            r = Route('PUT', '/applications/{application_id}/commands', application_id=application_id)
         return self.request(r, json=data)
 
     def get_guild_application_command_permissions(self, application_id, guild_id, command_id=None):
@@ -1416,9 +1606,14 @@ class HTTPClient:
         return self.request(r)
 
     def edit_application_command_permissions(self, application_id, guild_id, command_id, data):
-        r = Route('PUT', '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
-                  application_id=application_id, guild_id=guild_id, command_id=command_id)
-        return self.request(r,json=data)
+        r = Route(
+            'PUT',
+            '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+            application_id=application_id,
+            guild_id=guild_id,
+            command_id=command_id
+        )
+        return self.request(r, json=data)
 
     # Interaction management
     def post_initial_response(self, interaction_id: int, token: str, data: Dict[str, Any]):
@@ -1491,7 +1686,9 @@ class HTTPClient:
         return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id))
 
     def get_automod_rule(self, guild_id: int, rule_id: int):
-        return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id))
+        return self.request(
+            Route('GET', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)
+            )
 
     def create_automod_rule(self, guild_id: int, data: dict, reason: str = None):
         r = Route('POST', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id)
