@@ -1155,35 +1155,8 @@ class Message(Hashable):
             edited a message's content or embed that isn't yours.
         """
 
-        # TODO: Make it possible to edit attachments
-        # is_interaction_response = fields.pop('__is_interaction_response', None)
-        # if is_interaction_response is True:
-        #     deferred = fields.pop('__deferred', False)
-        #     use_webhook = fields.pop('__use_webhook', False)
-        #     interaction_id = fields.pop('__interaction_id', None)
-        #     interaction_token = fields.pop('__interaction_token', None)
-        #     application_id = fields.pop('__application_id', None)
-        #     files = fields.pop('files', fields.pop('file', None))
-        #     if files and not isinstance(files, list):
-        #         files = [files]
-        #     if fields:
-        #         try:
-        #             payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
-        #                                                                        interaction_id=interaction_id,
-        #                                                                        token=interaction_token,
-        #                                                                        application_id=application_id,
-        #                                                                        deferred=deferred, files=files, **fields)
-        #         except NotFound:
-        #             is_interaction_response = None
-        #         else:
-        #             if payload:
-        #                 self._update(payload)
-        #             else:
-        #                 self._update(fields)
-        #
-        # if is_interaction_response is None:
         if content is not MISSING:
-            previous_allowed_mentions = self._state.previous_allowed_mentions
+            previous_allowed_mentions = self._state.allowed_mentions
         else:
             previous_allowed_mentions = None
 
@@ -1195,6 +1168,7 @@ class Message(Hashable):
             flags.suppress_embeds = True
         else:
             flags = MISSING
+
         with handle_message_parameters(
                 content=content,
                 flags=flags,
