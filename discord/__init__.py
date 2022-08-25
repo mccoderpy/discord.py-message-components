@@ -16,10 +16,12 @@ __author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015-2021 Rapptz & 2021-present mccoderpy'
 __version__ = '1.8a'
+
 try:
     with open('./version.txt') as fp:
         __version__ = fp.read()
-except Exception:
+    del fp
+except FileNotFoundError:
     pass
 
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
@@ -62,6 +64,7 @@ from .player import *
 from .webhook import *
 from .welcome_screen import *
 from .voice_client import VoiceClient, VoiceProtocol
+from .sink import *
 from .audit_logs import AuditLogChanges, AuditLogEntry, AuditLogDiff
 from .raw_models import *
 from .team import *
@@ -71,7 +74,7 @@ from .automod import *
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
-version_info = VersionInfo(major=1, minor=8, micro=0, releaselevel='alpha', serial=0)
+version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel='alpha', serial=0)
 
 del VersionInfo, namedtuple
 

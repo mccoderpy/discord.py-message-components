@@ -23,13 +23,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import abc
 import sys
 import copy
 import asyncio
 
-from typing import Union, Optional, List, Any, TYPE_CHECKING
+from typing import Union, Optional, List, Any, TYPE_CHECKING, Coroutine
 
 from .iterators import HistoryIterator
 from .context_managers import Typing
@@ -42,6 +43,7 @@ from .invite import Invite
 from .file import File
 from .components import Button, SelectMenu, ActionRow
 from .voice_client import VoiceClient, VoiceProtocol
+from .http import handle_message_parameters
 from . import utils
 
 if TYPE_CHECKING:
@@ -49,6 +51,9 @@ if TYPE_CHECKING:
     from .embeds import Embed
     from .sticker import GuildSticker
     from .message import Message, MessageReference
+
+
+MISSING = utils.MISSING
 
 
 class _Undefined:
@@ -965,18 +970,19 @@ class Messageable(metaclass=abc.ABCMeta):
                    content: Any = None,
                    *,
                    tts: bool = False,
-                   embed: Optional['Embed'] = None,
-                   embeds: Optional[List['Embed']] = None,
+                   embed: Optional[Embed] = None,
+                   embeds: Optional[List[Embed]] = None,
                    components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
                    file: Optional[File] = None,
                    files: Optional[List[File]] = None,
-                   stickers: Optional[List['GuildSticker']] = None,
+                   stickers: Optional[List[GuildSticker]] = None,
                    delete_after: Optional[float] = None,
                    nonce: Optional[int] = None,
                    allowed_mentions: Optional[AllowedMentions] = None,
-                   reference: Optional[Union['Message', 'MessageReference']] = None,
+                   reference: Optional[Union[Message, MessageReference]] = None,
                    mention_author: Optional[bool] = None,
-                   **kwargs):
+                   supress_embeds: Optional[bool] = False
+                   ) -> Message:
         """|coro|
 
         Sends a message to the destination with the content given.
@@ -1004,7 +1010,8 @@ class Messageable(metaclass=abc.ABCMeta):
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]]]]
-            A list of :class:`~discord.ActionRow`'s or a :class:`list` of :class:`~discord.Button`'s or :class:`~discord.SelectMenu`'
+            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -1041,6 +1048,9 @@ class Messageable(metaclass=abc.ABCMeta):
 
             .. versionadded:: 1.6
 
+        supress_embeds: Optional[:class:`bool`
+            Whether to supress embeds send with the message, default to :obj:`False`
+
         hidden: Optional[:class:`bool`]
             If ``True`` the message will be only bee visible for the performer of the interaction.
             If this isn't called within any subclass of :class:`~discord.BaseInteraction` it will be ignored.
@@ -1066,135 +1076,46 @@ class Messageable(metaclass=abc.ABCMeta):
         channel = await self._get_channel()
         state = self._state
         content = str(content) if content is not None else None
-
-        embed_list = []
-
-        if embed is not None:
-            embed_list.append(embed.to_dict())
-
-        if embeds:
-            embed_list.extend([e.to_dict() for e in embeds])
-
-        embeds = embed_list
-
-        if len(embeds) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embeds)}')
-
-        if components:
-            _components = []
-            for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, (Button, SelectMenu)):
-                    _components.extend(ActionRow(component).to_dict())
-                elif isinstance(component, ActionRow):
-                    _components.extend(component.to_dict())
-                elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
-            components = _components
+        previous_allowed_mentions = state.allowed_mentions
 
         if stickers is not None:
-            stickers = [str(sticker.id) for sticker in stickers]
-
-        if allowed_mentions is not None:
-            if state.allowed_mentions is not None:
-                allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
-            else:
-                allowed_mentions = allowed_mentions.to_dict()
+            sticker_ids = [str(sticker.id) for sticker in stickers]
         else:
-            allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
-
-        if mention_author is not None:
-            allowed_mentions = allowed_mentions or AllowedMentions().to_dict()
-            allowed_mentions['replied_user'] = bool(mention_author)
+            sticker_ids = MISSING
 
         if reference is not None:
             try:
                 reference = reference.to_message_reference_dict()
             except AttributeError:
-                raise InvalidArgument('reference parameter must be Message or MessageReference') from None
-
-        if file is not None and files is not None:
-            raise InvalidArgument('cannot pass both file and files parameter to send()')
-
-        is_interaction_response = kwargs.pop('__is_interaction_response', False)
-        deferred = kwargs.pop('__deferred', False)
-        use_webhook = kwargs.pop('__use_webhook', False)
-        interaction_id = kwargs.pop('__interaction_id', None)
-        interaction_token = kwargs.pop('__interaction_token', None)
-        application_id = kwargs.pop('__application_id', None)
-        followup = kwargs.pop('followup', False)
-        hidden = kwargs.pop('hidden', None)
-        if file is not None:
-            if not isinstance(file, File):
-                raise InvalidArgument('file parameter must be File')
-
-            try:
-                if hidden is not None:
-                    data = await state.http.send_interaction_response(use_webhook=use_webhook,
-                                                                      interaction_id=interaction_id,
-                                                                      token=interaction_token,
-                                                                      application_id=application_id,
-                                                                      deferred=deferred,
-                                                                      files=[file], allowed_mentions=allowed_mentions,
-                                                                      content=content, tts=tts, embeds=embeds,
-                                                                      components=components,
-                                                                      nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden is True else None,
-                                                                      followup=followup)
-                else:
-                    data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
-                                                       content=content, tts=tts, embeds=embeds, components=components,
-                                                       nonce=nonce, message_reference=reference, stickers=stickers)
-            finally:
-                file.close()
-
-        elif files is not None:
-            if len(files) > 10:
-                raise InvalidArgument('files parameter must be a list of up to 10 elements')
-            elif not all(isinstance(file, File) for file in files):
-                raise InvalidArgument('files parameter must be a list of File')
-
-            try:
-                if is_interaction_response:
-                    data = await state.http.send_interaction_response(use_webhook=use_webhook,
-                                                                      interaction_id=interaction_id,
-                                                                      token=interaction_token,
-                                                                      application_id=application_id,
-                                                                      deferred=deferred,
-                                                                      files=file, allowed_mentions=allowed_mentions,
-                                                                      content=content, tts=tts, embeds=embeds,
-                                                                      components=components,
-                                                                      nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden is True else None,
-                                                                      followup=followup or deferred)
-                else:
-                    data = await state.http.send_files(channel.id, files=files, content=content, tts=tts,
-                                                       embeds=embeds, components=components, nonce=nonce,
-                                                       allowed_mentions=allowed_mentions, message_reference=reference, stickers=stickers)
-            finally:
-                for f in files:
-                    f.close()
+                raise InvalidArgument('reference parameter must be Message, PartialMessage or MessageReference')
         else:
-            if is_interaction_response:
-                data = await state.http.send_interaction_response(use_webhook=use_webhook,
-                                                                  interaction_id=interaction_id,
-                                                                  token=interaction_token,
-                                                                  application_id=application_id,
-                                                                  deferred=deferred, allowed_mentions=allowed_mentions,
-                                                                  content=content, tts=tts, embeds=embeds,
-                                                                  components=components,
-                                                                  nonce=nonce, message_reference=reference,
-                                                                  flags=64 if hidden is True else None,
-                                                                  followup=followup)
-            else:
-                data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
-                                                                          nonce=nonce, allowed_mentions=allowed_mentions,
-                                                                          message_reference=reference, stickers=stickers)
-        if is_interaction_response:
-            if not isinstance(data, dict) and hidden is not None:
-                # Thanks Discord that they don't return the message when we send the interaction callback
-                data = await state.http.get_original_interaction_response(application_id=application_id, interaction_token=interaction_token)
+            reference = MISSING
+
+        if supress_embeds:
+            from .flags import MessageFlags
+            flags = MessageFlags._from_value(4)
+        else:
+            flags = MISSING
+
+        with handle_message_parameters(
+            content=content,
+            tts=tts,
+            nonce=nonce,
+            flags=flags,
+            file=file if file is not None else MISSING,
+            files=files if files is not None else MISSING,
+            embed=embed if embed is not None else MISSING,
+            embeds=embeds if embeds is not None else MISSING,
+            components=components,
+            allowed_mentions=allowed_mentions,
+            previous_allowed_mentions=previous_allowed_mentions,
+            message_reference=reference,
+            stickers=sticker_ids,
+            mention_author=mention_author
+        ) as params:
+            data = await state.http.send_message(channel.id, params=params)
         ret = state.create_message(channel=channel, data=data)
-        if (delete_after is not None) and (not is_interaction_response or hidden is not True):
+        if delete_after is not None:
             await ret.delete(delay=delete_after)
         return ret
 
@@ -1368,6 +1289,9 @@ class Connectable(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _get_voice_state_pair(self):
         raise NotImplementedError
+
+    def __call__(self, *, timeout=60.0, reconnect=True, cls=VoiceClient) -> Optional[Coroutine[None, None, VoiceProtocol]]:
+        return self.connect(timeout=timeout, reconnect=reconnect, cls=cls)
 
     async def connect(self, *, timeout=60.0, reconnect=True, cls=VoiceClient):
         """|coro|

@@ -37,7 +37,7 @@ AutocompleteInteraction
 .. autoclass:: AutocompleteInteraction()
     :members:
     :inherited-members:
-    :exclude-members: defer, respond_with_modal, from_type
+    :exclude-members: defer, respond, edit, respond_with_modal, from_type, get_followup, message_is_hidden
 
 ModalSubmitInteraction
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,7 +49,6 @@ ModalSubmitInteraction
     :inherited-members:
     :exclude-members: defer, respond_with_modal, from_type
 
-
 Localizations
 ~~~~~~~~~~~~~~~
 
@@ -58,3 +57,11 @@ Localizations
 .. autoclass:: Localizations()
     :members:
     :inherited-members:
+
+InteractionDataOption
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: discord.interactions.InteractionDataOption
+
+.. autoclass:: discord.interactions.InteractionDataOption()
+    :members:

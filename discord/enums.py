@@ -211,7 +211,7 @@ class ChannelType(Enum):
     public_thread   = 11
     private_thread  = 12
     stage_voice     = 13
-    guild_directory = 14 # don't think bots can access them but yea... to have all listed here
+    guild_directory = 14  # don't think bots can access them but yea... to have all listed here
     forum_channel   = 15
 
 
@@ -424,6 +424,13 @@ class OptionType(Enum):
     def from_type(cls, t):
         from .abc import User, GuildChannel, Role
         from .message import Attachment
+        if getattr(t, '__origin__', None) is Union:
+            # print(t.__origin__, dir(t.__origin__))
+            args = getattr(t, '__args__', [])
+            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
+                return cls.mentionable, None
+            else:
+                t = args[0]  # not the best solution, but we shall not get here
         if isinstance(t, int):
             return cls.try_value(t)
         elif isinstance(t, str):
@@ -445,10 +452,6 @@ class OptionType(Enum):
             return cls.role, None
         if issubclass(t, Attachment):
             return cls.attachment, None
-        if getattr(t, '__origin__', None) is Union:
-            args = getattr(t.annotation, '__args__', [])
-            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
-                return cls.mentionable, None
         return t, None
 
 
@@ -963,6 +966,7 @@ class AutoModTriggerType(Enum):
     harmful_link    = 2
     spam            = 3
     keyword_preset  = 4
+    mention_spam    = 5
 
 
 class AutoModActionType(Enum):

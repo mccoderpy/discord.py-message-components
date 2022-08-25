@@ -62,6 +62,8 @@ class File:
         a string then the ``filename`` will default to the string given.
     spoiler: :class:`bool`
         Whether the attachment is a spoiler.
+    description: Optional[:class:`str`:]
+        The file description can be set to attached images to show a alternative text.
     """
 
     __slots__ = ('fp', 'filename', 'description', 'spoiler', '_original_pos', '_owner', '_closer')
@@ -123,6 +125,13 @@ class File:
         self.fp.close = self._closer
         if self._owner:
             self._closer()
+
+    def to_dict(self, file_index: int) -> dict:
+        return {
+            'id': file_index,
+            'description': self.description,
+            'filename': self.filename
+        }
 
 
 class UploadFile(File):

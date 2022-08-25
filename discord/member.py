@@ -23,13 +23,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import datetime
 import inspect
 import itertools
 import sys
 from operator import attrgetter
-from typing import Optional
+
+from typing import (
+    Optional,
+    Union,
+    Coroutine,
+    TYPE_CHECKING
+)
 
 from typing_extensions import Literal
 
@@ -40,9 +47,14 @@ from .asset import Asset
 from .user import BaseUser, User
 from .activity import create_activity
 from .permissions import Permissions
+from .voice_client import VoiceProtocol, VoiceClient
 from .enums import Status, try_enum
 from .colour import Colour
 from .object import Object
+from .errors import NotInVoiceChannel
+
+if TYPE_CHECKING:
+    from .abc import Connectable
 
 
 class VoiceState:
@@ -106,7 +118,7 @@ class VoiceState:
         self.deaf = data.get('deaf', False)
         self.suppress = data.get('suppress', False)
         self.requested_to_speak_at = utils.parse_time(data.get('request_to_speak_timestamp'))
-        self.channel = channel
+        self.channel: Optional[Connectable] = channel
 
     def __repr__(self):
         attrs = [
@@ -118,6 +130,12 @@ class VoiceState:
             ('channel', self.channel)
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+
+    def __call__(self, *, timeout: Optional[float] = 60.0, reconnect: bool = True, cls: VoiceProtocol = VoiceClient) -> Optional[Coroutine[None, None, VoiceProtocol]]:
+        channel = self.channel
+        if not channel:
+            raise NotInVoiceChannel()
+        return channel.connect(timeout=timeout, reconnect=reconnect, cls=cls)
 
 
 def flatten_user(cls):
@@ -313,7 +331,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return ch
 
     def _update_roles(self, data):
-        self._roles = utils.SnowflakeList(map(int, data['roles']))
+        self._roles = utils.SnowflakeList(map(int, data.get('roles', [])))
 
     def _update(self, data):
         # the nickname change is optional,
@@ -653,10 +671,10 @@ class Member(discord.abc.Messageable, _BaseUser):
         return datetime.datetime.fromisoformat(self._communication_disabled_until) if self._communication_disabled_until else None
 
     @utils.deprecated('Member.timeout')
-    async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None):
+    async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
         await self.edit(communication_disabled_until=until, reason=reason)
 
-    async def timeout(self, until: datetime.datetime, *, reason: Optional[str] = None) -> None:
+    async def timeout(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
         """|coro|
 
         A shortcut method to timeout a member.
@@ -681,7 +699,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         HTTPException:
             Timeouting the member failed
         """
-        await self.edit(communication_disabled_until=until, reason=reason)
+        return await self.edit(communication_disabled_until=until, reason=reason)
 
     async def remove_timeout(self, *, reason: Optional[str] = None) -> None:
         """|coro|
@@ -702,7 +720,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         HTTPException:
             Removing the member from timeout failed
         """
-        await self.edit(communication_disabled_until=None, reason=reason)
+        return await self.edit(communication_disabled_until=None, reason=reason)
 
     async def ban(self, **kwargs):
         """|coro|

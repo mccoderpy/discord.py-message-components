@@ -23,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import asyncio
 from collections import deque, OrderedDict
@@ -36,7 +37,7 @@ import inspect
 import gc
 
 import os
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 from .guild import Guild
 from .activity import BaseActivity
@@ -58,6 +59,10 @@ from .object import Object
 from .invite import Invite
 from .automod import AutoModRule, AutoModActionPayload
 from .interactions import BaseInteraction, InteractionType
+
+
+if TYPE_CHECKING:
+    from .http import HTTPClient
 
 
 class ChunkRequest:
@@ -114,7 +119,7 @@ async def logging_coroutine(coroutine, *, info):
 class ConnectionState:
     def __init__(self, *, dispatch, handlers, hooks, syncer, http, loop, **options):
         self.loop = loop
-        self.http = http
+        self.http: HTTPClient = http
         self.max_messages = options.get('max_messages', 1000)
         if self.max_messages is not None and self.max_messages <= 0:
             self.max_messages = 1000
@@ -154,7 +159,7 @@ class ConnectionState:
             else:
                 status = str(status)
 
-        intents = options.get('intents', None)
+        intents: Intents = options.get('intents', None)
         if intents is not None:
             if not isinstance(intents, Intents):
                 raise TypeError('intents parameter must be Intent not %r' % type(intents))
@@ -208,7 +213,6 @@ class ConnectionState:
         self._emojis = {}
         self._stickers = {}
         self._events = {}
-        self._calls = {}
         self._guilds = {}
         self._voice_clients = {}
 
@@ -421,7 +425,7 @@ class ConnectionState:
         else:
             channel = guild and guild.get_channel(channel_id)
 
-        return channel or Object(id=channel_id), guild
+        return channel or PartialMessageable(self, channel_id, guild_id=guild.id if guild else None), guild
 
     async def chunker(self, guild_id, query='', limit=0, presences=False, *, nonce=None):
         ws = self._get_websocket(guild_id) # This is ignored upstream
@@ -502,15 +506,12 @@ class ConnectionState:
         self.user = user = ClientUser(state=self, data=data['user'])
         self._users[user.id] = user
 
-
-
         for guild_data in data['guilds']:
             self._add_guild_from_data(guild_data)
 
         for pm in data.get('private_channels', []):
             factory, _ = _channel_factory(pm['type'])
             self._add_private_channel(factory(me=user, data=pm, state=self))
-
 
         if self.application_id is None:
             try:
@@ -535,7 +536,7 @@ class ConnectionState:
         if self._messages is not None:
             self._messages.append(message)
         # not sure if we get ephemeral message here, but we don't want them as last message so ignore them
-        if channel and channel.__class__ in [TextChannel, ThreadChannel, VoiceChannel] and not message.flags.ephemeral:
+        if channel and isinstance(channel, (TextChannel, VoiceChannel, ThreadChannel)) and not message.flags.ephemeral:
             channel.last_message_id = message.id
 
     def parse_message_delete(self, data):
@@ -619,6 +620,9 @@ class ConnectionState:
             guild._add_post(post)
             self.dispatch('post_create', post)
         else:
+            message = self._get_message(thread.id)
+            if message:
+                message._thread = thread
             guild._add_thread(thread)
             self.dispatch('thread_create', thread)
 
@@ -642,12 +646,18 @@ class ConnectionState:
     def parse_thread_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = guild.get_channel(int(data['id']))
-        if isinstance(thread.parent_channel, ForumChannel):
-            guild._remove_post(thread)
-            self.dispatch('post_delete', thread)
+        if not thread:
+            thread = ThreadChannel._from_partial(state=self, guild=guild, data=data)
         else:
-            guild._remove_thread(thread)
-            self.dispatch('thread_delete', thread)
+            if isinstance(thread.parent_channel, ForumChannel):
+                guild._remove_post(thread)
+                self.dispatch('post_delete', thread)
+            else:
+                guild._remove_thread(thread)
+                self.dispatch('thread_delete', thread)
+                if thread.starter_message:
+                    thread.starter_message._thread = None
+        self.dispatch('thread_delete', thread)
 
 
     def parse_thread_member_update(self, data):
@@ -660,7 +670,6 @@ class ConnectionState:
                 self.dispatch('post_member_update', old_thread, thread)
             else:
                 self.dispatch('thread_member_update', old_thread, thread)
-
 
     def parse_thread_members_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
@@ -1009,7 +1018,7 @@ class ConnectionState:
             log.debug('GUILD_STICKERS_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
             return
 
-        before_stickers = guild.stickers
+        before_stickers = copy.copy(guild.stickers)
         for sticker in before_stickers:
             self._stickers.pop(sticker.id, None)
         guild.stickers = tuple(map(lambda d: self.store_sticker(d), data['stickers']))
@@ -1343,9 +1352,11 @@ class ConnectionState:
             if channel is not None:
                 return channel
 
+        # We assume it is an uncached privat channel here, this may be false
 
     def create_message(self, *, channel, data):
         return Message(state=self, channel=channel, data=data)
+
 
 class AutoShardedConnectionState(ConnectionState):
     def __init__(self, *args, **kwargs):
@@ -1354,17 +1365,24 @@ class AutoShardedConnectionState(ConnectionState):
         self.shard_ids = ()
         self.shards_launched = asyncio.Event()
 
-
     def _update_message_references(self):
+        removed = set()
         for msg in self._messages:
             if not msg.guild:
-                continue
+                removed.add(msg)
 
             new_guild = self._get_guild(msg.guild.id)
             if new_guild is not None and new_guild is not msg.guild:
                 channel_id = msg.channel.id
-                channel = new_guild.get_channel(channel_id) or Object(id=channel_id)
-                msg._rebind_channel_reference(channel)
+                channel = new_guild.get_channel(channel_id)
+                if channel:
+                    msg._rebind_channel_reference(channel)
+                else:
+                    removed.add(msg)
+        if removed:
+            # Remove the messages from cache we no longer have access to
+            for msg in removed:
+                self._messages.remove(msg)
 
     async def chunker(self, guild_id, query='', limit=0, presences=False, *, shard_id=None, nonce=None):
         ws = self._get_websocket(guild_id, shard_id=shard_id)

@@ -1,40 +1,79 @@
+# -*- coding: utf-8 -*-
+
+"""
+The MIT License (MIT)
+
+Copyright (c) 2021-present mccoderpy
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+"""
+from __future__ import annotations
+
+from typing import (
+    Union,
+    Optional,
+    Sequence,
+    List,
+    Dict,
+    Any,
+    TYPE_CHECKING
+)
+
+from typing_extensions import Literal
+
 import logging
 
-from . import abc
-
-from . import utils
+from . import abc, utils
 from .role import Role
 from .user import User
 from .file import File
 from .guild import Guild
 from .embeds import Embed
 from .member import Member
-from .http import HTTPClient
+from .http import HTTPClient, handle_message_parameters, handle_interaction_message_parameters
 from .reaction import Reaction
 from .flags import MessageFlags
 from .permissions import Permissions
 from .mentions import AllowedMentions
-from typing_extensions import Literal
 from .message import Message, Attachment
-from .application_commands import OptionType, SlashCommandOptionChoice
-from typing import (Union,
-                    List,
-                    Optional,
-                    Dict,
-                    Any,
-                    TYPE_CHECKING
-)
 
 from .components import Button, SelectMenu, ActionRow, Modal, TextInput
-from .channel import  _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
+from .channel import _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
 from .errors import NotFound, InvalidArgument, AlreadyResponded, UnknownInteraction
-from .enums import InteractionType, ApplicationCommandType, ComponentType, InteractionCallbackType, Locale, MessageType, \
+from .enums import (
+    InteractionType,
+    ApplicationCommandType,
+    ComponentType,
+    InteractionCallbackType,
+    Locale,
+    MessageType,
+    OptionType,
     try_enum
+)
 
 if TYPE_CHECKING:
     import datetime
-    from .application_commands import SlashCommand, MessageCommand, UserCommand
+    from .state import ConnectionState
+    from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
 
+
+MISSING = utils.MISSING
 
 log = logging.getLogger(__name__)
 
@@ -55,20 +94,17 @@ class EphemeralMessage:
     """
     Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
     """
-
+    # This class will be removed in the future when we switched to use a Webhook message model instead
     def __init__(self, *, state, channel, data, interaction):
-        self._state = state
-        self.__interaction__ = interaction
+        self._state: ConnectionState = state
+        self.__interaction__: BaseInteraction = interaction
         self.id = int(data.get('id', 0))
         self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
+        self.channel_id = utils._get_as_snowflake(data, 'channel_id')
         self.channel = channel
         self._update(data)
 
     def _update(self, data):
-        self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
-        self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
-        self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
-        self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')
         self.activity = data.get('activity')
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
@@ -76,14 +112,31 @@ class EphemeralMessage:
         self._thread = data.get('thread', None)
         self.pinned = data['pinned']
         self.mention_everyone = data['mention_everyone']
-        self.tts = data['tts']
-        self.content = data['content']
 
-        for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'interaction', 'thread'):
+        for handler in (
+                'tts',
+                'content',
+                'embeds',
+                'author',
+                'member',
+                'mentions',
+                'mention_roles',
+                'flags',
+                'interaction',
+                'components',
+                'attachments',
+                'reactions'
+        ):
             try:
                 getattr(self, '_handle_%s' % handler)(data[handler])
             except KeyError:
-                continue
+                if not hasattr(self, handler):
+                    setattr(
+                        self,
+                        handler,
+                        None if handler not in {'embeds', 'mentions', 'mentioned_roles', 'attachments', 'reactions', 'components'} else []
+                    )  # bad solution for now but works, will be removed anyway when rewrite the existing webhook system
+        return self
 
     def _handle_flags(self, value):
         self.flags = MessageFlags._from_value(value)
@@ -113,18 +166,13 @@ class EphemeralMessage:
         self.embeds = [Embed.from_dict(data) for data in value]
 
     def _handle_interaction(self, value):
-        pass
-
-    def _handle_thread(self, value):
-        thread = self.channel.get_thread(self.id)
-        if thread:
-            thread._update(value)
-        else:
-            thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
-            self.channel.guild._add_thread(thread)
+        self.interaction = value
 
     def _handle_components(self, value):
         self.components = [ActionRow.from_dict(data) for data in value]
+
+    def _handle_reactions(self, value):
+        self.reactions = [Reaction(message=self, data=d) for d in value]
 
     def _handle_nonce(self, value):
         self.nonce = value
@@ -209,47 +257,124 @@ class EphemeralMessage:
             for component in action_row:
                 if isinstance(component, SelectMenu):
                     yield component
+    
+    async def edit(
+        self,
+        *,
+        content: Any = MISSING,
+        embed: Optional[Embed] = MISSING,
+        embeds: Sequence[Embed] = MISSING,
+        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+        attachments: Sequence[Union[Attachment, File]] = MISSING,
+        keep_existing_attachments: bool = False,
+        allowed_mentions: Optional[AllowedMentions] = MISSING,
+        suppress: Optional[bool] = False
+    ) -> Union[Message, EphemeralMessage]:
+        """|coro|
 
-    async def edit(self, **fields):
-        content: str = fields.pop('content', None)
-        if content:
-            fields['content'] = str(content)
-        embeds: Optional[Union[List[Embed], Embed]] = fields.pop('embed', fields.pop('embeds', None))
-        if embeds is not None and not isinstance(embeds, list):
-            embeds = [embeds]
-        if embeds is not None:
-            fields['embeds'] = [e.to_dict() for e in embeds]
-        components: Optional[List[Union[List[Button, SelectMenu], ActionRow, Button, SelectMenu]]] = fields.pop(
-            'components', None)
-        _components = []
-        if components is not None and not isinstance(components, list):
-            components = [components]
-        if components is not None:
-            for index, component in enumerate(components):
-                if isinstance(component, (SelectMenu, Button)):
-                    components[index] = ActionRow(component)
-                elif isinstance(component, list):
-                    components[index] = ActionRow(*component)
+        Edits the message.
 
-            [_components.extend(*[c.to_dict()]) for c in components]
-            fields['components'] = _components
+        Attachment
+        -----------
+        content: Optional[:class:`str`]
+            The new content to replace the message with.
+            Could be ``None`` to remove the content.
+        embed: Optional[:class:`Embed`]
+            The new embed to replace the original with.
+            Could be ``None`` to remove the embed.
+        embeds: Optional[List[:class:`Embed`]]
+            A list containing up to 10 embeds
+        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
+            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        attachments: List[Union[:class:`Attachment`, :class:`File`]]
+            A list containing previous attachments to keep as well as new files to upload.
+            You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
+            If  an empty list (``[]``) is passed, all attachment will be removed.
 
-        try:
-            data = await self._state.http.edit_interaction_response(
-                interaction_id=self.__interaction__.id,
-                token=self.__interaction__._token,
-                application_id=self.__interaction__._application_id,
-                deferred=self.__interaction__.deferred,
-                use_webhook=True,
-                data=fields)
-        except NotFound:
-            raise UnknownInteraction(self.__interaction__.id)
+            .. note::
+
+                New files will always appear under existing ones.
+
+        keep_existing_attachments: :class:`bool`
+            Whether to auto-add existing attachments to ``attachments``, default :obj:`False`.
+
+            .. note::
+
+                Only needed when ``attachments`` are passed, otherwise will be ignored.
+
+        suppress: :class:`bool`
+            Whether to suppress embeds for the message. This removes
+            all the embeds if set to ``True``. If set to ``False``
+            this brings the embeds back if they were suppressed.
+            Using this parameter requires :attr:`~.Permissions.manage_messages`.
+        allowed_mentions: Optional[:class:`~discord.AllowedMentions`]
+            Controls the mentions being processed in this message. If this is
+            passed, then the object is merged with :attr:`~discord.Client.allowed_mentions`.
+            The merging behaviour only overrides attributes that have been explicitly passed
+            to the object, otherwise it uses the attributes set in :attr:`~discord.Client.allowed_mentions`.
+            If no object is passed at all then the defaults given by :attr:`~discord.Client.allowed_mentions`
+            are used instead.
+
+
+        """
+        
+        if suppress:
+            flags = MessageFlags._from_value(self.flags.value)
+            flags.suppress_embeds = True
         else:
-            if not isinstance(data, dict):
-                data = await self.__interaction__.get_original_callback(raw=True)
-            self._update(data)
-            if not self.__interaction__.callback_message:
-                self.__interaction__.callback_message = self
+            flags = MISSING
+
+        if keep_existing_attachments:
+            if attachments is not MISSING:
+                attachments = [*self.attachments, *attachments]
+
+        state = self._state
+        interaction = self.__interaction__
+        
+        if not self.channel:
+            self.channel = self._state.add_dm_channel(data=await state.http.get_channel(self.channel_id))
+        
+        is_original_response = self.id == interaction.callback_message.id
+
+        params = handle_message_parameters(
+            content=content,
+            flags=flags,
+            embed=embed,
+            embeds=embeds,
+            attachments=attachments,
+            components=components,
+            allowed_mentions=allowed_mentions,
+            previous_allowed_mentions=state.allowed_mentions
+        )
+        
+        if is_original_response:
+            method = state.http.edit_original_interaction_response(
+                token=interaction._token,
+                application_id=interaction._application_id,
+                params=params
+            )
+        else:
+            method = state.http.edit_followup(
+                token=interaction._token,
+                application_id=interaction._application_id,
+                message_id=self.id,
+                params=params
+            )
+        
+        with params:
+            data = await method    
+        
+        if not isinstance(data, dict):
+            if is_original_response:
+                return await interaction.get_original_callback()
+            else:
+                data = await state.http.get_followup_message(
+                    token=interaction._token,
+                    application_id=interaction._application_id,
+                    message_id=self.id,
+                )
+        self._update(data)
         return self
 
 
@@ -263,7 +388,7 @@ class BaseInteraction:
 
     def __init__(self, state, data):
         self._data = data
-        self._state = state
+        self._state: ConnectionState = state
         self._http: HTTPClient = state.http
         self.type: InteractionType = InteractionType.try_value(data['type'])
         self._application_id = int(data.get('application_id'))
@@ -286,7 +411,11 @@ class BaseInteraction:
         self.user_id = int(self._user['id'])
         self.author_locale: Locale = try_enum(Locale, data['locale'])
         self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale', None))
-        self.app_permissions: Permissions = Permissions(int(data['app_permissions']))
+        app_permissions = data.get('app_permissions', None)
+        if app_permissions:
+            self.app_permissions: Optional[Permissions] = Permissions(int(app_permissions))
+        else:
+            self.app_permissions = None
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
@@ -343,10 +472,8 @@ class BaseInteraction:
         base = {"type": int(response_type), "data": {'flags': 64 if hidden else None}}
         try:
             data = await self._http.post_initial_response(
-                _resp=base,
-                use_webhook=False,
+                data=base,
                 token=self._token,
-                application_id=self._application_id,
                 interaction_id=self.id
             )
         except NotFound:
@@ -359,169 +486,176 @@ class BaseInteraction:
                 msg = self.callback_message = await self.get_original_callback()
                 return msg
 
-    async def edit(self,
-                   **fields
-                   ) -> Union[Message, EphemeralMessage, None]:
+    async def edit(
+        self,
+        *,
+        content: Any = MISSING,
+        embed: Optional[Embed] = MISSING,
+        embeds: Sequence[Embed] = MISSING,
+        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+        attachments: Sequence[Union[Attachment, File]] = MISSING,
+        keep_existing_attachments: bool = False,
+        delete_after: Optional[float] = None,
+        allowed_mentions: Optional[AllowedMentions] = MISSING,
+        suppress: Optional[bool] = False
+    ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
-        'Defers' if it isn't yet and edit the message.
-        Depending on the :class:`~discord.InteractionType` of the interaction this edits the original message or the loading message.
+        Responds to the interaction by editing the original or callback message depending on the :attr:`~BaseInteraction.type`.
+
+        Attachment
+        -----------
+        content: Optional[:class:`str`]
+            The new content to replace the message with.
+            Could be ``None`` to remove the content.
+        embed: Optional[:class:`Embed`]
+            The new embed to replace the original with.
+            Could be ``None`` to remove the embed.
+        embeds: Optional[List[:class:`Embed`]]
+            A list containing up to 10 embeds
+        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
+            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        attachments: List[Union[:class:`Attachment`, :class:`File`]]
+            A list containing previous attachments to keep as well as new files to upload.
+            You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
+            If  an empty list (``[]``) is passed, all attachment will be removed.
+
+            .. note::
+
+                New files will always appear under existing ones.
+
+        keep_existing_attachments: :class:`bool`
+            Whether to auto-add existing attachments to ``attachments``, default :obj:`False`.
+
+            .. note::
+
+                Only needed when ``attachments`` are passed, otherwise will be ignored.
+
+        suppress: :class:`bool`
+            Whether to suppress embeds for the message. This removes
+            all the embeds if set to ``True``. If set to ``False``
+            this brings the embeds back if they were suppressed.
+            Using this parameter requires :attr:`~.Permissions.manage_messages`.
+        delete_after: Optional[:class:`float`]
+            If provided, the number of seconds to wait in the background
+            before deleting the message we just edited. If the deletion fails,
+            then it is silently ignored.
+        allowed_mentions: Optional[:class:`~discord.AllowedMentions`]
+            Controls the mentions being processed in this message. If this is
+            passed, then the object is merged with :attr:`~discord.Client.allowed_mentions`.
+            The merging behaviour only overrides attributes that have been explicitly passed
+            to the object, otherwise it uses the attributes set in :attr:`~discord.Client.allowed_mentions`.
+            If no object is passed at all then the defaults given by :attr:`~discord.Client.allowed_mentions`
+            are used instead.
+
+
         """
-        if self.message_is_hidden or self.deferred_modal:
-            return await self.message.edit(**fields)
-        try:
-            content: Optional[str] = fields['content']
-        except KeyError:
-            pass
-        else:
-            if content is not None:
-                fields['content'] = str(content)
-
-        try:
-            embeds: Optional[List[Embed]] = fields['embeds']
-        except KeyError:
-            pass
-        else:
-            if embeds is not None:
-                fields['embeds'] = [e.to_dict() for e in embeds]
-
-        try:
-            embed: Optional[Embed] = fields.pop('embed')
-        except KeyError:
-            pass
-        else:
-            if embed is not None:
-                embeds = list(reversed(fields.pop('embeds', [])))
-                embeds.append(embed.to_dict())
-                fields['embeds'] = list(reversed(embeds))
+        if self.deferred_modal:
+            if self.type.Component:
+                return await self.message.edit(
+                    content=content,
+                    embed=embed,
+                    embeds=embeds,
+                    components=components,
+                    attachments=attachments,
+                    keep_existing_attachments=keep_existing_attachments,
+                    allowed_mentions=allowed_mentions,
+                    delete_after=delete_after,
+                    suppress=suppress
+                )
             else:
-                fields['embeds'] = None
+                raise TypeError('You can\'t edit the message as it does not exist when using `respond_with_modal`.')
 
-        if fields.get('embeds', None) and len(fields['embeds']) > 10:
-            raise InvalidArgument(
-                f'The maximum number of embeds that can be send with a message is 10, '
-                f'got: {len(fields["embeds"])}'
-            )
+        response_type = MISSING
 
-        try:
-            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = fields['components']
-        except KeyError:
-            pass
-        else:
-            if components is not None:
-                c_list = []
-                for i, component in enumerate(list(components) if not isinstance(components, list) else components):
-                    if isinstance(component, ActionRow):
-                        c_list.extend(component.to_dict())
-                    elif isinstance(component, list):
-                        c_list.extend(
-                            ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
-                    elif isinstance(component, (Button, SelectMenu)):
-                        c_list.extend(ActionRow(component).to_dict())
-                fields['components'] = c_list
-        flags = MessageFlags._from_value(self.message.flags.value)
-        try:
-            suppress: Optional[bool] = fields['suppress']
-        except KeyError:
-            pass
-        else:
-            flags.suppress_embeds = suppress
-        fields['flags'] = flags.value
-        delete_after: Optional[float] = fields.pop('delete_after', None)
-        files = None
-        try:
-            file: Optional[File] = fields.pop('file')
-        except KeyError:
-            pass
-        else:
-            try:
-                fields['files'].append(file)
-            except KeyError:
-                fields['files'] = [file]
-        try:
-            files: Optional[List[File]] = fields.pop('files')
-        except KeyError:
-            pass
-        else:
-            if files is not None:
-                _files = []
-                keep_original_files: Optional[bool] = fields.pop('keep_original_files', False)
-                if keep_original_files:
-                    for index, file in enumerate(self.message.attachments):
-                        _files.append({'id': index, **file._to_minimal_dict()})
-                _id = len(_files)  # to continue the file id count
-                for index, file in enumerate(files):
-                    _files.append(
-                        {
-                            'id': index + _id,
-                            'description': file.description,
-                            'filename': file.filename
-                        }
-                    )
-                fields['attachments'] = _files
+        if not self.deferred:
+            if self.type.ApplicationCommand:
+                raise TypeError('You need to send a response first before you can edit it')
             else:
-                fields['attachments'] = []
+                response_type = InteractionCallbackType.update_msg
+
+        if suppress:
+            m = self.callback_message.flags.value if self.type.ApplicationCommand else self.message.flags.value
+            flags = MessageFlags._from_value(m)
+            flags.suppress_embeds = True
+        else:
+            flags = MISSING
 
         state = self._state
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
-        if self.deferred:
-            data = await state.http.edit_interaction_response(
+        if response_type is MISSING:
+            params = handle_message_parameters(
+                    content=content,
+                    flags=flags,
+                    embed=embed,
+                    embeds=embeds,
+                    attachments=attachments,
+                    components=components,
+                    allowed_mentions=allowed_mentions,
+                    previous_allowed_mentions=state.allowed_mentions
+            )
+            method = state.http.edit_original_interaction_response(
                 token=self._token,
-                interaction_id=self.id,
                 application_id=self._application_id,
-                data=fields,
-                files=files,
-                deferred=self.deferred
+                params=params
             )
         else:
-            data = await state.http.send_interaction_response(
-                token=self._token,
+            params = handle_interaction_message_parameters(
+                type=response_type,
+                content=content,
+                flags=flags,
+                embed=embed,
+                attachments=attachments,
+                components=components,
+                allowed_mentions=allowed_mentions,
+                previous_allowed_mentions=state.allowed_mentions
+            )
+            method = state.http.send_interaction_response(
                 interaction_id=self.id,
-                application_id=self._application_id,
-                data=fields,
-                files=files,
-                deferred=self.deferred,
-                followup=True if (self.callback_message and not self.callback_message.flags.loading) else False,
-                type=7
+                token=self._token,
+                params=params
             )
 
+        with params:
+            data = await method
+
         if not isinstance(data, dict):
-            data = await self.get_original_callback(raw=True)
-            msg = self.message._update(data)
+            msg = await self.get_original_callback()
         else:
-            if self.message:
+            if hasattr(self, 'message'):
                 msg = self.message._update(data)
             else:
                 if MessageFlags._from_value(data['flags']).ephemeral:
                     msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
                 else:
                     msg = Message(state=self._state, channel=self.channel, data=data)
-        if not self.callback_message:
-            self.callback_message = msg
-        if isinstance(msg, Message) and delete_after is not None:
-            await msg.delete(delay=delete_after)
-        if not self.callback_message:
-            self.callback_message = msg
+        self.callback_message = msg
+        is_hidden = msg.flags.ephemeral
+
+        if is_hidden:
+            self.deferred_hidden = True
         self.deferred = True
-        self.message = msg
+        if not is_hidden and delete_after is not None:
+            await msg.delete(delay=delete_after)
         return msg
 
-    async def respond(self,
-                      content: str = None, *,
-                      tts: bool = False,
-                      embed: Optional[Embed] = None,
-                      embeds: Optional[List[Embed]] = None,
-                      components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
-                      file: Optional[File] = None,
-                      files: Optional[List[File]] = None,
-                      delete_after: Optional[float] = None,
-                      allowed_mentions: Optional[AllowedMentions] = None,
-                      mention_author: bool = None,
-                      suppress: bool = False,
-                      hidden: bool = False
-                      ) -> Union[Message, EphemeralMessage]:
+    async def respond(
+        self,
+        content: str = None, *,
+        tts: bool = False,
+        embed: Optional[Embed] = None,
+        embeds: Optional[List[Embed]] = None,
+        components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+        file: Optional[File] = None,
+        files: Optional[List[File]] = None,
+        delete_after: Optional[float] = None,
+        allowed_mentions: Optional[AllowedMentions] = None,
+        suppress: bool = False,
+        hidden: bool = False
+    ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
         Responds to an interaction by sending a message.
@@ -537,13 +671,17 @@ class BaseInteraction:
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
             A :class:`list` of files to upload. Must be a maximum of 10.
-        stickers: List[:class:`~discord.GuildSticker`]
-            A list of up to 3 :class:`discord.GuildSticker` that should be sent with the message.
+        suppress: :class:`bool`
+            Whether to suppress embeds for the message. This removes
+            all the embeds if set to ``True``. If set to ``False``
+            this brings the embeds back if they were suppressed.
+            Using this parameter requires :attr:`~discord..Permissions.manage_messages` for messages that aren't from the bot.
         delete_after: :class:`float`
             If provided, the number of seconds to wait in the background
             before deleting the message we just sent. If the deletion fails,
@@ -562,134 +700,97 @@ class BaseInteraction:
         hidden: Optional[:class:`bool`]
             If ``True`` the message will be only visible for the performer of the interaction (e.g. :attr:`~discord.BaseInteraction.author`).
         """
+
+        if self.deferred_modal:
+            raise TypeError('After responding to the interaction with a modal, you can\'t respond.')
         state = self._state
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
-        data = {'tts': tts}
-        if content:
-            data['content'] = str(content)
-
-        embed_list = []
-        if embed is not None:
-            embed_list.append(embed.to_dict())
-        if embeds is not None:
-            embed_list.extend([e.to_dict() for e in embeds])
-        if len(embed_list) > 10:
-            raise InvalidArgument(
-                f'The maximum number of embeds that can be send with a message is 10, got: {len(embed_list)}'
-            )
-        if embed_list:
-            data['embeds'] = embed_list
-
-        if components:
-            _components = []
-            for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, (Button, SelectMenu)):
-                    _components.extend(ActionRow(component).to_dict())
-                elif isinstance(component, ActionRow):
-                    _components.extend(component.to_dict())
-                elif isinstance(component, list):
-                    _components.extend(
-                        ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
-            if _components:
-                data['components'] = _components
-
-        if allowed_mentions is not None:
-            if state.allowed_mentions is not None:
-                allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
-            else:
-                allowed_mentions = allowed_mentions.to_dict()
-        else:
-            allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
-
-        if mention_author is not None:
-            allowed_mentions = allowed_mentions or AllowedMentions().to_dict()
-            allowed_mentions['replied_user'] = bool(mention_author)
-
-        if allowed_mentions:
-            data['allowed_mentions'] = allowed_mentions
-
-        file_list = []
-        if file:
-            file_list.append(file)
-        if files:
-            file_list.extend(files)
-        files = file_list
-        if len(files) > 10:
-            raise InvalidArgument(
-                f'The maximum number of files that can be send with a message is 10, got: {len(files)}'
-            )
         flags = MessageFlags._from_value(0)
         if hidden:
             flags.ephemeral = True
         if suppress:
             flags.suppress_embeds = True
-        data['flags'] = flags.value
-        if self.deferred and self.callback_message and self.callback_message.flags.loading:
-            if not self.messages:
-                method = state.http.edit_interaction_response(
+
+        is_initial = False
+        response_type = MISSING
+
+        if not self.deferred:
+            response_type = InteractionCallbackType.msg_with_source
+        else:
+            if self.callback_message and (self.callback_message.flags.loading if self.type.ApplicationCommand else False):
+                is_initial = True
+
+        if response_type is MISSING:
+            params = handle_message_parameters(
+                    content=content,
+                    tts=tts,
+                    flags=flags,
+                    embed=embed if embed else MISSING,
+                    embeds=embeds if embeds else MISSING,
+                    file=file if file else MISSING,
+                    files=files if files else MISSING,
+                    components=components if components else MISSING,
+                    allowed_mentions=allowed_mentions,
+                    previous_allowed_mentions=state.allowed_mentions
+            )
+            if is_initial:
+                method = state.http.edit_original_interaction_response(
                     token=self._token,
-                    interaction_id=self.id,
                     application_id=self._application_id,
-                    data=data,
-                    files=files,
-                    deferred=self.deferred
+                    params=params
                 )
             else:
-                method = state.http.send_interaction_response(
+                method = state.http.send_followup(
                     token=self._token,
-                    interaction_id=self.id,
                     application_id=self._application_id,
-                    data=data,
-                    files=files,
-                    followup=True,
-                    deferred=self.deferred,
+                    params=params
                 )
         else:
-            if not self.callback_message:
-                method = state.http.send_interaction_response(
-                    token=self._token,
-                    interaction_id=self.id,
-                    application_id=self._application_id,
-                    data=data,
-                    files=files,
-                    deferred=self.deferred,
-                )
-            else:
-                method = state.http.send_interaction_response(
-                    token=self._token,
-                    interaction_id=self.id,
-                    application_id=self._application_id,
-                    data=data,
-                    files=files,
-                    followup=True,
-                    deferred=self.deferred,
-                )
-        try:
+            params = handle_interaction_message_parameters(
+                type=response_type,
+                content=content,
+                tts=tts,
+                flags=flags,
+                embed=embed if embed else MISSING,
+                embeds=embeds if embeds else MISSING,
+                file=file if file else MISSING,
+                files=files if files else MISSING,
+                components=components if components else MISSING,
+                allowed_mentions=allowed_mentions,
+                previous_allowed_mentions=state.allowed_mentions
+            )
+            method = state.http.send_interaction_response(
+                token=self._token,
+                interaction_id=self.id,
+                params=params
+            )
+
+        with params:
             data = await method
-        finally:
-            for f in files:
-                f.close()
 
         if not isinstance(data, dict):
             data = await self.get_original_callback(raw=True)
-        if hidden:  # should not be the case but im not sure at the moment
+        is_hidden = MessageFlags._from_value(data['flags']).ephemeral
+
+        if is_hidden:
             msg = EphemeralMessage(state=self._state, channel=self.channel, data=data, interaction=self)
         else:
-            msg = data if isinstance(data, Message) else Message(state=self._state, channel=self.channel, data=data)
-        if self.callback_message:
-            self.messages[msg.id] = msg
-        if not hidden and delete_after is not None:
-            await msg.delete(delay=delete_after)
-        if hidden is True and not self.deferred:
-            self.deferred_hidden = True
-        if not self.callback_message:
+            msg = Message(state=self._state, channel=self.channel, data=data)
+
+        if response_type is not MISSING or is_initial:
+            self.deferred = True
+            if is_hidden:
+                self.deferred_hidden = True
             self.callback_message = msg
-        self.deferred = True
+        else:
+            self.messages[msg.id] = msg
+        if not is_hidden and delete_after is not None:
+            await msg.delete(delay=delete_after)
         return msg
 
-    async def respond_with_modal(self, modal: 'Modal') -> Dict:
+    async def respond_with_modal(self, modal: Modal) -> Dict:
         """|coro|
         Respond to an interaction with a popup modal.
 
@@ -699,14 +800,10 @@ class BaseInteraction:
             The modal to send.
         """
         if not self.deferred:
-            data = await self._state.http.send_interaction_response(
+            data = await self._state.http.post_initial_response(
                 token=self._token,
                 interaction_id=self.id,
-                application_id=self._application_id,
-                deferred=self.deferred,
-                followup=False,
-                data=modal.to_dict(),
-                type=9
+                data={'type': 9, 'data': modal.to_dict()}
             )
         else:
             raise AlreadyResponded(self.id)
@@ -831,8 +928,8 @@ class ApplicationCommandInteraction(BaseInteraction):
             self.target = None
 
     @property
-    def command(self) -> Optional[Union['SlashCommand', 'MessageCommand', 'UserCommand']]:
-        """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked if any."""
+    def command(self) -> Optional[Union[SlashCommand, MessageCommand, UserCommand]]:
+        """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked."""
         if getattr(self, '_command', None) is not None:
             return self._command
         return self._state._get_client()._get_application_command(self.data.id) \
@@ -904,20 +1001,26 @@ class ComponentInteraction(BaseInteraction):
 
 class AutocompleteInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when autocomplete for a :class:`discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` set to :obj:`True`.
+    Represents the data of an interaction that will be received when autocomplete for a :class:`~discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` set to :obj:`True`.
     """
+
+    @property
+    def command(self) -> Optional[Union[SlashCommand, MessageCommand, UserCommand]]:
+        """Optional[:class:`~discord.SlashCommand`]: The slash-command for wich autocomplete was triggered."""
+        if getattr(self, '_command', None) is not None:
+            return self._command
+        return self._state._get_client()._get_application_command(self.data.id) \
+            if (self.type.ApplicationCommand or self.type.ApplicationCommandAutocomplete) else None
+
     @property
     def focused_option(self) -> 'InteractionDataOption':
-        """:class:`~discord.InteractionDataOption`: Returns the currently focused option."""
-        for option in self.data.options:
-            if option.focused:
-                return option
+        """:class:`~discord.interactions.InteractionDataOption`: Returns the currently focused option."""
+        return self.focused  # type: ignore
 
     @property
     def focused_option_name(self) -> str:
         """:class:`str`: Returns the name of the currently focused option."""
         return self.focused_option.name
-
 
     async def send_choices(self, choices: List[SlashCommandOptionChoice]) -> None:
         """
@@ -960,7 +1063,7 @@ class ModalSubmitInteraction(BaseInteraction):
     """
     Represents the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is pressed.
     """
-    def get_field(self, custom_id) -> Union['TextInput', None]:
+    def get_field(self, custom_id) -> Union[TextInput, None]:
         """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`~discord.TextInput.custom_id` match or :class:`None`"""
         for ar in self.data.components:
             for c in ar:
@@ -969,7 +1072,7 @@ class ModalSubmitInteraction(BaseInteraction):
         return None
 
     @property
-    def fields(self) -> List['TextInput']:
+    def fields(self) -> List[TextInput]:
         """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the :class:`~discord.Modal`."""
         field_list = []
         for ar in self.data.components:
@@ -1012,7 +1115,7 @@ class ModalSubmitInteraction(BaseInteraction):
 class InteractionData:
     def __init__(self, *, state, data, guild=None, **kwargs):
         self._data = data
-        self._state = state
+        self._state: ConnectionState = state
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
         resolved = data.get('resolved', None)
@@ -1084,8 +1187,20 @@ class option_float(float):
 
 
 class InteractionDataOption:
+    """
+    Represents a slash-command option passed via a command.
+    By default, you only get in contact with this using :attr:`~discord.AutocompleteInteraction.focused_option`.
+
+    Attributes
+    -----------
+    name: :class:`str`
+        The name of the option
+    type: :class:`~discord.OptionType`
+        The type of the option
+
+    """
     def __init__(self, *, state, data, guild=None, **kwargs):
-        self._state = state
+        self._state: ConnectionState = state
         self._data = data
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
@@ -1094,6 +1209,7 @@ class InteractionDataOption:
 
     @property
     def value(self) -> Optional[Union[str, int, float]]:
+        """Union[:class:`str`, :class:`int`, :class:`float`]: Returns the value of the option (what the user passed)"""
         value = self._data.get('value', None)
         if value:
             if isinstance(value, bool): # because booleans are integers too
@@ -1108,17 +1224,19 @@ class InteractionDataOption:
 
     @property
     def focused(self) -> bool:
-        return bool(self._data.get('focused', False))
+        """:class:`bool`: Whether this option is currently focused (for autocomplete)"""
+        return self._data.get('focused', False)
 
     @property
-    def options(self) -> Optional[List['InteractionDataOption']]:
+    def options(self) -> Optional[List[InteractionDataOption]]:
+        """Optional[List[:class:`InteractionDataOption`]]: For sub-command (groups) the sub-command or the actual options"""
         options = self._data.get('options', [])
         return [InteractionDataOption(state=self._state, data=option, guild=self._guild) for option in options]
 
 
 class ResolvedData:
     def __init__(self, *, state, data, guild=None, **kwargs):
-        self._state = state
+        self._state: ConnectionState = state
         self._data = data
         self._guild = guild
         self._channel_id = kwargs.pop('channel_id', None)
@@ -1127,6 +1245,7 @@ class ResolvedData:
             value = data.get(attr, None)
             if value is not None:
                 getattr(self, f'_{self.__class__.__name__}__handle_{attr}')(value)
+        del self._data  # No longer needed
 
     @property
     def users(self) -> Optional[Dict[int, User]]:

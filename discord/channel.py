@@ -23,43 +23,44 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
 from __future__ import annotations
 
 import datetime
 import time
 import asyncio
+
 from typing import (
-    List,
-    Dict,
+    TYPE_CHECKING,
+    Callable,
     Union,
     Optional,
-    Callable,
-    TYPE_CHECKING,
+    Sequence,
+    List,
+    Dict,
     Any
 )
 
-from .object import Object
-
-
 from .permissions import Permissions
-from .enums import ChannelType, try_enum, VoiceRegion, AutoArchiveDuration
+from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, try_enum
 from .components import Button, SelectMenu, ActionRow
 from .mixins import Hashable
 from . import utils, abc
-from .file import File
-from .mentions import AllowedMentions
+from .flags import ChannelFlags
 from .asset import Asset
-from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived, MissingPermissionsToCreateThread, \
-    Forbidden, HTTPException
+from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived, MissingPermissionsToCreateThread
+from .http import handle_message_parameters
+from .partial_emoji import PartialEmoji
 
 if TYPE_CHECKING:
     from .state import ConnectionState
+    from .mentions import AllowedMentions
+    from .file import File
     from .embeds import Embed
-    from .sticker import GuildSticker
     from .member import Member
-    from .message import Message, MessageReference
+    from .message import Message, PartialMessage
     from .guild import Guild
+
+MISSING = utils.MISSING
 
 
 __all__ = (
@@ -77,9 +78,11 @@ __all__ = (
     '_channel_factory'
 )
 
+
 async def _single_delete_strategy(messages):
     for m in messages:
         await m.delete()
+
 
 class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
     """Represents a Discord guild text channel.
@@ -132,11 +135,11 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                  '_type', 'last_message_id', '_threads', 'default_auto_archive_duration')
 
     def __init__(self, *, state, guild, data):
-        self._state = state
+        self._state: ConnectionState = state
         self.id = int(data['id'])
         self._type = data['type']
-        self._update(guild, data)
         self._threads = {}
+        self._update(guild, data)
 
     def __repr__(self):
         attrs = [
@@ -149,6 +152,13 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
+    def __del__(self):
+        guild = self.guild
+        if self.guild.get_channel(self.id):
+            raise TypeError('You can\'t delete a channel object manually from cache. Use "await channel.delete() instead.')
+        for thread in self._threads:
+            guild._remove_thread(thread)
+
     def _update(self, guild, data):
         self.guild = guild
         self.name = data['name']
@@ -156,10 +166,8 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         self.topic = data.get('topic')
         self.position = data['position']
         self.nsfw = data.get('nsfw', False)
-        # Does this need coercion into `int`? No idea yet.
         self.slowmode_delay = data.get('rate_limit_per_user', 0)
         self._type = data.get('type', self._type)
-        # self.threads = data.get('threads', self.threads)
         self.last_message_id = utils._get_as_snowflake(data, 'last_message_id')
         self.default_auto_archive_duration = try_enum(AutoArchiveDuration, data.get('default_auto_archive_duration', 1440))
         self._fill_overwrites(data)
@@ -357,7 +365,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                     check: Callable = None,
                     before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
                     after: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
-                    around: Optional[Union[abc.Snowflake, datetime.datetime]]=  None,
+                    around: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
                     oldest_first: Optional[bool] = False,
                     bulk: Optional[bool] = True):
         """|coro|
@@ -601,12 +609,14 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                             name: str,
                             auto_archive_duration: AutoArchiveDuration = None,
                             private: bool = False,
+                            invitable: bool = True,
+                            *,
                             reason: str = None):
         """|coro|
 
         Creates a new thread in this channel.
 
-        You must have the :attr:`~Permissions.manage_channels` permission to
+        You must have the :attr:`~Permissions.create_public_threads` or for private :attr:`~Permissions.create_private_threads` permission to
         use this.
 
 
@@ -621,10 +631,10 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
         aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration)).value
         _type = ChannelType.private_thread if private is True else ChannelType.public_thread
-        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, reason=reason)
+        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, invitable=invitable, reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
 
-        self._threads[thread.id] = thread
+        self.guild._add_thread(thread)
         return thread
 
 
@@ -660,11 +670,12 @@ class ThreadMember:
 
 
 class ThreadChannel(abc.Messageable, Hashable):
+    """Represents a thread in a guild"""
     def __init__(self, *, state, guild, data):
-        self._state = state
+        self._state: ConnectionState = state
         self.id = int(data['id'])
-        self._type = ChannelType.try_value(data['type'])
-        self._members = {}
+        self.type: ChannelType = ChannelType.try_value(data['type'])
+        self._members: Dict[int, ThreadMember] = {}
         self._update(guild, data)
 
     @staticmethod
@@ -676,31 +687,42 @@ class ThreadChannel(abc.Messageable, Hashable):
         return ChannelType.public_thread.value
 
     def _update(self, guild, data):
-        self.guild = guild
-        self.parent_id = int(data['parent_id'])
-        self.owner_id = int(data['owner_id'])
+        self.guild: Guild = guild
+        self.parent_id: int = int(data['parent_id'])
+        self.owner_id: int = int(data['owner_id'])
         if not self._members:
             self._members = {self.owner_id: self.owner}
-        self.name = data['name']
-        self.message_count = data.get('message_count', 0)
+        self.name: str = data['name']
+        self.message_count: int = data.get('message_count', 0)
+        self.total_message_sent: int = data.get('total_message_sent', self.message_count)
         self.member_count = data.get('member_count', 0)
-        self.last_message_id = utils._get_as_snowflake(data, 'last_message_id')
-        self.slowmode_delay = int(data.get('rate_limit_per_user', 0))
+        self.last_message_id: int = utils._get_as_snowflake(data, 'last_message_id')
+        self.slowmode_delay: int = int(data.get('rate_limit_per_user', 0))
         self._thread_meta = data.get('thread_metadata', {})
         me = data.get('member', None)
         if me:
             self._members[self._state.self_id] = ThreadMember._from_thread(thread=self, data=me)
         return self
 
+    @classmethod
+    def _from_partial(cls, state: ConnectionState, guild: Guild, data: Dict[str, Any]) -> ThreadChannel:
+        self = cls.__new__(cls)
+        self.id = int(data['id'])
+        self.guild = guild
+        self.type = try_enum(ChannelType, data['type'])
+        self.parent_id = int(data['parent_id'])
+
     def _sync_from_members_update(self, data):
         self.member_count = data.get('member_count', self.member_count)
+        joined = self._state.member_cache_flags.joined
         for new_member in data.get('added_members', []):
-            if not self.guild.get_member(int(new_member['user_id'])):
-                # This should be only the case if the ``GUILD_MEMBER`` Intent is disabled.
-                # But we use the data discord send us to add him to cache.
-                # NOTE: This may be removed later
-                from .member import Member
-                self.guild._add_member(Member(data=new_member, guild=self.guild, state=self._state))
+            if joined:
+                if not self.guild.get_member(int(new_member['user_id'])):
+                    # This should be only the case if the ``GUILD_MEMBER`` Intent is disabled.
+                    # But we use the data discord send us to add him to cache.
+                    # NOTE: This may be removed later
+                    from .member import Member
+                    self.guild._add_member(Member(data=new_member, guild=self.guild, state=self._state))
             self._add_member(ThreadMember(state=self._state, guild=self.guild, data=new_member))
         for removed_id in data.get('removed_member_ids', []):
             member = self.get_member(int(removed_id))
@@ -720,13 +742,9 @@ class ThreadChannel(abc.Messageable, Hashable):
         self._members.pop(member.id, None)
 
     @property
-    def starter_message(self):
+    def starter_message(self) -> Optional[Message]:
         original_message = self._state._get_message(self.id)
-        return original_message or self.id
-
-    @property
-    def type(self):
-        return try_enum(ChannelType, self._type)
+        return original_message
 
     @property
     def owner(self):
@@ -749,6 +767,10 @@ class ThreadChannel(abc.Messageable, Hashable):
         return self._thread_meta.get('archived', True)
 
     @property
+    def invitable(self):
+        return self._thread_meta.get('invitable', False)
+
+    @property
     def last_update_time(self):
         return datetime.datetime.fromisoformat(self._thread_meta.get('archive_timestamp', ''))
 
@@ -764,15 +786,15 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def created_at(self) -> Optional[datetime.datetime]:
-        """An aware timestamp of when the thread was created in UTC.
+        """Optional[:class:`datetime.datetime`]: An aware timestamp of when the thread was created in UTC.
 
         .. note::
 
             This timestamp only exists for threads created after 9 January 2022, otherwise returns ``None``.
-
-        :return: Optional[:class:`datetime.datetime`]
         """
-        return datetime.datetime.fromisoformat(self._thread_meta.get('create_timestamp'))
+        create_timestamp = self._thread_meta.get('create_timestamp', None)
+        if create_timestamp:
+            return datetime.datetime.fromisoformat(create_timestamp)
 
     @property
     def mention(self) -> str:
@@ -905,7 +927,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     async def _fetch_members(self):
         if not self._state._intents.members:
             raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this API-call.')
-        r =  await self._state.http.list_thread_members(channel_id=self.id)
+        r = await self._state.http.list_thread_members(channel_id=self.id)
         for thread_member in r:
             if not self.get_member(int(thread_member['user_id'])):
                 self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
@@ -1006,6 +1028,89 @@ class ThreadChannel(abc.Messageable, Hashable):
             result.append(Invite(state=state, data=invite))
 
         return result
+
+    async def edit(self, *, reason: Optional[str] = None, **fields) -> ThreadChannel:
+        """|coro|
+
+        Edits the thread. In order to unarchive it, you must already be a member of it.
+
+        Parameters
+        ----------
+        name: Optional[:class:`str`]
+        	The channel name. Must be 1-100 characters long
+        archived: Optional[:class:`bool`]
+            Whether the thread is archived
+        auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
+            Duration in minutes to automatically archive the thread after recent activity
+        locked: Optional[:clas:`bool`]
+            Whether the thread is locked; when a thread is locked, only users with :attr:`Permissions.manage_threads` can unarchive it
+        invitable: Optional[:clas:`bool`]
+        	Whether non-moderators can add other non-moderators to a thread; only available on private threads
+        rate_limit_per_user: :Optional[:class:`int`]
+            Amount of seconds a user has to wait before sending another message (0-21600);
+            bots, as well as users with the permission :attr:`Permissions.manage_messages`,
+            :attr:`Permissions.manage_thread`, or :attr:`Permissions.manage_channel`, are unaffected
+
+        Raises
+        ------
+        ~discord.Forbidden:
+            The bot missing permissions to edit the thread or the specific field
+        ~discord.HTTPException:
+            Editing the thread failed
+
+        Returns
+        -------
+        ThreadChannel:
+            The updated thread on success
+        """
+        payload = {}
+
+        try:
+            name: Optional[str] = fields['name']
+        except KeyError:
+            pass
+        else:
+            payload['name'] = name
+
+        try:
+            archived: Optional[bool] = fields['archived']
+        except KeyError:
+            pass
+        else:
+            payload['archived'] = archived
+
+        try:
+            auto_archive_duration: Optional[AutoArchiveDuration] = fields['auto_archive_duration']
+        except KeyError:
+            pass
+        else:
+            payload['auto_archive_duration'] = int(auto_archive_duration)
+
+        try:
+            locked: Optional[bool] = fields['locked']
+        except KeyError:
+            pass
+        else:
+            payload['locked'] = locked
+
+        try:
+            invitable: Optional[bool] = fields['invitable']
+        except KeyError:
+            pass
+        else:
+            if self.type.private_thread:
+                payload['invitable'] = invitable
+
+        try:
+            rate_limit_per_user: Optional[int] = fields['rate_limit_per_user']
+        except KeyError:
+            pass
+        else:
+            payload['rate_limit_per_user'] = rate_limit_per_user
+
+        data = await self._state.http.edit_thread(self.id, **payload, reason=reason)
+        self._update(self.guild, data)
+        return self
 
 
 class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
@@ -1163,7 +1268,6 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
             'bitrate': self.bitrate,
             'user_limit': self.user_limit
         }, name=name, reason=reason)
-
 
     async def edit(self, *, reason=None, **options):
         """|coro|
@@ -1969,7 +2073,7 @@ class ForumTag(Hashable):
         self._state = state
         self.guild = guild
         self.id = int(data['id'])
-        self.emoji_id = data.get("emoji_id")
+        self.emoji_id = utils._get_as_snowflake(data, "emoji_id")
         self.emoji_name = data.get("emoji_name")
         self.moderated = data.get("moderated")
         self.name = data.get("name")
@@ -1986,6 +2090,12 @@ class ForumTag(Hashable):
 
     def __str__(self):
         return self.__repr__()
+
+    @property
+    def emoji(self) -> Optional[PartialEmoji]:
+        if not (self.emoji_name or self.emoji_id):
+            return None
+        return PartialEmoji(name=self.emoji_name, id=self.emoji_id)
 
 
 class ForumChannel(abc.GuildChannel, Hashable):
@@ -2021,6 +2131,10 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The category channel ID this channel belongs to, if applicable.
         topic: Optional[:class:`str`]
             The channel's topic. ``None`` if it doesn't exist.
+        flags: :class:`ChannelFlags`
+            The channel's flags.
+        default_reaction_emoji: Optional[:class:`PartialEmoji`
+            The default emoji for reactiong to a post in this forum
         position: :class:`int`
             The position in the channel list. This is a number that starts at 0. e.g. the
             top channel is position 0.
@@ -2037,7 +2151,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
     __slots__ = ('name', 'id', 'guild', 'topic', '_state', 'nsfw',
                  'category_id', 'position', 'slowmode_delay', '_overwrites',
                  '_type', 'last_message_id', '_threads', 'default_auto_archive_duration',
-                 '_posts', '_tags', 'last_post_id')
+                 '_posts', '_tags', 'flags', 'default_reaction_emoji', 'last_post_id')
 
     def __init__(self, *, state, guild, data):
         self._state = state
@@ -2058,19 +2172,39 @@ class ForumChannel(abc.GuildChannel, Hashable):
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
+    def __del__(self):
+        guild = self.guild
+        if self.guild.get_channel(self.id):
+            raise TypeError('You can\'t delete a channel object manually from cache. Use "await channel.delete() instead.')
+        for post in self._posts:
+            guild._remove_post(post)
+
     def _update(self, guild, data):
         self.guild = guild
         self.name = data['name']
         self.category_id = utils._get_as_snowflake(data, 'parent_id')
         self.topic = data.get('topic')
+        self.flags: ChannelFlags = ChannelFlags._from_value(data['flags'])
+        try:
+            emoji = data['default_reaction_emoji']
+        except KeyError:
+            if not hasattr(self, 'default_reaction_emoji'):
+                self.default_reaction_emoji = None
+        else:
+            self.default_reaction_emoji: Optional[PartialEmoji] = PartialEmoji(
+                name=emoji['emoji_name'],
+                id=utils._get_as_snowflake(emoji, 'id') or None
+            )
         self.position = data['position']
         self.nsfw = data.get('nsfw', False)
         # Does this need coercion into `int`? No idea yet.
         self.slowmode_delay = data.get('rate_limit_per_user', 0)
         self._type = data.get('type', self._type)
         self.last_post_id = utils._get_as_snowflake(data, 'last_message_id')
-        self.default_auto_archive_duration = try_enum(AutoArchiveDuration,
-                                                      data.get('default_auto_archive_duration', 1440))
+        self.default_auto_archive_duration = try_enum(
+            AutoArchiveDuration,
+            data.get('default_auto_archive_duration', 1440)
+        )
         self._fill_overwrites(data)
         self._fill_tags(data)
 
@@ -2172,6 +2306,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The new channel name.
         topic: :class:`str`
             The new channel's topic.
+        tags_required: :class:`bool`
+            Whether new created post require at least one tag provided on creation
         position: :class:`int`
             The new channel's position.
         nsfw: :class:`bool`
@@ -2185,10 +2321,6 @@ class ForumChannel(abc.GuildChannel, Hashable):
         slowmode_delay: :class:`int`
             Specifies the slowmode rate limit for user in this channel, in seconds.
             A value of `0` disables slowmode. The maximum value possible is `21600`.
-        type: :class:`ChannelType`
-            Change the type of this text channel. Currently, only conversion between
-            :attr:`ChannelType.text` and :attr:`ChannelType.news` is supported. This
-            is only available to guilds that contain ``NEWS`` in :attr:`Guild.features`.
         reason: Optional[:class:`str`]
             The reason for editing this channel. Shows up on the audit log.
         overwrites: :class:`dict`
@@ -2205,6 +2337,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         HTTPException
             Editing the channel failed.
         """
+        # TODO: Implement this correctly
         await self._edit(options, reason=reason)
 
     @utils.copy_doc(abc.GuildChannel.clone)
@@ -2212,6 +2345,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return await self._clone_impl({
             'topic': self.topic,
             'nsfw': self.nsfw,
+            'flags': self.flags,
             'rate_limit_per_user': self.slowmode_delay
         }, name=name, reason=reason)
 
@@ -2276,16 +2410,17 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     async def create_post(
             self,
+            *,
             name: str,
+            tags: Optional[List[ForumTag]] = None,
             content: Any = None,
             embed: Optional[Embed] = None,
-            embeds: Optional[List[Embed]] = None,
+            embeds: Sequence[Embed] = None,
             components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
             file: Optional[File] = None,
-            files: Optional[List[File]] = None,
-            stickers: Optional[List[GuildSticker]] = None,
+            files: Sequence[File] = None,
             allowed_mentions: Optional[AllowedMentions] = None,
-            supress: bool = False,
+            suppress: bool = False,
             auto_archive_duration: Optional[AutoArchiveDuration] = None,
             slowmode_delay: int = 0,
             reason: Optional[str] = None
@@ -2301,6 +2436,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
         -----------
         name: :class:`str`
             The name of the post.
+        tags: Optional[List[:class:`ForumTag`]]
+            The list of up to 5 tags that should be added to the post.
+            These tags must be from the parent channel (forum).
         content: :class:`str`
             The content of the post starter-message.
         embed: Optional[:class:`Embed`]
@@ -2313,84 +2451,75 @@ class ForumChannel(abc.GuildChannel, Hashable):
             A file to include in the post starter-message.
         files: List[:class:`File`]
             A list of files to include in the post starter-message.
-        stickers: List[:class:`GuildSticker`]
-            A list of up to 3 stickers to include in the post starter-message.
         allowed_mentions: Optional[:class:`AllowedMentions`]
             The allowed mentions for the post.
-        supress: Optional[:class:`bool`]
-            Whether to supress embeds in the thread starter-message.
+        suppress: Optional[:class:`bool`]
+            Whether to suppress embeds in the post starter-message.
         auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
             The duration after the post will be archived automatically when inactive.
         slowmode_delay: Optional[:class:`int`]
             The amount of seconds a user has to wait before sending another message (0-21600)
         reason: Optional[:class:`str`]
             The reason for creating this post. Shows up in the audit logs.
+
+        Raises
+        -------
+        :exc:`InvalidArgument`
+            The forum requires ``tags`` on post creation but no tags where provided,
+            or ``name`` is of invalid length,
+            or ``auto_archive_duration`` is not of valid type.
+        :exc:`Forbidden`
+            The bot does not have permissions to create posts in this channel
+        :exe:`HTTPException`
+            Creating the post failed
         """
 
         state = self._state
-
         content = str(content) if content is not None else None
-        embed_list = []
 
-        if embed is not None:
-            embed_list.append(embed.to_dict())
+        if self.flags.require_tags and not tags:
+            raise InvalidArgument('This forum requires at least one tag provided when creating a post.')
 
-        if embeds:
-            embed_list.extend([e.to_dict() for e in embeds])
-
-        embeds = embed_list
-
-        if len(embeds) > 10:
-            raise InvalidArgument(f'The maximum number of embeds that can be send with a message is 10, got: {len(embeds)}')
-
-        if components:
-            _components = []
-            for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, (Button, SelectMenu)):
-                    _components.extend(ActionRow(component).to_dict())
-                elif isinstance(component, ActionRow):
-                    _components.extend(component.to_dict())
-                elif isinstance(component, list):
-                    _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
-            components = _components
-
-        if allowed_mentions is not None:
-            if state.allowed_mentions is not None:
-                allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
-            else:
-                allowed_mentions = allowed_mentions.to_dict()
+        if suppress:
+            from .message import MessageFlags
+            flags = MessageFlags._from_value(0)
+            flags.suppress_embeds = True
         else:
-            allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
-
-        if file is not None and files is not None:
-            raise InvalidArgument('cannot pass both file and files parameter to send()')
-
-        message = {
-            'content': content,
-            'embeds': embeds,
-            'allowed_mentions': allowed_mentions,
-            'components' : components,
-            'sticker_ids': [str(sticker.id) for sticker in stickers] if stickers else None,
-            'attachments': [{'id': index,
-                             'description': file.description,
-                             'filename': file.filename
-                             } for index, file in enumerate(files)] if files and len(files) else None,
-            'flags': 4 if supress else None
-        }
+            flags = MISSING
 
         if len(name) > 100 or len(name) < 1:
-            raise AttributeError('The name of the post must bee between 1-100 characters; got %s' % len(name))
-        aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration,
-                                                                                             auto_archive_duration)).value
-        _type = ChannelType.public_thread
-        data = await self._state.http.create_post(
-            self.id,
-            name=name,
-            message=message,
-            auto_archive_duration=aad,
-            rate_limit_per_user=slowmode_delay,
-            reason=reason
-        )
+            raise InvalidArgument('The name of the post must bee between 1-100 characters; got %s' % len(name))
+        if auto_archive_duration:
+            auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
+            if not isinstance(auto_archive_duration, AutoArchiveDuration):
+                raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
+            else:
+                auto_archive_duration = auto_archive_duration.value
+
+        channel_payload = {
+            'name': name,
+            'rate_limit_per_user': slowmode_delay,
+            'auto_archive_duration': auto_archive_duration,
+            'applied_tags': [str(tag.id) for tag in tags] if tags is not None else None
+        }
+
+        with handle_message_parameters(
+            content=content,
+            embed=embed if embed else MISSING,
+            embeds=embeds if embeds else MISSING,
+            components=components if components else MISSING,
+            file=file if file else MISSING,
+            files=files if files else MISSING,
+            flags=flags,
+            allowed_mentions=allowed_mentions,
+            previous_allowed_mentions=state.allowed_mentions,
+            channel_payload=channel_payload,
+        ) as params:
+            data = await state.http.create_post(
+                channel_id=self.id,
+                params=params,
+                reason=reason
+            )
         post = ForumPost(state=self._state, guild=self.guild, data=data)
         self._add_post(post)
         # TODO: wait for ws event
@@ -2418,7 +2547,7 @@ class PartialMessageable(abc.Messageable, Hashable):
     """
 
     def __init__(self, state: 'ConnectionState', id: int, type: Optional[ChannelType] = None, *, guild_id: int = None):
-        self._state: 'ConnectionState' = state
+        self._state: ConnectionState = state
         self.id: int = id
         self.guild_id: Optional[int] = guild_id
         self.type: Optional[ChannelType] = type
@@ -2426,7 +2555,7 @@ class PartialMessageable(abc.Messageable, Hashable):
     def __repr__(self) -> str:
         return f'<PartialMessageable id={self.id} type={self.type!r}{f" guild_id={self.guild_id}" if self.guild_id else ""}>'
 
-    async def _get_channel(self) -> 'PartialMessageable':
+    async def _get_channel(self) -> PartialMessageable:
         return self
 
     @property
@@ -2466,7 +2595,7 @@ class PartialMessageable(abc.Messageable, Hashable):
 
         return Permissions.none()
 
-    def get_partial_message(self, message_id: int) -> 'PartialMessageable':
+    def get_partial_message(self, message_id: int) -> PartialMessage:
         """Creates a :class:`PartialMessage` from the message ID.
         This is useful if you want to work with a message and only have its ID without
         doing an unnecessary API call.

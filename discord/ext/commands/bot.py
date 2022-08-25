@@ -37,14 +37,7 @@ from typing import (
     Optional,
     Union,
     Dict,
-    Pattern,
-    Match,
-    AnyStr,
-    Callable,
-    Awaitable,
-    Any,
-    Iterable,
-    Mapping
+    Tuple
 )
 
 import discord
@@ -55,7 +48,6 @@ from .context import Context
 from . import errors
 from .help import HelpCommand, DefaultHelpCommand
 from .cog import Cog
-from ... import ApplicationCommand
 
 
 def when_mentioned(bot, msg):
@@ -132,8 +124,9 @@ class BotBase(GroupMixin):
         self.owner_id = options.get('owner_id')
         self.owner_ids = options.get('owner_ids', set())
         self.strip_after_prefix = options.get('strip_after_prefix', False)
-        self.sync_commands_on_cog_reload: bool = options.get('sync_commands_on_cog_reload', False)
         self.sync_commands: bool = options.get('sync_commands', False)
+        self.delete_not_existing_commands: bool = options.get('delete_not_existing_commands', True)
+        self.sync_commands_on_cog_reload: bool = options.get('sync_commands_on_cog_reload', False)
         if self.owner_id and self.owner_ids:
             raise TypeError('Both owner_id and owner_ids are set.')
 
@@ -162,6 +155,10 @@ class BotBase(GroupMixin):
                 self._schedule_event(func, ev, *args, **kwargs)
 
     async def close(self):
+        """|coro|
+
+        This has the same behaviour as :meth:`discord.Client.close` except that it unload all extensions and cogs first.
+        """
         for extension in tuple(self.__extensions):
             try:
                 self.unload_extension(extension)
@@ -720,7 +717,7 @@ class BotBase(GroupMixin):
         except ImportError:
             raise errors.ExtensionNotFound(name)
 
-    def load_extension(self, name, *, package=None):
+    def load_extension(self, name, *, package: Optional[str] = None):
         """Loads an extension.
 
         An extension is a python module that contains commands, cogs, or
@@ -767,7 +764,7 @@ class BotBase(GroupMixin):
 
         self._load_from_module_spec(spec, name)
 
-    def unload_extension(self, name, *, package=None):
+    def unload_extension(self, name, *, package: Optional[str] = None):
         """Unloads an extension.
 
         When the extension is unloaded, all commands, listeners, and cogs are
@@ -808,7 +805,7 @@ class BotBase(GroupMixin):
         self._remove_module_references(lib.__name__)
         self._call_module_finalizers(lib, name)
 
-    def reload_extension(self, name, *, package=None):
+    def reload_extension(self, name, *, package: Optional[str] = None):
         """Atomically reloads an extension.
 
         This replaces the extension with the same extension, only refreshed. This is
@@ -872,6 +869,20 @@ class BotBase(GroupMixin):
         else:
              self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
 
+    def reload_extensions(self, *names: Tuple[str], package: Optional[str] = None) -> None:
+        """
+        Same behaviour as :meth:`.reload_extension` excepts that it reloads multiple extensions
+        and triggers application commands syncing after all has been reloaded
+        """
+        before_sync = copy.copy(self.sync_commands_on_cog_reload)
+        self.sync_commands_on_cog_reload = False
+        try:
+            for name in names:
+                self.reload_extension(name, package=package)
+        finally:
+            self.sync_commands_on_cog_reload = before_sync
+            self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
+
     @property
     def extensions(self):
         """Mapping[:class:`str`, :class:`py:types.ModuleType`]: A read-only mapping of extension name to extension."""
@@ -887,7 +898,7 @@ class BotBase(GroupMixin):
             The cog wich application-commands should be added to the internal list of application-commands.
         """
 
-        self.remove_application_cmds_from_cog(cog)  # to ensure that commands that arent in the cog anymore get removed
+        self.remove_application_cmds_from_cog(cog)  # to ensure that commands that aren't in the cog anymore get removed
 
         for cmd_type, commands in cog.__application_commands_by_type__.items():
 
@@ -1030,7 +1041,7 @@ class BotBase(GroupMixin):
                     to_remove.append(cmd)
                     continue
                 # Remove all subcommands from this command if they are in the cog.
-                if cmd.type == 'chat_input' and cmd.has_subcommands:
+                if cmd.type.chat_input and cmd.has_subcommands:
                     for sub_command in cmd.sub_commands:
                         if sub_command.type.sub_command_group:
                             for sub_cmd in sub_command.sub_commands:
@@ -1040,7 +1051,6 @@ class BotBase(GroupMixin):
                             del cmd._sub_commands[sub_command.name]
 
         for guild_id, t in self._guild_specific_application_commands.items():
-            to_remove = []
             for commands in t.values():
                 for cmd in commands.values():
                     if cmd.cog and cmd.cog == cog:
@@ -1055,7 +1065,6 @@ class BotBase(GroupMixin):
                                         del sub_command._sub_commands[sub_cmd.name]
                             if sub_command.cog and sub_command.cog == cog:
                                 del cmd._sub_commands[sub_command.name]
-
         for cmd in to_remove:
             self._remove_application_command(cmd, from_cache=False)
 

@@ -28,12 +28,14 @@ from .enums import UserFlags
 
 __all__ = (
     'SystemChannelFlags',
+    'ChannelFlags',
     'MessageFlags',
     'PublicUserFlags',
     'Intents',
     'MemberCacheFlags',
     'ApplicationFlags'
 )
+
 
 class flag_value:
     def __init__(self, func):
@@ -185,6 +187,34 @@ class SystemChannelFlags(BaseFlags):
         """:class:`bool`: Returns ``True`` if the system channel is used for Nitro boosting notifications."""
         return 2
 
+@fill_with_flags()
+class ChannelFlags(BaseFlags):
+    r"""Wraps up a Discord Channel flag value"""
+    __slots__ = ()
+
+    @flag_value
+    def removed_from_home(self):
+        """:class:`bool`: Returns ``True`` if the channel is removed from the guild's home feed."""
+        return 0
+
+    @flag_value
+    def pinned(self):
+        """:class:`bool`: Returns ``True`` if the channel is a :class:`ForumPost` pinned at the top of the parent forum."""
+        return 1
+
+    @flag_value
+    def removed_from_active_now(self):
+        """:class:`bool`: Returns ``True`` if the channel is removed from the active now section in the guild's home feed."""
+        return 2
+
+    @flag_value
+    def require_tags(self):
+        """
+        :class:`bool`:
+        Returns ``True`` if this channel is a :class:`ForumChannel` that requires providing at least one tag when creating a post.
+        """
+        return 4
+
 
 @fill_with_flags()
 class MessageFlags(BaseFlags):
@@ -249,7 +279,7 @@ class MessageFlags(BaseFlags):
 
     @flag_value
     def has_thread(self):
-        """:class:`bool`: Returns ``True`` if the source message is associated with an thread.
+        """:class:`bool`: Returns ``True`` if the source message is associated with a thread.
 
         This message has an associated thread, with the same id as the message.
         """
@@ -270,6 +300,11 @@ class MessageFlags(BaseFlags):
         This message is an interaction response and the bot is "thinking"
         """
         return 128
+
+    @flag_value
+    def failed_to_mention_some_roles_in_thread(self):
+        """:class:`bool`: Returns ``True`` if the message failed to mention some roles and add their members to the thread."""
+        return 256
 
 
 @fill_with_flags()
@@ -1138,3 +1173,8 @@ class ApplicationFlags(BaseFlags):
         """:class:`bool`: Returns ``True`` if the privileged gateway message-content-intent
         is enabled in the application in the developer-portal."""
         return 1 << 19
+
+    @flag_value
+    def application_commands_badge(self):
+        """:class:`bool`: Returns ``True`` if the app has at least one global `application-command <application_commands>`_ registered."""
+        return 1 << 23

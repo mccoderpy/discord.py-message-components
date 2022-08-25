@@ -284,6 +284,7 @@ class DiscordWebSocket:
         # ws related stuff
         self.session_id = None
         self.sequence = None
+        self.resume_gateway_url = None
         self._zlib = zlib.decompressobj()
         self._buffer = bytearray()
         self._close_code = None
@@ -297,14 +298,18 @@ class DiscordWebSocket:
         return self._rate_limiter.is_ratelimited()
 
     @classmethod
-    async def from_client(cls, client, *, initial=False, gateway=None, shard_id=None, session=None, sequence=None, resume=False):
+    async def from_client(cls, client, *, initial=False, gateway=None, resume_gateway_url=None, shard_id=None, session=None, sequence=None, resume=False):
         """Creates a main websocket for Discord from a :class:`Client`.
 
         This is for internal use only.
         """
         version = client.gateway_version
-        gateway = gateway or await client.http.get_gateway(v=version)
+        if resume is True and resume_gateway_url is not None:
+            gateway = resume_gateway_url
+        else:
+            gateway = gateway or await client.http.get_gateway(v=version)
         socket = await client.http.ws_connect(gateway)
+
         ws = cls(socket, loop=client.loop)
 
         # dynamically add attributes needed
@@ -313,6 +318,7 @@ class DiscordWebSocket:
         ws._discord_parsers = client._connection.parsers
         ws._dispatch = client.dispatch
         ws.gateway = gateway
+        ws.resume_gateway_url = resume_gateway_url
         ws.call_hooks = client._connection.call_hooks
         ws._initial_identify = initial
         ws.shard_id = shard_id
@@ -474,6 +480,7 @@ class DiscordWebSocket:
 
                 self.sequence = None
                 self.session_id = None
+                self.resume_gateway_url = None
                 log.info('Shard ID %s _session has been invalidated.', self.shard_id)
                 await self.close(code=1000)
                 raise ReconnectWebSocket(self.shard_id, resume=False)
@@ -487,6 +494,7 @@ class DiscordWebSocket:
             self._trace = trace = data.get('_trace', [])
             self.sequence = msg['s']
             self.session_id = data['session_id']
+            self.resume_gateway_url = f'{data["resume_gateway_url"]}?{self.gateway.split("?")[-1]}'  # Weird way doing this but should prevent any future issues with that
             # pass back shard ID to ready handler
             data['__shard_id__'] = self.shard_id
             log.info('Shard ID %s has connected to Gateway: %s (Session ID: %s).',
@@ -717,13 +725,18 @@ class DiscordVoiceWebSocket:
     CLIENT_CONNECT      = 12
     CLIENT_DISCONNECT   = 13
 
-    def __init__(self, socket, loop):
+    def __init__(self, socket, loop, *, hook=None):
         self.ws = socket
         self.loop = loop
         self._keep_alive = None
         self._close_code = None
         self.secret_key = None
         self.ssrc_map = {}
+        if hook:
+            self._hook = hook
+
+    async def _hook(self, *args):
+        pass
 
     async def send_as_json(self, data):
         log.debug('Sending voice websocket frame: %s.', data)
@@ -837,6 +850,8 @@ class DiscordVoiceWebSocket:
                 self.ssrc_map[ssrc]['speaking'] = speaking
             else:
                 self.ssrc_map.update({ssrc: {'user_id': user, 'speaking': speaking}})
+
+        await self._hook(self, msg)
 
 
     async def initial_connection(self, data):
