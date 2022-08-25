@@ -72,7 +72,6 @@ if TYPE_CHECKING:
     from .state import ConnectionState
     from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
 
-
 MISSING = utils.MISSING
 
 log = logging.getLogger(__name__)
@@ -94,6 +93,7 @@ class EphemeralMessage:
     """
     Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
     """
+
     # This class will be removed in the future when we switched to use a Webhook message model instead
     def __init__(self, *, state, channel, data, interaction):
         self._state: ConnectionState = state
@@ -123,6 +123,7 @@ class EphemeralMessage:
                 'mention_roles',
                 'flags',
                 'interaction',
+                'components',
                 'attachments',
                 'reactions'
         ):
@@ -133,7 +134,14 @@ class EphemeralMessage:
                     setattr(
                         self,
                         handler,
-                        None if handler not in {'embeds', 'mentions', 'mentioned_roles', 'attachments', 'reactions'} else []
+                        None if handler not in {
+                            'embeds',
+                            'mentions',
+                            'mentioned_roles',
+                            'attachments',
+                            'reactions',
+                            'components'
+                        } else []
                     )  # bad solution for now but works, will be removed anyway when rewrite the existing webhook system
         return self
 
@@ -230,7 +238,8 @@ class EphemeralMessage:
 
     def __repr__(self):
         return '<EphemeralMessage id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(
-            self)
+            self
+        )
 
     def __eq__(self, other):
         return isinstance(other.__class__, self.__class__) and self.id == other.id
@@ -256,18 +265,18 @@ class EphemeralMessage:
             for component in action_row:
                 if isinstance(component, SelectMenu):
                     yield component
-    
+
     async def edit(
-        self,
-        *,
-        content: Any = MISSING,
-        embed: Optional[Embed] = MISSING,
-        embeds: Sequence[Embed] = MISSING,
-        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
-        attachments: Sequence[Union[Attachment, File]] = MISSING,
-        keep_existing_attachments: bool = False,
-        allowed_mentions: Optional[AllowedMentions] = MISSING,
-        suppress: Optional[bool] = False
+            self,
+            *,
+            content: Any = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Sequence[Embed] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            attachments: Sequence[Union[Attachment, File]] = MISSING,
+            keep_existing_attachments: bool = False,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
+            suppress: Optional[bool] = False
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
@@ -317,7 +326,7 @@ class EphemeralMessage:
 
 
         """
-        
+
         if suppress:
             flags = MessageFlags._from_value(self.flags.value)
             flags.suppress_embeds = True
@@ -330,10 +339,10 @@ class EphemeralMessage:
 
         state = self._state
         interaction = self.__interaction__
-        
+
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await state.http.get_channel(self.channel_id))
-        
+
         is_original_response = self.id == interaction.callback_message.id
 
         params = handle_message_parameters(
@@ -346,7 +355,7 @@ class EphemeralMessage:
             allowed_mentions=allowed_mentions,
             previous_allowed_mentions=state.allowed_mentions
         )
-        
+
         if is_original_response:
             method = state.http.edit_original_interaction_response(
                 token=interaction._token,
@@ -360,10 +369,10 @@ class EphemeralMessage:
                 message_id=self.id,
                 params=params
             )
-        
+
         with params:
-            data = await method    
-        
+            data = await method
+
         if not isinstance(data, dict):
             if is_original_response:
                 return await interaction.get_original_callback()
@@ -403,8 +412,12 @@ class BaseInteraction:
                 self.message = Message(state=state, channel=self.channel, data=message_data)
             self.cached_message = self.message and self._state._get_message(self.message.id)
             self.message_id = self.message.id
-        self.data = InteractionData(data=data.get('data', None), state=state, guild=self.guild,
-                                    channel_id=self.channel_id)
+        self.data = InteractionData(
+            data=data.get('data', None),
+            state=state,
+            guild=self.guild,
+            channel_id=self.channel_id
+        )
         self._member = data.get('member', None)
         self._user = data.get('user', self._member.get('user', None) if self._member else None)
         self.user_id = int(self._user['id'])
@@ -486,17 +499,17 @@ class BaseInteraction:
                 return msg
 
     async def edit(
-        self,
-        *,
-        content: Any = MISSING,
-        embed: Optional[Embed] = MISSING,
-        embeds: Sequence[Embed] = MISSING,
-        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
-        attachments: Sequence[Union[Attachment, File]] = MISSING,
-        keep_existing_attachments: bool = False,
-        delete_after: Optional[float] = None,
-        allowed_mentions: Optional[AllowedMentions] = MISSING,
-        suppress: Optional[bool] = False
+            self,
+            *,
+            content: Any = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Sequence[Embed] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            attachments: Sequence[Union[Attachment, File]] = MISSING,
+            keep_existing_attachments: bool = False,
+            delete_after: Optional[float] = None,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
+            suppress: Optional[bool] = False
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
@@ -587,14 +600,14 @@ class BaseInteraction:
 
         if response_type is MISSING:
             params = handle_message_parameters(
-                    content=content,
-                    flags=flags,
-                    embed=embed,
-                    embeds=embeds,
-                    attachments=attachments,
-                    components=components,
-                    allowed_mentions=allowed_mentions,
-                    previous_allowed_mentions=state.allowed_mentions
+                content=content,
+                flags=flags,
+                embed=embed,
+                embeds=embeds,
+                attachments=attachments,
+                components=components,
+                allowed_mentions=allowed_mentions,
+                previous_allowed_mentions=state.allowed_mentions
             )
             method = state.http.edit_original_interaction_response(
                 token=self._token,
@@ -642,18 +655,18 @@ class BaseInteraction:
         return msg
 
     async def respond(
-        self,
-        content: str = None, *,
-        tts: bool = False,
-        embed: Optional[Embed] = None,
-        embeds: Optional[List[Embed]] = None,
-        components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
-        file: Optional[File] = None,
-        files: Optional[List[File]] = None,
-        delete_after: Optional[float] = None,
-        allowed_mentions: Optional[AllowedMentions] = None,
-        suppress: bool = False,
-        hidden: bool = False
+            self,
+            content: str = None, *,
+            tts: bool = False,
+            embed: Optional[Embed] = None,
+            embeds: Optional[List[Embed]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+            file: Optional[File] = None,
+            files: Optional[List[File]] = None,
+            delete_after: Optional[float] = None,
+            allowed_mentions: Optional[AllowedMentions] = None,
+            suppress: bool = False,
+            hidden: bool = False
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
@@ -718,21 +731,22 @@ class BaseInteraction:
         if not self.deferred:
             response_type = InteractionCallbackType.msg_with_source
         else:
-            if self.callback_message and (self.callback_message.flags.loading if self.type.ApplicationCommand else False):
+            if self.callback_message and (
+            self.callback_message.flags.loading if self.type.ApplicationCommand else False):
                 is_initial = True
 
         if response_type is MISSING:
             params = handle_message_parameters(
-                    content=content,
-                    tts=tts,
-                    flags=flags,
-                    embed=embed if embed else MISSING,
-                    embeds=embeds if embeds else MISSING,
-                    file=file if file else MISSING,
-                    files=files if files else MISSING,
-                    components=components if components else MISSING,
-                    allowed_mentions=allowed_mentions,
-                    previous_allowed_mentions=state.allowed_mentions
+                content=content,
+                tts=tts,
+                flags=flags,
+                embed=embed if embed else MISSING,
+                embeds=embeds if embeds else MISSING,
+                file=file if file else MISSING,
+                files=files if files else MISSING,
+                components=components if components else MISSING,
+                allowed_mentions=allowed_mentions,
+                previous_allowed_mentions=state.allowed_mentions
             )
             if is_initial:
                 method = state.http.edit_original_interaction_response(
@@ -917,6 +931,7 @@ class ApplicationCommandInteraction(BaseInteraction):
     """
     Represents the data of an interaction that will be received when a :class:`discord.SlashCommand`, :class:`discord.UserCommand` or :class:`discord.MessageCommand` is used.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.data.type.user:
@@ -956,6 +971,7 @@ class ComponentInteraction(BaseInteraction):
     """
     Represents the data of an interaction which will be received when a :class:`~discord.SelectMenu` or :class:`~discord.Button` is used.
     """
+
     @property
     def component(self) -> Union[Button, SelectMenu]:
         """Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]: The component that was used"""
@@ -973,9 +989,11 @@ class ComponentInteraction(BaseInteraction):
                     self._component = select_menu
         return self._component
 
-    async def defer(self,
-                    type: Union[Literal[7], InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
-                    hidden: bool = False) -> Message:
+    async def defer(
+            self,
+            type: Union[Literal[7], InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
+            hidden: bool = False
+            ) -> Message:
         """
         Defers the interaction.
 
@@ -1062,6 +1080,7 @@ class ModalSubmitInteraction(BaseInteraction):
     """
     Represents the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is pressed.
     """
+
     def get_field(self, custom_id) -> Union[TextInput, None]:
         """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`~discord.TextInput.custom_id` match or :class:`None`"""
         for ar in self.data.components:
@@ -1198,6 +1217,7 @@ class InteractionDataOption:
         The type of the option
 
     """
+
     def __init__(self, *, state, data, guild=None, **kwargs):
         self._state: ConnectionState = state
         self._data = data
@@ -1211,7 +1231,7 @@ class InteractionDataOption:
         """Union[:class:`str`, :class:`int`, :class:`float`]: Returns the value of the option (what the user passed)"""
         value = self._data.get('value', None)
         if value:
-            if isinstance(value, bool): # because booleans are integers too
+            if isinstance(value, bool):  # because booleans are integers too
                 return value
             if isinstance(value, int):
                 return option_int(value, focused=self.focused)
