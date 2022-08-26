@@ -865,6 +865,13 @@ class BotBase(GroupMixin):
 
             # revert sys.modules back to normal and raise back to caller
             sys.modules.update(modules)
+
+            self.loop.create_task(
+                self._request_sync_commands(
+                    is_cog_reload=True,
+                    reload_failed=True
+                )
+            )
             raise
         else:
              self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
