@@ -62,6 +62,7 @@ from .channel import PartialMessageable
 if TYPE_CHECKING:
     from .state import ConnectionState
     from .mentions import AllowedMentions
+    from .abc import Messageable
 
 
 __all__ = (
@@ -586,7 +587,7 @@ class Message(Hashable):
         self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')
         self.activity = data.get('activity')
-        self.channel = channel  # weakref.proxy(channel, self.__remove_from_cache__)
+        self.channel: Messageable = channel  # weakref.proxy(channel, self.__remove_from_cache__)
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
         self.pinned = data['pinned']
@@ -1544,7 +1545,7 @@ class PartialMessage(Hashable):
         if not isinstance(channel, PartialMessageable) and int(channel.type) not in {0, 1, 2, 3, 5, 10, 11, 12, 15}:
             raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
-        self.channel = channel
+        self.channel: Messageable = channel
         self._state: ConnectionState = channel._state
         self.id = id
 
