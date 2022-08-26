@@ -87,6 +87,7 @@ def when_mentioned_or(*prefixes):
     ----------
     :func:`.when_mentioned`
     """
+
     def inner(bot, msg):
         r = list(prefixes)
         r = when_mentioned(bot, msg) + r
@@ -436,7 +437,7 @@ class BotBase(GroupMixin):
         return coro
 
     # listener registration
-    def add_interaction_listener(self, _type,  func, custom_id: re.Pattern):
+    def add_interaction_listener(self, _type, func, custom_id: re.Pattern):
         """
         This adds an interaction(decorator) like :meth:`on_click` or :meth:`on_select` to the client listeners.
 
@@ -454,13 +455,13 @@ class BotBase(GroupMixin):
         else:
             listeners.append((func, lambda i, c: custom_id.match(str(c.custom_id))))
 
-    def remove_interaction_listener(self, _type,  func, custom_id: re.Pattern):
+    def remove_interaction_listener(self, _type, func, custom_id: re.Pattern):
         """
         This removes an interaction(decorator) like :meth:`on_click` or :meth:`on_select` from the client listeners.
 
         .. note::
             This should not use directly; only cogs use this to remove them.
-            
+
         """
         try:
             if _type in self.extra_interaction_events:
@@ -865,9 +866,16 @@ class BotBase(GroupMixin):
 
             # revert sys.modules back to normal and raise back to caller
             sys.modules.update(modules)
+
+            self.loop.create_task(
+                self._request_sync_commands(
+                    is_cog_reload=True,
+                    reload_failed=True
+                )
+            )
             raise
         else:
-             self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
+            self.loop.create_task(self._request_sync_commands(is_cog_reload=True))
 
     def reload_extensions(self, *names: Tuple[str], package: Optional[str] = None) -> None:
         """
@@ -915,7 +923,7 @@ class BotBase(GroupMixin):
                                 if sub_command.type.sub_command_group:
                                     # if the subcommand is a group that already exists, add the subcommands of it
                                     # to the existing group
-                                    if sub_command.name in existing_command.sub_commands\
+                                    if sub_command.name in existing_command.sub_commands \
                                             and existing_command._sub_commands[sub_command.name].type.sub_command_group:
                                         existing_group = existing_command._sub_commands[sub_command.name]
                                         for sub_cmd in sub_command.sub_commands:
@@ -927,7 +935,8 @@ class BotBase(GroupMixin):
                                             existing_command.description = command.description
                                         existing_group.name_localizations.update(command.name_localizations)
                                         existing_group.description_localizations.update(
-                                            command.description_localizations)
+                                            command.description_localizations
+                                        )
                                         # maybe remove the if-statement in the future
                                         if command.default_required_permissions:
                                             existing_group.default_required_permissions = command.default_required_permissions
@@ -995,7 +1004,9 @@ class BotBase(GroupMixin):
                                                 sub_cmd.disabled = False
                                                 existing_group._sub_commands[sub_cmd.name] = sub_cmd
                                             existing_group.name_localizations.update(sub_command.name_localizations)
-                                            existing_group.description_localizations.update(sub_command.description_localizations)
+                                            existing_group.description_localizations.update(
+                                                sub_command.description_localizations
+                                                )
                                             continue
                                         else:
                                             for sub_cmd in sub_command.sub_commands:
@@ -1121,8 +1132,10 @@ class BotBase(GroupMixin):
                 if isinstance(ret, collections.abc.Iterable):
                     raise
 
-                raise TypeError("command_prefix must be plain string, iterable of strings, or callable "
-                                "returning either of these, not {}".format(ret.__class__.__name__))
+                raise TypeError(
+                    "command_prefix must be plain string, iterable of strings, or callable "
+                    "returning either of these, not {}".format(ret.__class__.__name__)
+                )
 
             if not ret:
                 raise ValueError("Iterable command_prefix must contain at least one prefix")
@@ -1182,14 +1195,18 @@ class BotBase(GroupMixin):
 
             except TypeError:
                 if not isinstance(prefix, list):
-                    raise TypeError("get_prefix must return either a string or a list of string, "
-                                    "not {}".format(prefix.__class__.__name__))
+                    raise TypeError(
+                        "get_prefix must return either a string or a list of string, "
+                        "not {}".format(prefix.__class__.__name__)
+                    )
 
                 # It's possible a bad command_prefix got us here.
                 for value in prefix:
                     if not isinstance(value, str):
-                        raise TypeError("Iterable command_prefix or list returned from get_prefix must "
-                                        "contain only strings, not {}".format(value.__class__.__name__))
+                        raise TypeError(
+                            "Iterable command_prefix or list returned from get_prefix must "
+                            "contain only strings, not {}".format(value.__class__.__name__)
+                        )
 
                 # Getting here shouldn't happen
                 raise

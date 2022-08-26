@@ -59,6 +59,7 @@ from .http import handle_message_parameters
 
 if TYPE_CHECKING:
     from .state import ConnectionState
+    from .abc import  Messageable
     from .mentions import AllowedMentions
 
 
@@ -584,7 +585,7 @@ class Message(Hashable):
         self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')
         self.activity = data.get('activity')
-        self.channel = channel
+        self.channel: Messageable = channel
         self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
         self.pinned = data['pinned']
@@ -1541,7 +1542,7 @@ class PartialMessage(Hashable):
         if channel.type not in (ChannelType.text, ChannelType.voice, ChannelType.news, ChannelType.private, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread):
             raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
-        self.channel = channel
+        self.channel: Messageable = channel
         self._state = channel._state
         self.id = id
 
