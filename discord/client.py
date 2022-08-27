@@ -496,7 +496,9 @@ class Client:
         """
         if not hasattr(self, 'app'):
             await self.application_info()
-        if (is_cog_reload and not reload_failed and getattr(self, 'sync_commands_on_cog_reload', False) is True) or (not is_cog_reload and self.sync_commands is True):
+        if (is_cog_reload and not reload_failed and getattr(self, 'sync_commands_on_cog_reload', False) is True) or (
+                not is_cog_reload and self.sync_commands is True
+        ):
             return await self._sync_commands()
         state = self._connection  # Speedup attribute access
         app_id = self.app.id

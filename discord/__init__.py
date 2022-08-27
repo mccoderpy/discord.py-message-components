@@ -15,7 +15,7 @@ __title__ = 'discord'
 __author__ = 'Rapptz & mccoderpy'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015-2021 Rapptz & 2021-present mccoderpy'
-__version__ = '1.8a'
+__version__ = '2.0a'
 
 try:
     with open('./version.txt') as fp:
