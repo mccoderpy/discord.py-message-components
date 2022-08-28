@@ -876,6 +876,47 @@ class SubCommand(SlashCommandOption):
                   self.description,
                   self.options)
 
+    @property
+    def base_command(self) -> SlashCommand:
+        """
+        Returns the base command of the sub-command
+
+        For example if the command is ``/a b c`` or ``/a c`` the base command would be ``a``
+
+        Returns
+        -------
+        :class:`SlashCommand`
+            The base command of the sub-command
+        """
+
+        parent = self.parent
+        if not isinstance(parent, SlashCommand):
+            parent = parent.parent
+        return parent
+
+    @property
+    def mention(self) -> str:
+        """
+        Returns a string the client renders as a mention of the command
+
+        .. note::
+
+            This requires that the bot is running and the command is cached
+
+        Returns
+        -------
+        The mention of the command
+
+        Raises
+        -------
+        :exc:`TypeError`
+            The bot is not running and so the id's not cached
+        """
+        base_command = self.base_command
+        if not base_command.id:
+            raise TypeError('The bot must be running in order to get the mention of a command')
+        return f'</{self.name}:{base_command.id}>'
+
     def to_dict(self):
         base = {
             'type': 1,
@@ -1110,6 +1151,28 @@ class SlashCommand(ApplicationCommand):
     @property
     def parent(self):
         return self
+
+    @property
+    def mention(self) -> str:
+        """
+        Returns a string the client renders as a mention of the command
+
+        .. note::
+
+            This requires that the bot is running and the command is cached
+
+        Returns
+        -------
+        The mention of the command
+
+        Raises
+        -------
+        :exc:`TypeError`
+            The bot is not running and so the id's not cached
+        """
+        if not self.id:
+            raise TypeError('The bot must be running in order to get the mention of a command')
+        return f'</{self.name}:{self.id}>'
 
     @property
     def cog(self) -> Optional['Cog']:
