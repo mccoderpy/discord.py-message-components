@@ -122,6 +122,7 @@ class EphemeralMessage:
                 'mentions',
                 'mention_roles',
                 'flags',
+                'components',
                 'interaction',
                 'attachments',
                 'reactions'
