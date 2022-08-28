@@ -917,6 +917,26 @@ class SubCommand(SlashCommandOption):
             raise TypeError('The bot must be running in order to get the mention of a command')
         return f'</{self.name}:{base_command.id}>'
 
+    @property
+    def qualified_name(self) -> str:
+        """
+        Returns a string representing the full name of the command
+
+        For example if the command is ``/a b c`` or ``/a c`` the qualified name would be ``a b c`` or ``a c``
+
+        Returns
+        -------
+        :class:`str`
+            The full name of the command
+        """
+
+        full_name = ''
+        parent = self.parent
+        if not isinstance(parent, SlashCommand):
+            full_name += f'{parent.parent.name} '
+        full_name += f'{parent.name} {self.name}'
+        return full_name
+
     def to_dict(self):
         base = {
             'type': 1,
