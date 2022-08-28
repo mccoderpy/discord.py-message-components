@@ -342,7 +342,7 @@ class EphemeralMessage:
         if not self.channel:
             self.channel = self._state.add_dm_channel(data=await state.http.get_channel(self.channel_id))
 
-        is_original_response = self.id == interaction.callback_message.id
+        is_original_response = interaction.callback_message and self.id == interaction.callback_message.id
 
         params = handle_message_parameters(
             content=content,
@@ -794,6 +794,7 @@ class BaseInteraction:
             self.deferred = True
             if is_hidden:
                 self.deferred_hidden = True
+        if not self.callback_message:
             self.callback_message = msg
         else:
             self.messages[msg.id] = msg
