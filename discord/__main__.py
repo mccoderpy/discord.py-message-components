@@ -29,21 +29,22 @@ import sys
 from pathlib import Path
 
 import discord
-import pkg_resources
+if sys.version_info <= (3, 7):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 import aiohttp
 import platform
 
 
 def show_version():
-    entries = []
-
-    entries.append('- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(sys.version_info))
+    entries = ['- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(sys.version_info)]
     version_info = discord.version_info
     entries.append('- discord.py-message-components v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(version_info))
     if version_info.releaselevel != 'final':
-        pkg = pkg_resources.get_distribution('discord.py-message-components')
-        if pkg:
-            entries.append('    - discord.py.message-components pkg_resources: v{0}'.format(pkg.version))
+        version = importlib_metadata.version('discord.py-message-components')
+        if version:
+            entries.append('    - discord.py.message-components metadata: v{0}'.format(version))
 
     entries.append('- aiohttp v{0.__version__}'.format(aiohttp))
     uname = platform.uname()
