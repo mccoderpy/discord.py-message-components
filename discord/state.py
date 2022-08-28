@@ -213,7 +213,6 @@ class ConnectionState:
         self._emojis = {}
         self._stickers = {}
         self._events = {}
-        self._calls = {}
         self._guilds = {}
         self._voice_clients = {}
 
@@ -323,7 +322,7 @@ class ConnectionState:
             self._events[event_id] = event = GuildScheduledEvent(state=self, guild=guild, data=data)
         try:
             guild._add_event(event)
-        except AttributeError: # If it is a PartialInviteGuild
+        except AttributeError:  # If it is a PartialInviteGuild
             pass
         return event
 
@@ -331,7 +330,7 @@ class ConnectionState:
     def guilds(self):
         return list(self._guilds.values())
 
-    def _get_guild(self, guild_id):
+    def _get_guild(self, guild_id) -> Guild:
         return self._guilds.get(guild_id)
 
     def _add_guild(self, guild):
@@ -537,7 +536,7 @@ class ConnectionState:
         if self._messages is not None:
             self._messages.append(message)
         # not sure if we get ephemeral message here, but we don't want them as last message so ignore them
-        if channel and channel.__class__ in [TextChannel, ThreadChannel, VoiceChannel] and not message.flags.ephemeral:
+        if channel and isinstance(channel, (TextChannel, VoiceChannel, ThreadChannel)) and not message.flags.ephemeral:
             channel.last_message_id = message.id
 
     def parse_message_delete(self, data):
@@ -616,21 +615,33 @@ class ConnectionState:
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = ThreadChannel(state=self, guild=guild, data=data)
-        message = self._get_message(thread.id)
-        if message:
-            message._thread = thread
-        guild._add_thread(thread)
-        self.dispatch('thread_create', thread)
+        if isinstance(thread.parent_channel, ForumChannel):
+            post = ForumPost(state=self, guild=guild, data=data)
+            guild._add_post(post)
+            self.dispatch('post_create', post)
+        else:
+            message = self._get_message(thread.id)
+            if message:
+                message._thread = thread
+            guild._add_thread(thread)
+            self.dispatch('thread_create', thread)
 
     def parse_thread_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = guild.get_channel(int(data['id']))
         if not thread:
             thread = ThreadChannel(state=self, guild=guild, data=data)
-            guild._add_thread(thread)
+            if isinstance(thread.parent_channel, ForumChannel):
+                post = ForumPost(state=self, guild=guild, data=data)
+                guild._add_post(post)
+            else:
+                guild._add_thread(thread)
         old_thread = copy.copy(thread)
         thread._update(guild, data)
-        self.dispatch('thread_update', old_thread, thread)
+        if isinstance(thread.parent_channel, ForumChannel):
+            self.dispatch('post_update', old_thread, thread)
+        else:
+            self.dispatch('thread_update', old_thread, thread)
 
     def parse_thread_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
@@ -638,9 +649,14 @@ class ConnectionState:
         if not thread:
             thread = ThreadChannel._from_partial(state=self, guild=guild, data=data)
         else:
-            if thread.starter_message:
-                thread.starter_message._thread = None
-            guild._remove_thread(thread)
+            if isinstance(thread.parent_channel, ForumChannel):
+                guild._remove_post(thread)
+                self.dispatch('post_delete', thread)
+            else:
+                guild._remove_thread(thread)
+                self.dispatch('thread_delete', thread)
+                if thread.starter_message:
+                    thread.starter_message._thread = None
         self.dispatch('thread_delete', thread)
 
 
@@ -650,8 +666,10 @@ class ConnectionState:
         if thread:
             old_thread = copy.copy(thread)
             thread._add_self(data)
-            self.dispatch('thread_member_update', old_thread, thread)
-
+            if isinstance(thread, ForumPost):
+                self.dispatch('post_member_update', old_thread, thread)
+            else:
+                self.dispatch('thread_member_update', old_thread, thread)
 
     def parse_thread_members_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
@@ -659,7 +677,11 @@ class ConnectionState:
         if thread:
             old_thread = copy.copy(thread)
             thread._sync_from_members_update(data)
-            self.dispatch('thread_members_update', old_thread, thread)
+
+            if isinstance(thread, ForumPost):
+                self.dispatch('post_members_update', old_thread, thread)
+            else:
+                self.dispatch('thread_members_update', old_thread, thread)
 
     def parse_thread_list_sync(self, data):
         guild = self._get_guild(int(data['guild_id']))
@@ -668,7 +690,10 @@ class ConnectionState:
         for t in data['threads']:
             _, factory = _channel_factory(t['type'])
             thread = factory(state=self, guild=guild, data=t)
-            guild._add_thread(thread)
+            if isinstance(thread.parent_channel, ForumChannel):
+                guild._add_post(thread)
+            else:
+                guild._add_thread(thread)
             try:
                 channel_ids.remove(thread.parent_id)
             except ValueError:
@@ -993,7 +1018,7 @@ class ConnectionState:
             log.debug('GUILD_STICKERS_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
             return
 
-        before_stickers = guild.stickers
+        before_stickers = copy.copy(guild.stickers)
         for sticker in before_stickers:
             self._stickers.pop(sticker.id, None)
         guild.stickers = tuple(map(lambda d: self.store_sticker(d), data['stickers']))
@@ -1340,17 +1365,24 @@ class AutoShardedConnectionState(ConnectionState):
         self.shard_ids = ()
         self.shards_launched = asyncio.Event()
 
-
     def _update_message_references(self):
+        removed = set()
         for msg in self._messages:
             if not msg.guild:
-                continue
+                removed.add(msg)
 
             new_guild = self._get_guild(msg.guild.id)
             if new_guild is not None and new_guild is not msg.guild:
                 channel_id = msg.channel.id
-                channel = new_guild.get_channel(channel_id) or Object(id=channel_id)
-                msg._rebind_channel_reference(channel)
+                channel = new_guild.get_channel(channel_id)
+                if channel:
+                    msg._rebind_channel_reference(channel)
+                else:
+                    removed.add(msg)
+        if removed:
+            # Remove the messages from cache we no longer have access to
+            for msg in removed:
+                self._messages.remove(msg)
 
     async def chunker(self, guild_id, query='', limit=0, presences=False, *, shard_id=None, nonce=None):
         ws = self._get_websocket(guild_id, shard_id=shard_id)

@@ -28,12 +28,14 @@ from .enums import UserFlags
 
 __all__ = (
     'SystemChannelFlags',
+    'ChannelFlags',
     'MessageFlags',
     'PublicUserFlags',
     'Intents',
     'MemberCacheFlags',
     'ApplicationFlags'
 )
+
 
 class flag_value:
     def __init__(self, func):
@@ -184,6 +186,34 @@ class SystemChannelFlags(BaseFlags):
     def premium_subscriptions(self):
         """:class:`bool`: Returns ``True`` if the system channel is used for Nitro boosting notifications."""
         return 2
+
+@fill_with_flags()
+class ChannelFlags(BaseFlags):
+    r"""Wraps up a Discord Channel flag value"""
+    __slots__ = ()
+
+    @flag_value
+    def removed_from_home(self):
+        """:class:`bool`: Returns ``True`` if the channel is removed from the guild's home feed."""
+        return 0
+
+    @flag_value
+    def pinned(self):
+        """:class:`bool`: Returns ``True`` if the channel is a :class:`ForumPost` pinned at the top of the parent forum."""
+        return 1
+
+    @flag_value
+    def removed_from_active_now(self):
+        """:class:`bool`: Returns ``True`` if the channel is removed from the active now section in the guild's home feed."""
+        return 2
+
+    @flag_value
+    def require_tags(self):
+        """
+        :class:`bool`:
+        Returns ``True`` if this channel is a :class:`ForumChannel` that requires providing at least one tag when creating a post.
+        """
+        return 4
 
 
 @fill_with_flags()

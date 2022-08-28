@@ -54,6 +54,7 @@ if version.endswith(('a', 'b', 'rc', 'dev')):
             fp.write(version)
 
 
+
 # The text of the README file
 readme = Path('./README.rst').read_text(encoding='utf-8')
 
@@ -98,6 +99,16 @@ setup(
     ],
     packages=['discord', 'discord.bin', 'discord.ext.commands', 'discord.ext.tasks'],
     include_package_data=True,
-    install_requires=["aiohttp", "chardet", "yarl", "async-timeout", "typing-extensions", "attrs", "multidict", "idna", 'importlib_metadata<4;python_version<"3.8.0'],
+    install_requires=[
+        "aiohttp",
+        "chardet",
+        "yarl",
+        "async-timeout",
+        "typing-extensions",
+        "attrs",
+        "multidict",
+        "idna",
+        'importlib-metadata<4;python_version<"3.8.0"'
+    ],
     python_requires=">=3.6"
 )

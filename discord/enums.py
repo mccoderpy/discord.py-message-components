@@ -211,7 +211,7 @@ class ChannelType(Enum):
     public_thread   = 11
     private_thread  = 12
     stage_voice     = 13
-    guild_directory = 14 # don't think bots can access them but yea... to have all listed here
+    guild_directory = 14  # don't think bots can access them but yea... to have all listed here
     forum_channel   = 15
 
 

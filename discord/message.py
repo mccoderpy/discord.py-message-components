@@ -56,11 +56,12 @@ from .guild import Guild
 from .mixins import Hashable
 from .sticker import Sticker
 from .http import handle_message_parameters
+from .channel import PartialMessageable
 
 if TYPE_CHECKING:
     from .state import ConnectionState
-    from .abc import  Messageable
     from .mentions import AllowedMentions
+    from .abc import Messageable
 
 
 __all__ = (
@@ -366,7 +367,7 @@ class MessageReference:
     __slots__ = ('message_id', 'channel_id', 'guild_id', 'fail_if_not_exists', 'resolved', '_state')
 
     def __init__(self, *, message_id, channel_id, guild_id=None, fail_if_not_exists=True):
-        self._state = None
+        self._state: ConnectionState = None
         self.resolved = None
         self.message_id = message_id
         self.channel_id = channel_id
@@ -576,7 +577,7 @@ class Message(Hashable):
                  'application', 'activity', 'stickers', '_thread', 'interaction')
 
     def __init__(self, *, state, channel, data):
-        self._state = state
+        self._state: ConnectionState = state
         self.id = utils._get_as_snowflake(data, 'id')
         self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
         self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
@@ -625,6 +626,9 @@ class Message(Hashable):
 
     def __repr__(self):
         return '<Message id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(self)
+
+    def __remove_from_cache__(self, _):
+        self._state._messages.remove(self)
 
     def _try_patch(self, data, key, transform=None):
         try:
@@ -1442,8 +1446,6 @@ class Message(Hashable):
         self._thread = thread
         return thread
 
-
-
     def to_reference(self, *, fail_if_not_exists=True):
         """Creates a :class:`~discord.MessageReference` from the current message.
 
@@ -1539,11 +1541,11 @@ class PartialMessage(Hashable):
     )
 
     def __init__(self, *, channel, id):
-        if channel.type not in (ChannelType.text, ChannelType.voice, ChannelType.news, ChannelType.private, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread):
+        if not isinstance(channel, PartialMessageable) and int(channel.type) not in {0, 1, 2, 3, 5, 10, 11, 12, 15}:
             raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
         self.channel: Messageable = channel
-        self._state = channel._state
+        self._state: ConnectionState = channel._state
         self.id = id
 
     def _update(self, data):

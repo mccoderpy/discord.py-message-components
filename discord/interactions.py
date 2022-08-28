@@ -72,6 +72,7 @@ if TYPE_CHECKING:
     from .state import ConnectionState
     from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
 
+
 MISSING = utils.MISSING
 
 log = logging.getLogger(__name__)
@@ -93,7 +94,6 @@ class EphemeralMessage:
     """
     Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
     """
-
     # This class will be removed in the future when we switched to use a Webhook message model instead
     def __init__(self, *, state, channel, data, interaction):
         self._state: ConnectionState = state
@@ -123,7 +123,6 @@ class EphemeralMessage:
                 'mention_roles',
                 'flags',
                 'interaction',
-                'components',
                 'attachments',
                 'reactions'
         ):
@@ -238,8 +237,7 @@ class EphemeralMessage:
 
     def __repr__(self):
         return '<EphemeralMessage id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(
-            self
-        )
+            self)
 
     def __eq__(self, other):
         return isinstance(other.__class__, self.__class__) and self.id == other.id
@@ -731,8 +729,7 @@ class BaseInteraction:
         if not self.deferred:
             response_type = InteractionCallbackType.msg_with_source
         else:
-            if self.callback_message and (
-            self.callback_message.flags.loading if self.type.ApplicationCommand else False):
+            if self.callback_message and (self.callback_message.flags.loading if self.type.ApplicationCommand else False):
                 is_initial = True
 
         if response_type is MISSING:
