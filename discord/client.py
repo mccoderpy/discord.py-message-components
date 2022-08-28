@@ -50,7 +50,6 @@ from typing import (
 )
 
 
-
 from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
@@ -61,7 +60,7 @@ from .channel import _channel_factory, PartialMessageable
 from .enums import ChannelType, ApplicationCommandType
 from .mentions import AllowedMentions
 from .errors import *
-from .enums import Status, VoiceRegion
+from .enums import Status, VoiceRegion, OptionType
 from .gateway import *
 from .activity import BaseActivity, create_activity
 from .voice_client import VoiceClient
@@ -73,9 +72,7 @@ from .backoff import ExponentialBackoff
 from .webhook import Webhook
 from .iterators import GuildIterator
 from .appinfo import AppInfo
-from .application_commands import MessageCommand, UserCommand, SlashCommand, generate_options, ApplicationCommand, \
-    GuildOnlySlashCommand, SubCommandGroup, SubCommand, GuildOnlySubCommand, GuildOnlySubCommandGroup, OptionType, \
-    Localizations
+from .application_commands import *
 
 if TYPE_CHECKING:
     from .permissions import Permissions
@@ -2085,8 +2082,28 @@ class Client:
                     self._application_commands_by_type[command.type.name].pop(command.name, None)
 
     @property
-    def application_commands(self):
+    def application_commands(self) -> List[ApplicationCommand]:
+        """List[:class:`ApplicationCommand`]: Returns a list of any application command that is registered for the bot`"""
         return list(self._application_commands.values())
+
+    @property
+    def global_application_commands(self) -> List[ApplicationCommand]:
+        """
+        Returns a list of all global application command that is registered for the bot
+
+        .. note::
+            This requires the bot running and all commands cached, otherwise the list will be empty
+
+        Returns
+        --------
+        List[:class:`ApplicationCommand`]
+            A list of registered global application commands of the bot
+        """
+        commands = []
+        for command in self.application_commands:
+            if not command.guild_id:
+                commands.append(command)
+        return commands
 
     async def change_presence(self, *, activity=None, status=None, afk=False):
         """|coro|
