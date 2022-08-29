@@ -915,7 +915,7 @@ class SubCommand(SlashCommandOption):
         base_command = self.base_command
         if not base_command.id:
             raise TypeError('The bot must be running in order to get the mention of a command')
-        return f'</{self.name}:{base_command.id}>'
+        return f'</{self.qualified_name}:{base_command.id}>'
 
     @property
     def qualified_name(self) -> str:
