@@ -188,8 +188,8 @@ class _Overwrites:
 
     def __init__(self, **kwargs):
         self.id = kwargs.pop('id')
-        self.allow = int(kwargs.pop('allow_new', 0))
-        self.deny = int(kwargs.pop('deny_new', 0))
+        self.allow = int(kwargs.pop('allow', 0))
+        self.deny = int(kwargs.pop('deny', 0))
         self.type = sys.intern(kwargs.pop('type'))
 
     def _asdict(self):
@@ -345,7 +345,7 @@ class GuildChannel:
 
         for index, overridden in enumerate(data.get('permission_overwrites', [])):
             overridden_type = try_enum(PermissionType, overridden.pop('type'))
-            if not overridden_type:
+            if not isinstance(overridden_type, PermissionType):
                 raise AttributeError('Type type should be 0 - member, or 1 - role not %s' % overridden_type)
             overridden_id = int(overridden.pop('id'))
             self._overwrites.append(_Overwrites(id=overridden_id, type=overridden_type.name, **overridden))

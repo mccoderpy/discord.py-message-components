@@ -231,15 +231,15 @@ class ChannelType(Enum):
 
 
 class PermissionType(Enum):
-    member = 0
-    role   = 1
+    role   = 0
+    member = 1
 
     # i use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
     def __str__(self):
-        return getattr(self.name, 'name')
+        return self.name
 
     def __int__(self):
-        return getattr(self, 'value')
+        return self.value
 
 
 class PrivacyLevel(Enum):
