@@ -2185,9 +2185,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
         self.category_id = utils._get_as_snowflake(data, 'parent_id')
         self.topic = data.get('topic')
         self.flags: ChannelFlags = ChannelFlags._from_value(data['flags'])
-        try:
-            emoji = data['default_reaction_emoji']
-        except KeyError:
+        emoji = data.get('default_reaction_emoji', None)
+        if not emoji:
             if not hasattr(self, 'default_reaction_emoji'):
                 self.default_reaction_emoji = None
         else:
