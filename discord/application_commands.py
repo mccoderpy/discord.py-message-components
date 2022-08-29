@@ -1195,6 +1195,10 @@ class SlashCommand(ApplicationCommand):
         return f'</{self.name}:{self.id}>'
 
     @property
+    def qualified_name(self) -> str:
+        return self.name
+
+    @property
     def cog(self) -> Optional['Cog']:
         """Optional[:class:`ext.commands.Cog`]: The cog the slash command belongs to"""
         return getattr(self, '_cog', None)
@@ -1214,6 +1218,7 @@ class SlashCommand(ApplicationCommand):
 
     @property
     def has_subcommands(self) -> bool:
+        """:class:`bool`: Whether the command has sub-commands or not"""
         return bool(self.sub_commands)
 
     def autocomplete_callback(self, coro):
@@ -1256,8 +1261,8 @@ class SlashCommand(ApplicationCommand):
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
     @property
-    def sub_commands(self) -> Optional[List[Union['SubCommandGroup', SubCommand]]]:
-        """A :class:`list` of :class:`SubCommand` and :class:`SubCommandGroup` the command has."""
+    def sub_commands(self) -> List[Union[SubCommandGroup, SubCommand]]:
+        """List[Union[:class:`SubCommand`, :class:`SubCommandGroup`]: A list of sub-commands or sub-command groups the command has."""
         return list(self._sub_commands.values())
 
     @property
@@ -1689,7 +1694,8 @@ class SubCommandGroup(SlashCommandOption):
             sub_command.parent = self
 
     @property
-    def sub_commands(self):
+    def sub_commands(self) -> List[SubCommand]:
+        """List[:class:`SubCommand`]: Returns a list of sub-commands the group has"""
         return list(self._sub_commands.values())
 
     def to_dict(self):
