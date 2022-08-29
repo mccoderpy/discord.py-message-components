@@ -569,7 +569,7 @@ class GuildChannel:
             base.mention_everyone = False
             base.embed_links = False
             base.attach_files = False
-            base.use_public_threads = False
+            base.create_public_threads = False
 
         # if you can't read a channel then you have no permissions there
         if not base.read_messages:
