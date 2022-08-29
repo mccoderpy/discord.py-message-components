@@ -130,7 +130,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         :attr:`~Permissions.manage_messages` bypass slowmode.
     """
 
-    __slots__ = ('name', 'id', 'guild', 'topic', '_state', 'nsfw',
+    __slots__ = ('name', 'id', 'guild', 'topic', '_state', '__deleted', 'nsfw',
                  'category_id', 'position', 'slowmode_delay', '_overwrites',
                  '_type', 'last_message_id', '_threads', 'default_auto_archive_duration')
 
@@ -153,11 +153,10 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
     def __del__(self):
-        guild = self.guild
-        if self.guild.get_channel(self.id):
-            raise TypeError('You can\'t delete a channel object manually from cache. Use "await channel.delete() instead.')
-        for thread in self._threads:
-            guild._remove_thread(thread)
+        if getattr(self, '_TextChannel__deleted', None) is True:
+            guild = self.guild
+            for thread in self.threads:
+                guild._remove_thread(thread)
 
     def _update(self, guild, data):
         self.guild = guild
@@ -194,11 +193,13 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
     def _remove_thread(self, thread):
         return self._threads.pop(thread.id, None)
 
-    def get_thread(self, thread_id):
-        return self._threads.get(int(thread_id), None)
+    def get_thread(self, id: int) -> Optional[ThreadChannel]:
+        """Optional[:class:`ThreadChannel`]: Returns the cached thread in this channel with the given ID if any, else :obj:`None`"""
+        return self._threads.get(id, None)
 
     @property
-    def threads(self):
+    def threads(self) -> List[ThreadChannel]:
+        """List[:class:`ThreadChannel`]: Returns a list of cached threads for this channel"""
         return list(self._threads.values())
 
     @utils.copy_doc(abc.GuildChannel.permissions_for)
@@ -2148,9 +2149,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
             :attr:`~Permissions.manage_messages` bypass slowmode.
         """
 
-    __slots__ = ('name', 'id', 'guild', 'topic', '_state', 'nsfw',
+    __slots__ = ('name', 'id', 'guild', 'topic', '_state', '__deleted', 'nsfw',
                  'category_id', 'position', 'slowmode_delay', '_overwrites',
-                 '_type', 'last_message_id', '_threads', 'default_auto_archive_duration',
+                 '_type', 'last_message_id', 'default_auto_archive_duration',
                  '_posts', '_tags', 'flags', 'default_reaction_emoji', 'last_post_id')
 
     def __init__(self, *, state, guild, data):
@@ -2173,11 +2174,10 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
     def __del__(self):
-        guild = self.guild
-        if self.guild.get_channel(self.id):
-            raise TypeError('You can\'t delete a channel object manually from cache. Use "await channel.delete() instead.')
-        for post in self._posts:
-            guild._remove_post(post)
+        if getattr(self, '_ForumChannel__deleted', None) is True:
+            guild = self.guild
+            for post in self.posts:
+                guild._remove_post(post)
 
     def _update(self, guild, data):
         self.guild = guild

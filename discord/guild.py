@@ -439,8 +439,10 @@ class Guild(Hashable):
 
     @property
     def events(self):
-        """List[:class:`~discord.GuildScheduledEvent`]: A list of events that belong to this guild."""
+        """List[:class:`~discord.GuildScheduledEvent`]: A list of scheduled events that belong to this guild."""
         return list(self._events.values())
+
+    scheduled_events = events
 
     @property
     def cached_automod_rules(self):

@@ -849,6 +849,9 @@ class ConnectionState:
             if channel is not None:
                 guild._remove_channel(channel)
                 self.dispatch('guild_channel_delete', channel)
+                if isinstance(channel, (TextChannel, ForumChannel)):
+                    # Allow the threads/posts in this channel to be removed from cache when the object is about to be finalized
+                    setattr(channel, f'_{channel.__class__.__name__}__deleted', True)
         else:
             # the reason we're doing this is so it's also removed from the
             # private channel by user cache as well
