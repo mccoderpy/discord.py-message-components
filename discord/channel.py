@@ -811,7 +811,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         """:class:`ThreadMember`: Returns the member of thread with the given user_id, or :obj:`None` if he is not in this thread."""
         return self._members.get(user_id, None)
 
-    def permissions_for(self, member) -> 'Permissions':
+    def permissions_for(self, member) -> Permissions:
         """Handles permission resolution for the current :class:`~discord.Member`.
 
         .. note::
@@ -856,7 +856,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         if self.me:
             raise ClientException('You\'r already a member of this thread.')
 
-        return await self._state.http.add_thread_member(channeL_id=self.id)
+        return await self._state.http.add_thread_member(channel_id=self.id)
 
     async def leave(self):
         """|coro|
@@ -876,7 +876,7 @@ class ThreadChannel(abc.Messageable, Hashable):
 
         return await self._state.http.remove_thread_member(channel_id=self.id)
 
-    async def add_member(self, member: Union['Member', int]):
+    async def add_member(self, member: Union[Member, int]):
         """|coro|
 
         Adds another member to the thread.
@@ -898,9 +898,9 @@ class ThreadChannel(abc.Messageable, Hashable):
         if self.get_member(member_id):
             raise ClientException('The user %s is already a Member of this thread.' % member)
 
-        return await self._state.http.add_thread_member(channeL_id=self.id, member_id=member_id)
+        return await self._state.http.add_thread_member(channel_id=self.id, member_id=member_id)
 
-    async def remove_member(self, member: Union['Member', int]):
+    async def remove_member(self, member: Union[Member, int]):
         """|coro|
 
         Removes a member from the thread.
