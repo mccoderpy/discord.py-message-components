@@ -275,7 +275,8 @@ class EphemeralMessage:
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
-            suppress: Optional[bool] = False
+            suppress: Optional[bool] = False,
+            delete_after: Optional[int] = None
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
@@ -382,6 +383,9 @@ class EphemeralMessage:
                     message_id=self.id,
                 )
         self._update(data)
+        if delete_after:
+            import warnings
+            warnings.warn("You can\'t delete a ephemeral message manual.")
         return self
 
 
