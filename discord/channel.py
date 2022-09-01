@@ -839,9 +839,14 @@ class ThreadChannel(abc.Messageable, Hashable):
         return self.get_member(self._state.self_id)
 
     @property
-    def parent_channel(self) -> TextChannel:
+    def parent_channel(self) -> Union[TextChannel, ForumChannel]:
         """:class:`TextChannel`: The parent channel of this tread"""
         return self.guild.get_channel(self.parent_id)
+
+    @property
+    def category_id(self) -> Optional[int]:
+        """Optional[:class:`int`]: The ID of the threads parent channel category, if any """
+        return self.parent_channel.category_id
 
     @property
     def created_at(self) -> Optional[datetime.datetime]:
