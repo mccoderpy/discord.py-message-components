@@ -56,8 +56,19 @@ from .permissions import PermissionOverwrite, Permissions
 from .colour import Colour
 from .errors import InvalidArgument, ClientException
 from .channel import *
-from .enums import VoiceRegion, ChannelType, Locale, try_enum, VerificationLevel, ContentFilter, NotificationLevel, \
-    EventEntityType, AutoModTriggerType, AutoModEventType
+from .enums import (
+    VoiceRegion,
+    ChannelType,
+    Locale,
+    VerificationLevel,
+    ContentFilter,
+    NotificationLevel,
+    EventEntityType,
+    AutoModTriggerType,
+    AutoModEventType,
+    AutoArchiveDuration,
+    try_enum
+)
 from .mixins import Hashable
 from .scheduled_event import GuildScheduledEvent
 from .user import User
@@ -76,9 +87,12 @@ _GuildLimit = namedtuple('_GuildLimit', 'emoji sticker bitrate filesize')
 
 
 async def default_callback(interaction, *args, **kwargs):
-    await interaction.respond('This command has no callback set.'
-                              'Probably something is being tested with him and he is not yet fully developed.',
-                              hidden=True)
+    await interaction.respond(
+        'This command has no callback set.'
+        'Probably something is being tested with him and he is not yet fully developed.',
+        hidden=True
+    )
+
 
 class Guild(Hashable):
     """Represents a Discord guild.
@@ -342,7 +356,7 @@ class Guild(Hashable):
         self.unavailable = guild.get('unavailable', False)
         self.id = int(guild['id'])
         self._roles = {}
-        state = self._state # speed up attribute access
+        state = self._state  # speed up attribute access
         for r in guild.get('roles', []):
             role = Role(guild=self, data=r, state=state)
             self._roles[role.id] = role
@@ -888,7 +902,9 @@ class Guild(Hashable):
         :class:`Asset`
             The resulting CDN asset.
         """
-        return Asset._from_guild_image(self._state, self.id, self.discovery_splash, 'discovery-splashes', format=format, size=size)
+        return Asset._from_guild_image(self._state, self.id, self.discovery_splash, 'discovery-splashes', format=format,
+                                       size=size
+                                       )
 
     @property
     def member_count(self):
@@ -976,12 +992,15 @@ class Guild(Hashable):
 
         return utils.find(pred, members)
 
-    def _create_channel(self,
-                        name: str,
-                        overwrites: Dict[Union[Role, Member], PermissionOverwrite],
-                        channel_type: ChannelType,
-                        category: Optional[CategoryChannel] = None,
-                        **options: Dict[str, Any]):
+    def _create_channel(
+            self,
+            name: str,
+            overwrites: Dict[Union[Role, Member], PermissionOverwrite],
+            channel_type: ChannelType,
+            category: Optional[CategoryChannel] = None,
+            reason: Optional[str] = None,
+            **options: Dict[str, Any]
+            ):
         if overwrites is None:
             overwrites = {}
         elif not isinstance(overwrites, dict):
@@ -1020,17 +1039,31 @@ class Guild(Hashable):
         else:
             options['rtc_region'] = None if rtc_region is None else str(rtc_region)
 
-        parent_id = category.id if category else None
-        return self._state.http.create_channel(self.id, channel_type.value, name=name, parent_id=parent_id,
-                                               permission_overwrites=perms, **options)
+        try:
+            default_auto_archive_duration = options.pop('default_auto_archive_duration')
+        except KeyError:
+            pass
+        else:
+            default_auto_archive_duration = try_enum(AutoArchiveDuration, default_auto_archive_duration)
+            if not isinstance(default_auto_archive_duration, AutoArchiveDuration):
+                raise InvalidArgument('%s is not a valid default_auto_archive_duration' % default_auto_archive_duration)
+            else:
+                options['default_auto_archive_duration'] = default_auto_archive_duration.value
 
-    async def create_text_channel(self,
-                                  name: str,
-                                  *,
-                                  overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
-                                  category: Optional[CategoryChannel] = None,
-                                  reason: Optional[str] = None,
-                                  **options):
+        parent_id = category.id if category else None
+        return self._state.http.create_channel(
+            self.id, channel_type.value, name=name, parent_id=parent_id, permission_overwrites=perms, reason=reason, **options
+        )
+
+    async def create_text_channel(
+            self,
+            name: str,
+            *,
+            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            category: Optional[CategoryChannel] = None,
+            reason: Optional[str] = None,
+            **options
+            ):
         """|coro|
 
         Creates a :class:`TextChannel` for the guild.
@@ -1115,13 +1148,15 @@ class Guild(Hashable):
         self._channels[channel.id] = channel
         return channel
 
-    async def create_voice_channel(self,
-                                   name: str,
-                                   *,
-                                   overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
-                                   category: Optional[CategoryChannel] = None,
-                                   reason: Optional[str] = None,
-                                   **options):
+    async def create_voice_channel(
+            self,
+            name: str,
+            *,
+            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            category: Optional[CategoryChannel] = None,
+            reason: Optional[str] = None,
+            **options
+            ):
         """|coro|
 
         This is similar to :meth:`create_text_channel` except makes a :class:`VoiceChannel` instead, in addition
@@ -1160,14 +1195,16 @@ class Guild(Hashable):
         self._channels[channel.id] = channel
         return channel
 
-    async def create_stage_channel(self,
-                                   name: str,
-                                   *,
-                                   topic: Optional[str] = None,
-                                   category: Optional[CategoryChannel] = None,
-                                   overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
-                                   reason: Optional[str] = None,
-                                   position: Optional[int] = None):
+    async def create_stage_channel(
+            self,
+            name: str,
+            *,
+            topic: Optional[str] = None,
+            category: Optional[CategoryChannel] = None,
+            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            reason: Optional[str] = None,
+            position: Optional[int] = None
+            ):
         """|coro|
 
         This is similar to :meth:`create_text_channel` except makes a :class:`StageChannel` instead, in addition
@@ -1198,19 +1235,101 @@ class Guild(Hashable):
         :class:`StageChannel`
             The channel that was just created.
         """
-        data = await self._create_channel(name, overwrites, ChannelType.stage_voice, category, reason=reason, position=position, topic=topic)
+        data = await self._create_channel(
+            name, overwrites, ChannelType.stage_voice, category, reason=reason, position=position, topic=topic
+        )
         channel = StageChannel(state=self._state, guild=self, data=data)
 
         # temporarily add to the cache
         self._channels[channel.id] = channel
         return channel
 
-    async def create_category(self,
-                              name: str,
-                              *,
-                              overwrites: Optional[Dict[str, PermissionOverwrite]] = None,
-                              reason: Optional[str] = None,
-                              position: Optional[int] = None):
+    async def create_forum_channel(
+            self,
+            name: str,
+            *,
+            topic: Optional[str] = None,
+            slowmode_delay: Optional[int] = None,
+            default_auto_archive_duration: Optional[AutoArchiveDuration] = None,
+            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            nsfw: Optional[bool] = None,
+            category: Optional[CategoryChannel] = None,
+            position: Optional[int] = None,
+            reason: Optional[str] = None
+    ) -> ForumChannel:
+        """|coro|
+
+        Same as :meth`create_text_channel` excepts that it creates a forum channel instead
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the channel
+        overwrites
+            A :class:`dict` of target (either a role or a member) to
+            :class:`PermissionOverwrite` to apply upon creation of a channel.
+            Useful for creating secret channels.
+        category: Optional[:class:`CategoryChannel`]
+            The category to place the newly created channel under.
+            The permissions will be automatically synced to category if no
+            overwrites are provided.
+        position: :class:`int`
+            The position in the channel list. This is a number that starts
+            at 0. e.g. the top channel is position 0.
+        topic: Optional[:class:`str`]
+            The new channel's topic.
+        slowmode_delay: :class:`int`
+            Specifies the slowmode rate limit for user in this channel, in seconds.
+            The maximum value possible is `21600`.
+        default_auto_archive_duration: :class:`int`
+            The default duration that the clients use (not the API) for newly created threads in the channel,
+            in minutes, to automatically archive the thread after recent activity
+        nsfw: :class:`bool`
+            To mark the channel as NSFW or not.
+        reason: Optional[:class:`str`]
+            The reason for creating this channel. Shows up on the audit log.
+
+        Raises
+        -------
+        Forbidden
+            You do not have the proper permissions to create this channel.
+        HTTPException
+            Creating the channel failed.
+        InvalidArgument
+            The permission overwrite information is not in proper form,
+            or the ``default_auto_archive_duration`` is not a valid member of :class:`AutoArchiveDuration`
+
+        Returns
+        -------
+        :class:`ForumChannel`
+            The channel that was just created
+        """
+        data = await self._create_channel(
+            name,
+            overwrites,
+            ChannelType.forum_channel,
+            category,
+            topic=topic,
+            slowmode_delay=slowmode_delay,
+            default_auto_archive_duration=default_auto_archive_duration,
+            nsfw=nsfw,
+            position=position,
+            reason=reason
+        )
+        channel = ForumChannel(state=self._state, guild=self, data=data)
+
+        # temporarily add to the cache
+        self._channels[channel.id] = channel
+        return channel
+
+    async def create_category(
+            self,
+            name: str,
+            *,
+            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            reason: Optional[str] = None,
+            position: Optional[int] = None
+            ):
         """|coro|
 
         Same as :meth:`create_text_channel` except makes a :class:`CategoryChannel` instead.
@@ -1617,10 +1736,12 @@ class Guild(Hashable):
             reason=data['reason']
         )
 
-    def bans(self,
-             limit: Optional[int] = None,
-             before: Optional[Union['Snowflake', datetime]] = None,
-             after: Optional[Union['Snowflake', datetime]] = None) -> BanIterator:
+    def bans(
+            self,
+            limit: Optional[int] = None,
+            before: Optional[Union['Snowflake', datetime]] = None,
+            after: Optional[Union['Snowflake', datetime]] = None
+            ) -> BanIterator:
         """Retrieves an :class:`.AsyncIterator` that enables receiving the guild's bans.
 
         You must have the :attr:`~Permissions.ban_members` permission
@@ -1670,13 +1791,15 @@ class Guild(Hashable):
             # ban_entries is now a list of BanEntry...
         """
         return BanIterator(self, limit=limit, before=before, after=after)
-    
-    async def prune_members(self,
-                            *,
-                            days: int,
-                            compute_prune_count=True,
-                            roles: List['Snowflake'] = None,
-                            reason: Optional[str] = None):
+
+    async def prune_members(
+            self,
+            *,
+            days: int,
+            compute_prune_count=True,
+            roles: List['Snowflake'] = None,
+            reason: Optional[str] = None
+            ):
         r"""|coro|
 
         Prunes the guild from its inactive members.
@@ -1732,7 +1855,9 @@ class Guild(Hashable):
         if roles:
             roles = [str(role.id) for role in roles]
 
-        data = await self._state.http.prune_members(self.id, days, compute_prune_count=compute_prune_count, roles=roles, reason=reason)
+        data = await self._state.http.prune_members(self.id, days, compute_prune_count=compute_prune_count, roles=roles,
+                                                    reason=reason
+                                                    )
         return data['pruned']
 
     async def templates(self):
@@ -1926,6 +2051,7 @@ class Guild(Hashable):
             The list of integrations that are attached to the guild.
         """
         data = await self._state.http.get_all_integrations(self.id)
+
         def convert(d):
             factory, itype = _integration_factory(d['type'])
             if factory is None:
@@ -2370,7 +2496,8 @@ class Guild(Hashable):
             action = action.value
 
         return AuditLogIterator(self, before=before, after=after, limit=limit,
-                                oldest_first=oldest_first, user_id=user, action_type=action)
+                                oldest_first=oldest_first, user_id=user, action_type=action
+                                )
 
     async def widget(self):
         """|coro|
@@ -2488,9 +2615,13 @@ class Guild(Hashable):
             raise ValueError('user_ids must contain at least 1 value')
 
         limit = min(100, limit or 5)
-        return await self._state.query_members(self, query=query, limit=limit, user_ids=user_ids, presences=presences, cache=cache)
+        return await self._state.query_members(self, query=query, limit=limit, user_ids=user_ids, presences=presences,
+                                               cache=cache
+                                               )
 
-    async def change_voice_state(self, *, channel: Optional[Union[VoiceChannel, StageChannel]], self_mute=False, self_deaf=False):
+    async def change_voice_state(
+            self, *, channel: Optional[Union[VoiceChannel, StageChannel]], self_mute=False, self_deaf=False
+            ):
         """|coro|
 
         Changes client's voice state in the guild.
@@ -2510,12 +2641,14 @@ class Guild(Hashable):
         channel_id = channel.id if channel else None
         await ws.voice_state(self.id, channel_id, self_mute, self_deaf)
 
-    async def create_sticker(self, name: str,
-                             file: Union[UploadFile, 'PathLike[str]', 'PathLike[bytes]'],
-                             tags: Union[str, List[str]],
-                             description: str = None,
-                             *,
-                             reason: str = None) -> GuildSticker:
+    async def create_sticker(
+            self, name: str,
+            file: Union[UploadFile, 'PathLike[str]', 'PathLike[bytes]'],
+            tags: Union[str, List[str]],
+            description: str = None,
+            *,
+            reason: str = None
+            ) -> GuildSticker:
         """|coro|
 
         Create a new sticker for the guild.
@@ -2562,11 +2695,11 @@ class Guild(Hashable):
             raise ValueError(f'The tags could be max. 200 characters in length; {len(tags)}.')
         try:
             data = await self._state.http.create_guild_sticker(guild_id=self.id, name=name, description=description,
-                                                               tags=tags, file=file, reason=reason)
+                                                               tags=tags, file=file, reason=reason
+                                                               )
         finally:
             file.close()
         return self._state.store_sticker(data)
-
 
     async def fetch_events(self, with_user_count: bool = True) -> Optional[List[GuildScheduledEvent]]:
         """|coro|
@@ -2615,29 +2748,30 @@ class Guild(Hashable):
             self._add_event(event)
             return event
 
-    async def create_scheduled_event(self,
-                                     name: str,
-                                     entity_type: EventEntityType,
-                                     start_time: datetime,
-                                     end_time: Optional[datetime] = None,
-                                     channel: Optional[Union[StageChannel, VoiceChannel]] = None,
-                                     description: Optional[str] = None,
-                                     location: Optional[str] = None,
-                                     cover_image: Optional[bytes] = None,
-                                     *, reason: Optional[str] = None
-                                     ) -> GuildScheduledEvent:
+    async def create_scheduled_event(
+            self,
+            name: str,
+            entity_type: EventEntityType,
+            start_time: datetime,
+            end_time: Optional[datetime] = None,
+            channel: Optional[Union[StageChannel, VoiceChannel]] = None,
+            description: Optional[str] = None,
+            location: Optional[str] = None,
+            cover_image: Optional[bytes] = None,
+            *, reason: Optional[str] = None
+            ) -> GuildScheduledEvent:
         """|coro|
-        
+
         Schedules a new Event in this guild. Requires ``MANAGE_EVENTS`` at least in the :attr:`channel`
         or in the entire guild if :attr:`~GuildScheduledEvent.type` is :attr:`~EventType.external`.
-        
+
         Parameters
         ----------
         name: :class:`str`
             The name of the scheduled event. 1-100 characters long.
         entity_type: :class:`EventEntityType`
             The entity_type of the scheduled event.
-            
+
             .. important::
                 :attr:`end_time` and :attr:`location` must be provided if entity_type is :class:`~EventEntityType.external`, otherwise :attr:`channel`
 
@@ -2704,9 +2838,13 @@ class Guild(Hashable):
 
         if channel is not None and not entity_type.external:
             if not isinstance(channel, (VoiceChannel, StageChannel)):
-                raise TypeError(f'The channel must be a StageChannel or VoiceChannel object, not {channel.__class__.__name__}.')
+                raise TypeError(
+                    f'The channel must be a StageChannel or VoiceChannel object, not {channel.__class__.__name__}.'
+                    )
             if (entity_type) not in (1, 2):
-                entity_type = {StageChannel: EventEntityType.stage, VoiceChannel: EventEntityType.voice}.get(type(channel))
+                entity_type = {StageChannel: EventEntityType.stage, VoiceChannel: EventEntityType.voice}.get(
+                    type(channel)
+                    )
                 fields['entity_type'] = entity_type.value
             fields['channel_id'] = str(channel.id)
             fields['entity_metadata'] = None
@@ -2772,21 +2910,25 @@ class Guild(Hashable):
             }
         client._guild_specific_application_commands[self.id][command.type.name][command.name] = command
         data = command.to_dict()
-        command_data = await self._state.http.create_application_command(self._state._get_client().app.id, data=data, guild_id=self.id)
+        command_data = await self._state.http.create_application_command(self._state._get_client().app.id, data=data,
+                                                                         guild_id=self.id
+                                                                         )
         command._fill_data(command_data)
         client._application_commands[command.id] = self._application_commands[command.id] = command
         return command
 
-    async def add_slash_command(self,
-                                name: str,
-                                name_localizations: Optional[Localizations] = Localizations(),
-                                description: str = 'No description',
-                                description_localizations: Optional[Localizations] = Localizations(),
-                                default_required_permissions: Optional['Permissions'] = None,
-                                options: Optional[List[Union['SubCommandGroup', 'SubCommand', 'SlashCommandOption']]] = [],
-                                connector: Optional[Dict[str, str]] = {},
-                                func: Awaitable = default_callback,
-                                cog: Optional['Cog'] = None) -> SlashCommand:
+    async def add_slash_command(
+            self,
+            name: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description: str = 'No description',
+            description_localizations: Optional[Localizations] = Localizations(),
+            default_required_permissions: Optional['Permissions'] = None,
+            options: Optional[List[Union['SubCommandGroup', 'SubCommand', 'SlashCommandOption']]] = [],
+            connector: Optional[Dict[str, str]] = {},
+            func: Awaitable = default_callback,
+            cog: Optional['Cog'] = None
+            ) -> SlashCommand:
         command = SlashCommand(
             name=name,
             name_localizations=name_localizations,
@@ -2798,17 +2940,20 @@ class Guild(Hashable):
             func=func,
             guild_id=self.id,
             state=self._state,
-            cog=cog)
+            cog=cog
+        )
         return await self._register_application_command(command)
 
-    async def add_message_command(self,
-                                  name: str,
-                                  name_localizations: Optional[Localizations] = Localizations(),
-                                  description: str = 'No description',
-                                  description_localizations: Optional[Localizations] = Localizations(),
-                                  default_required_permissions: Optional['Permissions'] = None,
-                                  func: Awaitable = default_callback,
-                                  cog: Optional['Cog'] = None) -> MessageCommand:
+    async def add_message_command(
+            self,
+            name: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description: str = 'No description',
+            description_localizations: Optional[Localizations] = Localizations(),
+            default_required_permissions: Optional['Permissions'] = None,
+            func: Awaitable = default_callback,
+            cog: Optional['Cog'] = None
+            ) -> MessageCommand:
         command = MessageCommand(
             name=name,
             name_localizations=name_localizations,
@@ -2822,14 +2967,16 @@ class Guild(Hashable):
         )
         return await self._register_application_command(command)
 
-    async def add_user_command(self,
-                               name: str,
-                               name_localizations: Optional[Localizations] = Localizations(),
-                               description: str = 'No description',
-                               description_localizations: Optional[Localizations] = Localizations(),
-                               default_required_permissions: Optional['Permissions'] = None,
-                               func: Awaitable = default_callback,
-                               cog: Optional['Cog'] = None) -> UserCommand:
+    async def add_user_command(
+            self,
+            name: str,
+            name_localizations: Optional[Localizations] = Localizations(),
+            description: str = 'No description',
+            description_localizations: Optional[Localizations] = Localizations(),
+            default_required_permissions: Optional['Permissions'] = None,
+            func: Awaitable = default_callback,
+            cog: Optional['Cog'] = None
+            ) -> UserCommand:
         command = UserCommand(
             name=name,
             name_localizations=name_localizations,
@@ -2847,10 +2994,10 @@ class Guild(Hashable):
         """|coro|
 
         Fetches the Auto Moderation rules for this guild
-        
+
         .. warning::
             This is an API-call, use it carefully.
-        
+
         Returns
         --------
         List[:class:`~discord.AutoModRule`]
@@ -2861,16 +3008,18 @@ class Guild(Hashable):
             self._add_automod_rule(AutoModRule(state=self._state, guild=self, **rule))
         return self.cached_automod_rules
 
-    async def create_automod_rule(self,
-                                  name: str,
-                                  event_type: AutoModEventType,
-                                  trigger_type: AutoModTriggerType,
-                                  trigger_metadata: AutoModTriggerMetadata,
-                                  actions: List[AutoModAction],
-                                  enabled: bool = True,
-                                  exempt_roles: List['Snowflake'] = [],
-                                  exempt_channels: List['Snowflake'] = [],
-                                  *, reason: Optional[str] = None) -> AutoModRule:
+    async def create_automod_rule(
+            self,
+            name: str,
+            event_type: AutoModEventType,
+            trigger_type: AutoModTriggerType,
+            trigger_metadata: AutoModTriggerMetadata,
+            actions: List[AutoModAction],
+            enabled: bool = True,
+            exempt_roles: List['Snowflake'] = [],
+            exempt_channels: List['Snowflake'] = [],
+            *, reason: Optional[str] = None
+            ) -> AutoModRule:
         """|coro|
 
         Creates a new AutoMod rule for this guild
@@ -2927,4 +3076,3 @@ class Guild(Hashable):
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)
         self._add_automod_rule(rule)
         return rule
-

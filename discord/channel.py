@@ -1679,6 +1679,15 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         ret.sort(key=lambda c: (c.position, c.id))
         return ret
 
+    @property
+    def forum_channels(self):
+        """List[:class:`ForumChannel`]: Returns the forum channels that are under this category."""
+        ret = [c for c in self.guild.channels
+               if c.category_id == self.id
+               and isinstance(c, ForumChannel)]
+        ret.sort(key=lambda c: (c.position, c.id))
+        return ret
+
     async def create_text_channel(self, name, *, overwrites=None, reason=None, **options):
         """|coro|
 
@@ -1716,6 +1725,38 @@ class CategoryChannel(abc.GuildChannel, Hashable):
             The channel that was just created.
         """
         return await self.guild.create_stage_channel(name, overwrites=overwrites, category=self, reason=reason, **options)
+
+    async def create_forum_channel(
+            self,
+            name: str,
+            *,
+            topic: Optional[str] = None,
+            slowmode_delay: Optional[int] = None,
+            default_auto_archive_duration: Optional[AutoArchiveDuration] = None,
+            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            nsfw: Optional[bool] = None,
+            position: Optional[int] = None,
+            reason: Optional[str] = None
+    ) -> ForumChannel:
+        """|coro|
+
+        A shortcut method to :meth:`Guild.create_forum_channel` to create a :class:`ForumChannel` in the category.
+
+        Returns
+        -------
+        :class:`ForumChannel`
+            The channel that was just created
+        """
+        return await self.guild.create_forum_channel(
+            name=name,
+            topic=topic,
+            slowmode_delay=slowmode_delay,
+            default_auto_archive_duration=default_auto_archive_duration,
+            overwrites=overwrites,
+            nsfw=nsfw,
+            position=position,
+            reason=reason
+        )
 
 
 class DMChannel(abc.Messageable, Hashable):
