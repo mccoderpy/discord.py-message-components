@@ -1413,35 +1413,73 @@ class Message(Hashable):
 
         return await self.channel.send(content, reference=self, **kwargs)
 
-    async def create_thread(self,
-                            name: str,
-                            auto_archive_duration: Optional[AutoArchiveDuration] = None,
-                            private: Optional[bool] = False,
-                            reason: Optional[str] = None) -> ThreadChannel:
+    async def create_thread(
+            self,
+            name: str,
+            auto_archive_duration: Optional[AutoArchiveDuration] = None,
+            slowmode_delay: int = 0,
+            reason: Optional[str] = None
+    ) -> ThreadChannel:
         """|coro|
 
-        Creates a new thread in the channel of the message with this Message as the Starter-Message.
+        Creates a new thread in the channel of the message with this message as the starter-message.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the thread.
+        auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
+            Amount of time after that the thread will auto-hide from the channel list
+        slowmode_delay: :class:`int`
+            Amount of seconds a user has to wait before sending another message (0-21600)
+        reason: Optional[:class:`str`]
+            The reason for creating the thread. Shows up in the audit log.
+
+        Raises
+        ------
+        :exc:`TypeError`
+            The channel of the message is not a text or news channel,
+            or the message has already a thread,
+            or auto_archive_duration is not a valid member of :class:`AutoArchiveDuration`
+        :exc:`ValueError`
+            The ``name`` is of invalid length
+        :exc:`Forbidden`
+            The bot is missing permissions to create threads in this channel
+        :exc:`HTTPException`
+            Creating the thread failed
+
+        Returns
+        -------
+        :class:`ThreadChannel`
+            The created thread on success
         """
         if self.channel.type not in (ChannelType.text, ChannelType.news):
-            raise Exception('You could not create a thread inside a %s.' % self.channel.__class__.__name__)
+            raise TypeError('You could not create a thread inside a %s.' % self.channel.__class__.__name__)
         if self.thread:
             raise TypeError('There is already a thread associated with this message')
-        if private:
-            import warnings
-            warnings.warn('You can\'t create a private thread from a message and this parameter will be removed in a future release.',category=DeprecationWarning, stacklevel=4)
-        if len(name) > 100 or len(name) < 1:
-            raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
-        aad = (self.channel.default_auto_archive_duration if not auto_archive_duration else
-               try_enum(AutoArchiveDuration, auto_archive_duration))
-        _type = ChannelType.private_thread if private is True else ChannelType.public_thread
-        data = await self._state.http.create_thread(self.channel.id,
-                                                    message_id=self.id,
-                                                    name=name,
-                                                    auto_archive_duration=aad,
-                                                    type=_type,
-                                                    reason=reason)
-        thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
 
+        if len(name) > 100 or len(name) < 1:
+            raise ValueError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
+
+        payload = {
+            'name': name
+        }
+
+        if auto_archive_duration:
+            auto_archive_duration = try_enum(
+                AutoArchiveDuration, auto_archive_duration
+            )  # for the case someone pass a number
+            if not isinstance(auto_archive_duration, AutoArchiveDuration):
+                raise TypeError(
+                    f'auto_archive_duration must be a member of discord.AutoArchiveDuration, not {auto_archive_duration.__class__.__name__!r}'
+                )
+            payload['auto_archive_duration'] = auto_archive_duration.value
+
+        if slowmode_delay:
+            payload['rate_limit_per_user'] = slowmode_delay
+
+        data = await self._state.http.create_thread(self.channel.id, message_id=self.id, payload=payload, reason=reason)
+        thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
         self.channel.guild._add_thread(thread)
         self._thread = thread
         return thread
