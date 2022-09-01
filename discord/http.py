@@ -828,13 +828,10 @@ class HTTPClient:
     # Thread management
     def create_thread(
             self,
-            channel_id,
+            channel_id: int,
             *,
-            name,
-            auto_archive_duration,
-            type,
-            message_id=None,
-            invitable=None,
+            payload: Dict[str, Any],
+            message_id: Optional[int] = None,
             reason=None
         ):
         if message_id:
@@ -846,14 +843,7 @@ class HTTPClient:
             )
         else:
             r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
-        params = {
-            'type': int(type),
-            'name': str(name),
-            'auto_archive_duration': int(auto_archive_duration)
-        }
-        if not message_id:
-            params['invitable'] = invitable
-        return self.request(r, json=params, reason=reason)
+        return self.request(r, json=payload, reason=reason)
 
     def create_forum_post(self, channel_id, *, params: MultipartParameters, reason: Optional[str] = None):
         r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
@@ -869,6 +859,7 @@ class HTTPClient:
             *,
             name=None,
             auto_archive_duration=None,
+            slowmode_delay=None,
             archived=None,
             locked=None,
             invitable=None,
@@ -880,6 +871,8 @@ class HTTPClient:
             params['name'] = str(name)
         if auto_archive_duration:
             params['auto_archive_duration'] = int(auto_archive_duration)
+        if slowmode_delay:
+            params['rate_limit_per_user'] = slowmode_delay
         if archived:
             params['archived'] = bool(archived)
         if locked:
@@ -913,14 +906,14 @@ class HTTPClient:
         if type not in ('public', 'privat'):
             raise ValueError('type must be public or privat, not %s' % type)
         if joined_privat:
-            r = Route('GET', '/channels/{channel_id}/users/@me', channel_id=channel_id)
+            r = Route('GET', '/channels/{channel_id}/users/@me/threads/archived/private', channel_id=channel_id)
         else:
             r = Route('GET', '/channels/{channel_id}/threads/archived/{type}', channel_id=channel_id, type=type)
         params = {
-            'before': before,
+            'before': int(before),
             'limit': int(limit)
         }
-        return self.request(r, json=params)
+        return self.request(r, params=params)
 
     def create_post(self, channel_id: int, params: MultipartParameters, reason: Optional[str] = None):
         r = Route('POST', '/channels/{channel_id}/threads', channel_id=channel_id)
