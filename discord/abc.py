@@ -336,7 +336,7 @@ class GuildChannel:
 
         if options:
             data = await self._state.http.edit_channel(self.id, reason=reason, **options)
-            self._update(self.guild, data)
+            return self._update(self.guild, data)
 
     def _fill_overwrites(self, data):
         self._overwrites = []

@@ -998,6 +998,7 @@ class HTTPClient:
             'nsfw',
             'flags',
             'default_auto_archive_duration',
+            'auto_archive_duration',
             'user_limit',
             'position',
             'permission_overwrites',

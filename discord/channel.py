@@ -40,7 +40,7 @@ from typing import (
     Any
 )
 
-from .permissions import Permissions
+from .permissions import Permissions, PermissionOverwrite
 from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, try_enum
 from .components import Button, SelectMenu, ActionRow
 from .mixins import Hashable
@@ -59,6 +59,7 @@ if TYPE_CHECKING:
     from .member import Member
     from .message import Message, PartialMessage
     from .guild import Guild
+    from .role import Role
 
 MISSING = utils.MISSING
 
@@ -606,13 +607,16 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         from .message import PartialMessage
         return PartialMessage(channel=self, id=message_id)
 
-    async def create_thread(self,
-                            name: str,
-                            auto_archive_duration: AutoArchiveDuration = None,
-                            private: bool = False,
-                            invitable: bool = True,
-                            *,
-                            reason: str = None):
+    async def create_thread(
+            self,
+            name: str,
+            auto_archive_duration: Optional[AutoArchiveDuration] = None,
+            slowmode_delay: int = 0,
+            private: bool = False,
+            invitable: bool = True,
+            *,
+            reason: Optional[str] = None
+    ) -> ThreadChannel:
         """|coro|
 
         Creates a new thread in this channel.
@@ -620,21 +624,75 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         You must have the :attr:`~Permissions.create_public_threads` or for private :attr:`~Permissions.create_private_threads` permission to
         use this.
 
+        Parameters
+        ----------
+        name: :class:`str`
+            The name of the thread.
+        auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
+            Amount of time after that the thread will auto-hide from the channel list
+        slowmode_delay: :class:`int`
+            Amount of seconds a user has to wait before sending another message (0-21600)
+        private: :class:`bool`
+            Whether to create a private thread
 
+            .. note::
+
+                The guild needs to have the ``PRIVATE_THREADS`` feature wich they get with boost level 2
+
+        invitable: :class:`bool`
+            For private-threads Whether non-moderators can add new members to the thread, default :obj`True`
+        reason: Optional[:class:`str`]
+            The reason for creating the thread. Shows up in the audit log.
+
+        Raises
+        ------
+        :exc:`TypeError`
+            The channel of the message is not a text or news channel,
+            or the message has already a thread,
+            or auto_archive_duration is not a valid member of :class:`AutoArchiveDuration`
+        :exc:`ValueError`
+            The ``name`` is of invalid length
+        :exc:`Forbidden`
+            The bot is missing permissions to create threads in this channel
+        :exc:`HTTPException`
+            Creating the thread failed
+
+        Returns
+        -------
+        :class:`ThreadChannel`
+            The created thread on success
         """
-        if private is True and not self.permissions_for(self.guild.get_member(self._state.self_id)).create_private_threads:
-            raise MissingPermissionsToCreateThread(Permissions.use_private_threads, Permissions.send_messages_in_threads,
-                                                   type=ChannelType.private_thread)
-        elif private is False and not self.permissions_for(self.guild.get_member(self._state.self_id)).create_public_threads:
-            raise MissingPermissionsToCreateThread(Permissions.create_public_threads, Permissions.send_messages_in_threads,
-                                                   type=ChannelType.public_thread)
         if len(name) > 100 or len(name) < 1:
-            raise AttributeError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
-        aad = (self.default_auto_archive_duration if not auto_archive_duration else try_enum(AutoArchiveDuration, auto_archive_duration)).value
-        _type = ChannelType.private_thread if private is True else ChannelType.public_thread
-        data = await self._state.http.create_thread(self.id, name=name, auto_archive_duration=aad, type=_type, invitable=invitable, reason=reason)
-        thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
+            raise ValueError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
 
+        payload = {
+            'name': name
+        }
+
+        if auto_archive_duration:
+            auto_archive_duration = try_enum(
+                AutoArchiveDuration, auto_archive_duration
+            )  # for the case someone pass a number
+            if not isinstance(auto_archive_duration, AutoArchiveDuration):
+                raise TypeError(
+                    f'auto_archive_duration must be a member of discord.AutoArchiveDuration, not {auto_archive_duration.__class__.__name__!r}'
+                )
+            payload['auto_archive_duration'] = auto_archive_duration.value
+
+        if slowmode_delay:
+            payload['rate_limit_per_user'] = slowmode_delay
+
+        if private:
+            payload['type'] = ChannelType.private_thread.value
+            if not invitable:
+                payload['invitable'] = False
+        elif self.is_news():
+            payload['type'] = ChannelType.news_thread.value
+        else:
+            payload['type'] = ChannelType.public_thread.value
+
+        data = await self._state.http.create_thread(self.id, payload=payload, reason=reason)
+        thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
         self.guild._add_thread(thread)
         return thread
 
@@ -2291,7 +2349,20 @@ class ForumChannel(abc.GuildChannel, Hashable):
         """
         return self._posts.get(self.last_post_id) if self.last_post_id else None
 
-    async def edit(self, *, reason=None, **options) -> None:
+    async def edit(
+            self,
+            *,
+            name: str = MISSING,
+            topic: str = MISSING,
+            tags_required: bool = MISSING,
+            position: int = MISSING,
+            nsfw: bool = MISSING,
+            sync_permissions: bool = False,
+            category: Optional[CategoryChannel] = MISSING,
+            slowmode_delay: int = MISSING,
+            overwrites: Dict[Union[Member, Role], PermissionOverwrite] = MISSING,
+            reason: Optional[str] = None
+    ) -> ForumChannel:
         """|coro|
 
         Edits the channel.
@@ -2320,11 +2391,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
         slowmode_delay: :class:`int`
             Specifies the slowmode rate limit for user in this channel, in seconds.
             A value of `0` disables slowmode. The maximum value possible is `21600`.
-        reason: Optional[:class:`str`]
-            The reason for editing this channel. Shows up on the audit log.
         overwrites: :class:`dict`
             A :class:`dict` of target (either a role or a member) to
             :class:`PermissionOverwrite` to apply to the channel.
+        reason: Optional[:class:`str`]
+            The reason for editing this channel. Shows up on the audit log.
+
 
         Raises
         ------
@@ -2336,8 +2408,38 @@ class ForumChannel(abc.GuildChannel, Hashable):
         HTTPException
             Editing the channel failed.
         """
-        # TODO: Implement this correctly
-        await self._edit(options, reason=reason)
+        payload = {}
+
+        if name is not MISSING:
+            payload['name'] = name
+
+        if topic is not MISSING:
+            payload['topic'] = topic
+
+        if tags_required is not MISSING:
+            flags: ChannelFlags = ChannelFlags._from_value(self.flags.value)
+            flags.require_tags = tags_required
+            payload['flags'] = flags
+
+        if position is not MISSING:
+            payload['position'] = position
+
+        if nsfw is not MISSING:
+            payload['nsfw'] = nsfw
+
+        if sync_permissions:
+            payload['sync_permissions'] = sync_permissions
+
+        if category is not MISSING:
+            payload['category'] = category
+
+        if slowmode_delay is not MISSING:
+            payload['rate_limit_per_user'] = slowmode_delay
+
+        if overwrites is not MISSING:
+            payload['overwrites'] = overwrites
+
+        return await self._edit(options=payload, reason=reason)
 
     @utils.copy_doc(abc.GuildChannel.clone)
     async def clone(self, *, name=None, reason=None) -> ForumChannel:
@@ -2345,7 +2447,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
             'topic': self.topic,
             'nsfw': self.nsfw,
             'flags': self.flags,
-            'rate_limit_per_user': self.slowmode_delay
+            'rate_limit_per_user': self.slowmode_delay,
+            'default_auto_archive_duration': self.default_auto_archive_duration
         }, name=name, reason=reason)
 
     async def webhooks(self):
