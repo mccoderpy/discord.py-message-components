@@ -1039,16 +1039,22 @@ class Guild(Hashable):
         else:
             options['rtc_region'] = None if rtc_region is None else str(rtc_region)
 
-        try:
-            default_auto_archive_duration = options.pop('default_auto_archive_duration')
-        except KeyError:
-            pass
-        else:
-            default_auto_archive_duration = try_enum(AutoArchiveDuration, default_auto_archive_duration)
-            if not isinstance(default_auto_archive_duration, AutoArchiveDuration):
-                raise InvalidArgument('%s is not a valid default_auto_archive_duration' % default_auto_archive_duration)
+        if channel_type.text or channel_type.forum_channel:
+            try:
+                default_auto_archive_duration: AutoArchiveDuration = options.pop('default_auto_archive_duration')
+            except KeyError:
+                pass
             else:
-                options['default_auto_archive_duration'] = default_auto_archive_duration.value
+                default_auto_archive_duration = try_enum(AutoArchiveDuration, default_auto_archive_duration)
+                if not isinstance(default_auto_archive_duration, AutoArchiveDuration):
+                    raise InvalidArgument('%s is not a valid default_auto_archive_duration' % default_auto_archive_duration)
+                else:
+                    options['default_auto_archive_duration'] = default_auto_archive_duration.value
+
+            try:
+                options['default_thread_rate_limit_per_user']: int = options.pop('default_thread_slowmode_delay')
+            except KeyError:
+                pass
 
         parent_id = category.id if category else None
         return self._state.http.create_channel(
@@ -1122,6 +1128,9 @@ class Guild(Hashable):
         slowmode_delay: :class:`int`
             Specifies the slowmode rate limit for user in this channel, in seconds.
             The maximum value possible is `21600`.
+        default_thread_slowmode_delay: :class:`int`
+            The initial ``slowmode_delay`` to set on newly created threads in the channel.
+            This field is copied to the thread at creation time and does not live update.
         nsfw: :class:`bool`
             To mark the channel as NSFW or not.
         reason: Optional[:class:`str`]
@@ -1250,6 +1259,7 @@ class Guild(Hashable):
             *,
             topic: Optional[str] = None,
             slowmode_delay: Optional[int] = None,
+            default_post_slowmode_delay: Optional[int] = None,
             default_auto_archive_duration: Optional[AutoArchiveDuration] = None,
             overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
             nsfw: Optional[bool] = None,
@@ -1259,7 +1269,7 @@ class Guild(Hashable):
     ) -> ForumChannel:
         """|coro|
 
-        Same as :meth`create_text_channel` excepts that it creates a forum channel instead
+        Same as :meth:`create_text_channel` excepts that it creates a forum channel instead
 
         Parameters
         ----------
@@ -1281,7 +1291,10 @@ class Guild(Hashable):
         slowmode_delay: :class:`int`
             Specifies the slowmode rate limit for user in this channel, in seconds.
             The maximum value possible is `21600`.
-        default_auto_archive_duration: :class:`int`
+        default_post_slowmode_delay: :class:`int`
+            The initial ``slowmode_delay`` to set on newly created threads in the channel.
+            This field is copied to the thread at creation time and does not live update.
+        default_auto_archive_duration: :class:`AutoArchiveDuration`
             The default duration that the clients use (not the API) for newly created threads in the channel,
             in minutes, to automatically archive the thread after recent activity
         nsfw: :class:`bool`
@@ -1311,6 +1324,7 @@ class Guild(Hashable):
             category,
             topic=topic,
             slowmode_delay=slowmode_delay,
+            default_thread_slowmode_delay=default_post_slowmode_delay,
             default_auto_archive_duration=default_auto_archive_duration,
             nsfw=nsfw,
             position=position,
