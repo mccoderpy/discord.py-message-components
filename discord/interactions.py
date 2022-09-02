@@ -282,11 +282,11 @@ class EphemeralMessage:
 
         Edits the message.
 
-        Attachment
+        Parameters
         -----------
         content: Optional[:class:`str`]
             The new content to replace the message with.
-            Could be ``None`` to remove the content.
+            Could be ``None`` to remove the content.y
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
@@ -518,7 +518,7 @@ class BaseInteraction:
 
         Responds to the interaction by editing the original or callback message depending on the :attr:`~BaseInteraction.type`.
 
-        Attachment
+        Parameters
         -----------
         content: Optional[:class:`str`]
             The new content to replace the message with.

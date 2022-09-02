@@ -80,12 +80,13 @@ api_docs = 'https://discord.com/developers/docs'
 
 class Localizations:
     """
-    Represents a dict with localized values for application-command names, descriptions, option-names, choice-names, etc.
+    Represents a :class:`dict` with localized values.
+    These are used for application-commands, options and choices ``name_localizations`` and ``description_localizations``
 
     +--------+-------------------------+---------------------+
     | Locale |      Language Name      |     Native Name     |
     |        | (lowercase also usable) |                     |
-    +--------+-------------------------+---------------------+
+    +========+=========================+=====================+
     | da     | Danish                  | Dansk               |
     | de     | German                  | Deutsch             |
     | en_GB  | English, UK             | English, UK         |
@@ -99,7 +100,7 @@ class Localizations:
     | nl     | Dutch                   | Nederlands          |
     | no     | Norwegian               | Norsk               |
     | pl     | Polish                  | Polski              |
-    | pt_BR  | Portuguese, Brazilian   | Português do Brasil |
+    | pt_BR  | Portuguese/Brazilian    | Português do Brasil |
     | ro     | Romanian, Romania       | Română              |
     | fi     | Finnish                 | Suomi               |
     | sv_SE  | Swedish                 | Svenska             |
@@ -110,12 +111,12 @@ class Localizations:
     | bg     | Bulgarian               | български           |
     | ru     | Russian                 | Pусский             |
     | uk     | Ukrainian               | Українська          |
-    | hi     | Hindi                   | हिन्दी                 |
+    | hi     | Hindi                   | हिन्दी              |
     | th     | Thai                    | ไทย                 |
-    | zh_CN  | Chinese, China          | 中文                 |
-    | ja     | Japanese                | 日本語                |
-    | zh_TW  | Chinese, Taiwan         | 繁體中文              |
-    | ko     | Korean                  | 한국어                |
+    | zh_CN  | Chinese, China          | 中文                  |
+    | ja     | Japanese                | 日本語                 |
+    | zh_TW  | Chinese, Taiwan         | 繁體中文                |
+    | ko     | Korean                  | 한국어                 |
     +--------+-------------------------+---------------------+
 
     Parameters
@@ -187,7 +188,7 @@ class Localizations:
         data = data or {}
         return cls(**{try_enum(Locale, key).name: value for key, value in data.items()})
 
-    def update(self, __m: 'Localizations') -> None:
+    def update(self, __m: Localizations) -> None:
         """Similar to :meth:`dict.update`"""
         self.__languages_dict__.update(__m.__languages_dict__)
 
