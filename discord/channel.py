@@ -798,7 +798,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         if not self._members:
             self._members = {self.owner_id: self.owner}
         self.name: str = data['name']
-        self.flags: ChannelFlags = ChannelFlags._from_value(data['falgs'])
+        self.flags: ChannelFlags = ChannelFlags._from_value(data['flags'])
         self.message_count: int = data.get('message_count', 0)
         self.total_message_sent: int = data.get('total_message_sent', self.message_count)
         self.member_count = data.get('member_count', 0)
@@ -2238,8 +2238,6 @@ class ForumPost(ThreadChannel):
         The ID of the post
     """
     def __init__(self, *, state, guild, data: dict) -> None:
-        from colored_dict import cprint
-        cprint(data)
         self._state: ConnectionState = state
         self.guild: Guild = guild
         self.id: int = int(data['id'])
@@ -2369,7 +2367,7 @@ class ForumTag(Hashable):
     moderated: :class:`bool`
         Whether only moderators can apply this tag to a post.
     """
-    __slots__ = ('name', 'moderated', 'emoji_id', 'emoji_name', 'guild', 'state')
+    __slots__ = ('name', 'moderated', 'emoji_id', 'emoji_name', 'guild', '_state')
 
     def __init__(
             self,
