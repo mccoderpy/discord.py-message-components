@@ -35,7 +35,9 @@ from typing import (
     Union,
     Optional,
     Sequence,
+    Coroutine,
     List,
+    Tuple,
     Dict,
     Any
 )
@@ -47,7 +49,7 @@ from .mixins import Hashable
 from . import utils, abc
 from .flags import ChannelFlags
 from .asset import Asset
-from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived, MissingPermissionsToCreateThread
+from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived
 from .http import handle_message_parameters
 from .partial_emoji import PartialEmoji
 
@@ -75,6 +77,7 @@ __all__ = (
     'GroupChannel',
     'ForumPost',
     'ForumChannel',
+    'ForumTag',
     'PartialMessageable',
     '_channel_factory'
 )
@@ -176,7 +179,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         return self
 
     @property
-    def type(self):
+    def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return try_enum(ChannelType, self._type)
 
@@ -698,6 +701,23 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
 
 class ThreadMember:
+    """
+    Represents a minimal :class:`Member` that has joined a :class:`ThreadChannel` or :class:`ForumPost`
+
+    Attributes
+    ----------
+    id: :class:`int`
+        The ID of the member
+    guild: :class:`Guild`
+        The guild the thread member belongs to
+    joined_at: :class:`datetime.datetime`
+        When the member joined the thread
+    thread_id: :class:`int`
+        The id of the thread the member belongs to
+    guild_id: :class:`int`
+        The ID of the guild the thread member belongs to
+
+    """
     def __init__(self, *, state, guild, data):
         self._state = state
         self.guild = guild
@@ -714,22 +734,48 @@ class ThreadMember:
         return cls(state=thread._state, guild=thread.guild, data=data)
 
     @property
-    def as_guild_member(self):
+    def as_guild_member(self) -> Optional[Member]:
+        """Optional[:class:`Member`]: Returns the full guild member for the thread member if cached else :obj:`None`"""
         return self.guild.get_member(self.id)
 
-    async def send(self, *args, **kwargs):
-        return await self.as_guild_member.send(*args, **kwargs)
+    async def send(self, *args, **kwargs) -> Coroutine[Any, Any, Message]:
+        """
+        A shortcut to :meth:`Member.send`
+        """
+        member: abc.Messageable = self.as_guild_member or await self._state._get_client().fetch_user(self.id)
+        return member.send(*args, **kwargs)
 
-    def permissions_in(self, channel):
-        return self.as_guild_member.permissions_in(channel)
+    def permissions_in(self, channel: abc.GuildChannel) -> Permissions:
+        """
+        A shorthand method to :meth:`Member.permissions_in`
+
+        Raises
+        ------
+        TypeError
+            The associated guild member is not cached
+        """
+        member = self.as_guild_member
+        if not member:
+            raise TypeError('The guild member of this thread member is not cached')
+        return member.permissions_in(channel)
 
     @property
-    def mention(self):
+    def mention(self) -> str:
+        """Returns a string the client renders as a mention of the user"""
         return '<@%s>' % self.id
 
 
 class ThreadChannel(abc.Messageable, Hashable):
-    """Represents a thread in a guild"""
+    """
+    Represents a thread in a guild
+
+    Attributes
+    ----------
+    id: :class:`int`
+        The ID of the thread
+    type: :class:`ChannelType`
+        The type of the thread
+    """
     def __init__(self, *, state, guild, data):
         self._state: ConnectionState = state
         self.id = int(data['id'])
@@ -752,6 +798,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         if not self._members:
             self._members = {self.owner_id: self.owner}
         self.name: str = data['name']
+        self.flags: ChannelFlags = ChannelFlags._from_value(data['falgs'])
         self.message_count: int = data.get('message_count', 0)
         self.total_message_sent: int = data.get('total_message_sent', self.message_count)
         self.member_count = data.get('member_count', 0)
@@ -766,6 +813,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     @classmethod
     def _from_partial(cls, state: ConnectionState, guild: Guild, data: Dict[str, Any]) -> ThreadChannel:
         self = cls.__new__(cls)
+        self._state = state
         self.id = int(data['id'])
         self.guild = guild
         self.type = try_enum(ChannelType, data['type'])
@@ -802,36 +850,70 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def starter_message(self) -> Optional[Message]:
-        original_message = self._state._get_message(self.id)
-        return original_message
+        """Optional[:class:`Message`]: The starter message of this thread if it was started from a message and the message is cached"""
+        return self._state._get_message(self.id)
 
     @property
-    def owner(self):
-        return self.guild.get_member(self.owner_id)
+    def owner(self) -> Optional[Union[Member, ThreadMember]]:
+        """
+        Returns the owner(creator) of the thread.
+        Depending on whether the associated guild member is cached, this returns the :class:`Member` instead of the :class:`ThreadMember`
+
+        .. note::
+
+            If the thread members are not fetched (can be done manually using :meth:`~ThreadChannel.fetch_members`)
+            and the guild member is not cached, this returns :obj:`None`.
+
+        Returns
+        --------
+        Optional[Union[:class:`Member`, :class:`ThreadMember`]]
+            The thread owner if cached
+        """
+        return self.guild.get_member(self.owner_id) or self.get_member(self.owner_id)
 
     @property
-    def members(self):
+    def members(self) -> List[ThreadMember]:
+        """List[:class:`Member`]: Returns a list with cached members of this thread"""
         return list(self._members.values())
 
     @property
-    def locked(self):
+    def locked(self) -> bool:
+        """:class:`bool`: Whether the threads conversation is locked by a moderator.
+        If so, the thread can only be unarchived by a moderator
+        """
         return self._thread_meta.get('locked', False)
 
     @property
-    def auto_archive_duration(self):
+    def auto_archive_duration(self) -> AutoArchiveDuration:
+        """:class:`AutoArchiveDuration`: The duration after which the thread will auto hide from the channel list"""
         return try_enum(AutoArchiveDuration, self._thread_meta.get('auto_archive_duration', 0))
 
     @property
-    def archived(self):
+    def archived(self) -> bool:
+        """:class:`bool`: Whether the thread is archived (e.g. not showing in the channel list)"""
         return self._thread_meta.get('archived', True)
 
     @property
-    def invitable(self):
+    def invitable(self) -> bool:
+        """
+        Private threads only:
+        When :obj:`True` only the owner of the thread and members with :func:`~Permissions.manage_threads` permissions
+        can add new members
+
+        Returns
+        -------
+        :class:`bool`
+        """
         return self._thread_meta.get('invitable', False)
 
     @property
-    def last_update_time(self):
-        return datetime.datetime.fromisoformat(self._thread_meta.get('archive_timestamp', ''))
+    def archive_time(self) -> Optional[datetime.datetime]:
+        """
+        Optional[:class:`datetime.datetime`]: When the thread's archive status was last changed, used for calculating recent activity
+        """
+        archive_timestamp = self._thread_meta.get('archive_timestamp', None)
+        if archive_timestamp:
+            return datetime.datetime.fromisoformat(archive_timestamp)
 
     @property
     def me(self):
@@ -840,12 +922,12 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def parent_channel(self) -> Union[TextChannel, ForumChannel]:
-        """:class:`TextChannel`: The parent channel of this tread"""
+        """Union[:class:`TextChannel`, :class:`ForumChannel`]: The parent channel of this tread"""
         return self.guild.get_channel(self.parent_id)
 
     @property
     def category_id(self) -> Optional[int]:
-        """Optional[:class:`int`]: The ID of the threads parent channel category, if any """
+        """Optional[:class:`int`]: The ID of the threads parent channel category, if any"""
         return self.parent_channel.category_id
 
     @property
@@ -870,9 +952,9 @@ class ThreadChannel(abc.Messageable, Hashable):
         """:class:`str`: Returns a URL that allows the client to jump to the referenced thread."""
         return f'https://discord.com/channels/{self.guild.id}/{self.id}'
 
-    def get_member(self, user_id) -> Optional[ThreadMember]:
-        """:class:`ThreadMember`: Returns the member of thread with the given user_id, or :obj:`None` if he is not in this thread."""
-        return self._members.get(user_id, None)
+    def get_member(self, id) -> Optional[ThreadMember]:
+        """:class:`ThreadMember`: Returns the thread member with the given ID, or :obj:`None` if he is not a member of the thread."""
+        return self._members.get(id, None)
 
     def permissions_for(self, member) -> Permissions:
         """Handles permission resolution for the current :class:`~discord.Member`.
@@ -911,7 +993,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         .. note::
             Also requires the thread is **not archived**.
 
-        This will fire a ``thread_members_update`` event.
+        This will fire a :func:`discord.thread_members_update` event.
         """
 
         if self.archived:
@@ -929,7 +1011,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         .. note::
             Also requires the thread is **not archived**.
 
-        This will fire a ``thread_members_update`` event.
+        This will fire a :func:`discord.thread_members_update` event.
         """
 
         if self.archived:
@@ -988,21 +1070,32 @@ class ThreadChannel(abc.Messageable, Hashable):
 
         return await self._state.http.remove_thread_member(channel_id=self.id, member_id=member_id)
 
-    async def _fetch_members(self):
-        if not self._state._intents.members:
+    async def fetch_members(self) -> List[ThreadMember]:
+        """
+        Fetch the members that currently joined this thread
+
+        .. note::
+
+            This requires :func:`Intents.members` to be enabled
+
+        Returns
+        --------
+        List[:class:`ThreadMember`]
+            A list of members that has joined this thread
+        """
+        if not self._state.intents.members:
             raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this API-call.')
         r = await self._state.http.list_thread_members(channel_id=self.id)
         for thread_member in r:
-            if not self.get_member(int(thread_member['user_id'])):
-                self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
+            self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
         return self.members
 
-    async def delete(self, *, reason=None):
+    async def delete(self, *, reason: Optional[str] = None) -> None:
         """|coro|
 
         Deletes the thread channel.
 
-        You must have :attr:`~Permissions.manage_channels` permission to use this.
+        The bot must have :attr:`~Permissions.manage_channels` permission to use this.
 
         Parameters
         -----------
@@ -1012,11 +1105,11 @@ class ThreadChannel(abc.Messageable, Hashable):
 
         Raises
         -------
-        ~discord.Forbidden
-            You do not have proper permissions to delete the thread.
-        ~discord.NotFound
+        Forbidden
+            The bot is missing permissions to delete the thread.
+        NotFound
             The thread was not found or was already deleted.
-        ~discord.HTTPException
+        HTTPException
             Deleting the thread failed.
         """
         await self._state.http.delete_channel(self.id, reason=reason)
@@ -1093,7 +1186,17 @@ class ThreadChannel(abc.Messageable, Hashable):
 
         return result
 
-    async def edit(self, *, reason: Optional[str] = None, **fields) -> ThreadChannel:
+    async def edit(
+            self,
+            *,
+            name: str = MISSING,
+            archived: bool = MISSING,
+            auto_archive_duration: AutoArchiveDuration = MISSING,
+            locked: bool = MISSING,
+            invitable: bool = MISSING,
+            slowmode_delay: int = MISSING,
+            reason: Optional[str] = None
+    ) -> ThreadChannel:
         """|coro|
 
         Edits the thread. In order to unarchive it, you must already be a member of it.
@@ -1101,25 +1204,29 @@ class ThreadChannel(abc.Messageable, Hashable):
         Parameters
         ----------
         name: Optional[:class:`str`]
-        	The channel name. Must be 1-100 characters long
+            The channel name. Must be 1-100 characters long
         archived: Optional[:class:`bool`]
             Whether the thread is archived
         auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
             Duration in minutes to automatically archive the thread after recent activity
-        locked: Optional[:clas:`bool`]
+        locked: Optional[:class:`bool`]
             Whether the thread is locked; when a thread is locked, only users with :attr:`Permissions.manage_threads` can unarchive it
-        invitable: Optional[:clas:`bool`]
-        	Whether non-moderators can add other non-moderators to a thread; only available on private threads
-        rate_limit_per_user: :Optional[:class:`int`]
+        invitable: Optional[:class:`bool`]
+            Whether non-moderators can add other non-moderators to a thread; only available on private threads
+        slowmode_delay: :Optional[:class:`int`]
             Amount of seconds a user has to wait before sending another message (0-21600);
             bots, as well as users with the permission :attr:`Permissions.manage_messages`,
             :attr:`Permissions.manage_thread`, or :attr:`Permissions.manage_channel`, are unaffected
+        reason: Optional[:class:`str`]
+            The reason for editing the channel. Shows up on the audit log.
 
         Raises
         ------
-        ~discord.Forbidden:
+        InvalidArgument:
+            The ``auto_archive_duration`` is not a valid member of :class:`AutoArchiveDuration`
+        Forbidden:
             The bot missing permissions to edit the thread or the specific field
-        ~discord.HTTPException:
+        HTTPException:
             Editing the thread failed
 
         Returns
@@ -1129,50 +1236,29 @@ class ThreadChannel(abc.Messageable, Hashable):
         """
         payload = {}
 
-        try:
-            name: Optional[str] = fields['name']
-        except KeyError:
-            pass
-        else:
+        if name is not MISSING:
             payload['name'] = name
 
-        try:
-            archived: Optional[bool] = fields['archived']
-        except KeyError:
-            pass
-        else:
+        if archived is not MISSING:
             payload['archived'] = archived
 
-        try:
-            auto_archive_duration: Optional[AutoArchiveDuration] = fields['auto_archive_duration']
-        except KeyError:
-            pass
-        else:
-            payload['auto_archive_duration'] = int(auto_archive_duration)
+        if auto_archive_duration is not MISSING:
+            auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
+            if not isinstance(auto_archive_duration, AutoArchiveDuration):
+                raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
+            else:
+                payload['auto_archive_duration'] = auto_archive_duration.value
 
-        try:
-            locked: Optional[bool] = fields['locked']
-        except KeyError:
-            pass
-        else:
+        if locked is not MISSING:
             payload['locked'] = locked
 
-        try:
-            invitable: Optional[bool] = fields['invitable']
-        except KeyError:
-            pass
-        else:
-            if self.type.private_thread:
-                payload['invitable'] = invitable
+        if invitable is not MISSING:
+            payload['invitable'] = invitable
 
-        try:
-            rate_limit_per_user: Optional[int] = fields['rate_limit_per_user']
-        except KeyError:
-            pass
-        else:
-            payload['rate_limit_per_user'] = rate_limit_per_user
+        if slowmode_delay is not MISSING:
+            payload['rate_limit_per_user'] = slowmode_delay
 
-        data = await self._state.http.edit_thread(self.id, **payload, reason=reason)
+        data = await self._state.http.edit_channel(self.id, options=payload, reason=reason)
         self._update(self.guild, data)
         return self
 
@@ -1322,7 +1408,7 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         return self
 
     @property
-    def type(self):
+    def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.voice
 
@@ -1459,7 +1545,7 @@ class StageChannel(VocalGuildChannel):
         return [member for member in self.members if member.voice.requested_to_speak_at is not None]
 
     @property
-    def type(self):
+    def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.stage_voice
 
@@ -1575,12 +1661,12 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         return ChannelType.category.value
 
     @property
-    def type(self):
+    def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.category
 
     @property
-    def jump_url(self):
+    def jump_url(self) -> str:
         """:class:`str`: Returns an empty string as you can't jump to a category."""
         return ''
 
@@ -1812,7 +1898,7 @@ class DMChannel(abc.Messageable, Hashable):
         return ChannelType.private
 
     @property
-    def type(self):
+    def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.private
 
@@ -1953,7 +2039,7 @@ class GroupChannel(abc.Messageable, Hashable):
         return ChannelType.group
 
     @property
-    def type(self):
+    def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.group
 
@@ -2139,24 +2225,132 @@ class GroupChannel(abc.Messageable, Hashable):
 
 
 class ForumPost(ThreadChannel):
+    """
+    Represents a post in a :class:`ForumChannel`, this is very similar to a :class:`ThreadChannel`
+
+    Attributes
+    ----------
+    guild: :class:`Guild`
+        The guild this post belongs to
+    id: :class:`int`
+        The ID of the post
+    """
     def __init__(self, *, state, guild, data: dict) -> None:
-        self._state = state
-        self.guild = guild
-        self.id = int(data['id'])
+        from colored_dict import cprint
+        cprint(data)
+        self._state: ConnectionState = state
+        self.guild: Guild = guild
+        self.id: int = int(data['id'])
         self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(map(int, data.get("applied_tags",[])))
         super().__init__(state=self._state, guild=self.guild, data=data)
 
-    def get_tags(self) -> List[ForumTag]:
+    def _update(self, guild, data) -> ForumPost:
+        self._applied_tags = utils.SnowflakeList(map(int, data['applied_tags']))
+        super()._update(guild, data)
+        return self
+
+    @property
+    def applied_tags(self) -> List[ForumTag]:
         """List[:class:`ForumTag`]: Returns a list of tags applied to this post."""
         tags = []
         for tag_id in self._applied_tags:
             tags.append(self.parent_channel.get_tag(tag_id))
         return tags
 
+    async def edit_tags(self, *tags: ForumTag) -> ForumPost:
+        """|coro|
+
+        Edits the tags of the post
+
+        Parameters
+        ----------
+        tags: Tuple[:class:`ForumTag`]
+            Tags to keep as well as new tags to add
+
+        Returns
+        -------
+        ForumPost
+            The updated post
+        """
+        return await self.edit(tags=tags)
+
+    async def edit(
+            self,
+            *,
+            name: str = MISSING,
+            tags: Sequence[ForumTag] = MISSING,
+            pinned: bool = MISSING,
+            auto_archive_duration: AutoArchiveDuration = MISSING,
+            locked: bool = MISSING,
+            slowmode_delay: int = MISSING,
+            reason: Optional[str] = None
+    ) -> ForumPost:
+        """|coro|
+
+        Edits the post, all parameters are optional
+
+        Parameters
+        -----------
+        name: :class:`str`
+            The new name of the post
+        tags: Sequence[:class:`ForumPost`]
+            Tags to keep as well as new tags to add
+        pinned: :class:`bool`
+            Whether the post is pinned to the top of the parent forum.
+
+            .. note::
+
+                Per forum, only one post can be pinned.
+
+        auto_archive_duration: :class:`AutoArchiveDuration`
+            The new amount of minutes after that the post will stop showing in the channel list
+            after ``auto_archive_duration`` minutes of inactivity.
+        locked: :class:`bool`
+            Whether the post is locked;
+            when a post is locked, only users with :func:~Permissions.manage_threads` permissions can unarchive it
+        slowmode_delay: Optional[:class:`str`]
+            Amount of seconds a user has to wait before sending another message (0-21600);
+            bots, as well as users with the permission manage_messages, manage_thread, or manage_channel, are unaffected
+        reason: Optional[:class:`str`]
+            The reason for editing the post, shows up in the audit log.
+        """
+        payload = {}
+
+        if name is not MISSING:
+            payload[name] = name
+
+        if tags is not MISSING:
+            payload['applied_tags'] = [str(tag.id) for tag in tags]
+
+        if pinned is not MISSING:
+            flags = ChannelFlags._from_value(self.flags.value)
+            flags.pinned = pinned
+            payload['flags'] = flags.value
+
+        if auto_archive_duration is not MISSING:
+            auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
+            if not isinstance(auto_archive_duration, AutoArchiveDuration):
+                raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
+            else:
+                payload['auto_archive_duration'] = auto_archive_duration.value
+
+        if locked is not MISSING:
+            payload['locked'] = locked
+
+        if slowmode_delay is not MISSING:
+            payload['rate_limit_per_user'] = slowmode_delay
+
+        data = await self._state.http.edit_channel(self.id, options=payload, reason=reason)
+        return self._update(self.guild, data)
+
 
 class ForumTag(Hashable):
     """
-    Represents a tag in a forum.
+    Represents a tag in a :class:`ForumChannel`.
+    
+    .. note::
+    
+        The ``id`` and ``guild`` attributes are only available if the instance is not self created.
 
     Attributes
     -----------
@@ -2173,17 +2367,23 @@ class ForumTag(Hashable):
     moderated: :class:`bool`
         Whether only moderators can apply this tag to a post.
     """
+    __slots__ = ('name', 'moderated', 'emoji_id', 'emoji_name', 'guild', 'state')
 
-    def __init__(self, *, state, guild, data):
-        self._state = state
-        self.guild = guild
-        self.id = int(data['id'])
-        self.emoji_id = utils._get_as_snowflake(data, "emoji_id")
-        self.emoji_name = data.get("emoji_name")
-        self.moderated = data.get("moderated")
-        self.name = data.get("name")
+    def __init__(
+            self,
+            name: str,
+            moderated: bool = False,
+            emoji_id: Optional[int] = None,
+            emoji_name: Optional[str] = None
+    ):
+        self.guild: Guild
+        self._state: ConnectionState
+        self.name: str = name
+        self.moderated: bool = moderated
+        self.emoji_id = emoji_id
+        self.emoji_name = emoji_name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         attrs = [
             ('id', self.id),
             ('name', self.name),
@@ -2193,14 +2393,37 @@ class ForumTag(Hashable):
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
-    def __str__(self):
-        return self.__repr__()
+    def __str__(self) -> str:
+        return self.name
 
     @property
     def emoji(self) -> Optional[PartialEmoji]:
+        """Optional[:class:`PartialEmoji`]: The emoji that is set for this post, if any"""
         if not (self.emoji_name or self.emoji_id):
             return None
         return PartialEmoji(name=self.emoji_name, id=self.emoji_id)
+    
+    @classmethod
+    def _with_state(cls, state: ConnectionState, guild: Guild, data: Dict[str, Any]) -> ForumTag:
+        self = cls.__new__(cls)
+        self._state = state
+        self.guild = guild
+        self.name = data['name']
+        self.moderated = data.get('moderated', False)
+        self.emoji_id = utils._get_as_snowflake(data, 'emoji_id')
+        self.emoji_name = data.get('emoji_name', None)
+        return self
+
+    def to_dict(self) -> Dict[str, Any]:
+        base = {
+            'name': self.name,
+            'moderated': self.moderated
+        }
+        if self.emoji_id:
+            base['emoji_id'] = self.emoji_id
+        elif self.emoji_name:
+            base['emoji_name'] = self.emoji_name
+        return base
 
 
 class ForumChannel(abc.GuildChannel, Hashable):
@@ -2284,10 +2507,10 @@ class ForumChannel(abc.GuildChannel, Hashable):
                 guild._remove_post(post)
 
     def _update(self, guild, data):
-        self.guild = guild
-        self.name = data['name']
-        self.category_id = utils._get_as_snowflake(data, 'parent_id')
-        self.topic = data.get('topic')
+        self.guild: Guild = guild
+        self.name: str = data['name']
+        self.category_id: int = utils._get_as_snowflake(data, 'parent_id')
+        self.topic: str = data.get('topic')
         self.flags: ChannelFlags = ChannelFlags._from_value(data['flags'])
         emoji = data.get('default_reaction_emoji', None)
         if not emoji:
@@ -2298,12 +2521,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
                 name=emoji['emoji_name'],
                 id=utils._get_as_snowflake(emoji, 'id') or None
             )
-        self.position = data['position']
-        self.nsfw = data.get('nsfw', False)
+        self.position: int = data['position']
+        self.nsfw: bool = data.get('nsfw', False)
         # Does this need coercion into `int`? No idea yet.
-        self.slowmode_delay = data.get('rate_limit_per_user', 0)
+        self.slowmode_delay: int = data.get('rate_limit_per_user', 0)
         self._type = data.get('type', self._type)
-        self.last_post_id = utils._get_as_snowflake(data, 'last_message_id')
+        self.last_post_id: int = utils._get_as_snowflake(data, 'last_message_id')
         self.default_auto_archive_duration = try_enum(
             AutoArchiveDuration,
             data.get('default_auto_archive_duration', 1440)
@@ -2316,7 +2539,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         guild = self.guild
         state = self._state
         for t in tags:
-            self._tags[int(t['id'])] = ForumTag(state=state, guild=guild, data=t)
+            self._tags[int(t['id'])] = ForumTag._with_state(state=state, guild=guild, data=t)
 
     async def _get_channel(self):
         return self
@@ -2346,7 +2569,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     @property
     def posts(self) -> List[ForumPost]:
-        """List[:class:`ForumPost`]: A list of all posts in the forum."""
+        """List[:class:`ForumPost`]: A list of all cached posts in the forum."""
         return list(self._posts.values())
 
     def _add_tag(self, tag: ForumTag) -> None:
@@ -2356,7 +2579,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return self._tags.pop(tag.id, None)
 
     def get_tag(self, tag_id: int) -> Optional[ForumTag]:
-        """Optional[:class:`ForumTag`]: Returns a tag with the given ID in the forum, or :obj:`None when not found."""
+        """Optional[:class:`ForumTag`]: Returns a tag with the given ID in the forum, or :obj:`None` when not found."""
         return self._tags.get(tag_id, None)
 
     @property
@@ -2391,7 +2614,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         Returns
         ---------
         Optional[:class:`ForumPost`]
-            The last post in this channel or ``None`` if not found.
+            The last post in this channel or :obj:`None` if not found.
         """
         return self._posts.get(self.last_post_id) if self.last_post_id else None
 
@@ -2400,6 +2623,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             *,
             name: str = MISSING,
             topic: str = MISSING,
+            available_tags: Sequence[ForumTag] = MISSING,
             tags_required: bool = MISSING,
             position: int = MISSING,
             nsfw: bool = MISSING,
@@ -2422,6 +2646,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The new channel name.
         topic: :class:`str`
             The new channel's topic.
+        available_tags: Sequence[:class:`ForumTag`]
+            An iterable of tags to keep as well of new tags.
+            You can use this to reorder the tags.
         tags_required: :class:`bool`
             Whether new created post require at least one tag provided on creation
         position: :class:`int`
@@ -2462,8 +2689,11 @@ class ForumChannel(abc.GuildChannel, Hashable):
         if topic is not MISSING:
             payload['topic'] = topic
 
+        if available_tags is not MISSING:
+            payload['available_tags'] = [tag._to_dict() for tag in available_tags]
+
         if tags_required is not MISSING:
-            flags: ChannelFlags = ChannelFlags._from_value(self.flags.value)
+            flags = ChannelFlags._from_value(self.flags.value)
             flags.require_tags = tags_required
             payload['flags'] = flags
 
@@ -2707,7 +2937,7 @@ class PartialMessageable(abc.Messageable, Hashable):
         return self
 
     @property
-    def guild(self) -> Optional['Guild']:
+    def guild(self) -> Optional[Guild]:
         """Optional[:class:`~discord.Guild`]: The guild this partial messageable belongs to if any."""
         return self._state._get_guild(self.guild_id)
 
