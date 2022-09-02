@@ -853,34 +853,6 @@ class HTTPClient:
         else:
             return self.request(r, json=params.payload, params=query_params, reason=reason)
 
-    def edit_thread(
-            self,
-            channel_id,
-            *,
-            name=None,
-            auto_archive_duration=None,
-            slowmode_delay=None,
-            archived=None,
-            locked=None,
-            invitable=None,
-            reason=None
-        ):
-        r = Route('PATCH', '/channels/{channel_id}', channel_id=channel_id)
-        params = {}
-        if name:
-            params['name'] = str(name)
-        if auto_archive_duration:
-            params['auto_archive_duration'] = int(auto_archive_duration)
-        if slowmode_delay:
-            params['rate_limit_per_user'] = slowmode_delay
-        if archived:
-            params['archived'] = bool(archived)
-        if locked:
-            params['locked'] = bool(locked)
-        if invitable is not None:
-            params['invitable'] = invitable
-        return self.request(r, json=params, reason=reason)
-
     def add_thread_member(self, channel_id, member_id='@me'):
         r = Route(
             'PUT',
@@ -1003,6 +975,12 @@ class HTTPClient:
             'position',
             'permission_overwrites',
             'rate_limit_per_user',
+            'default_reaction_emoji'
+            'default_thread_rate_limit_per_user',
+            'available_tags',
+            'applied_tags',
+            'locked',
+            'archived',
             'type',
             'rtc_region'
         )
