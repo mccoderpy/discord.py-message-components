@@ -1034,6 +1034,13 @@ Utility Functions
 
 .. autofunction:: discord.utils.styled_timestamp
 
+MISSING
+--------
+
+.. object:: MISSING
+
+    The ``MISSING`` is a special object used as default value in places where :obj:`None` cant be used as it is a valid value too.
+    For example in ``edit`` functions.
 
 Profile
 ---------
@@ -3377,6 +3384,15 @@ VoiceChannel
 .. autoclass:: VoiceChannel()
     :members:
     :inherited-members:
+    :exclude-members: history, typing
+
+    .. automethod:: history
+        :async-for:
+
+    .. automethod:: typing
+        :async-with:
+
+
 
 StageChannel
 ~~~~~~~~~~~~~
@@ -3384,6 +3400,23 @@ StageChannel
 .. attributetable:: StageChannel
 
 .. autoclass:: StageChannel()
+    :members:
+    :inherited-members:
+
+ForumChannel
+~~~~~~~~~~~~~
+
+.. attributetable:: ForumChannel
+
+.. autoclass:: ForumChannel()
+    :members:
+
+ForumPost
+~~~~~~~~~~
+
+.. attributetable:: ForumPost
+
+.. autoclass:: ForumPost()
     :members:
     :inherited-members:
 
@@ -3638,6 +3671,14 @@ File
 .. autoclass:: File
     :members:
 
+ForumTag
+~~~~~~~~~
+
+.. attributetable:: ForumTag
+
+.. autoclass:: ForumTag()
+    :members:
+
 Colour
 ~~~~~~
 
@@ -3716,6 +3757,14 @@ SystemChannelFlags
 .. attributetable:: SystemChannelFlags
 
 .. autoclass:: SystemChannelFlags()
+    :members:
+
+ChannelFlags
+~~~~~~~~~~~~~
+
+.. attributetable:: ChannelFlags
+
+.. autoclass:: ChannelFlags()
     :members:
 
 MessageFlags
