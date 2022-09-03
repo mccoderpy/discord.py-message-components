@@ -44,14 +44,14 @@ import weakref
 
 import aiohttp
 
-from .errors import HTTPException, Forbidden, NotFound, LoginFailure, DiscordServerError, GatewayNotFound, \
-    InvalidArgument
+from .errors import HTTPException, Forbidden, NotFound, LoginFailure, DiscordServerError, GatewayNotFound, InvalidArgument
 from .file import File
+from .enums import Locale
 from .gateway import DiscordClientWebSocketResponse
 from .mentions import AllowedMentions
 from .components import ActionRow, Button, SelectMenu
 from . import __version__, utils
-from .utils import MISSING
+
 
 if TYPE_CHECKING:
     from .flags import MessageFlags
@@ -59,6 +59,10 @@ if TYPE_CHECKING:
     from .embeds import Embed
     from .message import Attachment, MessageReference
     from .utils import SnowflakeList
+
+
+MISSING = utils.MISSING
+
 
 log = logging.getLogger(__name__)
 
@@ -416,7 +420,17 @@ class HTTPClient:
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
 
-    def __init__(self, connector=None, *, proxy=None, proxy_auth=None, loop=None, unsync_clock=True, api_version=10):
+    def __init__(
+            self,
+            connector=None,
+            *,
+            proxy: Optional[str] = None,
+            proxy_auth: Optional[aiohttp.BasicAuth] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+            unsync_clock: bool = True,
+            api_version: int = 10,
+            api_error_locale: Optional[Locale] = None
+    ):
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.connector = connector
         self.__session: aiohttp.ClientSession = None  # filled in static_login
@@ -428,6 +442,7 @@ class HTTPClient:
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
         self.api_version = api_version
+        self.api_error_locale = api_error_locale or Locale.en_US
         Route.BASE = f'https://discord.com/api/v{api_version}'
 
         user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
@@ -435,9 +450,10 @@ class HTTPClient:
 
     def recreate(self):
         if self.__session.closed:
-            self.__session = aiohttp.ClientSession(connector=self.connector,
-                                                   ws_response_class=DiscordClientWebSocketResponse
-                                                   )
+            self.__session = aiohttp.ClientSession(
+                connector=self.connector,
+                ws_response_class=DiscordClientWebSocketResponse
+            )
 
     async def ws_connect(self, url, *, compress=0):
         kwargs = {
@@ -448,6 +464,7 @@ class HTTPClient:
             'autoclose': False,
             'headers': {
                 'User-Agent': self.user_agent,
+                'X-Discord-Locale': self.api_error_locale.value
             },
             'compress': compress
         }
@@ -466,7 +483,8 @@ class HTTPClient:
 
         # header creation
         headers = {
-            'User-Agent': self.user_agent
+            'User-Agent': self.user_agent,
+            'X-Discord-Locale': self.api_error_locale.value
         }
 
         if self.token is not None:

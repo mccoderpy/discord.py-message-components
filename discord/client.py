@@ -57,7 +57,7 @@ from .template import Template
 from .widget import Widget
 from .guild import Guild
 from .channel import _channel_factory, PartialMessageable
-from .enums import ChannelType, ApplicationCommandType
+from .enums import ChannelType, ApplicationCommandType, Locale
 from .mentions import AllowedMentions
 from .errors import *
 from .enums import Status, VoiceRegion, OptionType
@@ -172,6 +172,9 @@ class Client:
         If not given, defaults to a regularly constructed :class:`Intents` class.
     gateway_version: :class:`int`
         The gateway and api version to use. Defaults to ``v10``.
+    api_error_locale: :class:`discord.Locale`
+        The locale language to use for api errors. This will be applied to the ``X-Discord-Local`` header in requests.
+        Default to :func:`Locale.en_US`
     member_cache_flags: :class:`MemberCacheFlags`
         Allows for finer control over how the library caches members.
         If not given, defaults to cache as much as possible with the
@@ -257,7 +260,7 @@ class Client:
         The event loop that the client uses for HTTP requests and websocket operations.
     """
     def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None, **options):
-        self.ws = None
+        self.ws: DiscordWebSocket = None
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop() if loop is None else loop
         self._listeners = {}
         self.sync_commands: bool = options.get('sync_commands', False)
@@ -276,7 +279,16 @@ class Client:
         proxy_auth = options.pop('proxy_auth', None)
         unsync_clock = options.pop('assume_unsync_clock', True)
         self.gateway_version: int = options.get('gateway_version', 10)
-        self.http = HTTPClient(connector, proxy=proxy, proxy_auth=proxy_auth, unsync_clock=unsync_clock, loop=self.loop, api_version=self.gateway_version)
+        self.api_error_locale: Locale = options.pop('api_error_locale', None)
+        self.http = HTTPClient(
+            connector,
+            proxy=proxy,
+            proxy_auth=proxy_auth,
+            unsync_clock=unsync_clock,
+            loop=self.loop,
+            api_version=self.gateway_version,
+            api_error_locale=self.api_error_locale
+        )
 
         self._handlers = {
             'ready': self._handle_ready

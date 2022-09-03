@@ -1,7 +1,7 @@
 todo.md
 examples-test.py
 voice_test.py
-colored_dict.py
+cprint.py
 /cogs/
 /data/
 /exportToHTML/
