@@ -246,7 +246,10 @@ class Guild(Hashable):
 
     def _remove_thread(self, thread):
         self._channels.pop(thread.id, None)
-        thread.parent_channel._remove_thread(thread)
+        try:
+            thread.parent_channel._remove_thread(thread)
+        except AttributeError:  # parent channel was deleted
+            pass
 
     def _add_post(self, post):
         self._channels[post.id] = post
@@ -254,7 +257,10 @@ class Guild(Hashable):
 
     def _remove_post(self, post):
         self._channels.pop(post.id, None)
-        post.parent_channel._remove_post(post)
+        try:
+            post.parent_channel._remove_post(post)
+        except AttributeError: # parent channel was deleted
+            pass
 
     def _add_event(self, event):
         self._events[event.id] = event
