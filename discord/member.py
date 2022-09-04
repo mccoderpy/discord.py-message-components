@@ -668,13 +668,14 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     @property
     def communication_disabled_until(self) -> Optional[datetime.datetime]:
+        """Optional[:class:`datetime.datetime`]: The time until the member is timeouted, if any"""
         return datetime.datetime.fromisoformat(self._communication_disabled_until) if self._communication_disabled_until else None
 
     @utils.deprecated('Member.timeout')
     async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
         await self.edit(communication_disabled_until=until, reason=reason)
 
-    async def timeout(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
+    async def timeout(self, until: Union[datetime.datetime, datetime.timedelta], *, reason: Optional[str] = None) -> Member:
         """|coro|
 
         A shortcut method to timeout a member.
@@ -684,24 +685,30 @@ class Member(discord.abc.Messageable, _BaseUser):
         Parameters
         -----------
         until: :class:`datetime.datetime`
-            Until when the member should be timeouted
+            Until when the member should be timeouted.
+            This can be a timezone aware :class`~datetime.datetime` object or a :class:`~datetime.timedelta` object.
             
             .. note::
+
                 This can be max 28 days from current time!
-                
+
         reason: Optional[:class:`str`]
             The reason for sending the member to timeout - Shows up in the audit-log
         
         Raises
         -------
-        Forbidden:
+        TypeError
+            The passed :class:`~datetime.datetime` object is not timezone aware
+        Forbidden
             The bot missing access to timeout this member
-        HTTPException:
+        HTTPException
             Timeouting the member failed
         """
+        if isinstance(until, datetime.timedelta):
+            until = utils.utcnow() + until
         return await self.edit(communication_disabled_until=until, reason=reason)
 
-    async def remove_timeout(self, *, reason: Optional[str] = None) -> None:
+    async def remove_timeout(self, *, reason: Optional[str] = None) -> Member:
         """|coro|
 
         A shortcut method to remove a member from timeout.
@@ -715,9 +722,9 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         Raises
         -------
-        Forbidden:
+        Forbidden
             The bot missing access to remove this member from timeout
-        HTTPException:
+        HTTPException
             Removing the member from timeout failed
         """
         return await self.edit(communication_disabled_until=None, reason=reason)
@@ -791,12 +798,19 @@ class Member(discord.abc.Messageable, _BaseUser):
             Pass ``None`` to kick them from voice.
         communication_disabled_until: Optional[:class:`datetime.datetime`]
             Temporarily puts the member in timeout until this time.
-            If ``None``, then the member  is removed from timeout.
+            If :obj:`None`, then the member  is removed from timeout.
+
+            .. note::
+
+                The :class:`~datetime.datetime` object must be timezone aware.
+
         reason: Optional[:class:`str`]
             The reason for editing this member. Shows up on the audit log.
 
         Raises
         -------
+        TypeError
+            The :class:`~datetime.datetime` object passed to ``communication_disabled_until`` is not timezone aware
         Forbidden
             You do not have the proper permissions to the action requested.
         HTTPException
@@ -859,11 +873,16 @@ class Member(discord.abc.Messageable, _BaseUser):
             payload['roles'] = tuple(r.id for r in roles)
 
         try:
-            communication_disabled_until: Optional[datetime.datetime] = fields['communication_disabled_until']
+            communication_disabled_until: Optional[datetime.datetime] = fields.pop('communication_disabled_until')
         except KeyError:
             pass
         else:
             if communication_disabled_until:
+                if not communication_disabled_until.tzinfo:
+                    raise TypeError(
+                        'communication_disabled_until must be an aware datetime.'
+                        'Consider using discord.utils.utcnow() or datetime.datetime.now().astimezone() for local time.'
+                    )
                 payload['communication_disabled_until'] = communication_disabled_until.isoformat()
             else:
                 payload['communication_disabled_until'] = None
