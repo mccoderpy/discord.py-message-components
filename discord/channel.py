@@ -791,7 +791,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     def _sorting_bucket(self):
         return ChannelType.public_thread.value
 
-    def _update(self, guild, data):
+    def _update(self, guild: Guild, data: Dict[str, Any]):
         self.guild: Guild = guild
         self.parent_id: int = int(data['parent_id'])
         self.owner_id: int = int(data['owner_id'])
@@ -818,8 +818,9 @@ class ThreadChannel(abc.Messageable, Hashable):
         self.guild = guild
         self.type = try_enum(ChannelType, data['type'])
         self.parent_id = int(data['parent_id'])
+        return self
 
-    def _sync_from_members_update(self, data):
+    def _sync_from_members_update(self, data: Dict[str, Any]) -> None:
         self.member_count = data.get('member_count', self.member_count)
         joined = self._state.member_cache_flags.joined
         for new_member in data.get('added_members', []):
@@ -836,16 +837,16 @@ class ThreadChannel(abc.Messageable, Hashable):
             if member:
                 self._remove_member(member)
 
-    def _add_self(self, data):
+    def _add_self(self, data: Dict[str, Any]) -> None:
         self._add_member(ThreadMember(state=self._state, guild=self.guild, data=data))
 
-    async def _get_channel(self):
+    async def _get_channel(self) -> None:
         return self
 
-    def _add_member(self, member):
+    def _add_member(self, member: ThreadMember) -> None:
         self._members[member.id] = member
 
-    def _remove_member(self, member):
+    def _remove_member(self, member: ThreadMember) -> None:
         self._members.pop(member.id, None)
 
     @property
@@ -897,7 +898,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     def invitable(self) -> bool:
         """
         Private threads only:
-        When :obj:`True` only the owner of the thread and members with :func:`~Permissions.manage_threads` permissions
+        When :obj:`True` only the owner of the thread and members with :attr:`~Permissions.manage_threads` permissions
         can add new members
 
         Returns
@@ -916,7 +917,7 @@ class ThreadChannel(abc.Messageable, Hashable):
             return datetime.datetime.fromisoformat(archive_timestamp)
 
     @property
-    def me(self):
+    def me(self) -> Optional[ThreadMember]:
         """Optional[:class:`ThreadMember`]: The thread member of the bot, or :obj:`None` if he is not a member of the thread."""
         return self.get_member(self._state.self_id)
 
