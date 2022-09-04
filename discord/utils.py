@@ -220,6 +220,11 @@ def oauth_url(
     return url
 
 
+def utcnow() -> datetime.datetime:
+    """:class:`datetime.datetime`: Returns a timezone aware :class:`datetime.datetime` object representing the current UTC time."""
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
 def snowflake_time(id):
     """
     Parameters
@@ -348,7 +353,7 @@ def get(iterable, **attrs):
     return None
 
 
-def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[TimestampStyle, str] = TimestampStyle.short):
+def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[TimestampStyle, str] = TimestampStyle.short) -> str:
     """
     A small function that returns a styled timestamp for discord, this will be displayed accordingly in the Discord client depending on the :attr:`style` specified.
 
@@ -377,15 +382,16 @@ def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[Time
     :class:`str`
         The formatted timestamp.
     """
-    unix_timestamp = int(timestamp.timestamp()) if isinstance(timestamp, datetime.datetime) else timestamp
+    unix_timestamp = int(timestamp.timestamp()) if isinstance(timestamp, datetime.datetime) else int(timestamp)
     style = TimestampStyle.from_value(style) if isinstance(style, str) else style
     if not isinstance(style, TimestampStyle):
         raise AttributeError('style has to be a discord.TimestampStyle')
     return f'<t:{unix_timestamp}:{str(style)}>'
 
 
-async def create_voice_activity(channel: 'VoiceChannel', target_application_id: int, **kwargs):
+async def create_voice_activity(channel: VoiceChannel, target_application_id: int, **kwargs):
     return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
+
 
 def _unique(iterable):
     seen = set()
