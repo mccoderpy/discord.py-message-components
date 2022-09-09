@@ -1653,15 +1653,26 @@ class PartialMessage(Hashable):
                 if isinstance(component, SelectMenu):
                     yield component
 
-    async def edit(self, **fields):
+    async def edit(
+            self,
+            *,
+            content: Any = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Sequence[Embed] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            attachments: Sequence[Union[Attachment, File]] = MISSING,
+            delete_after: Optional[float] = None,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
+            suppress: Optional[bool] = False
+    ):
         """|coro|
 
         Edits the message.
 
         The content must be able to be transformed into a string via ``str(content)``.
 
-        .. versionchanged:: 1.7
-            :class:`discord.Message` is returned instead of ``None`` if an edit took place.
+        .. versionchanged:: 1.3
+            The ``suppress`` keyword-only parameter was added.
 
         Parameters
         -----------
@@ -1672,14 +1683,24 @@ class PartialMessage(Hashable):
             The new embed to replace the original with.
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds.
-        components: List[Union[:class:`discord.ActionRow`, List]]
-            A list of :class:`discord.ActionRow`'s or a List with :class:`Button`'s or :class:`SelectMenu`.
+            A list containing up to 10 embeds
+        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
+            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        attachments: List[Union[:class:`Attachment`, :class:`File`]]
+            A list containing previous attachments to keep as well as new files to upload.
+            You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
+            If  an empty list (``[]``) is passed, all attachment will be removed.
+
+            .. note::
+
+                New files will always appear under existing ones.
+
         suppress: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
             this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~.Permissions.manage_messages`.
+            Using this parameter requires :attr:`~.Permissions.manage_messages` for messages that aren't from the bot.
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
             before deleting the message we just edited. If the deletion fails,
@@ -1708,105 +1729,31 @@ class PartialMessage(Hashable):
             The message that was edited.
         """
 
-        try:
-            content = fields['content']
-        except KeyError:
-            pass
+        if content is not MISSING:
+            previous_allowed_mentions = self._state.allowed_mentions
         else:
-            if content is not None:
-                fields['content'] = str(content)
+            previous_allowed_mentions = None
 
-        raw_embeds = []
-
-        try:
-            embed = fields.pop('embed')
-        except KeyError:
-            pass
+        if suppress:
+            flags = MessageFlags._from_value(self.flags.value)
+            flags.suppress_embeds = True
         else:
-            if embed is not None:
-                raw_embeds.append(embed.to_dict())
+            flags = MISSING
 
-        try:
-            embeds = fields.pop('embeds')
-        except KeyError:
-            pass
-        else:
-            if embeds is not None:
-                raw_embeds.extend([e.to_dict() for e in embeds])
-        
-        if raw_embeds:
-            fields['embeds'] = raw_embeds
-            
-        try:
-            components = fields['components']
-        except KeyError:
-            pass
-        else:
-            if components is not None:
-                _components = []
-                for component in (list(components) if not isinstance(components, list) else components):
-                    if isinstance(component, (Button, SelectMenu)):
-                        _components.extend(ActionRow(component).to_dict())
-                    elif isinstance(component, ActionRow):
-                        _components.extend(component.to_dict())
-                    elif isinstance(component, list):
-                        _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
-                fields['components'] = _components
-
-        try:
-            suppress = fields.pop('suppress')
-        except KeyError:
-            pass
-        else:
-            flags = MessageFlags._from_value(0)
-            flags.suppress_embeds = suppress
-            fields['flags'] = flags.value
-
-        delete_after = fields.pop('delete_after', None)
-
-        try:
-            allowed_mentions = fields.pop('allowed_mentions')
-        except KeyError:
-            pass
-        else:
-            if allowed_mentions is not None:
-                if self._state.allowed_mentions is not None:
-                    allowed_mentions = self._state.allowed_mentions.merge(allowed_mentions).to_dict()
-                else:
-                    allowed_mentions = allowed_mentions.to_dict()
-                fields['allowed_mentions'] = allowed_mentions
-
-        is_interaction_response = fields.pop('__is_interaction_response', None)
-        if is_interaction_response is True:
-            deferred = fields.pop('__deferred', False)
-            use_webhook = fields.pop('__use_webhook', False)
-            interaction_id = fields.pop('__interaction_id', None)
-            interaction_token = fields.pop('__interaction_token', None)
-            application_id = fields.pop('__application_id', None)
-            files = fields.pop('files', fields.pop('file', None))
-            if files and not isinstance(files, list):
-                files = [files]
-            if fields:
-                try:
-                    payload = await self._state.http.edit_interaction_response(use_webhook=use_webhook,
-                                                                               interaction_id=interaction_id,
-                                                                               token=interaction_token,
-                                                                               application_id=application_id,
-                                                                               deferred=deferred, files=files, **fields)
-                except NotFound:
-                    is_interaction_response = None
-                else:
-                    if payload:
-                        self._update(payload)
-                    else:
-                        self._update(fields)
-
-        if is_interaction_response is None:
-            payload = await self._state.http.edit_message(self.channel.id, self.id, **fields)
-            self._update(payload)
+        with handle_message_parameters(
+                content=content,
+                flags=flags,
+                embed=embed if embed is not None else MISSING,
+                embeds=embeds if embeds is not None else MISSING,
+                attachments=attachments,
+                components=components,
+                allowed_mentions=allowed_mentions,
+                previous_allowed_mentions=previous_allowed_mentions
+        ) as params:
+            data = await self._state.http.edit_message(self.channel.id, self.id, params=params)
 
         if delete_after is not None:
             await self.delete(delay=delete_after)
 
-        if payload is not None:
-            return self._state.create_message(channel=self.channel, data=payload)
+        if data is not None:
+            return self._state.create_message(channel=self.channel, data=data)
