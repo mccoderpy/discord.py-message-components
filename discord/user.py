@@ -85,7 +85,10 @@ class Profile(namedtuple('Profile', 'flags user mutual_guilds connected_accounts
 _BaseUser = discord.abc.User
 
 class BaseUser(_BaseUser):
-    __slots__ = ('name', 'id', 'discriminator', 'avatar', 'banner', 'banner_color', 'bot', 'system', '_public_flags', '_state')
+    __slots__ = (
+        'name', 'id', 'discriminator', 'avatar', 'banner', 'banner_color',
+        'hex_banner_color', 'bot', 'system', '_public_flags', '_state'
+    )
 
     def __init__(self, *, state, data):
         self._state = state
@@ -114,6 +117,7 @@ class BaseUser(_BaseUser):
             self.banner_color = Colour(banner_color)
         else:
             self.banner_color = None
+        self.hex_banner_color: str = data.get('banner_color', None)
         self._public_flags = data.get('public_flags', 0)
         self.bot = data.get('bot', False)
         self.system = data.get('system', False)
