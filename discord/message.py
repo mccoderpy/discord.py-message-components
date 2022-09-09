@@ -1093,7 +1093,7 @@ class Message(Hashable):
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
             suppress: Optional[bool] = False
-    ):
+    ) -> Message:
         """|coro|
 
         Edits the message.
@@ -1664,7 +1664,7 @@ class PartialMessage(Hashable):
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
             suppress: Optional[bool] = False
-    ):
+    ) -> Optional[Message]:
         """|coro|
 
         Edits the message.
