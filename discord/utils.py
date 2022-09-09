@@ -377,6 +377,11 @@ def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[Time
         async def time(ctx):
             await ctx.send(discord.utils.styled_timestamp(datetime.now(), discord.TimestampStyle.long))
 
+    Raises
+    -------
+    AttributeError
+        If the :attr:`style` is not a valid member of :class:`~discord.TimestampStyle`
+
     Returns
     -------
     :class:`str`

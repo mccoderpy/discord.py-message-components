@@ -688,7 +688,7 @@ class ConnectionState:
         old_guild = copy.copy(guild)
         channel_ids = [int(c) for c in data.get('channel_ids', [])]
         for t in data['threads']:
-            _, factory = _channel_factory(t['type'])
+            factory, _ = _channel_factory(t['type'])
             thread = factory(state=self, guild=guild, data=t)
             if isinstance(thread.parent_channel, ForumChannel):
                 guild._add_post(thread)
@@ -706,6 +706,7 @@ class ConnectionState:
         for c in channel_ids:
             channel = guild.get_channel(c)
             channel._threads = {}
+
         self.dispatch('thread_list_sync', old_guild, guild)
 
     def parse_guild_scheduled_event_create(self, data):
