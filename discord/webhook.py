@@ -40,6 +40,7 @@ from .enums import try_enum, WebhookType
 from .user import BaseUser, User
 from .asset import Asset
 from .mixins import Hashable
+from .http import handle_message_parameters, MultipartParameters
 
 __all__ = (
     'WebhookAdapter',
@@ -49,7 +50,10 @@ __all__ = (
     'WebhookMessage',
 )
 
+MISSING = utils.MISSING
+
 log = logging.getLogger(__name__)
+
 
 class WebhookAdapter:
     """Base class for all webhook adapters.
@@ -135,50 +139,18 @@ class WebhookAdapter:
         finally:
             cleanup()
 
-    def execute_webhook(self, *, payload, wait=False, thread_id: int = None, file=None, files=None):
-        cleanup = None
-        if file is not None:
-            multipart = {
-                'file': (file.filename, file.fp, 'application/octet-stream'),
-                'payload_json': utils.to_json(payload)
-            }
-            data = None
-            cleanup = file.close
-            files_to_pass = [file]
-        elif files is not None:
-            multipart = {
-                'payload_json': utils.to_json(payload)
-            }
-            for i, file in enumerate(files):
-                multipart['file%i' % i] = (file.filename, file.fp, 'application/octet-stream')
-            data = None
-
-            def _anon():
-                for f in files:
-                    f.close()
-
-            cleanup = _anon
-            files_to_pass = files
-        else:
-            data = payload
-            multipart = None
-            files_to_pass = None
-
+    def execute_webhook(self, *, wait=False, thread_id: int = None, params: MultipartParameters):
         url = '%s?wait=%d' % (self._request_url, wait)
         if thread_id:
             url += f'&thread_id={thread_id}'
-        maybe_coro = None
-        try:
-            maybe_coro = self.request('POST', url, multipart=multipart, payload=data, files=files_to_pass)
-        finally:
-            if maybe_coro is not None and cleanup is not None:
-                if not asyncio.iscoroutine(maybe_coro):
-                    cleanup()
-                else:
-                    maybe_coro = self._wrap_coroutine_and_cleanup(maybe_coro, cleanup)
+        if params.files:
+            maybe_coro = self.request('POST', url, multipart=params.multipart, files=params.files)
+        else:
+            maybe_coro = self.request('POST', url, payload=params.payload)
 
         # if request raises up there then this should never be `None`
         return self.handle_execution_response(maybe_coro, wait=wait)
+
 
 class AsyncWebhookAdapter(WebhookAdapter):
     """A webhook adapter suited for use with aiohttp.
@@ -210,7 +182,6 @@ class AsyncWebhookAdapter(WebhookAdapter):
 
         if reason:
             headers['X-Audit-Log-Reason'] = _uriquote(reason, safe='/ ')
-
 
         base_url = url.replace(self._request_url, '/') or '/'
         _id = self._webhook_id
@@ -891,8 +862,22 @@ class Webhook(Hashable):
 
         return self._adapter.edit_webhook(reason=reason, **payload)
 
-    def send(self, content=None, *, wait=False, thread_id: int = None, username=None, avatar_url=None, tts=False,
-                                    file=None, files=None, embed=None, embeds=None, allowed_mentions=None):
+    def send(
+            self,
+            content=None,
+            *,
+            wait=False,
+            thread_id: int = None,
+            username=None,
+            avatar_url=None,
+            tts=False,
+            file=None,
+            files=None,
+            embed=None,
+            embeds=None,
+            components=None,
+            allowed_mentions=None
+    ):
         """|maybecoro|
 
         Sends a message using the webhook.
@@ -960,42 +945,27 @@ class Webhook(Hashable):
             The message that was sent.
         """
 
-        payload = {}
         if self.token is None:
             raise InvalidArgument('This webhook does not have a token associated with it')
-        if files is not None and file is not None:
-            raise InvalidArgument('Cannot mix file and files keyword arguments.')
-        if embeds is not None and embed is not None:
-            raise InvalidArgument('Cannot mix embed and embeds keyword arguments.')
-
-        if embeds is not None:
-            if len(embeds) > 10:
-                raise InvalidArgument('embeds has a maximum of 10 elements.')
-            payload['embeds'] = [e.to_dict() for e in embeds]
-
-        if embed is not None:
-            payload['embeds'] = [embed.to_dict()]
-
-        if content is not None:
-            payload['content'] = str(content)
-
-        payload['tts'] = tts
-        if avatar_url:
-            payload['avatar_url'] = str(avatar_url)
-        if username:
-            payload['username'] = username
-
-        previous_mentions = getattr(self._state, 'allowed_mentions', None)
-
-        if allowed_mentions:
-            if previous_mentions is not None:
-                payload['allowed_mentions'] = previous_mentions.merge(allowed_mentions).to_dict()
-            else:
-                payload['allowed_mentions'] = allowed_mentions.to_dict()
-        elif previous_mentions is not None:
-            payload['allowed_mentions'] = previous_mentions.to_dict()
-
-        return self._adapter.execute_webhook(wait=wait, thread_id=thread_id, file=file, files=files, payload=payload)
+        previous_allowed_mentions = getattr(self._state, 'allowed_mentions', None)
+        with handle_message_parameters(
+            content=content,
+            username=username,
+            avatar_url=avatar_url,
+            tts=tts,
+            file=file if file is not None else MISSING,
+            files=files if file is not None else MISSING,
+            embed=embed if embed else MISSING,
+            embeds=embeds if embeds is not None else MISSING,
+            components=components,
+            allowed_mentions=allowed_mentions,
+            previous_allowed_mentions=previous_allowed_mentions
+        ) as params:
+            return self._adapter.execute_webhook(
+                wait=wait,
+                thread_id=thread_id,
+                params=params
+            )
 
     def execute(self, *args, **kwargs):
         """An alias for :meth:`~.Webhook.send`."""
