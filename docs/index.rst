@@ -33,6 +33,10 @@
       :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
 
+   .. image:: https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
+       :target: https://github.com/sponsors/mccoderpy
+       :alt: Sponsor button
+
    A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & many other features by `mccoderpy <https://github.com/mccoderpy/>`_
 
 .. important::
