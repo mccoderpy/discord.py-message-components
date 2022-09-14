@@ -29,6 +29,10 @@
       :target: https://discordpy-message-components.readthedocs.io/en/developer/
       :alt: Documentation Status
 
+   .. image:: https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
+       :target: https://github.com/sponsors/mccoderpy
+       :alt: Sponsor button
+
    A "fork" of `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library made by `Rapptz <https://github.com/Rapptz>`_ with implementation of the `Discord-Message-Components <https://discord.com/developers/docs/interactions/message-components>`_ & many other features by `mccoderpy <https://github.com/mccoderpy/>`_
 
 **NOTE:**
@@ -36,7 +40,7 @@
      New features are also implemented. It's not an extension!
      The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet.
 
-**❗The most (new) features are only documented in Code currently❗**
+**❗Some of the new features may be only documented in code currently❗**
 
 .. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
