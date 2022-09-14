@@ -2246,7 +2246,10 @@ class ForumPost(ThreadChannel):
         super().__init__(state=self._state, guild=self.guild, data=data)
 
     def _update(self, guild, data) -> ForumPost:
-        self._applied_tags = utils.SnowflakeList(map(int, data['applied_tags']))
+        try:
+            self._applied_tags = utils.SnowflakeList(map(int, data['applied_tags']))
+        except KeyError:
+            pass
         super()._update(guild, data)
         return self
 
