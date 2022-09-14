@@ -50,6 +50,7 @@ from typing import (
 )
 
 
+from .auto_updater import AutoUpdateChecker
 from .sticker import StickerPack
 from .user import User, Profile
 from .invite import Invite
@@ -251,6 +252,14 @@ class Client:
 
     delete_not_existing_commands: :class:`bool`
         Whether to remove global and guild-only application-commands that are not in the code anymore, default :obj:`True`.
+    do_auto_update_check: :class:`bool`
+        Whether to check for available updates automatically.
+        For more info see :class:`discord.on_update_available`.
+
+        .. note::
+
+            Attributes the moment, this may only work on the original repository, **not in forks**.
+            This is because it uses an internal API that only listen to a webhhgok from the original repo.
 
     Attributes
     -----------
@@ -280,6 +289,7 @@ class Client:
         unsync_clock = options.pop('assume_unsync_clock', True)
         self.gateway_version: int = options.get('gateway_version', 10)
         self.api_error_locale: Locale = options.pop('api_error_locale', None)
+        self.do_auto_update_check: bool = options.pop('do_auto_update_check', True)
         self.http = HTTPClient(
             connector,
             proxy=proxy,
@@ -308,9 +318,12 @@ class Client:
         if VoiceClient.warn_nacl:
             VoiceClient.warn_nacl = False
             log.warning("PyNaCl is not installed, voice will NOT be supported")
+        if self.do_auto_update_check:
+            self._auto_update_checker: Optional[AutoUpdateChecker] = AutoUpdateChecker(client=self)
+        else:
+            self._auto_update_checker: Optional[AutoUpdateChecker] = None
 
     # internals
-
     def _get_websocket(self, guild_id=None, *, shard_id=None):
         return self.ws
 
@@ -873,7 +886,8 @@ class Client:
 
         if kwargs:
             raise TypeError("unexpected keyword argument(s) %s" % list(kwargs.keys()))
-
+        if self.do_auto_update_check:
+            self.loop.create_task(self._auto_update_checker.check_task(), name='Auto update-checker')
         await self.login(*args)
         await self.connect(reconnect=reconnect)
 
