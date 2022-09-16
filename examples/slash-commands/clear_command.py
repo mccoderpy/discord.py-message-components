@@ -29,7 +29,7 @@ class ClearCommand(commands.Cog):
             Option(
                 option_type=discord.Member,
                 name='member',
-                description='The member wich last x messages should be deleted.',
+                description='The member which last x messages should be deleted.',
                 description_localizations=Localizations(
                     german='Der Member dessen letzten x Nachrichten gelöscht werden sollen.'),
                 required=False
