@@ -887,7 +887,7 @@ class Client:
         if kwargs:
             raise TypeError("unexpected keyword argument(s) %s" % list(kwargs.keys()))
         if self.do_auto_update_check:
-            self.loop.create_task(self._auto_update_checker.check_task(), name='Auto update-checker')
+            self.loop.create_task(self._auto_update_checker.check_task())
         await self.login(*args)
         await self.connect(reconnect=reconnect)
 
