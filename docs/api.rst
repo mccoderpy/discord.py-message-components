@@ -2337,17 +2337,9 @@ of :class:`enum.Enum`.
 
     Characterizes the type of content which can trigger the rule.
 
-    .. note::
-
-        The ``harmful_link`` and ``spam`` trigger types are not yet(22/06/2022) released, so they cannot be used in most servers.
-
     .. attribute:: keyword
 
         Check if content contains words from a user defined list of keywords
-
-    .. attribute:: harmful_link
-
-        Check if content contains any harmful links
 
     .. attribute:: spam
 
