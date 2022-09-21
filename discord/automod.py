@@ -152,11 +152,18 @@ class AutoModTriggerMetadata:
 
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword_preset`
+
+    total_mentions_limit: Optional[:class:`int`]
+        Total number of unique role and user mentions allowed per message (Maximum of 50)
+
+        .. note::
+            This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
     """
     def __init__(self,
                  keyword_filter: Optional[List[str]] = None,
                  presets: Optional[List[AutoModKeywordPresetType]] = None,
-                 exempt_words: Optional[List[str]] = None) -> None:
+                 exempt_words: Optional[List[str]] = None,
+                 total_mentions_limit: Optional[int] = None) -> None:
         """Additional data used to determine whether a rule should be triggered.
         Different fields are relevant based on the value of :attr:`AutoModRule.trigger_type`
 
@@ -180,6 +187,12 @@ class AutoModTriggerMetadata:
             .. note::
                 This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
 
+        total_mentions_limit: Optional[:class:`int`]
+            Total number of unique role and user mentions allowed per message (Maximum of 50)
+
+            .. note::
+                This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
+
         Raises
         -------
         :exc:`TypeError`
@@ -192,6 +205,8 @@ class AutoModTriggerMetadata:
         if exempt_words and not presets:
             raise TypeError('exempt_words can only be used with presets')
         self.exempt_words: Optional[List[str]] = exempt_words
+        self.total_mentions_limit: Optional[int] = total_mentions_limit
+
 
     @property
     def prefix_keywords(self) -> Iterator[str]:
@@ -289,10 +304,13 @@ class AutoModTriggerMetadata:
         if self.keyword_filter:
             return {'keyword_filter': self.keyword_filter}
         else:
-            base = {'presets': [int(p) for p in self.presets]}
-            if self.exempt_words:
-                base['allow_list'] = self.exempt_words
-            return base
+            if self.presets:
+                base = {'presets': [int(p) for p in self.presets]}
+                if self.exempt_words:
+                    base['allow_list'] = self.exempt_words
+                return base
+            elif self.total_mentions_limit:
+                return {'mention_total_limit': self.total_mentions_limit}
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> AutoModTriggerMetadata:
@@ -303,6 +321,7 @@ class AutoModTriggerMetadata:
             self.exempt_words = data.get('allow_list', [])
         else:
             self.keyword_filter = data.get('keyword_filter', None)
+        self.total_mentions_limit = data.get('mention_total_limit', None)
         return self
 
 
