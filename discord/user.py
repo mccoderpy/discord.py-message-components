@@ -23,9 +23,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 from collections import namedtuple
-from typing_extensions import  Literal
+from typing import (
+    Optional
+)
+from typing_extensions import Literal
 
 import discord.abc
 from .flags import PublicUserFlags
@@ -217,14 +221,27 @@ class BaseUser(_BaseUser):
         return Asset(self._state, '/embed/avatars/{}.png'.format(self.default_avatar.value))
 
     @property
-    def banner_url(self):
+    def banner_url(self) -> Optional[Asset]:
+        """
+        Optional[:class:`Asset`]: Returns an asset for the banner the user has, if any.
+        This is equal to calling :meth:`banner_url_as` with the default arguments.
+
+        Returns
+        --------
+        Optional[:class:`Asset`]
+            The resulting CDN asset if any.
+        """
         return self.banner_url_as()
 
-    def is_banner_animated(self):
+    def is_banner_animated(self) -> bool:
         """:class:`bool`: Indicates if the user has an animated banner."""
         return bool(self.banner and self.banner.startswith('a_'))
 
-    def banner_url_as(self, *, format: str = None, static_format: Literal['png', 'jpeg', 'webp', 'gif'] = 'webp', size: int = 1024):
+    def banner_url_as(self,
+                      *,
+                      format: str = None,
+                      static_format: Literal['png', 'jpeg', 'webp', 'gif'] = 'webp',
+                      size: int = 1024) -> Optional[Asset]:
         """Returns an :class:`Asset` for the banner the user has. Could be ``None``.
 
         The format must be one of 'webp', 'jpeg', 'jpg', 'png' or 'gif', and
@@ -252,8 +269,8 @@ class BaseUser(_BaseUser):
 
         Returns
         --------
-        :class:`Asset`
-            The resulting CDN asset.
+        Optional[:class:`Asset`]
+            The resulting CDN asset if any.
         """
         return Asset._from_banner(self._state, self, format=format, static_format=static_format, size=size)
 
