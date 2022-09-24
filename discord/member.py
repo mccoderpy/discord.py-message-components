@@ -522,6 +522,15 @@ class Member(discord.abc.Messageable, _BaseUser):
         """:class:`Asset`: Returns the guild-specific avatar asset for the member if he has one, else the default avatar asset"""
         return self.guild_avatar_url or self.avatar_url
 
+    def display_avatar_url_as(self,
+                              format: str = None,
+                              static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
+                              size: int = 1024) -> Optional[Asset]:
+        """:class:`Asset`: Same behaviour as :meth:`User.avatar_url_as` and :meth:`.guild_avatar_url_as` but it prefers the guild-specific avatar"""
+        if self.guild_avatar:
+            return self.guild_avatar_url_as(format=format, static_format=static_format, size=size)
+        return self.avatar_url_as(format=format, static_format=static_format, size=size)
+
     @property
     def guild_banner_url(self) -> Optional[Asset]:
         """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if any."""
@@ -565,6 +574,15 @@ class Member(discord.abc.Messageable, _BaseUser):
     def display_banner_url(self) -> Optional[Asset]:
         """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if he has one, else the default banner asset if any."""
         return self.guild_banner_url or self.banner_url
+
+    def display_banner_url_as(self,
+                              format: str = None,
+                              static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
+                              size: int = 1024) -> Optional[Asset]:
+        """:class:`Asset`: Same behaviour as :meth:`User.banner_url_as` and :meth:`.guild_banner_url_as` but it prefers the guild-specific banner"""
+        if self.guild_banner:
+            return self.guild_banner_url_as(format=format, static_format=static_format, size=size)
+        return self.banner_url_as(format=format, static_format=static_format, size=size)
 
     @property
     def activity(self):
