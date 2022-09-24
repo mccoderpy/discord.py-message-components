@@ -131,7 +131,7 @@ class Asset:
 
     @classmethod
     def _from_guild_banner(cls, state, member, *, format=None, static_format='webp', size=1024):
-        if not member.banner:
+        if not member.guild_banner:
             return None
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
