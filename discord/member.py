@@ -563,8 +563,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         Optional[:class:`Asset`}
             The resulting CDN asset if any.
         """
-        if self.guild_banner:
-            return Asset._from_guild_banner(self._state, self, static_format=static_format, format=format, size=size)
+        return Asset._from_guild_banner(self._state, self, static_format=static_format, format=format, size=size)
 
     def is_guild_banner_animated(self):
         """:class:`bool`: Indicates if the member has an animated guild-banner."""
