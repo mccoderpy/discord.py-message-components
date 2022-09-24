@@ -479,15 +479,16 @@ class Member(discord.abc.Messageable, _BaseUser):
         return self.nick or self.name
 
     @property
-    def guild_avatar_url(self):
+    def guild_avatar_url(self) -> Optional[Asset]:
+        """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if any."""
         return self.guild_avatar_url_as()
 
     def guild_avatar_url_as(self,
                             *,
                             format: str = None,
                             static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
-                            size: int = 1024):
-        """Returns an :class:`Asset` for the guild-avatar or None.
+                            size: int = 1024) -> Optional[Asset]:
+        """Returns an :class:`Asset` for the guild-specific avatar of the member if any, else :obj:`None`.
 
         The format must be one of 'webp', 'jpeg', or 'png'. The
         size must be a power of 2 between 16 and 4096.
@@ -506,8 +507,8 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         Returns
         --------
-        :class:`Asset`
-            The resulting CDN asset.
+        Optional[:class:`Asset`]
+            The resulting CDN asset if any.
         """
         if self.guild_avatar:
             return Asset._from_guild_avatar(self._state, self, static_format=static_format, format=format, size=size)
@@ -517,19 +518,21 @@ class Member(discord.abc.Messageable, _BaseUser):
         return bool(self.guild_avatar and self.guild_avatar.startswith('a_'))
 
     @property
-    def display_avatar_url(self):
+    def display_avatar_url(self) -> Asset:
+        """:class:`Asset`: Returns the guild-specific avatar asset for the member if he has one, else the default avatar asset"""
         return self.guild_avatar_url or self.avatar_url
 
     @property
-    def guild_banner_url(self):
+    def guild_banner_url(self) -> Optional[Asset]:
+        """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if any."""
         return self.guild_banner_url_as()
 
     def guild_banner_url_as(self,
                             *,
                             format: str = None,
                             static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
-                            size: int = 1024):
-        """Returns an :class:`Asset` for the guild-banner or None.
+                            size: int = 1024) -> Optional[Asset]:
+        """Returns an :class:`Asset` for the guild-specific banner of the member if any, else :obj:`None`.
 
         The format must be one of 'webp', 'jpeg', 'gif' or 'png'. The
         size must be a power of 2 between 16 and 4096.
@@ -548,10 +551,10 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         Returns
         --------
-        :class:`Asset`
-            The resulting CDN asset.
+        Optional[:class:`Asset`}
+            The resulting CDN asset if any.
         """
-        if self.guild_avatar:
+        if self.guild_banner:
             return Asset._from_guild_banner(self._state, self, static_format=static_format, format=format, size=size)
 
     def is_guild_banner_animated(self):
@@ -559,7 +562,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         return bool(self.guild_banner and self.guild_banner.startswith('a_'))
 
     @property
-    def display_banner_url(self):
+    def display_banner_url(self) -> Optional[Asset]:
+        """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if he has one, else the default banner asset if any."""
         return self.guild_banner_url or self.banner_url
 
     @property
