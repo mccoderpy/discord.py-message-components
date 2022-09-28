@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
-import collections
+import collections.abc
 import copy
 import inspect
 import importlib.util
@@ -131,7 +131,7 @@ class BotBase(GroupMixin):
         if self.owner_id and self.owner_ids:
             raise TypeError('Both owner_id and owner_ids are set.')
 
-        if self.owner_ids and not isinstance(self.owner_ids, collections.Collection):
+        if self.owner_ids and not isinstance(self.owner_ids, collections.abc.Collection):
             raise TypeError('owner_ids must be a collection not {0.__class__!r}'.format(self.owner_ids))
 
         if options.pop('self_bot', False):
