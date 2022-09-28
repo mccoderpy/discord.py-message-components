@@ -602,7 +602,13 @@ class GuildChannel:
         """
         await self._state.http.delete_channel(self.id, reason=reason)
 
-    async def set_permissions(self, target, *, overwrite=_undefined, reason=None, **permissions):
+    async def set_permissions(
+            self,
+            target: Union[Role, User],
+            *,
+            overwrite: Optional[PermissionOverwrite] = _undefined,
+            reason: Optional[str] = None,
+            **permissions):
         r"""|coro|
 
         Sets the channel specific permission overwrites for a target in the

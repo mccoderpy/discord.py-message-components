@@ -23,6 +23,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
+from typing import (
+    Union,
+    Optional,
+    Tuple,
+    Iterator
+)
 
 from .flags import BaseFlags, flag_value, fill_with_flags, alias_flag_value
 
@@ -685,6 +693,6 @@ class PermissionOverwrite:
 
             setattr(self, key, value)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Tuple[PermissionOverwrite.PURE_FLAGS, bool]]:
         for key in self.PURE_FLAGS:
             yield key, self._values.get(key)
