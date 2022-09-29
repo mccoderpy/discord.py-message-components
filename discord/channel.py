@@ -2699,7 +2699,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             payload['topic'] = topic
 
         if available_tags is not MISSING:
-            payload['available_tags'] = [tag._to_dict() for tag in available_tags]
+            payload['available_tags'] = [tag.to_dict() for tag in available_tags]
 
         if tags_required is not MISSING:
             flags = ChannelFlags._from_value(self.flags.value)
