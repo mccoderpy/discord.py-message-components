@@ -150,7 +150,7 @@ class Permissions(BaseFlags):
         """A factory method that creates a :class:`Permissions` with all
         permissions set to ``True``.
         """
-        return cls(0b11110111111111111111111111111111111111)
+        return cls(0b10011110111111111111111111111111111111111)
 
     @classmethod
     def all_channel(cls):
@@ -552,6 +552,7 @@ class Permissions(BaseFlags):
         """:class:`bool`: An alias for :attr:`moderate_members`."""
         return 1 << 40
 
+
 def augment_from_permissions(cls):
     cls.VALID_NAMES = set(Permissions.VALID_FLAGS)
     aliases = set()
@@ -577,6 +578,7 @@ def augment_from_permissions(cls):
 
     cls.PURE_FLAGS = cls.VALID_NAMES - aliases
     return cls
+
 
 @augment_from_permissions
 class PermissionOverwrite:
