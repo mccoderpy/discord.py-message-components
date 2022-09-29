@@ -72,7 +72,8 @@ __all__ = (
     'AutoModActionType',
     'AutoModEventType',
     'AutoModTriggerType',
-    'AutoModKeywordPresetType'
+    'AutoModKeywordPresetType',
+    'PostSortOrder'
 )
 
 
@@ -972,6 +973,11 @@ class AutoModActionType(Enum):
     block_message       = 1
     send_alert_message  = 2
     timeout_user        = 3
+
+
+class PostSortOrder(Enum):
+    latest_activity = 0
+    creation_date   = 1
 
 
 def try_enum(cls: Type[Enum], val: Any):
