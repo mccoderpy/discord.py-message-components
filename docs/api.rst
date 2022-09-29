@@ -2090,6 +2090,7 @@ of :class:`enum.Enum`.
 
         .. versionadded:: 1.3
 
+
 .. class:: AuditLogActionCategory
 
     Represents the category that the :class:`AuditLogAction` belongs to.
@@ -2441,6 +2442,17 @@ of :class:`enum.Enum`.
 
         An :class:`Attachment`
 
+.. class:: PostSortOrder
+
+    Type used to order posts in :class:`ForumChannel` channels.
+
+    .. attribute:: latest_activity
+
+        Sort forum posts by activity
+
+    .. attribute:: creation_date
+
+        Sort forum posts by creation time (from most recent to oldest)
 
 Async Iterator
 ----------------
