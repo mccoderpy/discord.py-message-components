@@ -43,7 +43,7 @@ from typing import (
 )
 
 from .permissions import Permissions, PermissionOverwrite
-from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, try_enum
+from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, PostSortOrder, try_enum
 from .components import Button, SelectMenu, ActionRow
 from .mixins import Hashable
 from . import utils, abc
@@ -2483,7 +2483,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
     __slots__ = ('name', 'id', 'guild', 'topic', '_state', '__deleted', 'nsfw',
                  'category_id', 'position', 'slowmode_delay', '_overwrites',
                  '_type', 'last_message_id', 'default_auto_archive_duration',
-                 '_posts', '_tags', 'flags', 'default_reaction_emoji', 'last_post_id')
+                 '_posts', '_tags', 'flags', 'default_reaction_emoji', 'last_post_id',
+                 'default_sort_order')
 
     def __init__(self, *, state, guild, data):
         self._state = state
@@ -2535,6 +2536,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             AutoArchiveDuration,
             data.get('default_auto_archive_duration', 1440)
         )
+        self.default_sort_order: Optional[PostSortOrder] = try_enum(PostSortOrder, data.get('default_sort_order', None))
         self._fill_overwrites(data)
         self._fill_tags(data)
 
@@ -2629,6 +2631,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             topic: str = MISSING,
             available_tags: Sequence[ForumTag] = MISSING,
             tags_required: bool = MISSING,
+            default_post_sort_order: Optional[PostSortOrder] = MISSING,
             position: int = MISSING,
             nsfw: bool = MISSING,
             sync_permissions: bool = False,
@@ -2655,6 +2658,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
             You can use this to reorder the tags.
         tags_required: :class:`bool`
             Whether new created post require at least one tag provided on creation
+        default_post_sort_order: Optional[`PostSortOrder`]
+            How the posts in the forum will be sorted for users by default.
         position: :class:`int`
             The new channel's position.
         nsfw: :class:`bool`
@@ -2700,6 +2705,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
             flags = ChannelFlags._from_value(self.flags.value)
             flags.require_tags = tags_required
             payload['flags'] = flags
+
+        if default_post_sort_order is not MISSING:
+            payload['default_sort_order'] = default_post_sort_order.value
 
         if position is not MISSING:
             payload['position'] = position
