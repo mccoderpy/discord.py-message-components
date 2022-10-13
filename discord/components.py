@@ -949,7 +949,7 @@ def _component_factory(data):
         return ActionRow.from_dict(data)
     elif component_type == ComponentType.Button:
         return Button.from_dict(data)
-    elif component_type == ComponentType.SelectMenu:
+    elif component_type in {3, 5, 6, 7, 8}:
         return SelectMenu.from_dict(data)
     elif component_type == ComponentType.TextInput:
         return TextInput.from_dict(data)

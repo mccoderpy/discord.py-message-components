@@ -985,7 +985,7 @@ class ComponentInteraction(BaseInteraction):
                     custom_id = int(custom_id)
                 if self.data.component_type == ComponentType.Button:
                     self._component = utils.get(self.message.all_buttons, custom_id=custom_id)
-                elif self.data.component_type == ComponentType.SelectMenu:
+                elif self.data.component_type in {3, 5, 6, 7, 8}:
                     select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
                     if select_menu:
                         setattr(select_menu, '_values', self.data.values)
