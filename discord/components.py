@@ -665,21 +665,31 @@ class ActionRow:
         for component in self.components:
             yield component
 
-    def to_dict(self) -> Union[list, EmptyActionRow]:
-        base = []
-        base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
-        objects = len([i['components'] for i in base])
-        if any([any([part['type'] == 2]) and any([part['type'] in (3, 4)]) for part in base]):
-            raise InvalidArgument('An ActionRow containing a SelectMenu cannot also contain Buttons\' or a TextInput')
-        if any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
-            raise InvalidArgument('An ActionRow can contain only one SelectMenu')
-        if any([any([part['type'] == 4]) and len(part) > 1 for part in base]):
-            raise InvalidArgument('An ActionRow can contain only one TextInput.')
-        if any([len(ar['components']) < 1 for ar in base]):
-            raise EmptyActionRow from base
+    def to_dict(self) -> List[Dict[str, Union[int, List[Dict[str, Any]]]]]:
+        base = [{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)]
+        base_length = len(base)
 
-        elif len(base) > 5 or objects > 25:
-            raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 Buttons or 1 Select-Menu each; you have {len(base)} ActionRow's passed with {objects} objects")
+        if base_length > 5:
+            raise InvalidArgument('A message could only contain up to 5 ActionRows')            
+        elif 25 < sum([len(ar['components']) for ar in base]) < 1:
+            raise InvalidArgument('The max. sum of the components of all ActionRows of a message is 25 and an ActionRow cannot be empty.')
+        
+        max_rows_reached = base_length == 5
+
+        for row_index, row in enumerate(base):
+            components = row['components']
+            row_components_count = len(components)
+            for c_index, c in enumerate(components):
+                t = c['type']
+                if t == 1:
+                    raise ValueError('An ActionRow can not contain another ActionRow')
+                elif t > 2 and row_components_count > 1:
+                    if max_rows_reached:
+                        raise ValueError('An ActionRow containing a %s cannot contain other components', try_enum(ComponentType, t).name)
+                    base.insert(row_index + 1, {'type': 1, 'components': [base[row_index].pop(c_index)]})
+                    row_components_count -= 1
+                    max_rows_reached = len(base)
+
         return base
 
     def __len__(self):
