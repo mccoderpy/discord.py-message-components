@@ -23,15 +23,30 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 from .enums import ComponentType, ButtonStyle, TextInputStyle
 from .emoji import Emoji
-from typing import Union, List, Optional, Any, Callable
-from typing_extensions import Literal
 from .partial_emoji import PartialEmoji
-from .errors import InvalidArgument, URLAndCustomIDNotAlowed, EmptyActionRow
+from .errors import InvalidArgument, URLAndCustomIDNotAlowed
 
-__all__ = ('Button', 'SelectMenu', 'TextInputStyle', 'ActionRow', 'SelectOption')
+from typing import (
+    Any,
+    Union,
+    List,
+    Dict,
+    Optional,
+    Callable
+)
+from typing_extensions import Literal
+
+__all__ = (
+    'Button',
+    'SelectMenu',
+    'TextInputStyle',
+    'ActionRow',
+    'SelectOption'
+)
 
 
 class Button:
@@ -56,7 +71,8 @@ class Button:
 
     """
 
-    def __init__(self, label: str = None,
+    def __init__(self,
+                 label: str = None,
                  custom_id: Union[str, int] = None,
                  style: Union[ButtonStyle, int] = ButtonStyle.grey,
                  emoji: Union[PartialEmoji, Emoji, str] = None,
@@ -685,8 +701,8 @@ class ActionRow:
                     raise ValueError('An ActionRow can not contain another ActionRow')
                 elif t > 2 and row_components_count > 1:
                     if max_rows_reached:
-                        raise ValueError('An ActionRow containing a %s cannot contain other components', try_enum(ComponentType, t).name)
-                    base.insert(row_index + 1, {'type': 1, 'components': [base[row_index].pop(c_index)]})
+                        raise ValueError('An ActionRow containing a %s cannot contain other components', ComponentType(t).name)
+                    base.insert(row_index + 1, {'type': 1, 'components': [base[row_index]['components'].pop(c_index)]})
                     row_components_count -= 1
                     max_rows_reached = len(base)
 
