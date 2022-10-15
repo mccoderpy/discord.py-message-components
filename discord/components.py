@@ -84,10 +84,10 @@ class Button:
         if isinstance(style, int):
             style = ButtonStyle.from_value(style)
         if not isinstance(style, ButtonStyle):
-            raise InvalidArgument("The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
+            raise InvalidArgument("The style must be one of discord.ButtonStyle's/discord.ButtonColor's members or usually an integer between 1 and 5")
         self.style = style
         if self.style == ButtonStyle.url and not self.url:
-            raise InvalidArgument('You must also pass a URL if the ButtonStyle is a link.')
+            raise InvalidArgument('An url is required for url buttons')
         if self.url and int(self.style) != 5:
             self.style = ButtonStyle.Link_Button
         if custom_id and len(custom_id) > 100:
@@ -97,8 +97,10 @@ class Button:
             self.custom_id = int(custom_id)
         else:
             self.custom_id = custom_id
-        if self.custom_id is not None and self.url:
+        if url and custom_id:
             raise URLAndCustomIDNotAlowed(self.custom_id)
+        elif not url and custom_id is None:
+            raise InvalidArgument('A custom_id must be specified for non-url buttons')
         if label and len(label) > 80:
             raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
         self.label = label
@@ -112,6 +114,8 @@ class Button:
             else:
                 self.emoji = PartialEmoji(name=emoji)
         else:
+            if not label:
+                raise InvalidArgument('A button must have at least one of label or emoji set')
             self.emoji = None
         self.disabled = disabled
 
