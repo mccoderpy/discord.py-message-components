@@ -127,6 +127,10 @@ class Button:
             return len(self.label)
         return len(self.emoji)
 
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.Button
+
     def set_label(self, label: str):
         """
         Sets the Label of the :class:`Button`
@@ -393,6 +397,10 @@ class SelectMenu:
         return f'<SelectMenu {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items()])}>'
 
     @property
+    def type(self) -> ComponentType:
+        return ComponentType.StringSelect
+
+    @property
     def all_option_values(self):
         """
         All values of the :attr:`options`
@@ -627,6 +635,10 @@ class TextInput:
         self.value: Optional[str] = value
         self.placeholder: Optional[str] = placeholder
 
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.TextInput
+
     def to_dict(self) -> dict:
         return {
             'type': 4,
@@ -685,32 +697,58 @@ class ActionRow:
         for component in self.components:
             yield component
 
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.ActionRow
+
     def to_dict(self) -> List[Dict[str, Union[int, List[Dict[str, Any]]]]]:
-        base = [{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)]
-        base_length = len(base)
+        rows = []
+        actual_row = []
+        rows.append(actual_row)
+        for c in self.components:
+            max_rows_reached = len(rows) == 5
+            if len(actual_row) >= 5:
+                if not max_rows_reached:
+                    if actual_row not in rows:
+                        rows.append(
+                            actual_row.copy()
+                        )
+                    else:
+                        rows[rows.index(actual_row)] = actual_row.copy()
+                    actual_row.clear()
+                    rows.append(actual_row)
+                else:
+                    raise InvalidArgument('A message could only contain up to 5 ActionRows')
 
-        if base_length > 5:
-            raise InvalidArgument('A message could only contain up to 5 ActionRows')            
-        elif 25 < sum([len(ar['components']) for ar in base]) < 1:
-            raise InvalidArgument('The max. sum of the components of all ActionRows of a message is 25 and an ActionRow cannot be empty.')
-        
-        max_rows_reached = base_length == 5
+            t = c.type
+            if t.ActionRow:
+                raise ValueError('An ActionRow can not contain another ActionRow')
+            elif t.Button:
+                actual_row.append(c.to_dict())
+            elif t.value > 2:
+                if len(rows) >= 5:
+                    raise ValueError(
+                        'An ActionRow containing a %s cannot contain other components',
+                        t.name
+                    )
+                if not actual_row:
+                    rows[rows.index(actual_row)] = [c.to_dict()]
+                    actual_row.clear()
+                    rows.append(actual_row)
+                else:
+                    rows.append([c.to_dict()])
 
-        for row_index, row in enumerate(base):
-            components = row['components']
-            row_components_count = len(components)
-            for c_index, c in enumerate(components):
-                t = c['type']
-                if t == 1:
-                    raise ValueError('An ActionRow can not contain another ActionRow')
-                elif t > 2 and row_components_count > 1:
-                    if max_rows_reached:
-                        raise ValueError('An ActionRow containing a %s cannot contain other components', ComponentType(t).name)
-                    base.insert(row_index + 1, {'type': 1, 'components': [base[row_index]['components'].pop(c_index)]})
-                    row_components_count -= 1
-                    max_rows_reached = len(base)
-
-        return base
+        max_rows_reached = len(rows) == 5
+        if len(actual_row):
+            if not max_rows_reached:
+                if actual_row not in rows:
+                    rows.append(
+                        actual_row.copy()
+                    )
+                rows[rows.index(actual_row)] = actual_row.copy()
+            else:
+                raise InvalidArgument('A message could only contain up to 5 ActionRows')
+        return [{'type': 1, 'components': components} for components in rows]
 
     def __len__(self):
         return len(self.components)
