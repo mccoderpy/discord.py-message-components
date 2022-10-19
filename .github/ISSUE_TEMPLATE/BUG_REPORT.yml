@@ -6,9 +6,8 @@ assignees:
   - mccoderpy
 body:
   - type: markdown
-    attributes:
-      value: |
-        Please fill in the fields below as accurately as possible to help us fix the bug!
+    value: |
+      Please fill in the fields below as accurately as possible to help us fix the bug!
   - type: textarea
     id: description
     attributes:
@@ -26,17 +25,17 @@ body:
         - developer
     validations:
       required: true
-  - type: markdown 
-    attributes:
-      value: |
-        For the next 3 fields use the output of the `version` command
-        ```ps
-        # Windows
-        py -m discord --version
-        
-        # Linux/macOS
-        python3 -m discord --version # Replace "python3" with the prefix of the Python version you are using
-        ```
+  - type: markdown
+      attributes:
+        value: |
+          "For the next 3 fields use the output of the `version` command
+          ```ps
+          # Windows
+          py -m discord --version
+
+          # Linux/macOS
+          python3 -m discord --version # Replace 'python3' with the prefix of the Python version you are using
+          ```"
   - type: input
     id: python-version
     attributes:
@@ -68,9 +67,8 @@ body:
     validations:
       required: true
    - type: input
-    id: contact-info
-    attributes:
+     id: contact-info
+     attributes:
       label: Contact info
       description: Additional ways to contact you
       placeholder: mccuber04#2960 (Discord)
-      render: python
