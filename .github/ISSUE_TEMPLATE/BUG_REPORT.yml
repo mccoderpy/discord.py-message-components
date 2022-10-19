@@ -20,29 +20,28 @@ body:
   - type: dropdown
     id: branch
     attributes:
-      label: Branch
-      description: What branch of the library are you using?
+      label: What branch of the library are you using?
       options:
         - main (stable)
         - developer
     validations:
       required: true
   - type: markdown 
-    attributes: |
-      For the next 3 fields use the output of the `version` command
-      ```ps
-      # Windows
-      py -m discord --version
-
-      # Linux/macOS
-      python3 -m discord --version # Replace "python3" with the prefix of the Python version you are using
-      ```
+    attributes:
+      value: |
+        For the next 3 fields use the output of the `version` command
+        ```ps
+        # Windows
+        py -m discord --version
+        
+        # Linux/macOS
+        python3 -m discord --version # Replace "python3" with the prefix of the Python version you are using
+        ```
   - type: input
     id: python-version
     attributes:
       label: The Python verion you are using.
       placeholder: Python v3.8.10-final
-      render: yaml
     validations:
       required: true
   - type: input
@@ -58,7 +57,6 @@ body:
     attributes:
       label: System info
       placeholder: Linux 5.4.0-126-generic
-      render: python
     validations:
       required: true
   - type: textarea
@@ -66,6 +64,13 @@ body:
     attributes:
       label: Full Traceback (Error)
       description: Please copy and paste the complete traceback (error). This will be automatically formatted into code, so no need for backticks.
-      render: python
+      render: shell
     validations:
       required: true
+   - type: input
+    id: contact-info
+    attributes:
+      label: Contact info
+      description: Additional ways to contact you
+      placeholder: mccuber04#2960 (Discord)
+      render: python
