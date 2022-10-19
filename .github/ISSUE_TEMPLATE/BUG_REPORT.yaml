@@ -18,7 +18,8 @@ body:
   - type: dropdown
     id: branch
     attributes:
-      label: What branch of the library are you using?
+      label: Branch used
+      description: What branch of the library are you using?
       options:
         - main (stable)
         - developer
