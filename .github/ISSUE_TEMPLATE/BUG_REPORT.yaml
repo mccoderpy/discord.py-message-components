@@ -47,7 +47,6 @@ body:
     attributes:
       label: What version (and release) of the library are you using
       placeholder: v2.0a294+gfb291a6
-      render: python
     validations:
       required: true
   - type: input
