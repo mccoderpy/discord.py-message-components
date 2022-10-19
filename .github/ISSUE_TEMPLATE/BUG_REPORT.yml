@@ -6,8 +6,9 @@ assignees:
   - mccoderpy
 body:
   - type: markdown
-    value: |
-      Please fill in the fields below as accurately as possible to help us fix the bug!
+    attributes:
+      value: |
+        Please fill in the fields below as accurately as possible to help us fix the bug!
   - type: textarea
     id: description
     attributes:
