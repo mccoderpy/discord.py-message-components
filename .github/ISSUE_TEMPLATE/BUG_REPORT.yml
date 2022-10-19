@@ -27,16 +27,16 @@ body:
     validations:
       required: true
   - type: markdown
-      attributes:
-        value: |
-          "For the next 3 fields use the output of the `version` command
-          ```ps
-          # Windows
-          py -m discord --version
+    attributes:
+      value: |
+        "For the next 3 fields use the output of the `version` command
+        ```ps
+        # Windows
+        py -m discord --version
 
-          # Linux/macOS
-          python3 -m discord --version # Replace 'python3' with the prefix of the Python version you are using
-          ```"
+        # Linux/macOS
+        python3 -m discord --version # Replace 'python3' with the prefix of the Python version you are using
+        ```"
   - type: input
     id: python-version
     attributes:
