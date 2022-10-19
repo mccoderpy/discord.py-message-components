@@ -42,13 +42,15 @@ body:
     attributes:
       label: The Python verion you are using.
       placeholder: Python v3.8.10-final
+      render: yaml
     validations:
       required: true
   - type: input
     id: version-output
     attributes:
-      label: What release of the library are you using (only needed when other then the `main` branch is used)
+      label: What version (and release) of the library are you using
       placeholder: v2.0a294+gfb291a6
+      render: python
     validations:
       required: true
   - type: input
