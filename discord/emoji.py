@@ -105,7 +105,7 @@ class Emoji(_EmojiTag):
             if attr[0] != '_':
                 value = getattr(self, attr, None)
                 if value is not None:
-                    yield (attr, value)
+                    yield attr, value
 
     def __iter__(self):
         return self._iterator()
@@ -126,6 +126,9 @@ class Emoji(_EmojiTag):
 
     def __hash__(self):
         return self.id >> 22
+
+    def __len__(self):
+        return len(str(self))
 
     @property
     def created_at(self):
@@ -158,7 +161,6 @@ class Emoji(_EmojiTag):
         """:class:`Guild`: The guild this emoji belongs to."""
         return self._state._get_guild(self.guild_id)
 
-
     def url_as(self, *, format=None, static_format="png"):
         """Returns an :class:`Asset` for the emoji's url.
 
@@ -189,7 +191,6 @@ class Emoji(_EmojiTag):
             The resulting CDN asset.
         """
         return Asset._from_emoji(self._state, self, format=format, static_format=static_format)
-
 
     def is_usable(self):
         """:class:`bool`: Whether the bot can use this emoji.
