@@ -813,7 +813,7 @@ class TextInput(BaseComponent):
     @classmethod
     def from_dict(cls, data):
         new = cls.__new__(cls)
-        for attr in ('type', 'label', 'custom_id', 'style', 'min_length', 'max_length', 'required', 'value', 'placeholder'):
+        for attr in ('label', 'custom_id', 'style', 'min_length', 'max_length', 'required', 'value', 'placeholder'):
             try:
                 new.__setattr__(attr, data[attr])
             except KeyError:
