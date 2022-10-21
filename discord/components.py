@@ -932,9 +932,9 @@ class ActionRow:
 
     def __class_getitem__(cls, item) -> ActionRow:
         if isinstance(item, tuple):
-            return cls(*item)
+            return ActionRow(*item)
         else:
-            return cls(item)
+            return ActionRow(item)
 
     def __repr__(self):
         return f'<ActionRow components={self.components}>'

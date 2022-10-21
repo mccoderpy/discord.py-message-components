@@ -46,6 +46,7 @@ from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
 from .errors import InvalidArgument, HTTPException, NotFound
+from .components import ActionRow, Button, BaseSelect
 from .embeds import Embed
 from .member import Member
 from .flags import MessageFlags
@@ -61,7 +62,6 @@ if TYPE_CHECKING:
     from .state import ConnectionState
     from .mentions import AllowedMentions
     from .abc import Messageable
-    from .components import ActionRow, Button, BaseSelect
 
 
 __all__ = (
@@ -1027,7 +1027,8 @@ class Message(Hashable):
         """Returns all :class:`Button`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                yield component
+                if isinstance(component, Button):
+                    yield component
 
     @property
     def all_select_menus(self):
@@ -1643,7 +1644,8 @@ class PartialMessage(Hashable):
         """Returns all :class:`Button`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                yield component
+                if isinstance(component, Button):
+                    yield component
 
     @property
     def all_select_menus(self):

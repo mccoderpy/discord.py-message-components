@@ -254,7 +254,7 @@ def handle_interaction_message_parameters(
         embed: Optional[Embed] = MISSING,
         embeds: Sequence[Embed] = MISSING,
         attachments: Sequence[Union[Attachment, File]] = MISSING,
-        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+        components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
         allowed_mentions: Optional[AllowedMentions] = MISSING,
         message_reference: Optional[MessageReference] = MISSING,
         stickers: Optional[SnowflakeList] = MISSING,
@@ -288,7 +288,7 @@ def handle_interaction_message_parameters(
         else:
             _components = []
             for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, (Button, SelectMenu)):
+                if isinstance(component, (Button, BaseSelect)):
                     _components.extend(ActionRow(component).to_dict())
                 elif isinstance(component, ActionRow):
                     _components.extend(component.to_dict())
