@@ -601,13 +601,13 @@ class ConnectionState:
                 if interaction.data.component_type == ComponentType.Button:
                     self.dispatch('button_click', interaction, interaction.component)
                     self.dispatch('raw_button_click', interaction, interaction.component)
-                elif interaction.data.component_type == ComponentType.SelectMenu:
+                elif interaction.data.component_type.value in {3, 5, 6, 7, 8}:
                     self.dispatch('selection_select', interaction, interaction.component)
                     self.dispatch('raw_selection_select', interaction, interaction.component)
             else:
                 if interaction.data.component_type == ComponentType.Button:
                     self.dispatch('raw_button_click', interaction, interaction.component)
-                elif interaction.data.component_type == ComponentType.SelectMenu:
+                elif interaction.data.component_type.value in {3, 5, 6, 7, 8}:
                     self.dispatch('raw_selection_select', interaction, interaction.component)
         elif interaction.type.ModalSubmit:
             self.dispatch('modal_submit', interaction)

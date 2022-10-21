@@ -47,7 +47,6 @@ from .partial_emoji import PartialEmoji
 from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
 from .errors import InvalidArgument, HTTPException, NotFound
 from .embeds import Embed
-from .components import Button, SelectMenu, ActionRow
 from .member import Member
 from .flags import MessageFlags
 from .file import File
@@ -62,6 +61,7 @@ if TYPE_CHECKING:
     from .state import ConnectionState
     from .mentions import AllowedMentions
     from .abc import Messageable
+    from .components import ActionRow, Button, BaseSelect
 
 
 __all__ = (
@@ -1034,7 +1034,7 @@ class Message(Hashable):
         """Returns all :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                if isinstance(component, SelectMenu):
+                if int(component.type) in {3, 5, 6, 7, 8}:
                     yield component
 
     @property
@@ -1087,7 +1087,7 @@ class Message(Hashable):
             content: Any = MISSING,
             embed: Optional[Embed] = MISSING,
             embeds: Sequence[Embed] = MISSING,
-            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             delete_after: Optional[float] = None,
@@ -1113,9 +1113,9 @@ class Message(Hashable):
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
-        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
@@ -1650,7 +1650,7 @@ class PartialMessage(Hashable):
         """Returns all :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                if isinstance(component, SelectMenu):
+                if int(component.type) in {3, 5, 6, 7, 8}:
                     yield component
 
     async def edit(
@@ -1659,7 +1659,7 @@ class PartialMessage(Hashable):
             content: Any = MISSING,
             embed: Optional[Embed] = MISSING,
             embeds: Sequence[Embed] = MISSING,
-            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
@@ -1684,9 +1684,9 @@ class PartialMessage(Hashable):
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
-        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.

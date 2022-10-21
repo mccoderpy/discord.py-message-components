@@ -23,13 +23,24 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
 import re
 from .asset import Asset
 from . import utils
 
+from typing import (
+    Optional,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
 
 class _EmojiTag:
     __slots__ = ()
+
 
 class PartialEmoji(_EmojiTag):
     """Represents a "partial" emoji.
@@ -103,7 +114,7 @@ class PartialEmoji(_EmojiTag):
         )
 
     def to_dict(self):
-        o = { 'name': self.name }
+        o = {'name': self.name}
         if self.id:
             o['id'] = self.id
         if self.animated:
@@ -123,10 +134,13 @@ class PartialEmoji(_EmojiTag):
             return '<a:%s:%s>' % (self.name, self.id)
         return '<:%s:%s>' % (self.name, self.id)
 
+    def __len__(self):
+        return len(str(self))
+
     def __repr__(self):
         return '<{0.__class__.__name__} animated={0.animated} name={0.name!r} id={0.id}>'.format(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if self.is_unicode_emoji():
             return isinstance(other, PartialEmoji) and self.name == other.name
 
@@ -134,27 +148,27 @@ class PartialEmoji(_EmojiTag):
             return self.id == other.id
         return False
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def __hash__(self):
         return hash((self.id, self.name))
 
-    def is_custom_emoji(self):
+    def is_custom_emoji(self) -> bool:
         """:class:`bool`: Checks if this is a custom non-Unicode emoji."""
         return self.id is not None
 
-    def is_unicode_emoji(self):
+    def is_unicode_emoji(self) -> bool:
         """:class:`bool`: Checks if this is a Unicode emoji."""
         return self.id is None
 
-    def _as_reaction(self):
+    def _as_reaction(self) -> str:
         if self.id is None:
             return self.name
         return '%s:%s' % (self.name, self.id)
 
     @property
-    def created_at(self):
+    def created_at(self) -> Optional[datetime]:
         """Optional[:class:`datetime.datetime`]: Returns the emoji's creation time in UTC, or None if Unicode emoji.
 
         .. versionadded:: 1.6
@@ -165,7 +179,7 @@ class PartialEmoji(_EmojiTag):
         return utils.snowflake_time(self.id)
 
     @property
-    def url(self):
+    def url(self) -> Asset:
         """:class:`Asset`: Returns the asset of the emoji, if it is custom.
 
         This is equivalent to calling :meth:`url_as` with
@@ -173,7 +187,7 @@ class PartialEmoji(_EmojiTag):
         """
         return self.url_as(format=None)
 
-    def url_as(self, *, format=None, static_format="png"):
+    def url_as(self, *, format: Optional[str] = None, static_format="png") -> Asset:
         """Returns an :class:`Asset` for the emoji's url, if it is custom.
 
         The format must be one of 'webp', 'jpeg', 'jpg', 'png' or 'gif'.

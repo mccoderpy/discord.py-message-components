@@ -49,7 +49,7 @@ from .file import File
 from .enums import Locale
 from .gateway import DiscordClientWebSocketResponse
 from .mentions import AllowedMentions
-from .components import ActionRow, Button, SelectMenu
+from .components import ActionRow, Button, BaseSelect
 from . import __version__, utils
 
 
@@ -112,7 +112,7 @@ def handle_message_parameters(
         embed: Optional[Embed] = MISSING,
         embeds: Sequence[Embed] = MISSING,
         attachments: Sequence[Union[Attachment, File]] = MISSING,
-        components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+        components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
         allowed_mentions: Optional[AllowedMentions] = MISSING,
         message_reference: Optional[MessageReference] = MISSING,
         stickers: Optional[SnowflakeList] = MISSING,
@@ -147,14 +147,14 @@ def handle_message_parameters(
             payload['components'] = []
         else:
             _components = []
-            for component in ([components] if not isinstance(components, list) else components):
-                if isinstance(component, (Button, SelectMenu)):
+            for component in (list(components) if not isinstance(components, list) else components):
+                if isinstance(component, (Button, BaseSelect)):
                     _components.extend(ActionRow(component).to_dict())
                 elif isinstance(component, ActionRow):
                     _components.extend(component.to_dict())
                 elif isinstance(component, list):
                     _components.extend(
-                        ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict()
+                        ActionRow(*[obj for obj in component]).to_dict()
                     )
             if len(_components) > 5:
                 raise TypeError(f"Only can send up to 5 ActionRows per message; got {len(_components)}")
@@ -294,7 +294,7 @@ def handle_interaction_message_parameters(
                     _components.extend(component.to_dict())
                 elif isinstance(component, list):
                     _components.extend(
-                        ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict()
+                        ActionRow(*[obj for obj in component]).to_dict()
                     )
             if len(_components) > 5:
                 raise TypeError(f"Only can send up to 5 ActionRows per message; got {len(_components)}")
@@ -1664,6 +1664,10 @@ class HTTPClient:
 
     def get_followup_message(self, token: str, application_id: int, message_id: int):
         r = Route('GET', f'/webhooks/{application_id}/{token}/messages/{message_id}')
+        return self.request(r)
+
+    def delete_interaction_response(self, token: str, application_id: int, message_id: int = '@original'):
+        r = Route('DELETE', f'/webhooks/{application_id}/{token}/messages/{message_id}')
         return self.request(r)
 
     def send_autocomplete_callback(self, token: str, interaction_id: int, choices: list):

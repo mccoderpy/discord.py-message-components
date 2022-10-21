@@ -23,18 +23,93 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
-from .enums import ComponentType, ButtonStyle, TextInputStyle
+from . import utils, abc
+from .enums import ComponentType, ButtonStyle, TextInputStyle, ChannelType
 from .emoji import Emoji
-from typing import Union, List, Optional, Any, Callable
-from typing_extensions import Literal
 from .partial_emoji import PartialEmoji
-from .errors import InvalidArgument, URLAndCustomIDNotAlowed, EmptyActionRow
+from .errors import InvalidArgument, URLAndCustomIDNotAlowed
 
-__all__ = ('Button', 'SelectMenu', 'TextInputStyle', 'ActionRow', 'SelectOption')
+from typing import (
+    overload,
+    Any,
+    Iterator,
+    Union,
+    Tuple,
+    List,
+    Dict,
+    Optional,
+    Callable,
+    TYPE_CHECKING,
+)
+
+from typing_extensions import Literal
+
+if TYPE_CHECKING:
+    from .interactions import ComponentInteraction
+
+__all__ = (
+    'ActionRow',
+    'Button',
+    'SelectMenu',
+    'SelectOption',
+    'TextInput',
+    'UserSelect',
+    'RoleSelect',
+    'MentionableSelect',
+    'ChannelSelect',
+    'Modal'
+)
 
 
-class Button:
+class BaseComponent:
+    """
+    The base class for all components.
+    """
+    _custom_id: Union[str, int]
+    _disabled: bool
+
+    def __init__(
+            self,
+            custom_id: Union[str, int] = None,
+            disabled: bool = False
+    ) -> None:
+        self.custom_id = custom_id
+        self.disabled = disabled
+
+    @property
+    def type(self) -> ComponentType:
+        raise NotImplementedError()
+
+    @property
+    def custom_id(self) -> Union[str, int]:
+        return self._custom_id
+
+    @custom_id.setter
+    def custom_id(self, value: Union[str, int]):
+        length = len(str(value))
+        if 1 > length > 100:
+            raise ValueError('The custom_id must be between 1 and 100 in length; got %s' % length)
+        self._custom_id = value
+
+    @property
+    def disabled(self) -> bool:
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool):
+        self._disabled = bool(value)
+
+    def to_dict(self) -> Dict[str, Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> BaseComponent:
+        raise NotImplementedError()
+
+
+class Button(BaseComponent):
 
     """
     Represents an `Discord-Button <https://discord.com/developers/docs/interactions/message-components#button-object>`_
@@ -55,49 +130,32 @@ class Button:
         whether the button is disabled (default False)
 
     """
+    __slots__ = ('_label', '_custom_id', '_style', '_url', '_disabled')
 
-    def __init__(self, label: str = None,
-                 custom_id: Union[str, int] = None,
-                 style: Union[ButtonStyle, int] = ButtonStyle.grey,
-                 emoji: Union[PartialEmoji, Emoji, str] = None,
-                 url: str = None,
-                 disabled: bool = False):
-        if url and not url.startswith(('http://', 'https://', 'discord://')):
-            raise ValueError(f'"{url}" is not a valid protocol. Only http(s) or discord protocol is supported')
-        self.url: Optional[str] = url
-        if isinstance(style, int):
-            style = ButtonStyle.from_value(style)
-        if not isinstance(style, ButtonStyle):
-            raise InvalidArgument("The Style of an discord.Button have to be an Object of discord.ButtonStyle, discord.ButtonColor or usually an Integer between 1 and 5")
+    def __init__(
+            self,
+            label: str = None,
+            custom_id: Union[str, int] = None,
+            style: Union[ButtonStyle, int] = ButtonStyle.grey,
+            emoji: Union[PartialEmoji, Emoji, str] = None,
+            url: Optional[str] = None,
+            disabled: bool = False
+    ) -> None:
+        super().__init__(custom_id=custom_id, disabled=disabled)
         self.style = style
-        if self.style == ButtonStyle.url and not self.url:
-            raise InvalidArgument('You must also pass a URL if the ButtonStyle is a link.')
-        if self.url and int(self.style) != 5:
-            self.style = ButtonStyle.Link_Button
-        if custom_id and len(custom_id) > 100:
-            raise InvalidArgument(
-                'The maximum length of Button-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
-        if isinstance(custom_id, str) and custom_id.isdigit():
-            self.custom_id = int(custom_id)
-        else:
-            self.custom_id = custom_id
-        if self.custom_id is not None and self.url:
+        if not emoji and not label:
+            raise InvalidArgument('A button must have at least one of label or emoji set')
+        elif self.style.url and not url:
+            raise InvalidArgument('An url is required for url buttons')
+        elif url and not self.style.url:
+            self.style = ButtonStyle.url
+        if url and custom_id:
             raise URLAndCustomIDNotAlowed(self.custom_id)
-        if label and len(label) > 80:
-            raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
+        elif not url and custom_id is None:
+            raise InvalidArgument('A custom_id must be specified for non-url buttons')
+        self.url: Optional[str] = url
         self.label = label
-        if isinstance(emoji, Emoji):
-            self.emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
-        elif isinstance(emoji, PartialEmoji):
-            self.emoji = emoji
-        elif isinstance(emoji, str):
-            if emoji[0] == '<':
-                self.emoji = PartialEmoji.from_string(emoji)
-            else:
-                self.emoji = PartialEmoji(name=emoji)
-        else:
-            self.emoji = None
-        self.disabled = disabled
+        self.emoji = emoji
 
     def __repr__(self) -> str:
         return f'<Button {", ".join(["%s=%s" % (k, str(v)) for k, v in self.__dict__.items()])}>'
@@ -107,6 +165,57 @@ class Button:
             return len(self.label)
         return len(self.emoji)
 
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.Button
+
+    @property
+    def style(self) -> ButtonStyle:
+        return self._style
+
+    @style.setter
+    def style(self, value: Union[int, ButtonStyle]):
+        if isinstance(value, int):
+            value = ButtonStyle(value)
+        self._style = value
+
+    @property
+    def label(self) -> Optional[str]:
+        return self._label
+
+    @label.setter
+    def label(self, value: Optional[str]):
+        if value and len(value) > 80:
+            raise InvalidArgument('The max. length of Button labels is 80, got %s' % value)
+        self._label = value
+
+    @property
+    def emoji(self) -> Optional[PartialEmoji]:
+        return getattr(self, '_emoji', None)
+
+    @emoji.setter
+    def emoji(self, value: Optional[Union[PartialEmoji, Emoji, str]]):
+        if isinstance(value, Emoji):
+            self._emoji = PartialEmoji(name=value.name, animated=value.animated, id=value.id)
+        elif isinstance(value, PartialEmoji):
+            self._emoji = value
+        elif isinstance(value, str):
+            if value[0] == '<':
+                self._emoji = PartialEmoji.from_string(value)
+            else:
+                self._emoji = PartialEmoji(name=value)
+
+    @property
+    def url(self) -> Optional[str]:
+        return getattr(self, '_url', None)
+
+    @url.setter
+    def url(self, value: Optional[str] = None):
+        if value and not value.startswith(('http://', 'https://', 'discord://')):
+            raise ValueError(f'"{value}" is not a valid protocol. Only http(s) or discord protocol is supported')
+        self._url = value
+
+    @utils.deprecated('label setter')
     def set_label(self, label: str):
         """
         Sets the Label of the :class:`Button`
@@ -119,12 +228,11 @@ class Button:
         :class:`~discord.Button`
             The updated instance
         """
-        if len(label) > 80:
-            raise InvalidArgument('The maximum length of Button-Labels\'s are 80; your one is %s long. (%s Characters to long)' % (len(label), len(label) - 80))
         self.label = label
         return self
 
-    def set_url(self, url: str):
+    @utils.deprecated('url setter')
+    def set_url(self, url: Optional[str]) -> Button:
         """
         Sets the url of the :class:`Button`
 
@@ -136,8 +244,6 @@ class Button:
         :class:`~discord.Button`
             The updated instance
         """
-        if not url.startswith(('http://', 'https://', 'discord://')):
-            raise ValueError(f'"{url}" is not a valid protocol. Only http(s) or discord protocol is supported')
         self.url = url
         return self
 
@@ -145,6 +251,7 @@ class Button:
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
         return self
 
+    @utils.deprecated('custom_id setter')
     def set_custom_id(self, custom_id: Union[str, int]):
         """
         Sets the custom_id of the :class:`Button`
@@ -220,7 +327,12 @@ class Button:
         return self
 
     def to_dict(self):
-        base = {'type': 2, 'label': self.label, 'style': int(self.style), 'disabled': self.disabled}
+        base = {
+            'type': 2,
+            'label': self.label,
+            'style': int(self.style),
+            'disabled': self.disabled
+        }
         if self.custom_id is not None:
             base['custom_id'] = str(self.custom_id)
         elif self.url:
@@ -298,9 +410,11 @@ class SelectOption:
         return self
 
     def to_dict(self):
-        base = {'label': str(self.label),
-                'value': str(self.value),
-                'default': bool(self.default)}
+        base = {
+            'label': str(self.label),
+            'value': str(self.value),
+            'default': bool(self.default)
+        }
         if self.description:
             base['description'] = str(self.description)
         if self.emoji:
@@ -319,7 +433,132 @@ class SelectOption:
                    default=data.pop('default', False))
 
 
-class SelectMenu:
+class BaseSelect(BaseComponent):
+    __slots__ = ('_custom_id', '_placeholder', '_min_values', '_max_values', '_disabled', '_values', '_interaction')
+    _interaction: Optional[ComponentInteraction]
+
+    def __init__(
+            self,
+            custom_id: Union[str, int],
+            placeholder: Optional[str] = None,
+            min_values: int = 1,
+            max_values: int = 1,
+            disabled: bool = False,
+    ) -> None:
+        super().__init__(custom_id=custom_id, disabled=disabled)
+        if placeholder and len(placeholder) > 150:
+            raise AttributeError(
+                'The maximum length of a the placeholder is 100 characters; your one is %d long (%d to long).' % (len(placeholder), len(placeholder) - 100)
+            )
+        self.placeholder: Optional[str] = placeholder
+        if 25 < min_values < 0:
+            raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
+        self.min_values = min_values
+        if 25 < max_values <= 0:
+            raise ValueError('The maximum number of elements to be selected must be between 0 and 25.')
+        self.max_values: int = max_values
+
+    @utils.cached_property
+    def values(self) -> Optional[List[Any]]:
+        if not hasattr(self, '_values'):
+            return None
+        values = []
+        interaction = self._interaction
+        resolved = interaction.data.resolved
+        getter = None
+        if self.type.UserSelect:
+            if interaction.guild:
+                def getter(v):
+                    return interaction.guild.get_member(v) or resolved.members[v] or resolved.users[v]
+            else:
+                def getter(v):
+                    return resolved.users[v]
+        elif self.type.RoleSelect:
+            def getter(v):
+                return resolved.roles.get(v)
+        elif self.type.MentionableSelect:
+            def getter(v):
+                try:
+                    return resolved.roles[v]
+                except KeyError:
+                    return interaction.guild.get_member(v) or resolved.members[v] or resolved.users[v]
+        elif self.type.ChannelSelect:
+            def getter(v):
+                return interaction.guild.get_channel(v) or resolved.channels[v] or interaction._state.get_channel(v)
+
+        for _id in self._values:
+            values.append(getter(int(_id)))
+        return values
+
+    def update(self, **kwargs) -> BaseSelect:
+        self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
+        return self
+
+    @utils.deprecated('custom_id setter')
+    def set_custom_id(self, custom_id: Union[str, int]) -> BaseSelect:
+        """
+        Set the custom_id of the Select
+
+        Parameters
+        ----------
+        custom_id: Union[:class:`str`, :class:`int`]
+            The custom_id to replace the old one with
+
+        Returns
+        -------
+        Union[:class:`.SelectMenu`, :class:`.UserSelect`, :class:`.RoleSelect`, :class:`MentionableSelect`, `:class:`.ChannelSelect`]
+            The instance with the updated custom_id
+        """
+        self.custom_id = custom_id
+        return self
+
+    def disable_if(self, check: Union[bool, Callable], *args):
+        """
+        Disables the Select if the passed :attr:`check` returns ``True``.
+
+
+        Parameters
+        ----------
+        check: Union[:class:`bool`, :class:`typing.Callable`]
+            The check could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`.
+        \*args: Any
+            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
+
+        Returns
+        -------
+        :class:`~discord.SelectMenu`
+            The updated instance
+         """
+        try:
+            check = check(*args)
+        except TypeError:
+            pass
+        if check is True:
+            self.disabled = True
+        return self
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'type': self.type.value,
+            'custom_id': str(self.custom_id),
+            'min_values': self.min_values,
+            'max_values': self.max_values,
+            'placeholder': self.placeholder,
+            'disabled': self.disabled
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]):
+        return cls(
+            custom_id=data.pop('custom_id'),
+            placeholder=data.pop('placeholder', None),
+            min_values=data.pop('min_values', 1),
+            max_values=data.pop('max_values', 1),
+            disabled=data.pop('disabled', False)
+        )
+
+
+class SelectMenu(BaseSelect):
 
     """
     Represents a `Select-Menu <https://discord.com/developers/docs/interactions/message-components#select-menus>`_
@@ -339,38 +578,36 @@ class SelectMenu:
     disabled: Optional[:class:`bool`] ) = False
         disable the SelectMenu, default False
     """
+    __slots__ = ('_custom_id', '_options', '_placeholder', '_min_values', '_max_values', '_disabled', '_values', '_interaction')
 
-    def __init__(self, custom_id: Union[str, int],
+    def __init__(self,
+                 custom_id: Union[str, int],
                  options: List[SelectOption],
-                 placeholder: str = None,
+                 placeholder: Optional[str] = None,
                  min_values: int = 1,
                  max_values: int = 1,
-                 disabled: bool = False):
-        if not any([isinstance(obj, SelectOption) for obj in options]):
-            raise InvalidArgument("SelectMenu.options must be a list of discord.SelectOption")
-        if len(options) > 25:
-            raise InvalidArgument('The maximum number of options in a SelectMenu is 25.')
-        self.options = options
-        if len(custom_id) > 100:
-            raise ValueError('The maximum length of a custom_id is 100 characters; your one is %s long (%s to long).' % (len(custom_id), len(custom_id) - 100))
-        if isinstance(custom_id, str) and custom_id.isdigit():
-            self.custom_id = int(custom_id)
-        else:
-            self.custom_id = custom_id
-        if placeholder and len(placeholder) > 150:
-            raise AttributeError('The maximum length of a the placeholder is 100 characters; your one is %s long (%s to long).' % (len(placeholder), len(placeholder) - 100))
-        self.placeholder = placeholder
-        if 25 < min_values < 0:
-            raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
-        self.min_values = min_values
-        if 25 < max_values <= 0:
-            raise ValueError('The maximum number of elements to be selected must be between 0 and 25.')
-        self.max_values = max_values
-        self.disabled = disabled
-        self._values = None
+                 disabled: bool = False
+                 ) -> None:
+        if min_values > len(options) > min(max_values, 25):
+            raise InvalidArgument('At least %d options must be provided and max. amount of options is 25', min_values)
+        for index, o in enumerate(options):
+            if not isinstance(o, SelectOption):
+                raise InvalidArgument("At SelectMenu.options[%d]: options must be a list of discord.SelectOption, got %s", o.__class__.__name__)
+        self.options: List[SelectOption] = options
+        super().__init__(
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled
+        )
 
     def __repr__(self):
         return f'<SelectMenu {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items()])}>'
+
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.StringSelect
 
     @property
     def all_option_values(self):
@@ -396,20 +633,7 @@ class SelectMenu:
             else:
                 yield option.value
 
-    def to_dict(self) -> dict:
-        base = {
-            'type': 3,
-            'custom_id': str(self.custom_id),
-            'options': [o.to_dict() for o in self.options if isinstance(o, SelectOption)],
-            'placeholder': self.placeholder,
-            'min_values': self.min_values,
-            'max_values': self.max_values
-        }
-        if self.disabled is True:
-            base['disabled'] = True
-        return base
-
-    @property
+    @utils.cached_property
     def values(self):
         """
         The options that were selected
@@ -457,66 +681,21 @@ class SelectMenu:
                 _not_selected.append(value)
         return _not_selected
 
-    def update(self, **kwargs):
-        self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
-        return self
-
-    def set_custom_id(self, custom_id: Union[str, int]):
-        """
-        Set the custom_id of the :class:`SelectMenu`
-
-        Parameters
-        ----------
-
-        custom_id: Union[:class:`str`, :class:`int`]
-            The custom_id to replace the old one with
-
-        Returns
-        -------
-        :class:`~discord.SelectMenu`
-            The updated instance
-        """
-        if len(custom_id) > 100:
-            raise InvalidArgument(
-                'The maximum length of SelectMenu-custom_id\'s are 100; your one is %s long. (%s Characters to long)' % (len(custom_id), len(custom_id) - 100))
-        if isinstance(custom_id, str) and custom_id.isdigit():
-            self.custom_id = int(custom_id)
-        else:
-            self.custom_id = custom_id
-        return self
-
-    def disable_if(self, check: Union[bool, Callable], *args):
-        """
-        Disables the :class:`discord.SelectMenu` if the passed :attr:`check` returns ``True``.
-
-
-        Parameters
-        ----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            The check could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`.
-        \*args: Any
-            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
-
-        Returns
-        -------
-        :class:`~discord.SelectMenu`
-            The updated instance
-         """
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
-        if check is True:
-            self.disabled = True
-        return self
+    def to_dict(self) -> Dict[str, Any]:
+        base = super().to_dict()
+        base['options'] = [o.to_dict() for o in self.options]
+        return base
 
     @classmethod
-    def from_dict(cls, data: dict):
-        return cls(custom_id=data.pop('custom_id'),
-                   options=[SelectOption.from_dict(o) for o in data.pop('options')],
-                   placeholder=data.pop('placeholder', None),
-                   min_values=data.pop('min_values', 1),
-                   max_values=data.pop('max_values', 1))
+    def from_dict(cls, data: Dict[str, Any]):
+        return cls(
+            custom_id=data.pop('custom_id'),
+            options=[SelectOption.from_dict(o) for o in data.pop('options')],
+            placeholder=data.pop('placeholder', None),
+            min_values=data.pop('min_values', 1),
+            max_values=data.pop('max_values', 1),
+            disabled=data.pop('disabled', False)
+        )
 
 
 class Modal:
@@ -529,23 +708,27 @@ class Modal:
         A developer-defined identifier for the component, max 100 characters
     title: :class:`str`
         The title of the popup modal, max 45 characters
-    components: List[Union[ActionRow, List[TextInput], TextInput]]
+    components: List[Union[:class:`ActionRow`, List[:class:`TextInput`],:class:` TextInput`]]
         Between 1 and 5 (inclusive) components that make up the modal.
     """
-    def __init__(self,
-                 title: str,
-                 custom_id: str,
-                 components: List[Union['ActionRow', List['TextInput']]]) -> None:
+    def __init__(
+            self,
+            title: str,
+            custom_id: str,
+            components: List[Union[ActionRow, List[TextInput]]]
+
+) -> None:
         # TODO: Add Error handling
         self.title = title
         self.custom_id = custom_id
-        self.components: List[ActionRow] = []
+        components = []
         for c in components:
             if isinstance(c, list):
                 c = ActionRow(*c)
             elif not isinstance(c, ActionRow):
                 c = ActionRow(c)
-            self.components.append(c)
+            components.append(c)
+        self.components: List[ActionRow] = components
 
     def to_dict(self):
         components = []
@@ -558,14 +741,17 @@ class Modal:
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: Dict[str, Any]):
         return cls(
             custom_id=data['custom_id'],
             title=data['title'],
-            components=_component_factory(data['components']))
+            components=[
+                _component_factory(a) for a in data['components']
+            ]
+        )
 
 
-class TextInput:
+class TextInput(BaseComponent):
     """
     Represents a `TextInput <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
 
@@ -598,14 +784,18 @@ class TextInput:
                  required: Optional[bool] = True,
                  value: Optional[str] = None,
                  placeholder: Optional[str] = None) -> None:
+        super().__init__(custom_id=custom_id)
         self.label: Optional[str] = label
-        self.custom_id: Optional[str] = custom_id
         self.style: Union[TextInputStyle, Literal[1, 2]] = style
         self.min_length: Optional[int] = min_length
         self.max_length: Optional[int] = max_length
         self.required: bool = required
         self.value: Optional[str] = value
         self.placeholder: Optional[str] = placeholder
+
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.TextInput
 
     def to_dict(self) -> dict:
         return {
@@ -631,76 +821,201 @@ class TextInput:
         return new
 
 
+class UserSelect(BaseSelect):
+    """Same as :class:`SelectMenu` but you can select from a list of users"""
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.UserSelect
+
+
+class RoleSelect(BaseSelect):
+    """Same as :class:`SelectMenu` but you can select from a list of roles"""
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.RoleSelect
+
+
+class MentionableSelect(BaseSelect):
+    """Same as :class:`SelectMenu` but you can select from a list of users and roles"""
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.MentionableSelect
+
+
+class ChannelSelect(BaseSelect):
+    """Same as :class:`SelectMenu` but you can select from a list of channels"""
+    __slots__ = ('_custom_id', '_options', '_placeholder', '_min_values', '_max_values', '_disabled', '_channel_types', '_values', '_interaction')
+
+    def __init__(self,
+                 custom_id: Union[str, int],
+                 channel_types: Optional[List[Union[ChannelType, abc.GuildChannel]]] = None,
+                 placeholder: Optional[str] = None,
+                 min_values: int = 1,
+                 max_values: int = 1,
+                 disabled: bool = False
+                 ) -> None:
+        self.channel_types: Optional[List[Union[ChannelType, abc.GuildChannel]]] = channel_types
+        super().__init__(
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled
+        )
+
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.ChannelSelect
+
+    @property
+    def channel_types(self) -> Optional[List[ChannelType]]:
+        return getattr(self, '_channel_types', None)
+
+    @channel_types.setter
+    def channel_types(self, value: Optional[List[Union[ChannelType, abc.GuildChannel]]]):
+        types = None
+        if value is not None:
+            types = []
+            for c in value:
+                if not isinstance(c, ChannelType):
+                    types.append(ChannelType.from_type(c)[-1])
+                else:
+                    types.append(c)
+        self._channel_types = types
+
+    def to_dict(self) -> Dict[str, Any]:
+        base = super().to_dict()
+        if self.channel_types:
+            base['channel_types'] = [int(t) for t in self.channel_types]
+        return base
+
+
 class ActionRow:
+    @overload
+    def __init__(self, *components: Button) -> None: ...
 
-    """
-    Represents an ActionRow-Part for the components of an :class:`discord.Message`.
+    @overload
+    def __init__(self, components: BaseSelect) -> None: ...
 
-    .. note ::
+    @overload
+    def __init__(self, components: TextInput) -> None:
+        ...
 
-        For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+    def __init__(self, *components: Union[Button, BaseSelect, TextInput]) -> None:
+        """
+        Represents an ActionRow-Part for the components of an :class:`discord.Message`.
 
-    Parameters
-    -----------
-    \*components: \*Union[:class:`Button`, :class:`SelectMenu`]
-        The components the :class:`ActionRow` should have. It could contain at least 5 :class:`Button`, or 1 :class:`SelectMenu`.
-    """
+        .. note ::
 
-    def __init__(self, *components):
-        self.components = []
-        for component in components:
-            if isinstance(component, (Button, SelectMenu, TextInput)):
-                self.components.append(component)
-            elif isinstance(component, self.__class__):
-                raise InvalidArgument('An ActionRow could not contain another ActionRow')
-            elif isinstance(component, dict):
-                if not component.get('type', None) in [2, 3, 4]:
-                    raise InvalidArgument('If you use a Dict instead of Button, SelectMenu or TextInput you have to provide the type')
-                self.components.append({2: Button, 3: SelectMenu, 4: TextInput}.get(component.get('type')).from_dict(component))
-    
+            For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+
+        Parameters
+        ----------
+        *components: *Union[:class:`Button`, :class:`BaseSelect`]
+            The components the :class:`ActionRow` should have.
+            This could be up to 5 :class:`Button`, or one :class:`BaseSelect` like object.
+        """
+        self.components = [c for c in components]
+
+    @overload
+    def __class_getitem__(cls, item: Button) -> ActionRow: ...
+
+    @overload
+    def __class_getitem__(cls, item: Tuple[Button, ...]) -> ActionRow: ...
+
+    @overload
+    def __class_getitem__(cls, item: BaseSelect) -> ActionRow: ...
+
+    @overload
+    def __class_getitem__(cls, item: TextInput) -> ActionRow:
+        ...
+
+    def __class_getitem__(cls, item) -> ActionRow:
+        if isinstance(item, tuple):
+            return cls(*item)
+        else:
+            return cls(item)
+
     def __repr__(self):
         return f'<ActionRow components={self.components}>'
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Union[Button, BaseSelect, TextInput]]:
         for component in self.components:
             yield component
 
-    def to_dict(self) -> Union[list, EmptyActionRow]:
-        base = []
-        base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in range(0, len(self.components), 5)])
-        objects = len([i['components'] for i in base])
-        if any([any([part['type'] == 2]) and any([part['type'] in (3, 4)]) for part in base]):
-            raise InvalidArgument('An ActionRow containing a SelectMenu cannot also contain Buttons\' or a TextInput')
-        if any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
-            raise InvalidArgument('An ActionRow can contain only one SelectMenu')
-        if any([any([part['type'] == 4]) and len(part) > 1 for part in base]):
-            raise InvalidArgument('An ActionRow can contain only one TextInput.')
-        if any([len(ar['components']) < 1 for ar in base]):
-            raise EmptyActionRow from base
+    @property
+    def type(self) -> ComponentType:
+        return ComponentType.ActionRow
 
-        elif len(base) > 5 or objects > 25:
-            raise InvalidArgument(f"The maximum number of ActionRow's per message is 5 and they can only contain 5 Buttons or 1 Select-Menu each; you have {len(base)} ActionRow's passed with {objects} objects")
-        return base
+    def to_dict(self) -> List[Dict[str, Union[int, List[Dict[str, Any]]]]]:
+        # I know this looks complex but it just auto-wraps components in to a new ActionRow when users are to stupid to place them in different
+        rows = []
+        actual_row = []
+        rows.append(actual_row)
+        for c in self.components:
+            max_rows_reached = len(rows) == 5
+            if len(actual_row) >= 5:
+                if not max_rows_reached:
+                    if actual_row not in rows:
+                        rows.append(
+                            actual_row.copy()
+                        )
+                    else:
+                        rows[rows.index(actual_row)] = actual_row.copy()
+                    actual_row.clear()
+                    rows.append(actual_row)
+                else:
+                    raise InvalidArgument('A message could only contain up to 5 ActionRows')
 
-    def __len__(self):
+            t = c.type
+            if t.ActionRow:
+                raise ValueError('An ActionRow can not contain another ActionRow')
+            elif t.Button:
+                actual_row.append(c.to_dict())
+            elif t.value > 2:
+                if len(rows) >= 5:
+                    raise ValueError(
+                        'An ActionRow containing a %s cannot contain other components',
+                        t.name
+                    )
+                if not actual_row:
+                    rows[rows.index(actual_row)] = [c.to_dict()]
+                    actual_row.clear()
+                    rows.append(actual_row)
+                else:
+                    rows.append([c.to_dict()])
+
+        max_rows_reached = len(rows) == 5
+        if len(actual_row) > 0:
+            if not max_rows_reached:
+                if actual_row not in rows:
+                    rows.append(
+                        actual_row.copy()
+                    )
+                rows[rows.index(actual_row)] = actual_row.copy()
+            else:
+                raise InvalidArgument('A message could only contain up to 5 ActionRows')
+        return [{'type': 1, 'components': components} for components in rows if len(components)]
+
+    def __len__(self) -> int:
         return len(self.components)
 
-    def __invert__(self):
+    def __invert__(self) -> List[Union[Button, BaseSelect, TextInput]]:
         return self.components
 
-    def __getitem__(self, item) -> Union[Button, SelectMenu, TextInput]:
+    def __getitem__(self, item: int) -> Union[Button, BaseSelect, TextInput]:
         return self.components[item]
 
-    def __setitem__(self, index, component):
+    def __setitem__(self, index, component: Union[Button, BaseSelect, TextInput]):
         return self.set_component_at(index, component)
 
-    def add_component(self, component: Union[Button, SelectMenu]):
+    def add_component(self, component: Union[Button, BaseSelect, TextInput]) -> ActionRow:
         """
         Adds a component to the :class:`ActionRow` and returns the action row.
 
         Parameters
         ----------
-        component: Union[:class:`Button`, :class:`SelectMenu`]
+        component: Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
             The component to add to the ActionRow.
 
         Returns
@@ -711,7 +1026,7 @@ class ActionRow:
         self.components.append(component)
         return self
 
-    def insert_component_at(self, index, component: Union[Button, SelectMenu]):
+    def insert_component_at(self, index, component: Union[Button, BaseSelect, TextInput]) -> ActionRow:
         """
         Inserts a component before a specified index to the :class:`ActionRow` and returns the action row.
 
@@ -719,7 +1034,7 @@ class ActionRow:
         -----------
         index: :class:`int`
             The index of where to insert the component.
-        component: Union[:class:`Button`, :class:`SelectMenu`]
+        component: Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
             The component to insert.
 
         Returns
@@ -730,7 +1045,7 @@ class ActionRow:
         self.components.insert(index, component)
         return self
 
-    def set_component_at(self, index, component: Union[Button, SelectMenu]):
+    def set_component_at(self, index: int, component: Union[Button, SelectMenu]) -> ActionRow:
         """
         Modifies a component to the :class:`ActionRow`. and returns the action row.
 
@@ -741,7 +1056,7 @@ class ActionRow:
         ----------
         index: :class:`int`
             The index of the component to modify.
-        component: Union[:class:`Button`, :class:`SelectMenu`]
+        component: Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
             The component to replace the old one with.
 
         Raises
@@ -757,11 +1072,11 @@ class ActionRow:
         try:
             self.components[index]
         except IndexError:
-            raise IndexError('component index %s out of range' % index)
+            raise IndexError('component index %d out of range' % index)
         self.components[index] = component
         return self
 
-    def disable_component_at(self, index):
+    def disable_component_at(self, index: int):
         """
         Disables the component at the specified position and returns the action row.
 
@@ -787,13 +1102,22 @@ class ActionRow:
         component.disabled = True
         return self
 
-    def add_components(self, *components: Union[Button, SelectMenu]):
+    @overload
+    def add_components(self, *components: Button) -> ActionRow: ...
+
+    @overload
+    def add_components(self, components: BaseSelect) -> ActionRow: ...
+
+    @overload
+    def add_components(self, components: TextInput) -> ActionRow: ...
+
+    def add_components(self, *components: Union[Button, BaseSelect, TextInput]) -> ActionRow:
         """
         Adds multiple components to the :class:`ActionRow`.
 
         Parameters
         ----------
-        \*components: \*Union[:class:`Button`, :class:`SelectMenu`]
+        \*components: \*Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
             The components to add to the ActionRow.
 
         Returns
@@ -804,7 +1128,7 @@ class ActionRow:
         self.components.extend(*components)
         return self
 
-    def disable_all_components(self):
+    def disable_all_components(self) -> ActionRow:
         """
         Disables all component's in this :class:`ActionRow` and returns the action row.
 
@@ -816,9 +1140,9 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_components_if(self, check: Union[bool, Callable], *args: Any):
+    def disable_all_components_if(self, check: Union[bool, Callable], *args: Any) -> ActionRow:
         """
-        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns ``True``. It returns the action row.
+        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`. It returns the action row.
 
         Parameters
         -----------
@@ -843,9 +1167,9 @@ class ActionRow:
             [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_buttons(self):
+    def disable_all_buttons(self) ->ActionRow:
         """
-        Disables all ::class:`~discord.Button`'s in this :class:`ActionRow` and returns the action row.
+        Disables all ::class:`~discord.Button`s in this :class:`ActionRow` and returns the action row.
 
         Returns
         -------
@@ -855,9 +1179,9 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_buttons_if(self, check: Union[bool, Callable], *args: Any):
+    def disable_all_buttons_if(self, check: Union[bool, Callable], *args: Any) -> ActionRow:
         """
-        Disables all :class:`~discord.Button`'s in this :class:`ActionRow` if the passed :attr:`check` returns ``True``.
+        Disables all :class:`~discord.Button`s in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`.
         It returns the action row.
     
         Parameters
@@ -882,21 +1206,21 @@ class ActionRow:
             [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_select_menus(self):
+    def disable_all_select_menus(self) -> ActionRow:
         """
-        Disables all :class:`discord.SelectMenu`'s in this :class:`ActionRow` and returns the action row.
+        Disables all :class:`BaseSelect` like objects in this :class:`ActionRow` and returns the action row.
 
         Returns
         -------
         :class:`~discord.ActionRow`
             The updated instance
         """
-        [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, SelectMenu)]
+        [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, BaseSelect)]
         return self
 
-    def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: Any):
+    def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: Any) -> ActionRow:
         """
-        Disables all :class:`SelectMenu`'s in this :class:`ActionRow` if the passed :attr:`check` returns ``True``.
+        Disables all :class:`BaseSelect` like objects in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`.
         It returns the action row.
 
         Parameters
@@ -922,7 +1246,7 @@ class ActionRow:
         return self
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict) -> ActionRow:
         """
         Internal method to create a :class:`discord.ActionRow` from the data given by discord.
 
@@ -937,21 +1261,29 @@ class ActionRow:
             The ActionRow created.
         """
         if data.get('type', None) != 1:
-            return InvalidArgument("%s could not be interpreted as an ActionRow" % data)
+            raise InvalidArgument("%s could not be interpreted as an ActionRow" % data)
         else:
             components = [_component_factory(component) for component in data.get('components', [])]
             return cls(*components)
 
 
-def _component_factory(data):
+def _component_factory(data) -> Union[ActionRow, BaseComponent]:
     component_type = data.get('type', None)
-    if component_type == ComponentType.ActionRow:
+    if component_type == 1:
         return ActionRow.from_dict(data)
-    elif component_type == ComponentType.Button:
+    elif component_type == 2:
         return Button.from_dict(data)
-    elif component_type == ComponentType.SelectMenu:
+    elif component_type == 3:
         return SelectMenu.from_dict(data)
-    elif component_type == ComponentType.TextInput:
+    elif component_type == 4:
         return TextInput.from_dict(data)
+    elif component_type == 5:
+        return UserSelect.from_dict(data)
+    elif component_type == 6:
+        return RoleSelect.from_dict(data)
+    elif component_type == 7:
+        return MentionableSelect.from_dict(data)
+    elif component_type == 8:
+        return ChannelSelect.from_dict(data)
     else:
         return None

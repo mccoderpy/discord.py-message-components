@@ -41,7 +41,6 @@ from .permissions import PermissionOverwrite, Permissions
 from .role import Role
 from .invite import Invite
 from .file import File
-from .components import Button, SelectMenu, ActionRow
 from .voice_client import VoiceClient, VoiceProtocol
 from .http import handle_message_parameters
 from . import utils
@@ -50,6 +49,7 @@ if TYPE_CHECKING:
     import datetime
     from .embeds import Embed
     from .sticker import GuildSticker
+    from .components import ActionRow, Button, BaseSelect
     from .message import Message, MessageReference
 
 
@@ -979,7 +979,7 @@ class Messageable(metaclass=abc.ABCMeta):
                    tts: bool = False,
                    embed: Optional[Embed] = None,
                    embeds: Optional[List[Embed]] = None,
-                   components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+                   components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
                    file: Optional[File] = None,
                    files: Optional[List[File]] = None,
                    stickers: Optional[List[GuildSticker]] = None,
@@ -1001,7 +1001,6 @@ class Messageable(metaclass=abc.ABCMeta):
         To upload a single file, the ``file`` parameter should be used with a
         single :class:`~discord.File` object. To upload multiple files, the ``files``
         parameter should be used with a :class:`list` of :class:`~discord.File` objects.
-        **Specifying both parameters will lead to an exception**.
 
         If the ``embed`` parameter is provided, it must be of type :class:`~discord.Embed` and
         it must be a rich embed type.
@@ -1016,9 +1015,9 @@ class Messageable(metaclass=abc.ABCMeta):
             The rich embed for the content.
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -1057,10 +1056,6 @@ class Messageable(metaclass=abc.ABCMeta):
 
         supress_embeds: Optional[:class:`bool`
             Whether to supress embeds send with the message, default to :obj:`False`
-
-        hidden: Optional[:class:`bool`]
-            If ``True`` the message will be only bee visible for the performer of the interaction.
-            If this isn't called within any subclass of :class:`~discord.BaseInteraction` it will be ignored.
 
         Raises
         --------
