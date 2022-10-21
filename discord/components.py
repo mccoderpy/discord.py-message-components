@@ -592,7 +592,7 @@ class SelectMenu(BaseSelect):
             raise InvalidArgument('At least %d options must be provided and max. amount of options is 25', min_values)
         for index, o in enumerate(options):
             if not isinstance(o, SelectOption):
-                raise InvalidArgument("At SelectMenu.options[%d]: options must be a list of discord.SelectOption, got %s", o.__class__.__name__)
+                raise InvalidArgument("At SelectMenu.options[%d]: options must be a list of discord.SelectOption, got %s" % o.__class__.__name__)
         self.options: List[SelectOption] = options
         super().__init__(
             custom_id=custom_id,
