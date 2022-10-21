@@ -37,6 +37,7 @@ from typing import (
 
 from typing_extensions import Literal
 
+import asyncio
 import logging
 
 from . import abc, utils
@@ -53,9 +54,9 @@ from .permissions import Permissions
 from .mentions import AllowedMentions
 from .message import Message, Attachment
 
-from .components import Button, SelectMenu, ActionRow, Modal, TextInput
+from .components import *
 from .channel import _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
-from .errors import NotFound, InvalidArgument, AlreadyResponded, UnknownInteraction
+from .errors import NotFound, HTTPException, InvalidArgument, AlreadyResponded, UnknownInteraction
 from .enums import (
     InteractionType,
     ApplicationCommandType,
@@ -70,6 +71,7 @@ from .enums import (
 if TYPE_CHECKING:
     import datetime
     from .state import ConnectionState
+    from .components import BaseSelect
     from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
 
 
@@ -262,7 +264,7 @@ class EphemeralMessage:
         """Returns all :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
-                if isinstance(component, SelectMenu):
+                if int(component.type) in {3, 5, 6, 7, 8}:
                     yield component
 
     async def edit(
@@ -271,12 +273,12 @@ class EphemeralMessage:
             content: Any = MISSING,
             embed: Optional[Embed] = MISSING,
             embeds: Sequence[Embed] = MISSING,
-            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
             suppress: Optional[bool] = False,
-            delete_after: Optional[int] = None
+            delete_after: Optional[float] = None
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
@@ -292,9 +294,9 @@ class EphemeralMessage:
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
-        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
@@ -316,6 +318,10 @@ class EphemeralMessage:
             all the embeds if set to ``True``. If set to ``False``
             this brings the embeds back if they were suppressed.
             Using this parameter requires :attr:`~.Permissions.manage_messages`.
+        delete_after: :class:`float`
+            If provided, the number of seconds to wait in the background
+            before deleting the response we just edited. If the deletion fails,
+            then it is silently ignored.
         allowed_mentions: Optional[:class:`~discord.AllowedMentions`]
             Controls the mentions being processed in this message. If this is
             passed, then the object is merged with :attr:`~discord.Client.allowed_mentions`.
@@ -387,6 +393,49 @@ class EphemeralMessage:
             import warnings
             warnings.warn("You can\'t delete a ephemeral message manual.")
         return self
+
+    async def delete(self, *, delay: Optional[float] = None) -> None:
+        """|coro|
+
+        Deletes the message.
+
+        .. note::
+            This can only be used while the interaction token is valid. So within 15 minutes after the interaction.
+
+        Parameters
+        -----------
+        delay: Optional[:class:`float`]
+            If provided, the number of seconds to wait in the background
+            before deleting the message. If the deletion fails then it is silently ignored.
+
+        Raises
+        ------
+        NotFound
+            The message was deleted already or the interaction token expired
+        HTTPException
+            Deleting the message failed.
+        """
+        interaction = self.__interaction__
+        is_original_response = interaction.callback_message and self.id == interaction.callback_message.id
+        if delay is not None:
+            async def delete():
+                await asyncio.sleep(delay)
+                try:
+                    await self._state.http.delete_interaction_response(
+                        interaction._token,
+                        interaction._application_id,
+                        message_id=self.id if not is_original_response else '@original'
+                    )
+                except HTTPException:
+                    pass
+
+            asyncio.ensure_future(delete(), loop=self._state.loop)
+        else:
+            await self._state.http.delete_interaction_response(
+                interaction._token,
+                interaction._application_id,
+                message_id=self.id if not is_original_response else '@original'
+            )
 
 
 class BaseInteraction:
@@ -507,7 +556,7 @@ class BaseInteraction:
             content: Any = MISSING,
             embed: Optional[Embed] = MISSING,
             embeds: Sequence[Embed] = MISSING,
-            components: List[Union[ActionRow, List[Union[Button, SelectMenu]]]] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             delete_after: Optional[float] = None,
@@ -528,9 +577,9 @@ class BaseInteraction:
             Could be ``None`` to remove the embed.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds
-        components: List[Union[:class:`discord.ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
@@ -554,7 +603,7 @@ class BaseInteraction:
             Using this parameter requires :attr:`~.Permissions.manage_messages`.
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
-            before deleting the message we just edited. If the deletion fails,
+            before deleting the response we just edited. If the deletion fails,
             then it is silently ignored.
         allowed_mentions: Optional[:class:`~discord.AllowedMentions`]
             Controls the mentions being processed in this message. If this is
@@ -653,7 +702,7 @@ class BaseInteraction:
         if is_hidden:
             self.deferred_hidden = True
         self.deferred = True
-        if not is_hidden and delete_after is not None:
+        if delete_after is not None:
             await msg.delete(delay=delete_after)
         return msg
 
@@ -663,7 +712,7 @@ class BaseInteraction:
             tts: bool = False,
             embed: Optional[Embed] = None,
             embeds: Optional[List[Embed]] = None,
-            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
             file: Optional[File] = None,
             files: Optional[List[File]] = None,
             delete_after: Optional[float] = None,
@@ -685,9 +734,9 @@ class BaseInteraction:
             The rich embed for the content.
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]]]]
-            A list of up to five :class:`~discord.ActionRow`'s/:class:`list`'s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.SelectMenu`'
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -699,12 +748,8 @@ class BaseInteraction:
             Using this parameter requires :attr:`~discord..Permissions.manage_messages` for messages that aren't from the bot.
         delete_after: :class:`float`
             If provided, the number of seconds to wait in the background
-            before deleting the message we just sent. If the deletion fails,
+            before deleting the response we just sent. If the deletion fails,
             then it is silently ignored.
-
-            .. note::
-                If :attr:`.hidden` is ``True`` the message can't be deleted.
-
         allowed_mentions: :class:`~discord.AllowedMentions`
             Controls the mentions being processed in this message. If this is
             passed, then the object is merged with :attr:`~discord.Client.allowed_mentions`.
@@ -713,7 +758,7 @@ class BaseInteraction:
             If no object is passed at all then the defaults given by :attr:`~discord.Client.allowed_mentions`
             are used instead.
         hidden: Optional[:class:`bool`]
-            If ``True`` the message will be only visible for the performer of the interaction (e.g. :attr:`~discord.BaseInteraction.author`).
+            If :obj:`True` the message will be only visible for the performer of the interaction (e.g. :attr:`~discord.BaseInteraction.author`).
         """
 
         if self.deferred_modal:
@@ -802,7 +847,7 @@ class BaseInteraction:
             self.callback_message = msg
         else:
             self.messages[msg.id] = msg
-        if not is_hidden and delete_after is not None:
+        if delete_after is not None:
             await msg.delete(delay=delete_after)
         return msg
 
@@ -976,7 +1021,7 @@ class ComponentInteraction(BaseInteraction):
     """
 
     @property
-    def component(self) -> Union[Button, SelectMenu]:
+    def component(self) -> Union[Button, SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]:
         """Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]: The component that was used"""
         if self._component is None:
             custom_id = self.data.custom_id
@@ -985,10 +1030,11 @@ class ComponentInteraction(BaseInteraction):
                     custom_id = int(custom_id)
                 if self.data.component_type == ComponentType.Button:
                     self._component = utils.get(self.message.all_buttons, custom_id=custom_id)
-                elif self.data.component_type in {3, 5, 6, 7, 8}:
+                elif self.data.component_type.value in {3, 5, 6, 7, 8}:
                     select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
                     if select_menu:
                         setattr(select_menu, '_values', self.data.values)
+                        setattr(select_menu, '_interaction', self)
                     self._component = select_menu
         return self._component
 
