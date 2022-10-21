@@ -23,8 +23,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 from .enums import UserFlags
+
+from typing import (
+    Union,
+    Dict,
+    Tuple,
+    Iterator,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from typing import Self
 
 __all__ = (
     'SystemChannelFlags',
@@ -39,26 +51,28 @@ __all__ = (
 
 class flag_value:
     def __init__(self, func):
-        self.name = func.__name__
-        self.flag = func(None)
-        self.__doc__ = func.__doc__
+        self.name: str = func.__name__
+        self.flag: int = func(None)
+        self.__doc__: str = func.__doc__
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: BaseFlags, owner) -> Union[Self, bool]:
         if instance is None:
             return self
         return instance._has_flag(self.flag)
 
-    def __set__(self, instance, value):
+    def __set__(self, instance: BaseFlags, value: bool) -> None:
         instance._set_flag(self.flag, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<flag_value flag={.flag!r}>'.format(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
+
 
 class alias_flag_value(flag_value):
     pass
+
 
 def fill_with_flags(*, inverted=False):
     def decorator(cls):
@@ -77,8 +91,11 @@ def fill_with_flags(*, inverted=False):
         return cls
     return decorator
 
+
 # n.b. flags must inherit from this and use the decorator above
 class BaseFlags:
+    DEFAULT_VALUE: int
+    VALID_FLAGS: Dict[str, int]
     __slots__ = ('value',)
 
     def __init__(self, **kwargs):
@@ -89,41 +106,42 @@ class BaseFlags:
             setattr(self, key, value)
 
     @classmethod
-    def _from_value(cls, value):
+    def _from_value(cls, value) -> Self:
         self = cls.__new__(cls)
         self.value = value
         return self
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, self.__class__) and self.value == other.value
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<%s value=%s>' % (self.__class__.__name__, self.value)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Tuple[str, bool]]:
         for name, value in self.__class__.__dict__.items():
             if isinstance(value, alias_flag_value):
                 continue
 
             if isinstance(value, flag_value):
-                yield (name, self._has_flag(value.flag))
+                yield name, self._has_flag(value.flag)
 
-    def _has_flag(self, o):
+    def _has_flag(self, o) -> bool:
         return (self.value & o) == o
 
-    def _set_flag(self, o, toggle):
+    def _set_flag(self, o: int, toggle: bool) -> None:
         if toggle is True:
             self.value |= o
         elif toggle is False:
             self.value &= ~o
         else:
             raise TypeError('Value to set for %s must be a bool.' % self.__class__.__name__)
+
 
 @fill_with_flags(inverted=True)
 class SystemChannelFlags(BaseFlags):
@@ -166,10 +184,10 @@ class SystemChannelFlags(BaseFlags):
     # Since this is counter-intuitive from an API perspective and annoying
     # these will be inverted automatically
 
-    def _has_flag(self, o):
+    def _has_flag(self, o: int) -> bool:
         return (self.value & o) != o
 
-    def _set_flag(self, o, toggle):
+    def _set_flag(self, o: int, toggle: bool) -> None:
         if toggle is True:
             self.value &= ~o
         elif toggle is False:
@@ -186,6 +204,7 @@ class SystemChannelFlags(BaseFlags):
     def premium_subscriptions(self):
         """:class:`bool`: Returns ``True`` if the system channel is used for Nitro boosting notifications."""
         return 2
+
 
 @fill_with_flags()
 class ChannelFlags(BaseFlags):
@@ -483,7 +502,7 @@ class Intents(BaseFlags):
             setattr(self, key, value)
 
     @classmethod
-    def all(cls) -> 'Intents':
+    def all(cls) -> Intents:
         """A factory method that creates a :class:`Intents` with everything enabled."""
         bits = max(cls.VALID_FLAGS.values()).bit_length()
         value = ((1 << bits) - 1) & ~(1 << 17 | 1 << 18 | 1 << 19)
@@ -492,14 +511,14 @@ class Intents(BaseFlags):
         return self
 
     @classmethod
-    def none(cls) -> 'Intents':
+    def none(cls) -> Intents:
         """A factory method that creates a :class:`Intents` with everything disabled."""
         self = cls.__new__(cls)
         self.value = self.DEFAULT_VALUE
         return self
 
     @classmethod
-    def default(cls) -> 'Intents':
+    def default(cls) -> Intents:
         """A factory method that creates a :class:`Intents` with everything enabled
         except :attr:`presences`, :attr:`members` and :attr:`message_content` (privileged intents).
         """
@@ -991,7 +1010,7 @@ class MemberCacheFlags(BaseFlags):
             setattr(self, key, value)
 
     @classmethod
-    def all(cls) -> 'MemberCacheFlags':
+    def all(cls) -> MemberCacheFlags:
         """A factory method that creates a :class:`MemberCacheFlags` with everything enabled."""
         bits = max(cls.VALID_FLAGS.values()).bit_length()
         value = (1 << bits) - 1
@@ -1000,7 +1019,7 @@ class MemberCacheFlags(BaseFlags):
         return self
 
     @classmethod
-    def none(cls) -> 'MemberCacheFlags':
+    def none(cls) -> MemberCacheFlags:
         """A factory method that creates a :class:`MemberCacheFlags` with everything disabled."""
         self = cls.__new__(cls)
         self.value = self.DEFAULT_VALUE
@@ -1093,6 +1112,7 @@ class MemberCacheFlags(BaseFlags):
     @property
     def _online_only(self):
         return self.value == 1
+
 
 @fill_with_flags()
 class ApplicationFlags(BaseFlags):
