@@ -721,14 +721,14 @@ class Modal:
         # TODO: Add Error handling
         self.title = title
         self.custom_id = custom_id
-        components = []
+        _components = []
         for c in components:
             if isinstance(c, list):
                 c = ActionRow(*c)
             elif not isinstance(c, ActionRow):
                 c = ActionRow(c)
-            components.append(c)
-        self.components: List[ActionRow] = components
+            _components.append(c)
+        self.components: List[ActionRow] = _components
 
     def to_dict(self):
         components = []
@@ -1183,7 +1183,7 @@ class ActionRow:
         """
         Disables all :class:`~discord.Button`s in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`.
         It returns the action row.
-    
+
         Parameters
         -----------
         check: Union[:class:`bool`, :class:`typing.Callable`]
