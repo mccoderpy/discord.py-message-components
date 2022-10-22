@@ -32,6 +32,11 @@ from typing import Union, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from os import PathLike
 
+__all__ = (
+    'File',
+    'UploadFile',
+)
+
 
 class File:
     r"""A parameter object used for :meth:`abc.Messageable.send`
@@ -135,7 +140,7 @@ class File:
 
 
 class UploadFile(File):
-    """An Object used for Upload files like Stickers.
+    """An object used for uploading files like stickers.
 
     Parameters
     ----------
