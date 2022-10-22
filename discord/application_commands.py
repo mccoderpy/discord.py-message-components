@@ -30,6 +30,7 @@ from typing import (
     Optional,
     List,
     Dict,
+    Type,
     Any,
     TYPE_CHECKING,
     Coroutine,
@@ -618,7 +619,7 @@ class SlashCommandOption:
             max_length: Optional[int] = None,
             channel_types: Optional[List[Union[type(GuildChannel), ChannelType, int]]] = None,
             default: Optional[Any] = None,
-            converter: Optional[Converter] = None,
+            converter: Optional[Union[Type[Converter], Greedy]] = None,
             ignore_conversion_failures: Optional[bool] = False,
             **kwargs
             ) -> None:
