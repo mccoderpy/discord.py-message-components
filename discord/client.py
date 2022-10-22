@@ -82,6 +82,11 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+__all__ = (
+    'Client',
+)
+
+
 def _cancel_tasks(loop):
     try:
         task_retriever = asyncio.Task.all_tasks
