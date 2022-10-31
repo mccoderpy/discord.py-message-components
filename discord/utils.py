@@ -353,7 +353,10 @@ def get(iterable, **attrs):
     return None
 
 
-def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[TimestampStyle, str] = TimestampStyle.short) -> str:
+def styled_timestamp(
+        timestamp: Union[datetime.datetime, int],
+        style: Union[TimestampStyle, str] = TimestampStyle.short
+) -> str:
     """
     A small function that returns a styled timestamp for discord, this will be displayed accordingly in the Discord client depending on the :attr:`style` specified.
 
@@ -373,9 +376,16 @@ def styled_timestamp(timestamp: Union[datetime.datetime, int], style: Union[Time
     --------
     .. code-block:: python
 
+        # Normal timestamp
         @client.command()
         async def time(ctx):
-            await ctx.send(discord.utils.styled_timestamp(datetime.now(), discord.TimestampStyle.long))
+            await ctx.send(discord.utils.styled_timestamp(discord.utils.utcnow(), discord.TimestampStyle.long))
+
+        # Relative timestamp
+        @client.command()
+        async def countdown(ctx, seconds: int):
+            happens_in = discord.utils.utcnow() + datetime.timedelta(seconds=seconds)
+            await ctx.send(f'Happens {discord.utils.styled_timestamp(happens_in, discord.TimestampStyle.relative)}')
 
     Raises
     -------
