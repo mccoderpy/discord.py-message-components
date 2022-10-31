@@ -257,14 +257,15 @@ class Client:
 
     delete_not_existing_commands: :class:`bool`
         Whether to remove global and guild-only application-commands that are not in the code anymore, default :obj:`True`.
-    do_auto_update_check: :class:`bool`
-        Whether to check for available updates automatically.
+
+    auto_check_for_updates: :class:`bool`
+        Whether to check for available updates automatically, default :obj:`False` for legal reasons.
         For more info see :class:`discord.on_update_available`.
 
         .. note::
 
             Attributes the moment, this may only work on the original repository, **not in forks**.
-            This is because it uses an internal API that only listen to a webhhgok from the original repo.
+            This is because it uses an internal API that only listen to a webhook from the original repo.
 
     Attributes
     -----------
@@ -294,7 +295,7 @@ class Client:
         unsync_clock = options.pop('assume_unsync_clock', True)
         self.gateway_version: int = options.get('gateway_version', 10)
         self.api_error_locale: Locale = options.pop('api_error_locale', None)
-        self.do_auto_update_check: bool = options.pop('do_auto_update_check', True)
+        self.auto_check_for_updates: bool = options.pop('auto_check_for_updates', False)
         self.http = HTTPClient(
             connector,
             proxy=proxy,
@@ -306,7 +307,9 @@ class Client:
         )
 
         self._handlers = {
-            'ready': self._handle_ready
+            'ready': self._handle_ready,
+            'connect': lambda: self._ws_connected.set(),
+            'resumed': lambda: self._ws_connected.set()
         }
 
         self._hooks = {
@@ -317,13 +320,14 @@ class Client:
         self._connection.shard_count = self.shard_count
         self._closed = False
         self._ready = asyncio.Event()
+        self._ws_connected = asyncio.Event()
         self._connection._get_websocket = self._get_websocket
         self._connection._get_client = lambda: self
 
         if VoiceClient.warn_nacl:
             VoiceClient.warn_nacl = False
             log.warning("PyNaCl is not installed, voice will NOT be supported")
-        if self.do_auto_update_check:
+        if self.auto_check_for_updates:
             self._auto_update_checker: Optional[AutoUpdateChecker] = AutoUpdateChecker(client=self)
         else:
             self._auto_update_checker: Optional[AutoUpdateChecker] = None
@@ -614,7 +618,7 @@ class Client:
                 try:
                     guild_commands = self._guild_specific_application_commands[guild_id]
                 except KeyError:
-                    no_longer_in_code_guilds += 1
+                    no_longer_in_code_guilds.add(guild_id)
                     no_longer_in_code_guild_specific += len(raw_commands)
                     continue  # Should already be cached in self._application_commands so skip that part here again
                 else:
@@ -783,6 +787,8 @@ class Client:
             'initial': True,
             'shard_id': self.shard_id,
         }
+        if self.auto_check_for_updates:
+            self._auto_update_checker.task = self.loop.create_task(self._auto_update_checker.check_task())
         while not self.is_closed():
             try:
                 coro = DiscordWebSocket.from_client(self, **ws_params)
@@ -792,6 +798,7 @@ class Client:
                     await self.ws.poll_event()
             except ReconnectWebSocket as e:
                 log.info('Got a request to %s the websocket.', e.op)
+                self._ws_connected.clear()
                 self.dispatch('disconnect')
                 ws_params.update(sequence=self.ws.sequence, resume=e.resume, session=self.ws.session_id, resume_gateway_url=self.ws.resume_gateway_url if e.resume else None)
                 continue
@@ -801,7 +808,7 @@ class Client:
                     ConnectionClosed,
                     aiohttp.ClientError,
                     asyncio.TimeoutError) as exc:
-
+                self._ws_connected.clear()
                 self.dispatch('disconnect')
                 if not reconnect:
                     await self.close()
@@ -862,6 +869,7 @@ class Client:
         if self.ws is not None and self.ws.open:
             await self.ws.close(code=1000)
 
+        self._ws_connected.clear()
         self._ready.clear()
 
     def clear(self):
@@ -873,6 +881,7 @@ class Client:
         """
         self._closed = False
         self._ready.clear()
+        self._ws_connected.clear()
         self._connection.clear()
         self.http.recreate()
 
@@ -891,8 +900,6 @@ class Client:
 
         if kwargs:
             raise TypeError("unexpected keyword argument(s) %s" % list(kwargs.keys()))
-        if self.do_auto_update_check:
-            self.loop.create_task(self._auto_update_checker.check_task())
         await self.login(*args)
         await self.connect(reconnect=reconnect)
 

@@ -70,7 +70,7 @@ log = logging.getLogger(__name__)
 async def json_or_text(response):
     text = await response.text(encoding='utf-8')
     try:
-        if response.headers['content-type'] == 'application/json':
+        if 'application/json' in response.headers['content-type']:
             return json.loads(text)
     except KeyError:
         # Thanks Cloudflare
@@ -536,6 +536,7 @@ class HTTPClient:
 
                         # even errors have text involved in them so this is safe to call
                         data = await json_or_text(r)
+
                         # check if we have rate limit header information
                         remaining = r.headers.get('X-Ratelimit-Remaining')
                         if remaining == '0' and r.status != 429:

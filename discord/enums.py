@@ -81,6 +81,7 @@ def _create_value_cls(name):
     cls = namedtuple(f'_EnumValue_' + name, 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
     cls.__str__ = lambda self: '%s.%s' % (name, self.name)
+
     def __getattribute__(self, n) -> Union[bool, Any]:
         if n in dir(cls):
             return super(cls, self).__getattribute__(n)
@@ -89,6 +90,7 @@ def _create_value_cls(name):
                 return self.name == n
             else:
                 raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
+
     # With this you can use something like some_channel.type.text to check if it is of this type
     # It is similar to "some_channel.type == ChannelType.text"
     cls.__getattribute__ = __getattribute__
@@ -697,6 +699,7 @@ class FriendFlags(Enum):
 class Theme(Enum):
     light = 'light'
     dark = 'dark'
+
 
 class Status(Enum):
     online = 'online'

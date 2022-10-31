@@ -523,10 +523,12 @@ class ConnectionState:
                 self.application_flags = ApplicationFlags._from_value(application['flags'])  # type: ignore
                 self.application_id = utils._get_as_snowflake(application, 'id')
 
+        self.call_handlers('connect')
         self.dispatch('connect')
         self._ready_task = asyncio.ensure_future(self._delay_ready(), loop=self.loop)
 
     def parse_resumed(self, data):
+        self.call_handlers('resumed')
         self.dispatch('resumed')
 
     def parse_message_create(self, data):
