@@ -1278,8 +1278,8 @@ class InteractionDataOption:
     @property
     def value(self) -> Optional[Union[str, int, float]]:
         """Union[:class:`str`, :class:`int`, :class:`float`]: Returns the value of the option (what the user passed)"""
-        value = self._data.get('value', None)
-        if value:
+        value = self._data.get('value', MISSING)
+        if value is not MISSING:
             if isinstance(value, bool):  # because booleans are integers too
                 return value
             if isinstance(value, int):
