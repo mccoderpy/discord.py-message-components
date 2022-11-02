@@ -65,6 +65,9 @@ extras_require = {
         'sphinx==3.0.3',
         'sphinxcontrib_trio==1.1.2',
         'sphinxcontrib-websupport',
+    ],
+    'speedups': [
+        'aiohttp[speedups]'
     ]
 }
 
@@ -72,12 +75,17 @@ extras_require = {
 setup(
     name="discord.py-message-components",
     url="https://github.com/mccoderpy/discord.py-message-components",
-    project_urls={'Documentation': 'https://discordpy-message-components.readthedocs.io/en/latest/', 'Source': 'https://github.com/mccoderpy/discord.py-message-components/', 'Support': 'https://discord.gg/sb69muSqsg', 'Issue Tracker': 'https://github.com/mccoderpy/discord.py-message-components/issues'},
+    project_urls={
+        'Documentation': 'https://discordpy-message-components.readthedocs.io/en/latest/',
+        'Source': 'https://github.com/mccoderpy/discord.py-message-components/',
+        'Support': 'https://discord.gg/sb69muSqsg',
+        'Issue Tracker': 'https://github.com/mccoderpy/discord.py-message-components/issues'
+    },
     author_email="mccuber04@outlook.de",
     version=str(version),
     author="mccoder.py",
     description="A \"fork\" of discord.py library made by Rapptz with implementation of the Discord-Message-Components & other features by mccoderpy",
-    keywords='discord discord.py discord.py-message-components discord-components discord-interactions  message-components components ',
+    keywords='discord discord4py discord.py discord.py-message-components discord-components discord-interactions  message-components components ',
     long_description=readme,
     long_description_content_type="text/x-rst",
     extras_require=extras_require,
