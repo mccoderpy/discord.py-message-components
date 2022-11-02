@@ -403,7 +403,7 @@ class ConnectionState:
         if isinstance(channel, DMChannel):
             self._private_channels_by_user.pop(channel.recipient.id, None)
 
-    def _get_message(self, msg_id):
+    def _get_message(self, msg_id) -> Message:
         return utils.find(lambda m: m.id == msg_id, reversed(self._messages)) if self._messages else None
 
     def _add_guild_from_data(self, guild):
