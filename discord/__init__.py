@@ -29,7 +29,6 @@ __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 from collections import namedtuple
 import logging
 
-__all__ = tuple(globals())
 
 from .client import Client
 from .appinfo import AppInfo
@@ -79,5 +78,6 @@ VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel='alpha', serial=0)
 
 del VersionInfo, namedtuple
+__all__ = tuple(globals())
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
