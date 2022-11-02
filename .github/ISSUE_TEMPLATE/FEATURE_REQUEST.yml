@@ -1,6 +1,8 @@
 name: Feature Request
 description: Suggest a feature that should be added to discord4py
-labels: feature request
+title: "[Feature Request]:"
+labels: ["feature request"]
+assignees: ["mccoderpy"]
 body:
   - type: input
     attributes:
