@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a feature for that should be added to discord4py
+description: Suggest a feature that should be added to discord4py
 labels: feature request
 body:
   - type: input
