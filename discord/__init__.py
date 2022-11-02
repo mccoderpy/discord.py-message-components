@@ -78,6 +78,5 @@ VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel='alpha', serial=0)
 
 del VersionInfo, namedtuple
-__all__ = tuple(globals())
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
