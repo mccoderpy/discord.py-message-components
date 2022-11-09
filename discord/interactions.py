@@ -1306,8 +1306,8 @@ class ResolvedData:
     def __init__(self, *, state, data, guild=None, **kwargs):
         self._state: ConnectionState = state
         self._data = data
-        self._guild = guild
-        self._channel_id = kwargs.pop('channel_id', None)
+        self._guild: Guild = guild
+        self._channel_id: Optional[int] = kwargs.pop('channel_id', None)
         for attr in ('users', 'members', 'channels', 'roles', 'messages', 'attachments'):
             setattr(self, f'_{attr}', {})
             value = data.get(attr, None)

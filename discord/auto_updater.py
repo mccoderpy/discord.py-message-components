@@ -26,42 +26,183 @@ DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
-import aiohttp
-
-import logging
-
 from typing import (
     TYPE_CHECKING,
     Optional,
     Union,
     Dict,
-    List,
     Any
 
 )
 
-logger = logging.getLogger(__name__)
+import re
+import sys
+import copy
+import json
+import aiohttp
+import logging
+import asyncio
+from collections import namedtuple
+
+if sys.version_info <= (3, 7):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
+
+from . import utils, __version__
+from .errors import HTTPException
+
 
 if TYPE_CHECKING:
     from .client import Client
 
+MISSING = utils.MISSING
+
+logger = logging.getLogger('update-checker')
+
 __all__ = ('AutoUpdateChecker',)
 
 
-class  AutoUpdateChecker:
+MinimalReleaseInfo = namedtuple('MinimalReleaseInfo', ('version', 'release', 'valid', 'use_instead'))
+GitReleaseInfo = namedtuple('GitReleaseInfo', ('branch', 'version', 'release', 'commit', 'valid', 'use_instead'))
+VERSION_REGEX = re.compile(r'\s*(\d+\.\d+(?:\.\d+)*(?:[-_.]?(?:alpha|beta|pre|preview|a|b|c|rc)(?:[-_.]?[0-9]+)?)?)(?:\+g([0-9a-f]{7,10}))?\s*')
+
+
+class AutoUpdateChecker:
     """This internal class handels automatic request to the library api to check for updates."""
     def __init__(self, client: Client) -> None:
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
         self.client = client
         self.dispatch = client.dispatch
+        self.task: Optional[asyncio.Task] = None  # Will be set by the Client instance
+        self.__session: Optional[aiohttp.ClientSession] = None  # set this later in check_task
+        self.current_release: Union[MinimalReleaseInfo, GitReleaseInfo, None] = None  # set this later in check_task
+        self.__last_check_result: Dict[str, Any] = {}
+        user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'  # 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0'
+        self.user_agent = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
+
+    @property
+    def last_check_result(self) -> Optional[Dict[str, Any]]:
+        return self.__last_check_result
+
+    @last_check_result.setter
+    def last_check_result(self, value) -> None:
+        raise NotImplementedError
+
+    def get_session(self) -> aiohttp.ClientSession:
+        if self.__session.closed:
+            self.__session = aiohttp.ClientSession('https://api.discord4py.dev')
+        return self.__session
+
+    async def request(
+            self,
+            method: str,
+            route: str,
+            data: Optional[Dict[str, Any]] = None
+    ) -> Any:
+        from .http import json_or_text  # circular imports
+
+        params = {}
+        headers = {
+            'User-Agent': self.user_agent,
+            'Accept': 'application/json',
+        }
+
+        if data is not None:
+            params['data'] = json.dumps(data)
+            headers['Content-Type'] = 'application/json'
+
+        params['headers'] = headers
+
+        for tries in range(5):
+            async with self.get_session() as session:
+                async with session.request(method, route, **params) as resp:
+                    data = await json_or_text(resp)
+                    if 400 > resp.status >= 200:
+                        return data
+                    elif resp.status >= 400:
+                        logger.warning('%s %s status was not 200. Was %d', method, route, resp.status)
+                        error = HTTPException(resp, data)
+                        logger.error(*error.args)
+                        await asyncio.sleep(5 + tries * 2)
+                        continue
+
+    async def get_current_release(self) -> Union[MinimalReleaseInfo, GitReleaseInfo]:
+        dist = importlib_metadata.distribution('discord.py-message-components')
+        version, release = VERSION_REGEX.match(dist.version).groups()
+        if release:
+            direct_url_file = dist.read_text('direct_url.json')
+            if direct_url_file:
+                direct_url = json.loads(direct_url_file)
+                url_is_valid = await self.validate_vcs_url(direct_url['url'])
+                vcs_info = direct_url['vcs_info']
+                branch = vcs_info.get('requested_revision', None)
+                commit_id = vcs_info.get('commit_id', None)
+                return GitReleaseInfo(branch, version, release, commit_id, url_is_valid, MISSING)
+            else:
+                info = await self.find_release(version, release)
+                if info is not None:
+                    return GitReleaseInfo(info['branch'], version, release, info['commit'], True, MISSING)
+                else:
+                    logger.warning('Unknown release used. Version checks will not be performed')
+        else:
+            return MinimalReleaseInfo(version, release, True, MISSING)
+
+    async def validate_vcs_url(self, url: str) -> bool:
+        d = await self.request('POST', '/is-valid-vcs-url', data={'url': url})
+        return d['valid']
+
+    async def find_release(self, version: str, release: str) -> Optional[Dict[str, Any]]:
+        pass
 
     async def check_task(self) -> None:
-        logger.debug('Started auto update checker task')
-        while self.loop.is_running():
-            await self.run_check()
-            await asyncio.sleep(600)
+        logger.debug('Starting auto update checker task')
+        self.__session = aiohttp.ClientSession('https://api.discord4py.dev')
+        self.current_release = current_release = await self.get_current_release()
+        if current_release and current_release.valid:
+            if type(current_release) is GitReleaseInfo:
+                logger.info(f'Running on version {current_release.version} ({current_release.release}) of branch {current_release.branch}')
+            else:
+                logger.debug(f'Running on version {current_release.version}')
+            while self.loop.is_running():
+                await self.run_check()
+                await asyncio.sleep(300)
+        else:
+            await self.__session.close()
+            logger.warning('Update checker task stopped')
 
     async def run_check(self) -> None:
         logger.debug('Checking for updates')
-        pass
+
+        data = await self.request('GET', f'/branch/{self.current_release.branch}/releases/latest')
+
+        if self.last_check_result == data:
+            return  # Why should we overwrite it here when it is equal?
+        self.__last_check_result = data
+
+        if not data['active']:
+            self.current_release.valid = False
+            self.current_release.use_instead = use_instead = data.get("use_instead", None)
+
+            logger.warning(
+                f'You are using a branch of the library that has been deleted and will no longer receive updates!'
+                f'Consider updating to {use_instead + "branch instead" if use_instead else "an other branch"}.'
+            )
+            self.dispatch('used_branch_deleted', use_instead)
+            logger.info("Stopped update checker task")
+            self.task.cancel()
+        else:
+            before = copy.copy(self.current_release)
+            version, release = data['v'], data['r']
+            if version != before.version or release != before.release:
+                logger.info(
+                    'New version available %s (%s) -> %s (%s)',
+                    self.current_release.version,
+                    self.current_release.release,
+                    version,
+                    release
+                )
+                self.dispatch('update_available', before, GitReleaseInfo(before.branch, version, release, MISSING, True, MISSING))
+
+    def start(self):
+        self.task = self.loop.create_task(self.check_task())

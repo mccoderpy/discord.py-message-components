@@ -356,11 +356,13 @@ class RequestsWebhookAdapter(WebhookAdapter):
         state = _PartialWebhookState(self, self.webhook, parent=self.webhook._state)
         return WebhookMessage(data=response, state=state, channel=self.webhook.channel)
 
+
 class _FriendlyHttpAttributeErrorHelper:
     __slots__ = ()
 
     def __getattr__(self, attr):
         raise AttributeError('PartialWebhookState does not support http methods.')
+
 
 class _PartialWebhookState:
     __slots__ = ('loop', 'parent', '_webhook')
@@ -403,6 +405,7 @@ class _PartialWebhookState:
             return getattr(self.parent, attr)
 
         raise AttributeError('PartialWebhookState does not support {0!r}.'.format(attr))
+
 
 class WebhookMessage(Message):
     """Represents a message sent from your webhook.
@@ -495,6 +498,7 @@ class WebhookMessage(Message):
                 return self._delete_delay_sync(delay)
 
         return self._state._webhook.delete_message(self.id)
+
 
 class Webhook(Hashable):
     """Represents a Discord webhook.
