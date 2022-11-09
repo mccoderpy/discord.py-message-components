@@ -78,7 +78,7 @@ class AutoUpdateChecker:
         self.__session: Optional[aiohttp.ClientSession] = None  # set this later in check_task
         self.current_release: Union[MinimalReleaseInfo, GitReleaseInfo, None] = None  # set this later in check_task
         self.__last_check_result: Dict[str, Any] = {}
-        user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'  # 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0'
+        user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
         self.user_agent = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
 
     @property
