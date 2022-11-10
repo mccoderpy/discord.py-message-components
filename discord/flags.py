@@ -447,6 +447,11 @@ class PublicUserFlags(BaseFlags):
         """:class:`bool`: Returns ``True`` if the user is flagged as a spammer by discord."""
         return UserFlags.spammer
 
+    @flag_value
+    def active_developer(self):
+        """:class:`bool`: Returns ``True`` if the user is a developer of an active discord application."""
+        return UserFlags.active_developer
+
     def all(self):
         """List[:class:`UserFlags`]: Returns all public flags the user has."""
         return [public_flag for public_flag in UserFlags if self._has_flag(public_flag.value)]
@@ -1116,7 +1121,7 @@ class MemberCacheFlags(BaseFlags):
 
 @fill_with_flags()
 class ApplicationFlags(BaseFlags):
-    r"""Wraps up the flags of a application.
+    r"""Wraps up the flags of an application.
 
         .. container:: operations
 
@@ -1198,3 +1203,8 @@ class ApplicationFlags(BaseFlags):
     def application_commands_badge(self):
         """:class:`bool`: Returns ``True`` if the app has at least one global `application-command <application_commands>`_ registered."""
         return 1 << 23
+
+    @flag_value
+    def active_application(self):
+        """:class:`bool`: Returns ``True`` is an active application (e.g. has at leas one app command executed in the last 30 days)."""
+        return 1 << 22
