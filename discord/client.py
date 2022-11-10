@@ -76,6 +76,8 @@ from .appinfo import AppInfo
 from .application_commands import *
 
 if TYPE_CHECKING:
+    from .abc import Messageable, GuildChannel
+    from .emoji import Emoji
     from .permissions import Permissions
     from .message import Message
 
@@ -1019,7 +1021,7 @@ class Client:
         """Returns a :class:`~discord.Message` with the given ID if it exists in the cache, else :obj:`None`"""
         return self._connection._get_message(id)
 
-    def get_channel(self, id):
+    def get_channel(self, id: int) -> Optional[Union[Messageable, GuildChannel]]:
         """Returns a channel with the given ID.
 
         Parameters
@@ -1034,11 +1036,13 @@ class Client:
         """
         return self._connection.get_channel(id)
 
-    def get_partial_messageable(self,
-                                id: int,
-                                *,
-                                guild_id: Optional[int] = None,
-                                type: Optional[ChannelType] = None) -> PartialMessageable:
+    def get_partial_messageable(
+            self,
+            id: int,
+            *,
+            guild_id: Optional[int] = None,
+            type: Optional[ChannelType] = None
+    ) -> PartialMessageable:
         """Returns a :class:`~discord.PartialMessageable` with the given channel ID.
         This is useful if you have the ID of a channel but don't want to do an API call
         to send messages to it.
@@ -1054,6 +1058,7 @@ class Client:
             :attr:`~discord.PartialMessageable.guild` properties to function properly.
         type: Optional[:class:`.ChannelType`]
             The underlying channel type for the :class:`~discord.PartialMessageable`.
+
         Returns
         --------
         :class:`.PartialMessageable`
@@ -1061,7 +1066,7 @@ class Client:
         """
         return PartialMessageable(state=self._connection, id=id, guild_id=guild_id, type=type)
 
-    def get_guild(self, id):
+    def get_guild(self, id: int) -> Optional[Guild]:
         """Returns a guild with the given ID.
 
         Parameters
@@ -1076,7 +1081,7 @@ class Client:
         """
         return self._connection._get_guild(id)
 
-    def get_user(self, id):
+    def get_user(self, id: int) -> Optional[User]:
         """Returns a user with the given ID.
 
         Parameters
@@ -1091,7 +1096,7 @@ class Client:
         """
         return self._connection.get_user(id)
 
-    def get_emoji(self, id):
+    def get_emoji(self, id: int) -> Optional[Emoji]:
         """Returns an emoji with the given ID.
 
         Parameters
