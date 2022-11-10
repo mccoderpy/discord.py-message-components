@@ -108,6 +108,11 @@ class AutoUpdateChecker:
             'Accept': 'application/json',
         }
 
+        if self.current_release is not None:
+            headers['Discord4py-Version'] = self.current_release.version
+            headers['Discord4py-Release'] = self.current_release.release,
+            headers['Discord4py-Branch'] = getattr(self.current_release, 'branch', 'unknown')
+
         if data is not None:
             params['data'] = json.dumps(data)
             headers['Content-Type'] = 'application/json'
