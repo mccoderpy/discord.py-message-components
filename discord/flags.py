@@ -1207,4 +1207,4 @@ class ApplicationFlags(BaseFlags):
     @flag_value
     def active_application(self):
         """:class:`bool`: Returns ``True`` is an active application (e.g. has at leas one app command executed in the last 30 days)."""
-        return 1 << 22
+        return 1 << 24
