@@ -80,6 +80,10 @@ class AutoUpdateChecker:
         self.__last_check_result: Dict[str, Any] = {}
         user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
         self.user_agent = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
+        self.headers: Dict[str, str] = {
+            'User-Agent': self.user_agent,
+            'Accept': 'application/json'
+        }
 
     @property
     def last_check_result(self) -> Optional[Dict[str, Any]]:
@@ -103,15 +107,7 @@ class AutoUpdateChecker:
         from .http import json_or_text  # circular imports
 
         params = {}
-        headers = {
-            'User-Agent': self.user_agent,
-            'Accept': 'application/json',
-        }
-
-        if self.current_release is not None:
-            headers['Discord4py-Version'] = self.current_release.version
-            headers['Discord4py-Release'] = self.current_release.release,
-            headers['Discord4py-Branch'] = getattr(self.current_release, 'branch', 'unknown')
+        headers = self.headers.copy()
 
         if data is not None:
             params['data'] = json.dumps(data)
@@ -164,6 +160,10 @@ class AutoUpdateChecker:
         logger.debug('Starting auto update checker task')
         self.__session = aiohttp.ClientSession('https://api.discord4py.dev')
         self.current_release = current_release = await self.get_current_release()
+        if current_release is not None:
+            self.headers['Discord4py-Version'] = current_release.version
+            self.headers['Discord4py-Release'] = current_release.release
+            self.headers['Discord4py-Branch'] = getattr(current_release, 'branch', 'unknown')
         if current_release and current_release.valid:
             if type(current_release) is GitReleaseInfo:
                 logger.info(f'Running on version {current_release.version} ({current_release.release}) of branch {current_release.branch}')
@@ -178,9 +178,7 @@ class AutoUpdateChecker:
 
     async def run_check(self) -> None:
         logger.debug('Checking for updates')
-
         data = await self.request('GET', f'/branch/{self.current_release.branch}/releases/latest')
-
         if self.last_check_result == data:
             return  # Why should we overwrite it here when it is equal?
         self.__last_check_result = data
