@@ -10,6 +10,8 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from __future__ import annotations
+
 import os
 import re
 import sys
@@ -25,7 +27,6 @@ sys.path.insert(0, os.path.abspath('..'))
 sys.path.append(os.path.abspath('extensions'))
 
 # -- Project information -----------------------------------------------------
-
 
 
 project = 'discord.py-message-components'
@@ -175,6 +176,7 @@ master_doc = 'index'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-def setup(app: 'App'):
+
+def setup(app: App):
     app.setup_extension("sphinxext.opengraph")
     app.add_css_file('style.css')

@@ -8,7 +8,7 @@ ActionRow
 .. autoclass:: ActionRow()
     :members:
 
-
+-----------------------
 
 Button
 ~~~~~~~
@@ -17,8 +17,11 @@ Button
 
 .. autoclass:: Button()
     :members:
+    :inherited-members:
 
+-----------------------
 
+.. _select-like-objects:
 
 SelectMenu
 ~~~~~~~~~~~
@@ -27,8 +30,7 @@ SelectMenu
 
 .. autoclass:: SelectMenu()
     :members:
-
-
+    :inherited-members:
 
 SelectOption
 ~~~~~~~~~~~~~
@@ -38,7 +40,43 @@ SelectOption
 .. autoclass:: SelectOption()
     :members:
 
+UserSelect
+~~~~~~~~~~~
 
+.. attributetable:: UserSelect
+
+.. autoclass:: UserSelect()
+    :members:
+    :inherited-members:
+
+RoleSelect
+~~~~~~~~~~~
+
+.. attributetable:: RoleSelect
+
+.. autoclass:: RoleSelect()
+    :members:
+    :inherited-members:
+
+MentionableSelect
+~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: MentionableSelect
+
+.. autoclass:: MentionableSelect()
+    :members:
+    :inherited-members:
+
+ChannelSelect
+~~~~~~~~~~~~~~
+
+.. attributetable:: ChannelSelect
+
+.. autoclass:: ChannelSelect()
+    :members:
+    :inherited-members:
+
+----------------------------
 
 Modal
 ~~~~~~
@@ -47,6 +85,7 @@ Modal
 
 .. autoclass:: Modal()
     :members:
+    :inherited-members:
 
 
 TextInput
@@ -56,3 +95,4 @@ TextInput
 
 .. autoclass:: TextInput()
     :members:
+    :inherited-members:

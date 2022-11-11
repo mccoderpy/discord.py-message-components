@@ -47,6 +47,10 @@ from typing import (
 from typing_extensions import Literal
 
 if TYPE_CHECKING:
+    from .role import Role
+    from .user import User
+    from .member import Member
+    from .abc import GuildChannel, Messageable
     from .interactions import ComponentInteraction
 
 __all__ = (
@@ -80,10 +84,31 @@ class BaseComponent:
 
     @property
     def type(self) -> ComponentType:
+        """:class:`~discord.ComponentType`: The type this component is of"""
         raise NotImplementedError()
 
     @property
     def custom_id(self) -> Union[str, int]:
+        """
+        Union[:class:`str`, :class:`int`] (depending on whether it is completely numeric or not):
+
+        A developer defined ID for this component. **This must be unique per** :class:`~discord.Message`/:class:`~discord.Modal`
+        Max. 100 characters long.
+
+        .. note::
+            The custom ID is a good place to store any additional data.
+            For example if you want to make a check in the callback whether the author is a specific user just store the user-id in the custom_id like
+
+            .. code-block:: python3
+
+                # The custom_id
+                custom_id=f'some-prefix:{ctx.author.id}'
+
+                # Now you can extract this information again in the callback by splitting it at the separator.
+                _, author_id = custom_id.split(':')  # Note that the author_id is still a string here, not an integer!
+
+            Of course, you can store any and as much data in it as you want. (As long as it does not exceed the max. length)
+        """
         return self._custom_id
 
     @custom_id.setter
@@ -95,6 +120,7 @@ class BaseComponent:
 
     @property
     def disabled(self) -> bool:
+        """:class:`bool`: Whether this component can be used or not. If :obj:`True` it is greyed out in the client."""
         return self._disabled
 
     @disabled.setter
@@ -110,37 +136,34 @@ class BaseComponent:
 
 
 class Button(BaseComponent):
-
-    """
-    Represents an `Discord-Button <https://discord.com/developers/docs/interactions/message-components#button-object>`_
-
-    Parameters
-    ----------
-    label: Optional[:class:`str`] = None
-        text that appears on the button, max 80 characters
-    custom_id: Optional[Union[:class:`str`, :class:`int`]] = None
-        a developer-defined identifier for the button, max 100 characters
-    style: Optional[Union[:class:`ButtonStyle`, :class:`int`]] = ButtonStyle.grey
-        The Style the Button should have
-    emoji: Optional[Union[:class:`discord.PartialEmoji`, :class:`discord.Emoji`, :class:`str`]] = None
-        The Emoji that will be displayed on the left side of the Button.
-    url: Optional[:class:`str`]
-        a url for link-style buttons
-    disabled: Optional[:class:`bool`] = False
-        whether the button is disabled (default False)
-
-    """
+    """Represents a `Discord-Button <https://discord.com/developers/docs/interactions/message-components#button-object>`_"""
     __slots__ = ('_label', '_custom_id', '_style', '_url', '_disabled')
 
     def __init__(
             self,
             label: str = None,
-            custom_id: Union[str, int] = None,
+            custom_id: Optional[Union[str, int]] = None,
             style: Union[ButtonStyle, int] = ButtonStyle.grey,
             emoji: Union[PartialEmoji, Emoji, str] = None,
             url: Optional[str] = None,
             disabled: bool = False
     ) -> None:
+        """
+        Represents a `Discord-Button <https://discord.com/developers/docs/interactions/message-components#button-object>`_
+
+        Parameters
+        ----------
+        label: Optional[:class:`str`]:
+            Text that appears on the button, max 80 characters
+        custom_id: Optional[Union[:class:`str`, :class:`int`]
+            See :attr:`BaseComponent.custom_id`
+        style: Optional[Union[:class:`ButtonStyle`, :class:`int`]]
+            The :class:`~discord.ButtonStyle` the button should have, defaults to :attr:`~discord.ButtonStyle.grey`
+        emoji: Optional[Union[:class:`~discord.PartialEmoji`, :class:`~discord.Emoji`, :class:`str`]]:
+            An emoji that will be displayed on the left side of the button.
+        url: Optional[:class:`str`]
+            An URL for the button if it is of type :attr:`ButtonStyle.url`
+        """
         super().__init__(custom_id=custom_id, disabled=disabled)
         self.style = style
         if not emoji and not label:
@@ -171,6 +194,7 @@ class Button(BaseComponent):
 
     @property
     def style(self) -> ButtonStyle:
+        """Optional[Union[:class:`~discord.ButtonStyle`, :class:`int`]]: The :class:`~discord.ButtonStyle` the button should have, defaults to :attr:`~discord.ButtonStyle.grey`"""
         return self._style
 
     @style.setter
@@ -181,6 +205,7 @@ class Button(BaseComponent):
 
     @property
     def label(self) -> Optional[str]:
+        """Optional[:class:`str`]: Text that appears on the button, max 80 characters"""
         return self._label
 
     @label.setter
@@ -191,6 +216,9 @@ class Button(BaseComponent):
 
     @property
     def emoji(self) -> Optional[PartialEmoji]:
+        """
+        Optional[Union[:class:`~discord.PartialEmoji`, :class:`~discord.Emoji`, :class:`str`]]: An emoji that will be displayed on the left side of the button.
+        """
         return getattr(self, '_emoji', None)
 
     @emoji.setter
@@ -207,10 +235,11 @@ class Button(BaseComponent):
 
     @property
     def url(self) -> Optional[str]:
+        """Optional[:class:`str`]: An URL for the button if it is of type :attr:`ButtonStyle.url`"""
         return getattr(self, '_url', None)
 
     @url.setter
-    def url(self, value: Optional[str] = None):
+    def url(self, value: Optional[str]):
         if value and not value.startswith(('http://', 'https://', 'discord://')):
             raise ValueError(f'"{value}" is not a valid protocol. Only http(s) or discord protocol is supported')
         self._url = value
@@ -220,7 +249,7 @@ class Button(BaseComponent):
         """
         Sets the Label of the :class:`Button`
 
-        label: :class`str`
+        label: :class:`str`
             The label to replace th old one with.
 
         Returns
@@ -236,7 +265,7 @@ class Button(BaseComponent):
         """
         Sets the url of the :class:`Button`
 
-        url: :class:`str`
+        url: Optional[:class:`str`]
             The url to replace the old one with
 
         Returns
@@ -275,53 +304,64 @@ class Button(BaseComponent):
             self.custom_id = custom_id
         return self
 
-    def disable_if(self, check: Union[bool, Callable], *args):
+    def disable_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any):
         """
-        Disables the :class:`~discord.Button` if the passed :attr:`check` returns ``True``.
+        Disables the :class:`~discord.Button` if the passed ``check`` returns :obj:`True` and return itself.
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            The check could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`.
-        \*args: Any
-            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
+        check: Union[:class:`bool`, Callable[[Any, ...], :class:`bool` ]]
+            Could be an :class:`bool` or usually any :obj:`~typing.Callable` that returns a :class:`bool`
+        *args: Any
+            Positional arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
+        **kwargs: Any
+            Keyword-only arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
 
         Returns
         -------
         :class:`~discord.Button`
             The updated instance
          """
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
+        if callable(check):
+            check = check(*args, **kwargs)
+
+        if not isinstance(check, bool):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check)
+            )
+
         if check is True:
             self.disabled = True
         return self
 
-    def set_style_if(self, check: Union[bool, Callable], style: ButtonStyle, *args):
+    def set_style_if(self, check: Union[bool, Callable[[Any, ...], bool]], style: ButtonStyle, *args, **kwargs):
         """
-        Sets the style of the :class:`Button` to the specified one if the specified check returns True.
+        Sets the style of the :class:`~discord.Button` to the specified one if the specified ``check`` returns :obj:`True`.
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            The check could be an :class:`bool` or usually any :class:`Callable` that returns an :class:`bool`
+        check: Union[:class:`bool`, Callable[[Any, ...], :class:`bool`]]
+            Could be an :class:`bool` or usually any :obj:`~typing.Callable` that returns a :class:`bool`
         style: discord.ButtonStyle
-            The style the :class:`Button` should have when the :attr:`check` returns True
+            The style the :class:`Button` should have when the ``check`` returns True
         *args: Any
-            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
+            Positional arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
+        **kwargs: Any
+            Keyword-only arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
 
         Returns
         -------
         :class:`~discord.Button`
             The updated instance
-
         """
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
+        if callable(check):
+            check = check(*args, **kwargs)
+
+        if not isinstance(check, bool):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check)
+            )
+
         if check is True:
             self.style = style
         return self
@@ -446,17 +486,44 @@ class BaseSelect(BaseComponent):
             disabled: bool = False,
     ) -> None:
         super().__init__(custom_id=custom_id, disabled=disabled)
-        if placeholder and len(placeholder) > 150:
-            raise AttributeError(
-                'The maximum length of a the placeholder is 100 characters; your one is %d long (%d to long).' % (len(placeholder), len(placeholder) - 100)
-            )
-        self.placeholder: Optional[str] = placeholder
-        if 25 < min_values < 0:
-            raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
+        self.placeholder = placeholder
         self.min_values = min_values
-        if 25 < max_values <= 0:
+        self.max_values = max_values
+
+    @property
+    def placeholder(self) -> Optional[str]:
+        """Optional[:class:`str`]: Custom placeholder text if nothing is selected, max. 100 characters."""
+        return self._placeholder
+
+    @placeholder.setter
+    def placeholder(self, value: str):
+        if value and len(value) > 150:
+            raise AttributeError(
+                'The maximum length of a the placeholder is 100 characters; your one is %d long (%d to long).' % (len(value), len(value) - 100)
+            )
+        self._placeholder = value
+
+    @property
+    def min_values(self) -> int:
+        """:class:`int`: The minimum number of items that must be chosen; default 1, min. 0, max. 25."""
+        return self._min_values
+
+    @min_values.setter
+    def min_values(self, value: int):
+        if 25 < value < 0:
+            raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
+        self._min_values = value
+
+    @property
+    def max_values(self) -> int:
+        """:class:`int`: The maximum number of items that can be chosen; default 1, max. 25."""
+        return self._min_values
+
+    @max_values.setter
+    def max_values(self, value: int):
+        if 25 < value <= 0:
             raise ValueError('The maximum number of elements to be selected must be between 0 and 25.')
-        self.max_values: int = max_values
+        self._max_values = value
 
     @utils.cached_property
     def values(self) -> Optional[List[Any]]:
@@ -506,33 +573,39 @@ class BaseSelect(BaseComponent):
 
         Returns
         -------
-        Union[:class:`.SelectMenu`, :class:`.UserSelect`, :class:`.RoleSelect`, :class:`MentionableSelect`, `:class:`.ChannelSelect`]
+        Union[:class:`.SelectMenu`, :class:`.UserSelect`, :class:`.RoleSelect`, :class:`.MentionableSelect`, :class:`.ChannelSelect`]
             The instance with the updated custom_id
         """
         self.custom_id = custom_id
         return self
 
-    def disable_if(self, check: Union[bool, Callable], *args):
+    def disable_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any):
         """
-        Disables the Select if the passed :attr:`check` returns ``True``.
+        Disables the Select if the passed ``check`` returns :obj:`True` and returns itself.
 
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            The check could be an :class:`bool` or usually any :obj:`Callable` that returns an :class:`bool`.
-        \*args: Any
-            Arguments that should be passed in to the :attr:`check` if it is an :class:`Callable`.
+        check: Union[:class:`bool`, Callable[[Any, ...], :class:`bool` ]]
+            Could be an :class:`bool` or usually any :obj:`~typing.Callable` that returns a :class:`bool`
+        *args: Any
+            Positional arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
+        **kwargs: Any
+            Keyword-only arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
 
         Returns
         -------
-        :class:`~discord.SelectMenu`
+        Union[:class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`]
             The updated instance
-         """
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
+        """
+        if callable(check):
+            check = check(*args, **kwargs)
+
+        if not isinstance(check, bool):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check)
+            )
+
         if check is True:
             self.disabled = True
         return self
@@ -559,41 +632,35 @@ class BaseSelect(BaseComponent):
 
 
 class SelectMenu(BaseSelect):
-
-    """
-    Represents a `Select-Menu <https://discord.com/developers/docs/interactions/message-components#select-menus>`_
-
-    Parameters
-    ----------
-    custom_id: str or int
-        A developer-defined identifier for the :class:`SelectMenu`, max. 100 characters.
-    options: List[:class:`SelectOption`]
-        A :class:`list` of choices(:class:`SelectOption`) the :class:`SelectMenu` should have, max. 25.
-    placeholder: Optional[:class:`str`] = None
-        Custom placeholder text if nothing is selected, max. 100 characters.
-    min_values: Optional[:class:`int`] = 1
-        The minimum number of items that must be chosen; default 1, min. 0, max. 25.
-    max_values: Optional[:class:`int`] = 1
-        The maximum number of items that can be chosen; default 1, max. 25.
-    disabled: Optional[:class:`bool`] ) = False
-        disable the SelectMenu, default False
-    """
     __slots__ = ('_custom_id', '_options', '_placeholder', '_min_values', '_max_values', '_disabled', '_values', '_interaction')
 
-    def __init__(self,
-                 custom_id: Union[str, int],
-                 options: List[SelectOption],
-                 placeholder: Optional[str] = None,
-                 min_values: int = 1,
-                 max_values: int = 1,
-                 disabled: bool = False
-                 ) -> None:
-        if min_values > len(options) > min(max_values, 25):
-            raise InvalidArgument('At least %d options must be provided and max. amount of options is 25', min_values)
-        for index, o in enumerate(options):
-            if not isinstance(o, SelectOption):
-                raise InvalidArgument("At SelectMenu.options[%d]: options must be a list of discord.SelectOption, got %s" % o.__class__.__name__)
-        self.options: List[SelectOption] = options
+    def __init__(
+            self,
+            custom_id: Union[str, int],
+            options: List[SelectOption],
+            placeholder: Optional[str] = None,
+            min_values: int = 1,
+            max_values: int = 1,
+            disabled: bool = False
+    ) -> None:
+        """
+        Represents a `Select-Menu <https://discord.com/developers/docs/interactions/message-components#select-menus>`_
+
+        Parameters
+        ----------
+        custom_id: Union[:class:`str`, :class:`int`]
+            A developer-defined identifier for the :class:`SelectMenu`, max. 100 characters
+        options: List[:class:`SelectOption`]
+            A :class:`list` of options to choose from, max. 25
+        placeholder: Optional[:class:`str`]
+            Custom placeholder text if nothing is selected, max. 100 characters
+        min_values: Optional[:class:`int`]
+            The minimum number of items that must be chosen; default 1, min. 0, max. 25
+        max_values: Optional[:class:`int`]
+            The maximum number of items that can be chosen; default 1, max. 25
+        disabled: Optional[:class:`bool`]
+            Disables the SelectMenu, default :obj:`False`
+        """
         super().__init__(
             custom_id=custom_id,
             placeholder=placeholder,
@@ -601,6 +668,7 @@ class SelectMenu(BaseSelect):
             max_values=max_values,
             disabled=disabled
         )
+        self.options = options
 
     def __repr__(self):
         return f'<SelectMenu {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items()])}>'
@@ -610,11 +678,31 @@ class SelectMenu(BaseSelect):
         return ComponentType.StringSelect
 
     @property
-    def all_option_values(self):
+    def options(self) -> List[SelectOption]:
         """
-        All values of the :attr:`options`
+        List[:class:`.SelectOption`]: A :class:`list` of options to choose from, max. 25.
 
-        If the value is a number it is returned as an integer, otherwise as string
+        .. note::
+            This must include at least the amount of :attr:`~SelectMenu.min_values`/:attr:`~SelectMenu.max_values`
+        """
+        return getattr(self, '_options', [])
+
+    @options.setter
+    def options(self, options: List[SelectOption]):
+        if self.min_values > len(options) > min(self.max_values, 25):
+            raise InvalidArgument('At least %d options must be provided and max. amount of options is 25', self.min_values)
+        for index, o in enumerate(options):
+            if not isinstance(o, SelectOption):
+                raise InvalidArgument("At SelectMenu.options[%d]: options must be a list of discord.SelectOption, got %s" % (index, o.__class__.__name__))
+        self._options = list(options)
+
+    @utils.cached_property
+    def all_option_values(self) -> Iterator[Union[int, str]]:
+        """
+        All values of the :attr:`options` of the SelectMenu.
+
+        .. warning::
+            If the :attr:`~discord.SelectOption.value` is a number it is returned as an :class:`int`, otherwise as :class:`str`!
 
         .. note::
             This is equal to
@@ -626,6 +714,7 @@ class SelectMenu(BaseSelect):
                         yield int(option.value)
                     else:
                         yield option.value
+
         """
         for option in self.options:
             if option.value.isdigit():
@@ -636,21 +725,29 @@ class SelectMenu(BaseSelect):
     @utils.cached_property
     def values(self):
         """
-        The options that were selected
+        The values of the :attr:`options` that were selected
 
         .. note::
-            This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
+            This only exists if the :class:`SelectMenu` is passed as an argument in an interaction.
 
-        .. important::
-            If the value is a number it is returned as an integer, otherwise as string
+        .. warning::
+            If the :attr:`~discord.SelectOption.value` is a number it is returned as an :class:`int`, otherwise as :class:`str`!
+
+        Raises
+        ------
+        TypeError
+            The SelectMenu was not passed as an argument for an interaction-callback
 
         Returns
         --------
         List[Union[:class:`int`, :class:`str`]]
-            A list of selected options
+            A list containing the values of the selected options
         """
         values = []
-        _values = getattr(self, '_values', [])
+        try:
+            _values = self._values
+        except AttributeError:
+            raise TypeError('You only can use this when the SelectMenu was passed as an argument in an interaction-callback')
         for value in _values:
             if value.isdigit():
                 values.append(int(value))
@@ -658,7 +755,7 @@ class SelectMenu(BaseSelect):
                 values.append(value)
         return values
 
-    @property
+    @utils.cached_property
     def not_selected(self):
         """
         The options that were **not** selected
@@ -666,13 +763,18 @@ class SelectMenu(BaseSelect):
         .. note::
             This only exists if the :class:`SelectMenu` is passed as a parameter in an interaction.
 
-        .. important::
-            If the value is a number it is returned as an integer, otherwise as string
+        .. warning::
+            If the :attr:`~discord.SelectOption.value` is a number it is returned as an :class:`int`, otherwise as :class:`str`!
+
+        Raises
+        ------
+        TypeError
+            The SelectMenu was not passed as an argument for an interaction-callback
 
         Returns
         --------
         List[Union[:class:`int`, :class:`str`]]
-            A list of **not** selected options
+            A list containing the values of all **not** selected options
         """
         _not_selected = []
         values = self.values
@@ -716,8 +818,7 @@ class Modal:
             title: str,
             custom_id: str,
             components: List[Union[ActionRow, List[TextInput]]]
-
-) -> None:
+    ) -> None:
         # TODO: Add Error handling
         self.title = title
         self.custom_id = custom_id
@@ -725,7 +826,7 @@ class Modal:
         for c in components:
             if isinstance(c, list):
                 c = ActionRow(*c)
-            elif not isinstance(c, ActionRow):
+            elif isinstance(c, TextInput):
                 c = ActionRow(c)
             _components.append(c)
         self.components: List[ActionRow] = _components
@@ -775,15 +876,17 @@ class TextInput(BaseComponent):
     placeholder: Optional[:class:`str`]
         Custom placeholder text if the input is empty, max 100 characters
     """
-    def __init__(self,
-                 label: str,
-                 custom_id: str,
-                 style: Union[TextInputStyle, Literal[1, 2]] = 1,
-                 min_length: Optional[int] = None,
-                 max_length: Optional[int] = None,
-                 required: Optional[bool] = True,
-                 value: Optional[str] = None,
-                 placeholder: Optional[str] = None) -> None:
+    def __init__(
+            self,
+            label: str,
+            custom_id: str,
+            style: Union[TextInputStyle, Literal[1, 2]] = 1,
+            min_length: Optional[int] = None,
+            max_length: Optional[int] = None,
+            required: Optional[bool] = True,
+            value: Optional[str] = None,
+            placeholder: Optional[str] = None
+    ) -> None:
         super().__init__(custom_id=custom_id)
         self.label: Optional[str] = label
         self.style: Union[TextInputStyle, Literal[1, 2]] = style
@@ -822,39 +925,107 @@ class TextInput(BaseComponent):
 
 
 class UserSelect(BaseSelect):
-    """Same as :class:`SelectMenu` but you can select from a list of users"""
+    """
+    Very similar to :class:`SelectMenu` but you can select from a list of :class:`~discord.Member`/:class:`~discord.User`
+
+    .. note::
+        :attr:`~SelectMenu.options` can't be set for this type
+    """
     @property
     def type(self) -> ComponentType:
         return ComponentType.UserSelect
 
+    def values(self) -> Optional[List[Union[Member, User]]]:
+        """
+        The members/users that were selected
+
+        .. note::
+            This only exists if the :class:`UserSelect` is passed as a parameter in an interaction.
+
+        Returns
+        --------
+        List[Union[:class:`Member`, :class:`User`]]
+            A list of selected members or user if the member is not found
+        """
+        return super().values
+
 
 class RoleSelect(BaseSelect):
-    """Same as :class:`SelectMenu` but you can select from a list of roles"""
+    """
+    Very similar to :class:`SelectMenu` but you can select from a list of :class:`~discord.Role`
+
+    .. note::
+        :attr:`~discord.SelectMenu.options` can't be set for this type
+    """
+
     @property
     def type(self) -> ComponentType:
         return ComponentType.RoleSelect
 
+    def values(self) -> Optional[List[Role]]:
+        """
+        The roles that were selected
+
+        .. note::
+            This only exists if the :class:`RoleSelect` is passed as a parameter in an interaction.
+
+        Returns
+        --------
+        List[:class:`Role`]
+            A list of selected roles
+        """
+        return super().values
+
 
 class MentionableSelect(BaseSelect):
-    """Same as :class:`SelectMenu` but you can select from a list of users and roles"""
+    """
+    Very similar to :class:`SelectMenu` but you can select from a list of both :class:`~discord.Member`/:class:`~discord.User` and :class:`~discord.Role`
+
+    .. note::
+        :attr:`~SelectMenu.options` can't be set for this type
+    """
     @property
     def type(self) -> ComponentType:
         return ComponentType.MentionableSelect
 
+    def values(self) -> Optional[List[Union[Member, User, Role]]]:
+        """
+        The members/users and roles that were selected
+
+        .. note::
+            This only exists if the :class:`MentionableSelect` is passed as a parameter in an interaction.
+
+        Returns
+        --------
+        List[Union[:class:`Member`, :class:`User`, :class:`Role`]]
+            A list of selected members/users and roles
+        """
+        return super().values
+
 
 class ChannelSelect(BaseSelect):
-    """Same as :class:`SelectMenu` but you can select from a list of channels"""
-    __slots__ = ('_custom_id', '_options', '_placeholder', '_min_values', '_max_values', '_disabled', '_channel_types', '_values', '_interaction')
+    """
+    Very similar to :class:`SelectMenu` but you can select from a list of channels.
 
-    def __init__(self,
-                 custom_id: Union[str, int],
-                 channel_types: Optional[List[Union[ChannelType, abc.GuildChannel]]] = None,
-                 placeholder: Optional[str] = None,
-                 min_values: int = 1,
-                 max_values: int = 1,
-                 disabled: bool = False
-                 ) -> None:
-        self.channel_types: Optional[List[Union[ChannelType, abc.GuildChannel]]] = channel_types
+    For this type there is an additional parameter ``channel_types``
+    wich can be a list of :class:`ChannelType` (or the type itself like :class:`TextChannel` or :class:`StageChannel`) that specify
+    from what channel types the user could choose.
+
+    .. note::
+        :attr:`~SelectMenu.options` can't be set for this type
+    """
+    __slots__ = ('_custom_id', '_placeholder', '_min_values', '_max_values', '_disabled', '_channel_types', '_values', '_interaction')
+
+    def __init__(
+            self,
+            custom_id: Union[str, int],
+            channel_types: Optional[List[Union[ChannelType, abc.GuildChannel]]] = None,
+            placeholder: Optional[str] = None,
+            min_values: int = 1,
+            max_values: int = 1,
+            disabled: bool = False
+    ) -> None:
+        self.channel_types = channel_types
         super().__init__(
             custom_id=custom_id,
             placeholder=placeholder,
@@ -883,6 +1054,20 @@ class ChannelSelect(BaseSelect):
                     types.append(c)
         self._channel_types = types
 
+    def values(self) -> Optional[List[Union[GuildChannel, Messageable]]]:
+        """
+        The channels that were selected
+
+        .. note::
+            This only exists if the :class:`ChannelSelect` is passed as a parameter in an interaction.
+
+        Returns
+        --------
+        List[Union[:class:`GuildChannel`, :class:`Messageable`]]
+            A list of selected channels
+        """
+        return super().values
+
     def to_dict(self) -> Dict[str, Any]:
         base = super().to_dict()
         if self.channel_types:
@@ -891,6 +1076,16 @@ class ChannelSelect(BaseSelect):
 
 
 class ActionRow:
+    """
+    Represents an ActionRow-Part for the components of a :class:`~discord.Message`.
+
+    Attributes
+    ----------
+    components: List[Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]]
+        The components the :class:`~discord.ActionRow` holds.
+        This could be up to 5 :class:`Button` or one :ref:`Select <select-like-objects>` like object/:class:`TextInput`.
+    """
+
     @overload
     def __init__(self, *components: Button) -> None: ...
 
@@ -903,17 +1098,18 @@ class ActionRow:
 
     def __init__(self, *components: Union[Button, BaseSelect, TextInput]) -> None:
         """
-        Represents an ActionRow-Part for the components of an :class:`discord.Message`.
+        Represents an ActionRow-Part for the components of a :class:`~discord.Message`.
 
         .. note ::
 
-            For more information about ActionRow's visit the `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
+            For more information about ActionRows visit the
+            `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
 
         Parameters
         ----------
-        *components: *Union[:class:`Button`, :class:`BaseSelect`]
-            The components the :class:`ActionRow` should have.
-            This could be up to 5 :class:`Button`, or one :class:`BaseSelect` like object.
+        *components: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
+            The components the :class:`~discord.ActionRow` should hold.
+            This could be up to 5 :class:`Button` or one :ref:`Select <select-like-objects>` like object/:class:`TextInput`.
         """
         self.components = [c for c in components]
 
@@ -948,7 +1144,7 @@ class ActionRow:
         return ComponentType.ActionRow
 
     def to_dict(self) -> List[Dict[str, Union[int, List[Dict[str, Any]]]]]:
-        # I know this looks complex but it just auto-wraps components in to a new ActionRow when users are to stupid to place them in different
+        # I know this looks complex but it just auto-wraps components in to a new ActionRow when users are too stupid to place them in different
         rows = []
         actual_row = []
         rows.append(actual_row)
@@ -1011,11 +1207,11 @@ class ActionRow:
 
     def add_component(self, component: Union[Button, BaseSelect, TextInput]) -> ActionRow:
         """
-        Adds a component to the :class:`ActionRow` and returns the action row.
+        Adds a component to the :class:`~discord.ActionRow` and returns itself.
 
         Parameters
         ----------
-        component: Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
+        component: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
             The component to add to the ActionRow.
 
         Returns
@@ -1028,13 +1224,13 @@ class ActionRow:
 
     def insert_component_at(self, index, component: Union[Button, BaseSelect, TextInput]) -> ActionRow:
         """
-        Inserts a component before a specified index to the :class:`ActionRow` and returns the action row.
+        Inserts a component before a specified index to the :class:`~discord.ActionRow` and returns itself.
 
         Parameters
         -----------
         index: :class:`int`
             The index of where to insert the component.
-        component: Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
+        component: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
             The component to insert.
 
         Returns
@@ -1047,7 +1243,7 @@ class ActionRow:
 
     def set_component_at(self, index: int, component: Union[Button, SelectMenu]) -> ActionRow:
         """
-        Modifies a component to the :class:`ActionRow`. and returns the action row.
+        Modifies a component to the :class:`~discord.ActionRow` and returns itself.
 
         .. note::
             The index must point to a valid pre-existing component.
@@ -1056,7 +1252,7 @@ class ActionRow:
         ----------
         index: :class:`int`
             The index of the component to modify.
-        component: Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
+        component: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
             The component to replace the old one with.
 
         Raises
@@ -1076,9 +1272,9 @@ class ActionRow:
         self.components[index] = component
         return self
 
-    def disable_component_at(self, index: int):
+    def disable_component_at(self, index: int) -> ActionRow:
         """
-        Disables the component at the specified position and returns the action row.
+        Disables the component at the specified position of the :class:`~discord.ActionRow` and returns itself.
 
         Parameters
         ----------
@@ -1113,11 +1309,11 @@ class ActionRow:
 
     def add_components(self, *components: Union[Button, BaseSelect, TextInput]) -> ActionRow:
         """
-        Adds multiple components to the :class:`ActionRow`.
+        Adds multiple components to the :class:`~discord.ActionRow` and returns itself.
 
         Parameters
         ----------
-        \*components: \*Union[:class:`Button`, :class:`BaseSelect`, :class:`TextInput`]
+        *components: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
             The components to add to the ActionRow.
 
         Returns
@@ -1130,7 +1326,7 @@ class ActionRow:
 
     def disable_all_components(self) -> ActionRow:
         """
-        Disables all component's in this :class:`ActionRow` and returns the action row.
+        Disables all components in this :class:`~discord.ActionRow` and returns itself.
 
         Returns
         -------
@@ -1140,36 +1336,39 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_components_if(self, check: Union[bool, Callable], *args: Any) -> ActionRow:
+    def disable_all_components_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any) -> ActionRow:
         """
-        Disables all :attr:`components` in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`. It returns the action row.
+        Disables all :attr:`components` in this :class:`~discord.ActionRow` if the passed ``check`` returns :obj:`True` and returns itself.
 
         Parameters
-        -----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            Could be a bool or usually any Callable that returns a bool.
+        ----------
+        check: Union[:class:`bool`, Callable[[Any, ...], :class:`bool` ]]
+            Could be an :class:`bool` or usually any :obj:`~typing.Callable` that returns a :class:`bool`
         *args: Any
-            Arguments that should be passed in to the check if it is a Callable.
+            Positional arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
+        **kwargs: Any
+            Keyword-only arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
 
         Returns
         -------
         :class:`~discord.ActionRow`
             The updated instance
         """
-        if not isinstance(check, (bool, Callable)):
+        if callable(check):
+            check = check(*args, **kwargs)
+
+        if not isinstance(check, bool):
             raise AttributeError(
-                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check)
+            )
+
         if check is True:
             [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_buttons(self) ->ActionRow:
+    def disable_all_buttons(self) -> ActionRow:
         """
-        Disables all ::class:`~discord.Button`s in this :class:`ActionRow` and returns the action row.
+        Disables any :class:`~discord.Button` in this :class:`~discord.ActionRow` and returns itself.
 
         Returns
         -------
@@ -1179,36 +1378,39 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_buttons_if(self, check: Union[bool, Callable], *args: Any) -> ActionRow:
+    def disable_all_buttons_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any) -> ActionRow:
         """
-        Disables all :class:`~discord.Button`s in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`.
-        It returns the action row.
+        Disables any :class:`~discord.Button` in this :class:`~discord.ActionRow` if the passed ``check`` returns :obj:`True` and returns itself.
 
         Parameters
-        -----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            Could be a bool or usually any Callable that returns a bool.
+        ----------
+        check: Union[:class:`bool`, Callable[[Any, ...], :class:`bool` ]]
+            Could be an :class:`bool` or usually any :obj:`~typing.Callable` that returns a :class:`bool`
         *args: Any
-            Arguments that should be passed in to the check if it is a Callable.
+            Positional arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
+        **kwargs: Any
+            Keyword-only arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
 
         Returns
         -------
         :class:`~discord.ActionRow`
             The updated instance
         """
-        if not isinstance(check, (bool, Callable)):
-            raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
+        if callable(check):
+            check = check(*args, **kwargs)
+
+        if not isinstance(check, bool):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check)
+            )
+
         if check is True:
             [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
     def disable_all_select_menus(self) -> ActionRow:
         """
-        Disables all :class:`BaseSelect` like objects in this :class:`ActionRow` and returns the action row.
+        Disables all :ref:`Select <select-like-objects>` like objects in this :class:`~discord.ActionRow` and returns itself.
 
         Returns
         -------
@@ -1218,29 +1420,33 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, BaseSelect)]
         return self
 
-    def disable_all_select_menus_if(self, check: Union[bool, Callable], *args: Any) -> ActionRow:
+    def disable_all_select_menus_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any) -> ActionRow:
         """
-        Disables all :class:`BaseSelect` like objects in this :class:`ActionRow` if the passed :attr:`check` returns :obj:`True`.
-        It returns the action row.
+        Disables all :ref:`Select <select-like-objects>` like objects in this :class:`~discord.ActionRow`
+        if the passed ``check`` returns :obj:`True` and returns itself.
 
         Parameters
         ----------
-        check: Union[:class:`bool`, :class:`typing.Callable`]
-            could be an :class:`bool` or usually any :class:`Callable` that returns a :class:`bool`
+        check: Union[:class:`bool`, Callable[[Any, ...], :class:`bool` ]]
+            Could be an :class:`bool` or usually any :obj:`~typing.Callable` that returns a :class:`bool`
         *args: Any
-            Arguments that should be passed in to the :attr:`check` if it is a :class:`Callable`.
+            Positional arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
+        **kwargs: Any
+            Keyword-only arguments that should be passed in to the ``check`` if it is a :obj:`~typing.Callable`
 
         Returns
         -------
         :class:`~discord.ActionRow`
             The updated instance
         """
-        if not isinstance(check, (bool, Callable)):
-            raise AttributeError('The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check))
-        try:
-            check = check(*args)
-        except TypeError:
-            pass
+        if callable(check):
+            check = check(*args, **kwargs)
+
+        if not isinstance(check, bool):
+            raise AttributeError(
+                'The check must bee a bool or any callable that returns one. Not {0.__class__.__name__}'.format(check)
+            )
+
         if check is True:
             [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, SelectMenu)]
         return self
@@ -1248,7 +1454,7 @@ class ActionRow:
     @classmethod
     def from_dict(cls, data: dict) -> ActionRow:
         """
-        Internal method to create a :class:`discord.ActionRow` from the data given by discord.
+        Internal method to create a :class:`~discord.ActionRow` from the data given by discord.
 
         Parameters
         ----------
@@ -1285,5 +1491,3 @@ def _component_factory(data) -> Union[ActionRow, BaseComponent]:
         return MentionableSelect.from_dict(data)
     elif component_type == 8:
         return ChannelSelect.from_dict(data)
-    else:
-        return None
