@@ -541,10 +541,10 @@ class BaseInteraction:
                 interaction_id=self.id
             )
         except NotFound:
-            return AlreadyResponded(self.id)
+            raise UnknownInteraction(self.id)
         else:
             self.deferred = True
-            if hidden is True and response_type.deferred_msg_with_source:
+            if hidden is True:
                 self.deferred_hidden = True
             if not data and response_type.msg_with_source or response_type.deferred_msg_with_source:
                 msg = self.callback_message = await self.get_original_callback()
@@ -843,7 +843,7 @@ class BaseInteraction:
             self.deferred = True
             if is_hidden:
                 self.deferred_hidden = True
-        if not self.callback_message:
+        if not self.callback_message and not self.deferred:
             self.callback_message = msg
         else:
             self.messages[msg.id] = msg
@@ -1011,7 +1011,7 @@ class ApplicationCommandInteraction(BaseInteraction):
         Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]:
             The Message containing the loading state
         """
-        data = await super()._defer(5, hidden)
+        data = await super()._defer(InteractionCallbackType.deferred_msg_with_source, hidden)
         return data
 
 

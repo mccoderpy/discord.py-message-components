@@ -853,7 +853,6 @@ class DiscordVoiceWebSocket:
 
         await self._hook(self, msg)
 
-
     async def initial_connection(self, data):
         state = self._connection
         state.ssrc = data['ssrc']
