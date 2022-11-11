@@ -1146,7 +1146,7 @@ of :class:`enum.Enum`.
 
 .. note::
     You can use any of the enum classe members as an attribute of an instance of it to get a :class:`bool` whether the instance has this value.
-    For example `channel.type.private` will return ``True`` if the channel is a private channel (PS: channel must be a :class:`DMChannel` or any other channel like object in this case)
+    For example `channel.type.private` will return :obj:`True` if the channel is a private channel (PS: channel must be a :class:`DMChannel` or any other channel like object in this case)
 
 .. class:: ChannelType
 
@@ -1272,6 +1272,40 @@ of :class:`enum.Enum`.
         Discovery requirements for 3 weeks in a row.
 
         .. versionadded:: 1.7
+
+.. class:: ComponentType
+
+    .. attribute:: ActionRow
+
+        Container for other components
+
+    .. attribute:: Button
+
+        Button object
+
+    .. attribute:: StringSelect
+
+        Select menu for picking from defined text options
+
+    .. attribute:: TextInput
+
+        Text input object
+
+    .. attribute:: UserSelect
+
+        Select menu for users
+
+    .. attribute:: RoleSelect
+
+        Select menu for roles
+
+    .. attribute:: MentionableSelect
+
+        Select menu for mentionables (users and roles)
+
+    .. attribute:: ChannelSelect
+
+        Select menu for channels
 
 .. class:: ButtonStyle
 
