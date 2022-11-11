@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
 
-
+import re
 from typing import (
     Any,
     List,
@@ -38,6 +38,7 @@ from typing import (
 )
 
 import datetime
+from re import Pattern, compile as _re_compile
 
 from . import utils
 from .role import Role
@@ -49,11 +50,11 @@ from .enums import AutoModEventType, AutoModKeywordPresetType, AutoModActionType
 
 
 if TYPE_CHECKING:
-    # Add imports here, that are only used for annotation and would raise CircularImportError otherwise
     from .state import ConnectionState
     from .guild import Guild
     from .user import User
     from .member import Member
+
 
 __all__ = (
     'AutoModAction',
@@ -159,11 +160,14 @@ class AutoModTriggerMetadata:
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
     """
-    def __init__(self,
-                 keyword_filter: Optional[List[str]] = None,
-                 presets: Optional[List[AutoModKeywordPresetType]] = None,
-                 exempt_words: Optional[List[str]] = None,
-                 total_mentions_limit: Optional[int] = None) -> None:
+    def __init__(
+            self,
+            keyword_filter: Optional[List[str]] = None,
+            regex_patterns: Optional[List[Union[str, Pattern]]] = None,
+            presets: Optional[List[AutoModKeywordPresetType]] = None,
+            exempt_words: Optional[List[str]] = None,
+            total_mentions_limit: Optional[int] = None
+    ) -> None:
         """Additional data used to determine whether a rule should be triggered.
         Different fields are relevant based on the value of :attr:`AutoModRule.trigger_type`
 
@@ -173,10 +177,16 @@ class AutoModTriggerMetadata:
             Substrings which will be searched for in content
 
             .. note::
-                This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
+                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
+
+        regex_patterns: Optional[List[:class:`str`]]
+            Regular expression patterns which will be matched against content (Maximum of 10, each max. 75 characters long)
+
+            .. note::
+                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
 
         presets: Optional[List[:class:`AutoModKeywordPresetType`]]
-            The internally pre-defined wordsets which will be searched for in content
+            The internally pre-defined word sets which will be searched for in content
 
             .. note::
                 This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
@@ -185,13 +195,13 @@ class AutoModTriggerMetadata:
             Substrings which should be excluded from the blacklist.
 
             .. note::
-                This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
+                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
 
         total_mentions_limit: Optional[:class:`int`]
             Total number of unique role and user mentions allowed per message (Maximum of 50)
 
             .. note::
-                This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
+                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
 
         Raises
         -------
@@ -201,12 +211,14 @@ class AutoModTriggerMetadata:
         if keyword_filter and presets:
             raise TypeError('Only one of keyword_filter or presets are accepted.')
         self.keyword_filter: Optional[List[str]] = keyword_filter or []
-        self.presets: Optional[List[AutoModKeywordPresetType]] = presets or []
+        if regex_patterns and presets:
+            raise TypeError('regex_patterns can only be used with AutoModRule\'s of type keyword')
+        self.regex_patterns: List[Pattern] = [_re_compile(pattern) for pattern in regex_patterns if not isinstance(pattern, Pattern)]
+        self.presets: List[AutoModKeywordPresetType] = presets or []
         if exempt_words and not presets:
             raise TypeError('exempt_words can only be used with presets')
         self.exempt_words: Optional[List[str]] = exempt_words
         self.total_mentions_limit: Optional[int] = total_mentions_limit
-
 
     @property
     def prefix_keywords(self) -> Iterator[str]:
@@ -302,7 +314,12 @@ class AutoModTriggerMetadata:
 
     def to_dict(self) -> Dict[str, Any]:
         if self.keyword_filter:
-            return {'keyword_filter': self.keyword_filter}
+            return {
+                'keyword_filter': self.keyword_filter,
+                'regex_patterns': [
+                    pattern.pattern for pattern in self.regex_patterns
+                ]
+            }
         else:
             if self.presets:
                 base = {'presets': [int(p) for p in self.presets]}
@@ -321,6 +338,7 @@ class AutoModTriggerMetadata:
             self.exempt_words = data.get('allow_list', [])
         else:
             self.keyword_filter = data.get('keyword_filter', None)
+            self.regex_patterns = data.get('regex_patterns', [])
         self.total_mentions_limit = data.get('mention_total_limit', None)
         return self
 
@@ -354,10 +372,12 @@ class AutoModRule:
     enabled: :class:`bool`
         Whether the rule is enabled
     """
-    def __init__(self,
-                 state: ConnectionState,
-                 guild: Guild,
-                 **data) -> None:
+    def __init__(
+            self,
+            state: ConnectionState,
+            guild: Guild,
+            **data
+    ) -> None:
         self._state: ConnectionState = state
         self.guild: Guild = guild
         self.id: int = int(data['id'])
@@ -539,7 +559,7 @@ class AutoModRule:
         except KeyError:
             pass
         else:
-            data['trigger_metadata'] = int(trigger_metadata)
+            data['trigger_metadata'] = trigger_metadata.to_dict()
 
         try:
             exempt_channels: List[Snowflake] = payload['exempt_channels']
