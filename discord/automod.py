@@ -143,12 +143,19 @@ class AutoModTriggerMetadata:
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword`
 
+    regex_patterns: Optional[List[:class:`~re.Pattern`]]
+            Regular expression patterns which will be matched against content (Maximum of 10, each max. 75 characters long)
+
+            .. note::
+                This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
+
     presets: Optional[List[:class:`AutoModKeywordPresetType`]]
-        The internally pre-defined wordsets which will be searched for in content
+        The internally pre-defined word sets which will be searched for in content
 
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword_preset`
-    exempt_words: Optional[List[str]]
+
+    exempt_words: Optional[List[:class:`str`]]
         Substrings which should be excluded from the blacklist.
 
         .. note::
@@ -179,8 +186,12 @@ class AutoModTriggerMetadata:
             .. note::
                 This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
 
-        regex_patterns: Optional[List[:class:`str`]]
+        regex_patterns: Optional[List[Union[:class:`str`, :class`~re.Pattern`]]]
             Regular expression patterns which will be matched against content (Maximum of 10, each max. 75 characters long)
+
+            .. warning::
+                Only <Rust `https://docs.rs/regex/latest/regex/`>_ flowered RegEx patterns are currently supported by Discord.
+                So things like look arounds are not allowed as they are not supported in Rust.
 
             .. note::
                 This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
@@ -191,7 +202,7 @@ class AutoModTriggerMetadata:
             .. note::
                 This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
 
-        exempt_words: Optional[List[str]]
+        exempt_words: Optional[List[:class:`str`]]
             Substrings which should be excluded from the blacklist.
 
             .. note::
