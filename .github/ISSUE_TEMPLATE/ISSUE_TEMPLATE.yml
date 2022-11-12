@@ -39,7 +39,7 @@ body:
   - type: input
     id: python-version
     attributes:
-      label: The Python verion you are using.
+      label: The Python version you are using.
       placeholder: Python v3.8.10-final
     validations:
       required: true
