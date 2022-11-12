@@ -922,10 +922,10 @@ class HTTPClient:
 
         return self.request(r)
 
-    def ban(self, user_id, guild_id, delete_message_days=1, reason=None):
+    def ban(self, user_id, guild_id, delete_message_seconds, *, reason=None):
         r = Route('PUT', '/guilds/{guild_id}/bans/{user_id}', guild_id=guild_id, user_id=user_id)
         params = {
-            'delete_message_days': delete_message_days,
+            'delete_message_seconds': delete_message_seconds
         }
         return self.request(r, params=params, reason=reason)
 

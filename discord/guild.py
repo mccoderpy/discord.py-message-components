@@ -2363,7 +2363,14 @@ class Guild(Hashable):
         """
         await self._state.http.kick(user.id, self.id, reason=reason)
 
-    async def ban(self, user, *, reason=None, delete_message_days=1):
+    async def ban(
+            self,
+            user: Snowflake,
+            *,
+            reason: Optional[str] = None,
+            delete_message_days: Optional[int] = None,
+            delete_message_seconds: Optional[int] = 0
+    ) -> None:
         """|coro|
 
         Bans a user from the guild.
@@ -2380,6 +2387,11 @@ class Guild(Hashable):
         delete_message_days: :class:`int`
             The number of days worth of messages to delete from the user
             in the guild. The minimum is 0 and the maximum is 7.
+
+            .. deprecated:: 2.0
+        delete_message_seconds: :class:`int`
+            The number of days worth of messages to delete from the user
+            in the guild. The minimum is 0 and the maximum is 604800 (7 days).
         reason: Optional[:class:`str`]
             The reason the user got banned.
 
@@ -2390,7 +2402,11 @@ class Guild(Hashable):
         HTTPException
             Banning failed.
         """
-        await self._state.http.ban(user.id, self.id, delete_message_days, reason=reason)
+        if delete_message_days is not None:
+            import warnings
+            warnings.warn('delete_message_days is deprecated, use delete_message_seconds instead.')
+            delete_message_seconds = delete_message_days * 86400
+        await self._state.http.ban(user.id, self.id, delete_message_seconds, reason=reason)
 
     async def unban(self, user, *, reason=None):
         """|coro|
