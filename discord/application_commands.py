@@ -305,9 +305,7 @@ class ApplicationCommand:
     def disabled(self, value: bool) -> None:
         self._disabled = value
         if hasattr(self, 'sub_commands'):
-            print(f'{self.name} has subcommands')
             for cmd in self.sub_commands:
-                print(f'{cmd.name} disabled? {value}')
                 cmd.disabled = value
 
     def _set_cog(self, cog: Cog, recursive: bool = False) -> None:
