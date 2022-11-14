@@ -915,6 +915,7 @@ class BotBase(GroupMixin):
                 command._set_cog(cog, recursive=True)
                 if command.name in self._application_commands_by_type[cmd_type]:
                     existing_command = self._application_commands_by_type[cmd_type][command.name]
+                    existing_command.disabled = False
                     if cmd_type == 'chat_input':
                         if command.has_subcommands:
                             # if the command has subcommands add them to the existing one.
@@ -985,6 +986,7 @@ class BotBase(GroupMixin):
                 for command in commands.values():
                     if command.name in self._guild_specific_application_commands[guild_id][cmd_type]:
                         existing_command = self._guild_specific_application_commands[guild_id][cmd_type][command.name]
+                        existing_command.disabled = False
                         if cmd_type == 'chat_input':
                             if command.has_subcommands:
 
