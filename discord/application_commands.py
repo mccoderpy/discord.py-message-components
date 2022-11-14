@@ -75,9 +75,10 @@ __all__ = (
 )
 
 api_docs = 'https://discord.com/developers/docs'
-
+CHAT_COMMAND_NAME_REGEX = re.compile(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', flags=re.RegexFlag.UNICODE)
 
 # TODO: Add a (optional) feature for auto generated localizations by a translator
+
 
 class Localizations:
     """
@@ -261,6 +262,7 @@ class ApplicationCommand:
         self._guild_ids = kwargs.get('guild_ids', None)
         self._guild_id = kwargs.get('guild_id', None)
         self._state_ = kwargs.get('state', None)
+        self._disabled = False
         self.func = kwargs.pop('func', None)
         self.cog = kwargs.get('cog', None)
         dp = kwargs.get('default_permission', None)
@@ -271,7 +273,6 @@ class ApplicationCommand:
         dmp = kwargs.get('default_member_permissions', None)
         self.default_member_permissions: Optional[Permissions] = (
             Permissions(int(dmp)) if dmp is not None else None) if not isinstance(dmp, Permissions) else dmp
-        self.disabled: bool = False
         self.allow_dm = kwargs.get('allow_dm', True)
         self.name_localizations: Localizations = kwargs.get('name_localizations', Localizations())
         self.description_localizations: Localizations = kwargs.get('description_localizations', Localizations())
@@ -295,6 +296,19 @@ class ApplicationCommand:
     @cog.setter
     def cog(self, __cog: Cog) -> None:
         setattr(self, '_cog', __cog)
+
+    @property
+    def disabled(self) -> bool:
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self._disabled = value
+        if hasattr(self, 'sub_commands'):
+            print(f'{self.name} has subcommands')
+            for cmd in self.sub_commands:
+                print(f'{cmd.name} disabled? {value}')
+                cmd.disabled = value
 
     def _set_cog(self, cog: Cog, recursive: bool = False) -> None:
         self.cog = cog
@@ -547,8 +561,11 @@ class SlashCommandOption:
     option_type: Union[:class:`OptionType`, :class:`int`, :class:`type`]
         Could be any of :class:`OptionType`'s attributes, an integer between 0 and 10 or a :class:`type` like
         :class:`discord.Member`, :class:`discord.TextChannel` or :class:`str`.
-        If the :attr:`option_type` is a :class:`type`, that subclasses :class:`~discord.abc.GuildChannel` the type of the
-        channel would set as the default :attr:`~SlashCommandOption.channel_types`.
+
+        .. note::
+            If the :attr:`option_type` is a :class:`type`, that subclasses :class:`~discord.abc.GuildChannel` the type of the
+            channel would set as the default :attr:`~SlashCommandOption.channel_types`.
+
     name: :class:`str`
         The 1-32 characters long name of the option shows up in discord.
         The name must be the same as the one of the parameter for the slash-command
@@ -557,8 +574,8 @@ class SlashCommandOption:
     description: :class:`str`
         The 1-100 characters long description of the option shows up in discord.
     required: Optional[:class:`bool`]
-        Weather this option must be provided by the user, default ``True``.
-        If ``False``, the parameter of the slash-command that takes this option needs a default value.
+        Weather this option must be provided by the user, default :obj:`True`.
+        If :obj:`False`, the parameter of the slash-command that takes this option needs a default value.
     choices: Optional[List[Union[:class:`SlashCommandOptionChoice`, :class:`str`, :class:`int`, :class:`float`]]]
         A list of up to 25 choices the user could select. Only valid if the :attr:`option_type` is one of
         :attr:`~OptionType.string`, :attr:`~OptionType.integer` or :attr:`~OptionType.number`.
@@ -635,7 +652,7 @@ class SlashCommandOption:
                 channel_types = channel_type
         self.type = option_type
 
-        if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name, flags=re.RegexFlag.UNICODE):
+        if not CHAT_COMMAND_NAME_REGEX.match(name):
             raise ValueError(
                 r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
@@ -847,7 +864,7 @@ class SubCommand(SlashCommandOption):
             **kwargs
             ):
         self.parent: Union[SubCommandGroup, SubCommand] = parent
-        if not re.match('^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+        if not CHAT_COMMAND_NAME_REGEX.match(name):
             raise ValueError(
                 r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
@@ -865,11 +882,21 @@ class SubCommand(SlashCommandOption):
         self.cog = kwargs.get('cog', None)
         self.connector = kwargs.get('connector', {})
         self.guild_id = kwargs.get('guild_id', parent.guild_id)
+        self._disabled = False
+        self._state = None
         self.autocomplete_func = None
         super().__init__(OptionType.sub_command, name=name, description=description,
                          name_localizations=name_localizations, description_localizations=description_localizations,
                          __options=options
                          )
+
+    @property
+    def disabled(self) -> bool:
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self._disabled = value
 
     def __repr__(self):
         return '<SubCommand parent=%s, name=%s, description=%s, options=%s>' \
@@ -954,7 +981,7 @@ class SubCommand(SlashCommandOption):
         # if self.cog is not None:
         #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
-        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', None))
+        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', []))
         if not checks:
             return True
         return await async_all(check(args[0]) for check in checks)
@@ -976,7 +1003,7 @@ class SubCommand(SlashCommandOption):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
+                self._state.dispatch('application_command_error', self, interaction, exc)
 
     def autocomplete_callback(self, coro):
         """
@@ -992,6 +1019,7 @@ class SubCommand(SlashCommandOption):
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
         self.autocomplete_func = coro
+        return coro
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if not self.autocomplete_func:
@@ -1014,7 +1042,7 @@ class SubCommand(SlashCommandOption):
                 else:
                     await self.on_error(interaction, exc)
             else:
-                self.parent.parent._state.dispatch('application_command_error', self, interaction, exc)
+                self.base_command._state.dispatch('application_command_error', self, interaction, exc)
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -1042,6 +1070,17 @@ class GuildOnlySubCommand(SubCommand):
         self.guild_ids = guild_ids or parent.guild_ids if parent else []
         super().__init__(*args, **kwargs)
         self._commands = kwargs.get('commands', [])
+        self._disabled = False
+
+    @property
+    def disabled(self) -> bool:
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self._disabled = value
+        for cmd in self._commands:
+            cmd.disabled = value
 
     def __repr__(self):
         return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>' \
@@ -1068,6 +1107,7 @@ class GuildOnlySubCommand(SubCommand):
         self.autocomplete_func = coro
         for cmd in self._commands:
             cmd.autocomplete_func = coro
+        return coro
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -1130,7 +1170,7 @@ class SlashCommand(ApplicationCommand):
                          connector=connector,
                          **kwargs
                          )
-        if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+        if not CHAT_COMMAND_NAME_REGEX.match(name):
             raise ValueError(
                 r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
@@ -1142,7 +1182,7 @@ class SlashCommand(ApplicationCommand):
         self.description = description
         if len(options) > 25:
             raise ValueError('The maximum of options per command is 25, got %s' % len(options))
-        self.connector = connector
+        self.connector: Dict[str, str] = connector
         self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in (
         OptionType.sub_command, OptionType.sub_command_group)}
         if not self._sub_commands:
@@ -1238,6 +1278,7 @@ class SlashCommand(ApplicationCommand):
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
         self.autocomplete_func = coro
+        return coro
 
     async def invoke_autocomplete(self, interaction, *args, **kwargs):
         if self.autocomplete_func is None:
@@ -1379,7 +1420,7 @@ class SlashCommand(ApplicationCommand):
 
         interaction._command = self
         interaction.params = params
-        if interaction.type == InteractionType.ApplicationCommandAutocomplete:
+        if interaction.type.ApplicationCommandAutocomplete:
             interaction.focused = find(lambda opt: (opt.__getattribute__('focused') or None) is True, options)
             return await to_invoke.invoke_autocomplete(interaction, **params)
         return await to_invoke.invoke(interaction, **params)
@@ -1502,6 +1543,16 @@ class GuildOnlySlashCommand(SlashCommand):
         super().__init__(*args, **kwargs, guild_ids=guild_ids)
         self._commands = kwargs.get('commands', [])
 
+    @property
+    def disabled(self) -> bool:
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool):
+        self._disabled = value
+        for cmd in self._commands:
+            cmd.disabled = value
+
     def __repr__(self):
         return '<GuildOnlySlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_ids=%s>' \
                % (self.name,
@@ -1527,6 +1578,7 @@ class GuildOnlySlashCommand(SlashCommand):
         self.autocomplete_func = coro
         for cmd in self._commands:
             cmd.autocomplete_func = coro
+        return coro
 
     def error(self, coro):
         if not asyncio.iscoroutinefunction(coro):
@@ -1650,7 +1702,7 @@ class SubCommandGroup(SlashCommandOption):
             **kwargs
             ):
         self.cog = kwargs.get('cog', None)
-        if not re.match(r'^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$', name):
+        if not CHAT_COMMAND_NAME_REGEX.match(name):
             raise ValueError(
                 r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
                 f'{api_docs}/interactions/application-commands#application-command-object-application-command-naming.'
@@ -1666,6 +1718,7 @@ class SubCommandGroup(SlashCommandOption):
         self.guild_ids = kwargs.get('guild_ids', parent.guild_ids)
         self.guild_id = kwargs.get('guild_id', parent.guild_id)
         self.func = kwargs.get('func', None)
+        self._disabled = False
         super().__init__(OptionType.sub_command_group, name=name, name_localizations=name_localizations,
                          description=description, description_localizations=description_localizations,
                          __options=commands
@@ -1693,6 +1746,16 @@ class SubCommandGroup(SlashCommandOption):
         setattr(self, '_parent_', value)
         for sub_command in self.sub_commands:
             sub_command.parent = self
+
+    @property
+    def disabled(self) -> bool:
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self._disabled = value
+        for cmd in self.sub_commands:
+            cmd.disabled = value
 
     @property
     def sub_commands(self) -> List[SubCommand]:
