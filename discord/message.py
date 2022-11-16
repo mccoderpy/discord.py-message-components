@@ -255,7 +255,13 @@ class Attachment(Hashable):
         data = await self._http.get_from_cdn(url)
         return data
 
-    async def to_file(self, *, use_cached=False, spoiler=False):
+    async def to_file(
+            self,
+            *,
+            use_cached: bool = False,
+            spoiler: bool = False,
+            description: Optional[str] = MISSING
+    ):
         """|coro|
 
         Converts the attachment into a :class:`File` suitable for sending via
@@ -278,6 +284,12 @@ class Attachment(Hashable):
             Whether the file is a spoiler.
 
             .. versionadded:: 1.4
+        description: :class:`bool`
+            The description (_alt text_) for the file.
+
+            This will be default to the :attr:`~discord.Attachment.description`.
+            Set the value to :obj:`None` to supress this.
+            .. versionadded:: 2.0
 
         Raises
         ------
@@ -295,7 +307,7 @@ class Attachment(Hashable):
         """
 
         data = await self.read(use_cached=use_cached)
-        return File(io.BytesIO(data), filename=self.filename, spoiler=spoiler)
+        return File(io.BytesIO(data), filename=self.filename, spoiler=spoiler, description=self.description if description is MISSING else description)
 
 
 class DeletedReferencedMessage:
