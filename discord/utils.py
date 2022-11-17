@@ -42,6 +42,7 @@ import json
 import array
 import asyncio
 import logging
+import colorama
 import collections.abc
 import unicodedata
 from base64 import b64encode
@@ -71,6 +72,8 @@ T = TypeVar('T')
 
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
+
+colorama.init()
 
 
 class _MISSING:
@@ -765,10 +768,6 @@ def stream_supports_colour(stream: Any) -> bool:
     # WT_SESSION checks if this is Windows Terminal
     # Sometimes however WT_SESSION is not present, so we check for the SESSIONNAME
     return is_a_tty and ('ANSICON' in os.environ or 'WT_SESSION' in os.environ or os.environ.get('SESSIONNAME', '') == 'Console')
-
-
-import colorama
-colorama.init()
 
 
 class _ColourFormatter(logging.Formatter):
