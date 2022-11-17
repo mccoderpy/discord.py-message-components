@@ -5,3 +5,5 @@ Jinja2 >.0.3
 Pigments
 typing-extensions
 aiohttp>=3.8.0,<4
+colorama
+color-pprint

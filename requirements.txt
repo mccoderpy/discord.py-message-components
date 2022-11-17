@@ -6,5 +6,5 @@ async-timeout
 attrs
 multidict
 idna
-colorama
 color-pprint
+colorama
