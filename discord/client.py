@@ -927,14 +927,10 @@ class Client:
             finally:
                 loop.close()
 
-        This function also sets up the logging library to make it easier
+        This function also sets up the `:mod:`logging` library to make it easier
         for beginners to know what is going on with the library. For more
-        advanced users, this can be disabled by passing ``None`` to
+        advanced users, this can be disabled by passing :obj:`None` to
         the ``log_handler`` parameter.
-        .. warning::
-            This function must be the last function to call due to the fact that it
-            is blocking. That means that registration of events or anything being
-            called after this function call will not execute until it returns.
 
         Parameters
         -----------
