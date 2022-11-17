@@ -25,8 +25,23 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+from typing import (
+    Any,
+    Union,
+    Optional,
+    Iterable,
+    Callable,
+    TypeVar,
+    TYPE_CHECKING
+)
+
+import os
+import re
+import sys
+import json
 import array
 import asyncio
+import logging
 import collections.abc
 import unicodedata
 from base64 import b64encode
@@ -36,23 +51,23 @@ from .enums import TimestampStyle
 import functools
 from inspect import isawaitable as _isawaitable, signature as _signature
 from operator import attrgetter
-import json
-import re
+
+
 import warnings
 
 from .errors import InvalidArgument
 
-from typing import (
-    Union,
-    Optional,
-    Iterable,
-    TYPE_CHECKING
-)
-
 if TYPE_CHECKING:
+    from typing_extensions import ParamSpec, Self
+
     from .guild import Guild
     from .channel import VoiceChannel
     from .permissions import Permissions
+
+    P = ParamSpec('P')
+
+
+T = TypeVar('T')
 
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
@@ -147,35 +162,41 @@ class SequenceProxy(collections.abc.Sequence):
         return self.__proxied.count(value)
 
 
-def parse_time(timestamp):
+def parse_time(timestamp: str):
     if timestamp:
-        return datetime.datetime(*map(int, re.split(r'[^\d]', timestamp.replace('+00:00', ''))))
+        return datetime.datetime(*map(int, re.split(r'\D', timestamp.replace('+00:00', ''))))
     return None
 
 
-def copy_doc(original):
-    def decorator(overriden):
+def copy_doc(original: Callable) -> Callable[[T], T]:
+    def decorator(overriden: T) -> T:
         overriden.__doc__ = f'{overriden.__doc__}\n\n' if overriden.__doc__ else "" + original.__doc__
         overriden.__signature__ = _signature(original)
         return overriden
     return decorator
 
 
-def deprecated(instead=None):
-    def actual_decorator(func):
+def deprecated(instead: Optional[str] = None) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    def actual_decorator(func: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(func)
-        def decorated(*args, **kwargs):
+        def decorated(*args: P.args, **kwargs: P.kwargs) -> T:
             warnings.simplefilter('always', DeprecationWarning)  # turn off filter
-            if instead:
-                fmt = "{0.__name__} is deprecated, use {1} instead."
-            else:
-                fmt = '{0.__name__} is deprecated.'
-
-            warnings.warn(fmt.format(func, instead), stacklevel=3, category=DeprecationWarning)
+            deprecation_warning(func.__name__, instead)
             warnings.simplefilter('default', DeprecationWarning)  # reset filter
             return func(*args, **kwargs)
         return decorated
     return actual_decorator
+
+
+def deprecation_warning(target: str, instead: Optional[str] = None) -> None:
+    warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+    if instead:
+        fmt = "{0} is deprecated, use {1} instead."
+    else:
+        fmt = '{0} is deprecated.'
+
+    warnings.warn(fmt.format(target, instead), stacklevel=3, category=DeprecationWarning)
+    warnings.simplefilter('default', DeprecationWarning)  # reset filter
 
 
 def oauth_url(
@@ -225,7 +246,7 @@ def utcnow() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def snowflake_time(id):
+def snowflake_time(id: int):
     """
     Parameters
     -----------
@@ -235,12 +256,14 @@ def snowflake_time(id):
     Returns
     --------
     :class:`datetime.datetime`
-        The creation date in UTC of a Discord snowflake ID."""
+        The creation date in UTC of a Discord snowflake ID.
+    """
     return datetime.datetime.utcfromtimestamp(((id >> 22) + DISCORD_EPOCH) / 1000)
 
 
 def time_snowflake(datetime_obj, high=False):
-    """Returns a numeric snowflake pretending to be created at the given date.
+    """
+    Returns a numeric snowflake pretending to be created at the given date.
 
     When using as the lower end of a range, use ``time_snowflake(high=False) - 1`` to be inclusive, ``high=True`` to be exclusive
     When using as the higher end of a range, use ``time_snowflake(high=True)`` + 1 to be inclusive, ``high=False`` to be exclusive
@@ -259,7 +282,8 @@ def time_snowflake(datetime_obj, high=False):
 
 
 def find(predicate, seq):
-    """A helper to return the first element found in the sequence
+    """
+    A helper to return the first element found in the sequence
     that meets the predicate. For example: ::
 
         member = discord.utils.find(lambda m: m.name == 'Mighty', channel.guild.members)
@@ -725,3 +749,153 @@ def escape_mentions(text):
         The text with the mentions removed.
     """
     return re.sub(r'@(everyone|here|[!&]?[0-9]{17,20})', '@\u200b\\1', text)
+
+
+# Thanks discord.py for this logger, it's grat, so we take this :)
+def stream_supports_colour(stream: Any) -> bool:
+    # Pycharm and Vscode support colour in their inbuilt editors
+    if 'PYCHARM_HOSTED' in os.environ or os.environ.get('TERM_PROGRAM') == 'vscode':
+        return True
+
+    is_a_tty = hasattr(stream, 'isatty') and stream.isatty()
+    if sys.platform != 'win32':
+        return is_a_tty
+
+    # ANSICON checks for things like ConEmu
+    # WT_SESSION checks if this is Windows Terminal
+    # Sometimes however WT_SESSION is not present, so we check for the SESSIONNAME
+    return is_a_tty and ('ANSICON' in os.environ or 'WT_SESSION' in os.environ or os.environ.get('SESSIONNAME', '') == 'Console')
+
+
+import colorama
+colorama.init()
+
+
+class _ColourFormatter(logging.Formatter):
+
+    # ANSI codes are a bit weird to decipher if you're unfamiliar with them, so here's a refresher
+    # It starts off with a format like \x1b[XXXm where XXX is a semicolon separated list of commands
+    # The important ones here relate to colour.
+    # 30-37 are black, red, green, yellow, blue, magenta, cyan and white in that order
+    # 40-47 are the same except for the background
+    # 90-97 are the same but "bright" foreground
+    # 100-107 are the same as the bright ones but for the background.
+    # 1 means bold, 2 means dim, 0 means reset, and 4 means underline.
+
+    # LEVEL_COLOURS = [
+    #     (logging.DEBUG, '\x1b[40;1m'),
+    #     (logging.INFO, '\x1b[34;1m'),
+    #     (logging.WARNING, '\x1b[33;1m'),
+    #     (logging.ERROR, '\x1b[31m'),
+    #     (logging.CRITICAL, '\x1b[41m'),
+    # ]
+    LEVEL_COLOURS = [
+        (logging.DEBUG, colorama.Back.BLACK + colorama.Style.BRIGHT),
+        (logging.INFO, colorama.Fore.BLUE + colorama.Style.BRIGHT),
+        (logging.WARNING, colorama.Fore.YELLOW + colorama.Style.BRIGHT),
+        (logging.ERROR, colorama.Fore.RED),
+        (logging.CRITICAL, colorama.Back.RED),
+    ]
+
+    FORMATS = {
+        level: logging.Formatter(
+            f'\x1b[30;1m%(asctime)s\x1b[0m {colour}%(levelname)-8s\x1b[0m \x1b[35m%(name)s\x1b[0m %(message)s',
+            '%Y-%m-%d %H:%M:%S',
+        )
+        for level, colour in LEVEL_COLOURS
+    }
+
+    def __str__(self) -> str:
+        return 'ColorFormatter'
+
+    def format(self, record):
+        formatter = self.FORMATS.get(record.levelno)
+        if formatter is None:
+            formatter = self.FORMATS[logging.DEBUG]
+
+        # Override the traceback to always print in red
+        if record.exc_info:
+            text = formatter.formatException(record.exc_info)
+            record.exc_text = f'\x1b[31m{text}\x1b[0m'
+
+        output = formatter.format(record)
+
+        # Remove the cache layer
+        record.exc_text = None
+        return output
+
+
+def setup_logging(
+    *,
+    handler: logging.Handler = MISSING,
+    formatter: logging.Formatter = MISSING,
+    level: int = MISSING,
+    root: bool = True,
+) -> None:
+    """A helper function to set up logging.
+    This is superficially similar to :func:`logging.basicConfig` but
+    uses different defaults and a colour formatter if the stream can
+    display colour.
+    This is used by the :class:`~discord.Client` to set up logging
+    if ``log_handler`` is not ``None``.
+
+    .. versionadded:: 2.0
+
+    Parameters
+    -----------
+    handler: :class:`logging.Handler`
+        The log handler to use for the library's logger.
+        The default log handler if not provided is :class:`logging.StreamHandler`.
+    formatter: :class:`logging.Formatter`
+        The formatter to use with the given log handler. If not provided then it
+        defaults to a colour based logging formatter (if available). If colour
+        is not available then a simple logging formatter is provided.
+    level: :class:`int`
+        The default log level for the library's logger. Defaults to ``logging.INFO``.
+    root: :class:`bool`
+        Whether to set up the root logger rather than the library logger.
+        Unlike the default for :class:`~discord.Client`, this defaults to ``True``.
+    """
+
+    if level is MISSING:
+        level = logging.INFO
+
+    if handler is MISSING:
+        handler = logging.StreamHandler()
+        handler_name = 'default stream handler'
+    else:
+        handler_name = handler.name
+
+    if formatter is MISSING:
+        if isinstance(handler, logging.StreamHandler) and stream_supports_colour(handler.stream):
+            formatter = _ColourFormatter()
+            supports_color = True
+        else:
+            dt_fmt = '%Y-%m-%d %H:%M:%S'
+            formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
+            supports_color = False
+    else:
+        supports_color = stream_supports_colour(handler.stream) if isinstance(handler, logging.StreamHandler) else MISSING
+
+    if root:
+        logger = logging.getLogger()
+    else:
+        library, _, _ = __name__.partition('.')
+        logger = logging.getLogger(library)
+
+    handler.setFormatter(formatter)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    if level <= logging.INFO:
+        level_name = logging.getLevelName(level)
+        if supports_color:
+            fmt = f'Started colored logging for \x1b[32m%s\x1b[0m with handler \x1b[32m%s\x1b[0m on level {dict(_ColourFormatter.LEVEL_COLOURS)[level]}%s\x1b[0m.'
+        else:
+            fmt = 'Started logging for %s with handler %s on level %s.'
+        logger.info(
+            fmt,
+            logger.name,
+            handler_name,
+            level_name
+        )

@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     from .message import Message
 
 log = logging.getLogger(__name__)
-
+MISSING = utils.MISSING
 
 __all__ = (
     'Client',
@@ -716,7 +716,7 @@ class Client:
 
     # login state management
 
-    async def login(self, token):
+    async def login(self, token: str):
         """|coro|
 
         Logs in the client with the specified credentials.
@@ -887,7 +887,7 @@ class Client:
         self._connection.clear()
         self.http.recreate()
 
-    async def start(self, *args, **kwargs):
+    async def start(self, token: str, reconnect: bool = True):
         """|coro|
 
         A shorthand coroutine for :meth:`login` + :meth:`connect`.
@@ -897,15 +897,19 @@ class Client:
         TypeError
             An unexpected keyword argument was received.
         """
-
-        reconnect = kwargs.pop('reconnect', True)
-
-        if kwargs:
-            raise TypeError("unexpected keyword argument(s) %s" % list(kwargs.keys()))
-        await self.login(*args)
+        await self.login(token)
         await self.connect(reconnect=reconnect)
 
-    def run(self, *args, **kwargs):
+    def run(
+        self,
+        token: str,
+        reconnect: bool = True,
+        *,
+        log_handler: Optional[logging.Handler] = MISSING,
+        log_formatter: logging.Formatter = MISSING,
+        log_level: int = MISSING,
+        root_logger: bool = False
+    ) -> None:
         """A blocking call that abstracts away the event loop
         initialisation from you.
 
@@ -939,10 +943,18 @@ class Client:
 
         async def runner():
             try:
-                await self.start(*args, **kwargs)
+                await self.start(token, reconnect)
             finally:
                 if not self.is_closed():
                     await self.close()
+
+        if log_handler is not None:
+            utils.setup_logging(
+                handler=log_handler,
+                formatter=log_formatter,
+                level=log_level,
+                root=root_logger
+            )
 
         def stop_loop_on_completion(f):
             loop.stop()
@@ -1956,7 +1968,7 @@ class Client:
                 global_registered_raw = await self.http.get_application_commands(application_id)
             log.info('Synced global application-commands.')
         else:
-            log.info('No Changes on global application-commands found.')
+            log.info('No changes on global application-commands found.')
 
         for updated in global_registered_raw:
             command_type = str(ApplicationCommandType.try_value(updated['type']))
@@ -2091,7 +2103,7 @@ class Client:
                     self._application_commands[command.id] = command
 
         if not any_guild_commands_changed:
-            log.info('No Changes on guild-specific application-commands found.')
+            log.info('No changes on guild-specific application-commands found.')
 
         log.info('Successful synced all global and guild-specific application-commands.')
 
