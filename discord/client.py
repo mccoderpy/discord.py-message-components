@@ -927,6 +927,42 @@ class Client:
             finally:
                 loop.close()
 
+        This function also sets up the logging library to make it easier
+        for beginners to know what is going on with the library. For more
+        advanced users, this can be disabled by passing ``None`` to
+        the ``log_handler`` parameter.
+        .. warning::
+            This function must be the last function to call due to the fact that it
+            is blocking. That means that registration of events or anything being
+            called after this function call will not execute until it returns.
+
+        Parameters
+        -----------
+        token: :class:`str`
+            The authentication token. **Do not prefix this token with anything as the library will do it for you.**
+        reconnect: :class:`bool`
+            If we should attempt reconnecting, either due to internet
+            failure or a specific failure on Discord's part. Certain
+            disconnects that lead to bad state will not be handled (such as
+            invalid sharding payloads or bad tokens).
+        log_handler: Optional[:class:`logging.Handler`]
+            The log handler to use for the library's logger. If this is :obj:`None`
+            then the library will not set up anything logging related. Logging
+            will still work if :obj:`None` is passed, though it is your responsibility
+            to set it up.
+            The default log handler if not provided is :class:`logging.StreamHandler`.
+        log_formatter: :class:`logging.Formatter`
+            The formatter to use with the given log handler. If not provided then it
+            defaults to a colour based logging formatter (if available).
+        log_level: :class:`int`
+            The default log level for the library's logger. This is only applied if the
+            ``log_handler`` parameter is not :obj:`None`. Defaults to :attr:`logging.INFO`.
+        root_logger: :class:`bool`
+            Whether to set up the root logger rather than the library logger.
+            By default, only the library logger (``'discord'``) is set up. If this
+            is set to :obj:`True` then the root logger is set up as well.
+            Defaults to :obj:`False`.
+
         .. warning::
 
             This function must be the last function to call due to the fact that it
