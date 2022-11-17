@@ -790,7 +790,7 @@ class Client:
             'shard_id': self.shard_id,
         }
         if self.auto_check_for_updates:
-            self._auto_update_checker.task = self.loop.create_task(self._auto_update_checker.check_task())
+            self._auto_update_checker.start()
         while not self.is_closed():
             try:
                 coro = DiscordWebSocket.from_client(self, **ws_params)
