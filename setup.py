@@ -54,7 +54,6 @@ if version.endswith(('a', 'b', 'rc', 'dev')):
             fp.write(version)
 
 
-
 # The text of the README file
 readme = Path('./README.rst').read_text(encoding='utf-8')
 
@@ -102,6 +101,8 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Topic :: Internet',
+        'Framework :: aiohttp',
+        'Framework :: asyncio',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Utilities'
@@ -117,7 +118,8 @@ setup(
         "attrs",
         "multidict",
         "idna",
-        'importlib-metadata<4;python_version<"3.8.0"'
+        'importlib-metadata<4;python_version<"3.8.0"',
+        'color-pprint'
     ],
     python_requires=">=3.6"
 )

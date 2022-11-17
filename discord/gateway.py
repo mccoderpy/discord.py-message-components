@@ -26,6 +26,7 @@ DEALINGS IN THE SOFTWARE.
 
 import asyncio
 from collections import namedtuple, deque
+from color_pprint import color_dumps
 import concurrent.futures
 import json
 import logging
@@ -53,6 +54,7 @@ __all__ = (
     'ReconnectWebSocket',
 )
 
+
 class ReconnectWebSocket(Exception):
     """Signals to safely reconnect the websocket."""
     def __init__(self, shard_id, *, resume=True):
@@ -60,11 +62,14 @@ class ReconnectWebSocket(Exception):
         self.resume = resume
         self.op = 'RESUME' if resume else 'IDENTIFY'
 
+
 class WebSocketClosure(Exception):
     """An exception to make up for the fact that aiohttp doesn't signal closure."""
     pass
 
+
 EventListener = namedtuple('EventListener', 'predicate event result future')
+
 
 class GatewayRatelimiter:
     def __init__(self, count=110, per=60.0):
@@ -189,6 +194,7 @@ class KeepAliveHandler(threading.Thread):
         self.latency = ack_time - self._last_send
         if self.latency > 10:
             log.warning(self.behind_msg, self.shard_id, self.latency)
+
 
 class VoiceKeepAliveHandler(KeepAliveHandler):
     def __init__(self, *args, **kwargs):
@@ -497,15 +503,41 @@ class DiscordWebSocket:
             self.resume_gateway_url = f'{data["resume_gateway_url"]}?{self.gateway.split("?")[-1]}'  # Weird way doing this but should prevent any future issues with that
             # pass back shard ID to ready handler
             data['__shard_id__'] = self.shard_id
-            log.info('Shard ID %s has connected to Gateway: %s (Session ID: %s).',
-                     self.shard_id, ', '.join(trace), self.session_id)
+            handler = logging.getLogger('discord').handlers[-1]
+            if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
+                log.info(
+                    'Shard ID %s has connected to Gateway (Session ID: %s): %s',
+                    self.shard_id,
+                    self.session_id,
+                    ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)])
+                )
+            else:
+                log.info(
+                    'Shard ID %s has connected to Gateway (Session ID: %s): %s',
+                    self.shard_id,
+                    self.session_id,
+                    ', '.join(trace)
+                )
 
         elif event == 'RESUMED':
             self._trace = trace = data.get('_trace', [])
             # pass back the shard ID to the resumed handler
             data['__shard_id__'] = self.shard_id
-            log.info('Shard ID %s has successfully RESUMED _session %s under trace %s.',
-                     self.shard_id, self.session_id, ', '.join(trace))
+            handler = logging.getLogger('discord').handlers[-1]
+            if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
+                log.info(
+                    'Shard ID %s has successfully RESUMED _session %s under trace %s.',
+                     self.shard_id,
+                    self.session_id,
+                    ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)])
+                )
+            else:
+                log.info(
+                    'Shard ID %s has successfully RESUMED _session %s under trace %s.',
+                    self.shard_id,
+                    self.session_id,
+                    ', '.join(trace)
+                )
 
         try:
             func = self._discord_parsers[event]

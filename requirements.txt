@@ -6,3 +6,4 @@ async-timeout
 attrs
 multidict
 idna
+color-pprint
