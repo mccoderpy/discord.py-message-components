@@ -119,6 +119,7 @@ setup(
         "multidict",
         "idna",
         'importlib-metadata<4;python_version<"3.8.0"',
+        'colorama',
         'color-pprint'
     ],
     python_requires=">=3.6"
