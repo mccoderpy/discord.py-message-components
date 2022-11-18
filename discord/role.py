@@ -33,6 +33,7 @@ from .colour import Colour
 from .mixins import Hashable
 from .utils import snowflake_time, _get_as_snowflake, _bytes_to_base64_data
 
+
 class RoleTags:
     """Represents tags on a role.
 
@@ -78,6 +79,7 @@ class RoleTags:
     def __repr__(self):
         return '<RoleTags bot_id={0.bot_id} integration_id={0.integration_id} ' \
                'premium_subscriber={1}>'.format(self, self.is_premium_subscriber())
+
 
 class Role(Hashable):
     """Represents a Discord role in a :class:`Guild`.
