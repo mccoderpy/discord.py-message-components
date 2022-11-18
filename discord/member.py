@@ -444,6 +444,12 @@ class Member(discord.abc.Messageable, _BaseUser):
         return self.colour
 
     @property
+    def role_ids(self) -> utils.SnowflakeList:
+        """:class:`utils.SnowflakeList`: An iterable of :class:`int` contain the ID's of the roles the member has.
+        You can use this to check on an efficient way whether a member has a role or not"""
+        return self._roles
+
+    @property
     def roles(self):
         """List[:class:`Role`]: A :class:`list` of :class:`Role` that the member belongs to. Note
         that the first element of this list is always the default '@everyone'
@@ -657,7 +663,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return max(guild.get_role(rid) or guild.default_role for rid in self._roles)
 
     @property
-    def guild_permissions(self):
+    def guild_permissions(self) -> Permissions:
         """:class:`Permissions`: Returns the member's guild permissions.
 
         This only takes into consideration the guild permissions
@@ -683,7 +689,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return base
 
     @property
-    def voice(self):
+    def voice(self) -> Optional[VoiceState]:
         """Optional[:class:`VoiceState`]: Returns the member's current voice state."""
         return self.guild._voice_state_for(self._user.id)
 
