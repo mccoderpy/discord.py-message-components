@@ -258,7 +258,8 @@ class ApplicationCommand:
 
     def __init__(self, type: int, *args, **kwargs):
         self._type = type
-        self.name = kwargs.get('name', '')
+        self.name: str = kwargs.get('name', '')
+        self.is_nsfw: bool = kwargs.get('is_nsfw', False)
         self._guild_ids = kwargs.get('guild_ids', None)
         self._guild_id = kwargs.get('guild_id', None)
         self._state_ = kwargs.get('state', None)
@@ -419,6 +420,7 @@ class ApplicationCommand:
         base = {
             'type': int(self.type),
             'name': str(self.name),
+            'nsfw': self.nsfw,
             'name_localizations': self.name_localizations.to_dict(),
             'description': getattr(self, 'description', ''),
             'description_localizations': self.description_localizations.to_dict(),
@@ -463,7 +465,7 @@ class ApplicationCommand:
         return self._state._get_client().app.id
 
     @classmethod
-    def _from_type(cls, state, data):
+    def _from_type(cls, state: ConnectionState, data: Dict[str, Any]):
         command_type = data['type']
         if command_type == 1:
             return SlashCommand.from_dict(state, data)
@@ -523,9 +525,11 @@ class SlashCommandOptionChoice:
     """
 
     def __init__(
-            self, name: Union[str, int, float], value: Union[str, int, float] = None,
+            self,
+            name: Union[str, int, float],
+            value: Union[str, int, float, None] = None,
             name_localizations: Optional[Localizations] = Localizations()
-            ):
+    ):
 
         if 100 < len(str(name)) < 1:
             raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
@@ -536,7 +540,7 @@ class SlashCommandOptionChoice:
     def __repr__(self):
         return '<SlashCommandOptionChoice name=%s, value=%s>' % (self.name, self.value)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         base = {
             'name': str(self.name),
             'value': self.value,
@@ -545,7 +549,7 @@ class SlashCommandOptionChoice:
         return base
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data) -> SlashCommandOptionChoice:
         name_localizations = data.pop('name_localizations', None) or {}
         return cls(name=data['name'], value=data['value'], name_localizations=Localizations(**name_localizations))
 
@@ -637,7 +641,7 @@ class SlashCommandOption:
             converter: Optional[Union[Type[Converter], Greedy]] = None,
             ignore_conversion_failures: Optional[bool] = False,
             **kwargs
-            ) -> None:
+    ) -> None:
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
             if issubclass(option_type, Converter) or converter is Greedy:
@@ -860,7 +864,7 @@ class SubCommand(SlashCommandOption):
             description_localizations: Optional[Localizations] = Localizations(),
             options: List[SlashCommandOption] = [],
             **kwargs
-            ):
+    ):
         self.parent: Union[SubCommandGroup, SubCommand] = parent
         if not CHAT_COMMAND_NAME_REGEX.match(name):
             raise ValueError(
@@ -920,6 +924,22 @@ class SubCommand(SlashCommandOption):
         if not isinstance(parent, SlashCommand):
             parent = parent.parent
         return parent
+
+    @property
+    def nsfw(self) -> bool:
+        """
+        Whether this command is nsfw
+
+        .. note::
+
+            Currently, any sub command of a base-command that is nsfw will be nsfw too.
+
+        Returns
+        -------
+        :class:`bool`
+            Whether this command is nsfw or not
+        """
+        return self.base_command.nsfw
 
     @property
     def mention(self) -> str:
@@ -1129,11 +1149,18 @@ class SlashCommand(ApplicationCommand):
         The name of the slash-command. Must be between 1 and 32 characters long and oly contain a-z, _ and -.
     description: :class:`str`
         The description of the command shows up in discord. Between 1 and 100 characters long.
+
+    default_member_permissions: Optional[Union[:class:`~discord.Permissions`, :class:`int`]]
+         Permissions that a Member needs by default to execute(see) the command.
     allow_dm: Optional[:class:`bool`]
         Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
         By default, commands are visible.
-    default_member_permissions: Optional[Union[:class:`~discord.Permissions`, :class:`int`]]
-         Permissions that a Member needs by default to execute(see) the command.
+    is_nsfw: :class:`bool`
+        Whether this command is an `NSFW command <https://support.discord.com/hc/en-us/articles/10123937946007>`_, default :obj:`False`
+
+        .. note::
+            Currently all sub-commands of a command that is marked as *NSFW* are NSFW too.
+
     options: Optional[List[:class:`SlashCommandOption`]]
         A list of max. 25 options for the command.
         Required options **must** be listed before optional ones.
@@ -1152,22 +1179,25 @@ class SlashCommand(ApplicationCommand):
             description_localizations: Optional[Localizations] = Localizations(),
             default_member_permissions: Optional[Union[Permissions, int]] = None,
             allow_dm: Optional[bool] = True,
+            is_nsfw: bool = False,
             options: List[SlashCommandOption] = [],
             connector: Dict[str, str] = {},
             **kwargs
-            ):
+    ):
         self.autocomplete_func = None
-        super().__init__(1,
-                         name=name,
-                         description=description,
-                         name_localizations=name_localizations,
-                         description_localizations=description_localizations,
-                         default_member_permissions=default_member_permissions,
-                         allow_dm=allow_dm,
-                         options=options,
-                         connector=connector,
-                         **kwargs
-                         )
+        super().__init__(
+            1,
+            name=name,
+            description=description,
+            name_localizations=name_localizations,
+            description_localizations=description_localizations,
+            default_member_permissions=default_member_permissions,
+            allow_dm=allow_dm,
+            is_nsfw=is_nsfw,
+            options=options,
+            connector=connector,
+            **kwargs
+        )
         if not CHAT_COMMAND_NAME_REGEX.match(name):
             raise ValueError(
                 r'Command names and options must follow the regex "^[-_\w0-9\u0901-\u097D\u0E00-\u0E7F]{1,32}$"'
@@ -1324,6 +1354,7 @@ class SlashCommand(ApplicationCommand):
         self.description_localizations = Localizations.from_dict(data.get('description_localizations', {}))
         self.default_member_permissions = Permissions(int(dmp)) if dmp else None
         self.allow_dm = data.pop('dm_permission', True)
+        self.is_nsfw = data.get('nsfw', False)
         self._guild_id = int(data.get('guild_id', 0))
         self._state_ = state
         for opt in data.get('options', []):
