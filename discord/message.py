@@ -285,7 +285,7 @@ class Attachment(Hashable):
 
             .. versionadded:: 1.4
         description: :class:`bool`
-            The description (_alt text_) for the file.
+            The description (*alt text*) for the file.
 
             This will be default to the :attr:`~discord.Attachment.description`.
             Set the value to :obj:`None` to supress this.
