@@ -39,6 +39,7 @@ __all__ = (
 
 from ... import InvalidArgument, Permissions
 from discord.application_commands import *
+from ...abc import MISSING
 
 
 class CogMeta(type):
@@ -530,59 +531,81 @@ class Cog(metaclass=CogMeta):
         return decorator
 
     @classmethod
-    def slash_command(cls,
-                      name: str = None,
-                      name_localizations: Optional[Localizations] = Localizations(),
-                      description: str = None,
-                      description_localizations: Optional[Localizations] = Localizations(),
-                      allow_dm: bool = True,
-                      default_required_permissions: Optional['Permissions'] = None,
-                      options: Optional[List] = [],
-                      guild_ids: Optional[List[int]] = None,
-                      connector: Optional[dict] = {},
-                      option_descriptions: Optional[dict] = {},
-                      option_descriptions_localizations: Optional[Dict[str, Localizations]] = {},
-                      base_name: Optional[str] = None,
-                      base_name_localizations: Optional[Localizations] = Localizations(),
-                      base_desc: Optional[str] = None,
-                      base_desc_localizations: Optional[Localizations] = Localizations(),
-                      group_name: Optional[str] = None,
-                      group_name_localizations: Optional[Localizations] = Localizations(),
-                      group_desc: Optional[str] = None,
-                      group_desc_localizations: Optional[Localizations] = Localizations()) -> Callable[
-        [Awaitable[Any]], Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]
+    def slash_command(
+            cls,
+            name: str = None,
+            name_localizations: Localizations = Localizations(),
+            description: Optional[str] = None,
+            description_localizations: Localizations = Localizations(),
+            allow_dm: bool = True,
+            is_nsfw: bool = MISSING,
+            default_required_permissions: Optional[Permissions] = None,
+            options: Optional[List] = [],
+            guild_ids: Optional[List[int]] = None,
+            connector: dict = {},
+            option_descriptions: dict = {},
+            option_descriptions_localizations: Dict[str, Localizations] = {},
+            base_name: Optional[str] = None,
+            base_name_localizations: Optional[Localizations] = Localizations(),
+            base_desc: Optional[str] = None,
+            base_desc_localizations: Optional[Localizations] = Localizations(),
+            group_name: Optional[str] = None,
+            group_name_localizations: Optional[Localizations] = Localizations(),
+            group_desc: Optional[str] = None,
+            group_desc_localizations: Optional[Localizations] = Localizations()
+    ) -> Callable[
+        [Awaitable[Any]],
+        Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]
     ]:
         """
-        A decorator that adds a slash-command to the client.
+        A decorator that adds a slash-command to the client. The method this is attached to must be a :ref:`coroutine <coroutine>`.
 
         .. note::
 
-            :attr:`~Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
-            to register a command if he not already exists and update him if changes where made.
+            :attr:`~discord.ext.commands.Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
+            to register a command if it does not already exist and update it if changes where made.
+
+        .. note::
+            Any of the following parameters are only needed when the corresponding target was not used before
+            (e.g. there is already a command in the code that has these parameters set) - otherwise it will replace the previous value:
+
+            - ``allow_dm``
+            - ``is_nsfw``
+            - ``base_name_localizations``
+            - ``base_desc``
+            - ``base_desc_localizations``
+            - ``group_name_localizations``
+            - ``group_desc``
+            - ``group_desc_localizations``
 
         Parameters
         -----------
-
         name: Optional[:class:`str`]
             The name of the command. Must only contain a-z, _ and - and be 1-32 characters long.
             Default to the functions name.
-        name_localizations: Optional[:class:`discord.Localizations`]
+        name_localizations: Optional[:class:`~discord.Localizations`]
             Localizations object for name field. Values follow the same restrictions as :attr:`name`
         description: Optional[:class:`str`]
             The description of the command shows up in the client. Must be between 1-100 characters long.
             Default to the functions docstring or "No Description".
-        description_localizations: Optional[:class:`discord.Localizations`]
+        description_localizations: Optional[:class:`~discord.Localizations`]
             Localizations object for description field. Values follow the same restrictions as :attr:`description`
         allow_dm: Optional[:class:`bool`]
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
             By default, commands are visible.
-        default_required_permissions: Optional[:class:`discord.Permissions`]
+        is_nsfw: :class:`bool`
+            Whether this command is an `NSFW command <https://support.discord.com/hc/en-us/articles/10123937946007>`_, default :obj:`False`
+
+            .. note::
+                Currently all sub-commands of a command that is marked as *NSFW* are NSFW too.
+
+        default_required_permissions: Optional[:class:`~discord.Permissions`]
              Permissions that a Member needs by default to execute(see) the command.
-        options: Optional[List[:class:`SlashCommandOption`]]
+        options: Optional[List[:class:`~discord.SlashCommandOption`]]
             A list of max. 25 options for the command. If not provided the options will be generated
             using :meth:`generate_options` that creates the options out of the function parameters.
             Required options **must** be listed before optional ones.
-            Use :attr:`options` to connect non-ascii option names with the parameter of the function.
+            Use the ``connector`` parameter to connect non-ascii option names with the parameter of the function.
         guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
         connector: Optional[Dict[:class:`str`, :class:`str`]]
@@ -590,40 +613,51 @@ class Cog(metaclass=CogMeta):
             Useful for using non-ascii Letters in your option names without getting ide-errors.
         option_descriptions: Optional[Dict[:class:`str`, :class:`str`]]
             Descriptions the :func:`generate_options` should take for the Options that will be generated.
-            The keys are the name of the option and the value the description.
+            The keys are the :attr:`~discord.SlashCommandOption.name` of the option and the value the :attr:`~discord.SlashCommandOption.description`.
+
+            .. note::
+                This will only be used if ``options`` is not set.
+
+        option_descriptions_localizations: Optional[Dict[:class:`str`, :class:`~discord.Localizations`]]
+            Localized :attr:`~discord.SlashCommandOption.description` for the options.
+            In the format ``{'option_name': Localizations(...)}``
         base_name: Optional[:class:`str`]
             The name of the base-command(a-z, _ and -, 1-32 characters) if you want the command
             to be in a command-/sub-command-group.
-            If the base-command not exists yet, he will be addet.
+            If the base-command does not exist yet, it will be added.
+        base_name_localizations: Optional[:class:`~discord.Localizations`]
+            Localized ``base_name``'s for the command.
         base_desc: Optional[:class:`str`]
-            The description of the base-command(1-100 characters), only needed if the :attr:`base_name` was not used before
-            otherwise it will replace the one before.
+            The description of the base-command(1-100 characters).
+        base_desc_localizations: Optional[:class:`~discord.Localizations`]
+            Localized ``base_description``'s for the command.
         group_name: Optional[:class:`str`]
-            The name of the command-group(a-z, _ and -, 1-32 characters) if you want the command
-            to be in a sub-command-group.
+            The name of the command-group(a-z, _ and -, 1-32 characters) if you want the command to be in a sub-command-group.
+        group_name_localizations: Optional[:class:`~discord.Localizations`]
+            Localized ``group_name``'s for the command.
         group_desc: Optional[:class:`str`]
-            The description of the sub-command-group(1-100 characters), only needed if the :attr:`group_name` was not used before
-            otherwise it will replace the one before.
+            The description of the sub-command-group(1-100 characters).
+        group_desc_localizations: Optional[:class:`~discord.Localizations`]
+            Localized ``group_desc``'s for the command.
 
         Raises
-        -------
-        class:`TypeError`:
-            The function the decorator is attached to is not actual a coroutine (startswith ``async def``)
-            or a parameter passed to :class:`SlashCommandOption` is invalid for the option_type or the option_type
+        ------
+        :exc:`TypeError`:
+            The function the decorator is attached to is not actual a :ref:`coroutine <coroutine>`
+            or a parameter passed to :class:`SlashCommandOption` is invalid for the ``option_type`` or the ``option_type``
             itself is invalid.
-        :class:`InvalidArgument`:
-            You passed :attr:`group_name` but no :attr:`base_name`.
-        :class:`ValueError`:
-            Any of :attr:`name`, :attr:`description`, :attr:`options`, :attr:`base_name`, :attr:`base_desc`, :attr:`group_name` or :attr:`group_desc` is not valid.
+        :exc:`~discord.InvalidArgument`:
+            You passed ``group_name`` but no ``base_name``.
+        :exc:`ValueError`:
+            Any of ``name``, ``description``, ``options``, ``base_name``, ``base_desc``, ``group_name`` or ``group_desc`` is not valid.
 
         Returns
         -------
         The slash-command registered.
-            If neither :attr:`guild_ids`, or :attr:`base_name` passed: An object of :class:`~discord.SlashCommand`.
-            If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`~discord.GuildOnlySlashCommand`
-            representing the guild-only slash-commands.
-            If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of :class:`~discord.SubCommand`.
-            if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`~discord.GuildOnlySubCommand`
+            - If neither ``guild_ids`` nor ``base_name`` passed: An instance of :class:`~discord.SlashCommand`.
+            - If ``guild_ids`` and no ``base_name`` where passed: An instance of :class:`~discord.GuildOnlySlashCommand` representing the guild-only slash-commands.
+            - If ``base_name`` and no ``guild_ids`` where passed: An instance of :class:`~discord.SubCommand`.
+            - If ``base_name`` and ``guild_ids`` passed: instance of :class:`~discord.GuildOnlySubCommand` representing the guild-only sub-commands.
         """
 
         def decorator(func: Awaitable[Any]) -> Union[
@@ -633,19 +667,16 @@ class Cog(metaclass=CogMeta):
 
             Parameters
             ----------
-            func:
+            func: Awaitable[Any]
                 The function for the decorator.
 
             Returns
             -------
             Union[:class:`SlashCommand`, :class:`GuildOnlySlashCommand`, :class:`SubCommand`, :class:`GuildOnlySubCommand`]:
-                The slash-command registered.
-                If neither :attr:`guild_ids` or :attr:`base_name` passed: An object of :class:`SlashCommand`.
-                If :attr:`guild_ids` and no :attr:`base_name` where passed: An object of :class:`GuildOnlySlashCommand`
-                representing the guild-only slash-commands.
-                If :attr:`base_name` and no :attr:`guild_ids` where passed: An object of class:`SubCommand`.
-                if :attr:`base_name` and :attr:`guild_ids` passed: An object of :class:`GuildOnlySubCommand`
-                representing the guild-only sub-commands.
+                - If neither ``guild_ids`` nor ``base_name`` passed: An instance of :class:`~discord.SlashCommand`.
+                - If ``guild_ids`` and no ``base_name`` where passed: An instance of :class:`~discord.GuildOnlySlashCommand` representing the guild-only slash-commands.
+                - If ``base_name` and no ``guild_ids`` where passed: An instance of :class:`~discord.SubCommand`.
+                - If ``base_name`` and ``guild_ids`` passed: instance of :class:`~discord.GuildOnlySubCommand` representing the guild-only sub-commands.
             """
             actual = func
             if isinstance(actual, staticmethod):
@@ -662,117 +693,159 @@ class Cog(metaclass=CogMeta):
                 is_cog=True
             )
             if group_name and not base_name:
-                raise InvalidArgument('You have to provide the `base_name` parameter if you want to create a SubCommand or SubCommandGroup.')
+                raise InvalidArgument('You have to provide the `base_name` parameter if you want to create a sub-command or sub-command-group.')
             guild_cmds = []
             if guild_ids:
+                guild_app_cmds = cls.__guild_specific_application_commands__
                 for guild_id in guild_ids:
                     base, base_command, sub_command_group = None, None, None
                     try:
-                        cls.__guild_specific_application_commands__[guild_id]
+                        guild_app_cmds[guild_id]
                     except KeyError:
-                        cls.__guild_specific_application_commands__[guild_id] = {'chat_input': {}, 'message': {}, 'user': {}}
+                        guild_app_cmds[guild_id] = {'chat_input': {}, 'message': {}, 'user': {}}
                     if base_name:
                         try:
-                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]
+                            base_command = guild_app_cmds[guild_id]['chat_input'][base_name]
                         except KeyError:
-                            base_command = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name] =\
-                                SlashCommand(cog=cls,
-                                             name=base_name,
-                                             name_localizations=base_name_localizations,
-                                             description=base_desc or 'No Description',
-                                             description_localizations=base_desc_localizations,
-                                             default_member_permissions=default_required_permissions,
-                                             guild_id=guild_id)
+                            base_command = guild_app_cmds[guild_id]['chat_input'][base_name] = SlashCommand(
+                                cog=cls,
+                                name=base_name,
+                                name_localizations=base_name_localizations,
+                                description=base_desc or 'No Description',
+                                description_localizations=base_desc_localizations,
+                                default_member_permissions=default_required_permissions,
+                                is_nsfw=is_nsfw if is_nsfw is not MISSING else False,
+                                guild_id=guild_id
+                            )
                         else:
+                            if base_desc:
+                                base_command.description = base_desc
                             base_command.name_localizations.update(base_name_localizations)
-                            base_command.description = base_desc or base_command.description
                             base_command.description_localizations.update(base_desc_localizations)
                         base = base_command
                     if group_name:
                         try:
-                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][base_name]._sub_commands[group_name]
+                            sub_command_group = guild_app_cmds[guild_id]['chat_input'][base_name]._sub_commands[group_name]
                         except KeyError:
-                            sub_command_group = cls.__guild_specific_application_commands__[guild_id]['chat_input'][
-                                base_name]._sub_commands[group_name] = SubCommandGroup(cog=cls,
-                                                                                       parent=base_command,
-                                                                                       name=group_name,
-                                                                                       name_localizations=group_name_localizations,
-                                                                                       description=group_desc or 'No Description',
-                                                                                       description_localizations=group_desc_localizations,
-                                                                                       guild_id=guild_id)
+                            sub_command_group = guild_app_cmds[guild_id]['chat_input'][base_name]._sub_commands[group_name] = SubCommandGroup(
+                                cog=cls,
+                                parent=base_command,
+                                name=group_name,
+                                name_localizations=group_name_localizations,
+                                description=group_desc or 'No Description',
+                                description_localizations=group_desc_localizations,
+                                guild_id=guild_id
+                            )
                         else:
+                            if group_desc:
+                                sub_command_group.description = group_desc
                             sub_command_group.name_localizations.update(group_name_localizations)
-                            sub_command_group.description = group_desc or sub_command_group.description
                             sub_command_group.description_localizations.update(group_desc_localizations)
                         base = sub_command_group
                     if base:
-                        base._sub_commands[_name] = SubCommand(cog=cls,
-                                                               parent=base, name=_name,
-                                                               name_localizations=name_localizations,
-                                                               description=_description,
-                                                               description_localizations=description_localizations,
-                                                               options=_options,
-                                                               connector=connector,
-                                                               func=actual)
+                        base._sub_commands[_name] = SubCommand(
+                            cog=cls,
+                            parent=base,
+                            func=actual,
+                            name=_name,
+                            name_localizations=name_localizations,
+                            description=_description,
+                            description_localizations=description_localizations,
+                            options=_options,
+                            connector=connector
+                        )
                         guild_cmds.append(base._sub_commands[_name])
                     else:
-                        cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name] =\
-                            SlashCommand(
+                        guild_app_cmds[guild_id]['chat_input'][_name] = SlashCommand(
                                 cog=cls,
-                                name=_name,
+                                guild_id=guild_id,
                                 func=actual,
+                                name=_name,
                                 name_localizations=name_localizations,
                                 description=_description,
                                 description_localizations=description_localizations,
                                 default_member_permissions=default_required_permissions,
+                                is_nsfw=is_nsfw if is_nsfw is not MISSING else False,
                                 options=_options,
-                                guild_id=guild_id,
                                 connector=connector
                             )
-                        guild_cmds.append(cls.__guild_specific_application_commands__[guild_id]['chat_input'][_name])
+                        guild_cmds.append(guild_app_cmds[guild_id]['chat_input'][_name])
 
                 if base_name:
-                    base = GuildOnlySlashCommand(cog=cls, func=actual, name=_name, description=_description,
-                                                 default_member_permissions=default_required_permissions,
-                                                 options=_options, guild_ids=guild_ids, connector=connector)
+                    base = GuildOnlySlashCommand(
+                        cog=cls,
+                        guild_ids=guild_ids,
+                        func=actual,
+                        name=_name,
+                        description=_description,
+                        default_member_permissions=default_required_permissions,
+                        is_nsfw=is_nsfw if is_nsfw is not MISSING else False,
+                        options=_options
+                    )
                     if group_name:
-                        base = GuildOnlySubCommandGroup(cog=cls, parent=base, name=_name, description=_description,
-                                                        default_member_permissions=default_required_permissions,
-                                                        options=_options, guild_ids=guild_ids, connector=connector)
-                    return GuildOnlySubCommand(cog=cls, parent=base, name=_name, description=_description,
-                                               options=_options, func=actual, guild_ids=guild_ids, connector=connector,
-                                               commands=guild_cmds)
-                return GuildOnlySlashCommand(cog=cls, name=_name, description=_description,
-                                             default_member_permissions=default_required_permissions,
-                                             options=_options, func=actual, guild_ids=guild_ids, connector=connector,
-                                             commands=guild_cmds)
+                        base = GuildOnlySubCommandGroup(
+                            cog=cls,
+                            guild_ids=guild_ids,
+                            parent=base,
+                            name=_name,
+                            description=_description,
+                            default_member_permissions=default_required_permissions,
+                            options=_options
+                        )
+                    return GuildOnlySubCommand(
+                        cog=cls,
+                        guild_ids=guild_ids,
+                        parent=base,
+                        func=actual,
+                        name=_name,
+                        description=_description,
+                        options=_options,
+                        connector=connector,
+                        commands=guild_cmds
+                    )
+                return GuildOnlySlashCommand(
+                    cog=cls,
+                    guild_ids=guild_ids,
+                    func=actual,
+                    name=_name,
+                    description=_description,
+                    default_member_permissions=default_required_permissions,
+                    options=_options,
+                    connector=connector,
+                    commands=guild_cmds
+                )
             else:
+                app_cmds = cls.__application_commands_by_type__
                 base, base_command, sub_command_group = None, None, None
                 if base_name:
                     try:
-                        base_command = cls.__application_commands_by_type__['chat_input'][base_name]
+                        base_command = app_cmds['chat_input'][base_name]
                     except KeyError:
-                        base_command = cls.__application_commands_by_type__['chat_input'][base_name] = SlashCommand(
+                        base_command = app_cmds['chat_input'][base_name] = SlashCommand(
                             cog=cls,
                             name=base_name,
                             name_localizations=base_name_localizations,
                             description=base_desc or 'No Description',
                             description_localizations=base_desc_localizations,
                             default_member_permissions=default_required_permissions,
-                            allow_dm=allow_dm
+                            allow_dm=allow_dm if allow_dm is not MISSING else True,
+                            is_nsfw=is_nsfw if is_nsfw is not MISSING else False
                         )
                     else:
+                        if base_desc:
+                            base_command.description = base_desc
+                        if allow_dm is not MISSING:
+                            base_command.allow_dm = allow_dm
+                        if is_nsfw is not MISSING:
+                            base_command.is_nsfw = is_nsfw
                         base_command.name_localizations.update(base_name_localizations)
-                        base_command.description = base_desc or base_command.description
                         base_command.description_localizations.update(base_desc_localizations)
-                        base_command.allow_dm = allow_dm
                     base = base_command
                 if group_name:
                     try:
-                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[group_name]
+                        sub_command_group = app_cmds['chat_input'][base_name]._sub_commands[group_name]
                     except KeyError:
-                        sub_command_group = cls.__application_commands_by_type__['chat_input'][base_name]._sub_commands[
-                            group_name] = SubCommandGroup(
+                        sub_command_group = app_cmds['chat_input'][base_name]._sub_commands[group_name] = SubCommandGroup(
                             parent=base_command,
                             name=group_name,
                             name_localizations=group_name_localizations,
@@ -780,98 +853,121 @@ class Cog(metaclass=CogMeta):
                             description_localizations=group_desc_localizations
                         )
                     else:
+                        if group_desc:
+                            sub_command_group.description = group_desc
                         sub_command_group.name_localizations.update(group_name_localizations)
-                        sub_command_group.description = group_desc or sub_command_group.description
                         sub_command_group.description_localizations.update(group_desc_localizations)
                     base = sub_command_group
                 if base:
-                    command = base._sub_commands[_name] = SubCommand(cog=cls,
-                                                                     parent=base, name=_name,
-                                                                     name_localizations=name_localizations,
-                                                                     description=_description,
-                                                                     description_localizations=description_localizations,
-                                                                     options=_options,
-                                                                     func=actual,
-                                                                     connector=connector)
+                    command = base._sub_commands[_name] = SubCommand(
+                        cog=cls,
+                        parent=base,
+                        func=actual,
+                        name=_name,
+                        name_localizations=name_localizations,
+                        description=_description,
+                        description_localizations=description_localizations,
+                        options=_options,
+                        connector=connector
+                    )
                 else:
                     command = cls.__application_commands_by_type__['chat_input'][_name] = SlashCommand(
                         cog=cls,
+                        func=actual,
                         name=_name,
                         name_localizations=name_localizations,
                         description=_description or 'No Description',
                         description_localizations=description_localizations,
                         default_member_permissions=default_required_permissions,
-                        allow_dm=allow_dm,
-                        func=actual,
+                        allow_dm=allow_dm if allow_dm is not MISSING else True,
+                        is_nsfw=is_nsfw if is_nsfw is not MISSING else False,
                         options=_options,
                         connector=connector
                     )
+
                 return command
         return decorator
 
     @classmethod
-    def message_command(cls,
-                        name: str = None,
-                        name_localizations: Optional[Localizations] = Localizations(),
-                        default_required_permissions: Optional['Permissions'] = None,
-                        allow_dm: Optional[bool] = True,
-                        guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], MessageCommand]:
+    def message_command(
+            cls,
+            name: Optional[str] = None,
+            name_localizations: Localizations = Localizations(),
+            default_required_permissions: Optional[Permissions] = None,
+            allow_dm: bool = True,
+            is_nsfw: bool = False,
+            guild_ids: Optional[List[int]] = None
+    ) -> Callable[[Awaitable[Any]], MessageCommand]:
         """
-        A decorator that registers a :class:`MessageCommand`(shows up under ``Apps`` when right-clicking on a message)
-        to the client.
+        A decorator that registers a :class:`~discord.MessageCommand` (shows up under ``Apps`` when right-clicking on a message)
+        to the client. The function this is attached to must be a :ref:`coroutine <coroutine>`.
 
         .. note::
-
-            :attr:`~<Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
-            to register a command if he not already exists and update him if changes where made.
+            :attr:`~Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
+            to register a command if it does not already exist and update it if changes where made.
 
         Parameters
         ----------
         name: Optional[:class:`str`]
             The name of the message-command, default to the functions name.
             Must be between 1-32 characters long.
-        default_required_permissions: Optional[:class:`discord.Permissions`]
-            Permissions that a Member needs by default to execute(see) the command.
-        allow_dm: Optional[:class:`bool`]
+        name_localizations: :class:`Localizations`
+            Localized ``name``'s.
+        default_required_permissions: Optional[:class:`Permissions`]
+            Permissions that a member needs by default to execute(see) the command.
+        allow_dm: :class:`bool`
             Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
             By default, commands are visible.
+        is_nsfw: :class:`bool`
+            Whether this command is an `NSFW command <https://support.discord.com/hc/en-us/articles/10123937946007>`_, default :obj:`False`.
         guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
 
         Returns
         -------
-        MessageCommand:
+        ~discord.MessageCommand:
             The message-command registered.
 
         Raises
         ------
         TypeError:
-            The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
+            The function the decorator is attached to is not actual a :ref:`coroutine <coroutine>`.
         """
         def decorator(func: Awaitable[Any]) -> MessageCommand:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
             if not inspect.iscoroutinefunction(actual):
-                raise TypeError('The message-command function registered  must be a coroutine.')
+                raise TypeError('The message-command function registered must be a coroutine.')
             _name = name or actual.__name__
             cmd = MessageCommand(
                 cog=cls,
+                guild_ids=guild_ids,
+                func=actual,
                 name=_name,
                 name_localizations=name_localizations,
                 default_member_permissions=default_required_permissions,
                 allow_dm=allow_dm,
-                func=actual,
-                guild_ids=guild_ids
+                is_nsfw=is_nsfw
             )
             if guild_ids:
                 for guild_id in guild_ids:
+                    guild_cmd = MessageCommand(
+                        cog=cls,
+                        guild_id=guild_id,
+                        func=func,
+                        name=_name,
+                        name_localizations=name_localizations,
+                        default_member_permissions=default_required_permissions,
+                        allow_dm=allow_dm,
+                        is_nsfw=is_nsfw
+                    )
                     try:
-                        cls.__guild_specific_application_commands__[guild_id]['message'][cmd.name] = cmd
+                        cls.__guild_specific_application_commands__[guild_id]['message'][_name] = guild_cmd
                     except KeyError:
                         cls.__guild_specific_application_commands__[guild_id] = {
                             'chat_input': {},
-                            'message': {cmd.name: cmd},
+                            'message': {_name: guild_cmd},
                             'user': {}
                         }
             else:
@@ -881,43 +977,49 @@ class Cog(metaclass=CogMeta):
         return decorator
 
     @classmethod
-    def user_command(cls,
-                     name: str = None,
-                     name_localizations: Optional[Localizations] = Localizations(),
-                     default_required_permissions: Optional['Permissions'] = None,
-                     allow_dm: Optional[bool] = True,
-                     guild_ids: List[int] = None) -> Callable[[Awaitable[Any]], UserCommand]:
-        """
-       A decorator that registers a :class:`UserCommand`(shows up under ``Apps`` when right-clicking on a user)
-       to the client.
+    def user_command(
+            cls,
+            name: str = None,
+            name_localizations: Localizations = Localizations(),
+            default_required_permissions: Optional[Permissions] = None,
+            allow_dm: bool = True,
+            is_nsfw: bool = False,
+            guild_ids: Optional[List[int]] = None
+    ) -> Callable[[Awaitable[Any]], UserCommand]:
+        """A decorator that registers a :class:`UserCommand` (shows up under ``Apps`` when right-clicking on a user) to the client.
+        The function this is attached to must be a :ref:`coroutine <coroutine>`.
 
-       .. note::
-
+        .. note::
             :attr:`~Bot.sync_commands` of the :class:`~discord.ext.commands.Bot` instance must be set to :obj:`True`
             to register a command if he not already exists and update him if changes where made.
 
-       Parameters
-       ----------
-       name: Optional[:class:`str`]
-           The name of the user-command, default to the functions name.
-           Must be between 1-32 characters long.
-       default_required_permissions: Optional[:class:`discord.Permissions`]
-           Permissions that a Member needs by default to execute(see) the command.
-       allow_dm:  Optional[class:`bool`]
-            Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
-       guild_ids: Optional[List[:class:`int`]]
+        Parameters
+        ----------
+        name: Optional[:class:`str`]
+            The name of the user-command, default to the functions name.
+            Must be between 1-32 characters long.
+        name_localizations: :class:`Localizations`
+            Localized ``name``'s.
+        default_required_permissions: Optional[:class:`Permissions`]
+            Permissions that a member needs by default to execute(see) the command.
+        allow_dm: :class:`bool`
+            Indicates whether the command is available in DMs with the app, only for globally-scoped commands.
+            By default, commands are visible.
+        is_nsfw: :class:`bool`
+            Whether this command is an `NSFW command <https://support.discord.com/hc/en-us/articles/10123937946007>`_, default :obj:`False`.
+        guild_ids: Optional[List[:class:`int`]]
             ID's of guilds this command should be registered in. If empty, the command will be global.
 
-       Returns
-       -------
-       UserCommand:
-           The user-command registered.
+        Returns
+        -------
+        ~discord.UserCommand:
+            The user-command registered.
 
-       Raises
-       ------
-       TypeError:
-           The function the decorator is attached to is not actual a coroutine (startswith ``async def``).
-       """
+        Raises
+        ------
+        TypeError:
+            The function the decorator is attached to is not actual a :ref:`coroutine <coroutine>`.
+        """
         def decorator(func: Awaitable[Any]) -> UserCommand:
             actual = func
             if isinstance(actual, staticmethod):
@@ -927,25 +1029,37 @@ class Cog(metaclass=CogMeta):
             _name = name or actual.__name__
             cmd = UserCommand(
                 cog=cls,
+                guild_ids=guild_ids,
+                func=actual,
                 name=_name,
                 name_localizations=name_localizations,
                 default_member_permissions=default_required_permissions,
                 allow_dm=allow_dm,
-                func=actual,
-                guild_ids=guild_ids
+                is_nsfw=is_nsfw
             )
             if guild_ids:
                 for guild_id in guild_ids:
+                    guild_cmd = UserCommand(
+                        cog=cls,
+                        guild_id=guild_id,
+                        func=actual,
+                        name=_name,
+                        name_localizations=name_localizations,
+                        default_member_permissions=default_required_permissions,
+                        allow_dm=allow_dm,
+                        is_nsfw=is_nsfw
+                    )
                     try:
-                        cls.__guild_specific_application_commands__[guild_id]['user'][cmd.name] = cmd
+                        cls.__guild_specific_application_commands__[guild_id]['user'][_name] = guild_cmd
                     except KeyError:
                         cls.__guild_specific_application_commands__[guild_id] = {
                             'chat_input': {},
                             'message': {},
-                            'user': {cmd.name: cmd}
+                            'user': {_name: guild_cmd}
                         }
             else:
-                cls.__application_commands_by_type__['user'][cmd.name] = cmd
+                cls.__application_commands_by_type__['user'][_name] = cmd
+
             return cmd
         return decorator
 
