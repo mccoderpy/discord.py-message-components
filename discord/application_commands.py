@@ -49,12 +49,13 @@ from types import FunctionType
 from .utils import async_all, find, get, snowflake_time
 from .abc import GuildChannel
 from .channel import PartialMessageable
-from .enums import ApplicationCommandType, InteractionType, ChannelType, OptionType, Locale, try_enum
+from .enums import ApplicationCommandType, ChannelType, OptionType, Locale, try_enum
 from .permissions import Permissions
 
 if TYPE_CHECKING:
     from datetime import datetime
     from .guild import Guild
+    from .state import ConnectionState
     from .ext.commands import Cog, Greedy, Converter
     from .interactions import BaseInteraction
 
@@ -420,7 +421,7 @@ class ApplicationCommand:
         base = {
             'type': int(self.type),
             'name': str(self.name),
-            'nsfw': self.nsfw,
+            'nsfw': self.is_nsfw,
             'name_localizations': self.name_localizations.to_dict(),
             'description': getattr(self, 'description', ''),
             'description_localizations': self.description_localizations.to_dict(),
@@ -939,7 +940,7 @@ class SubCommand(SlashCommandOption):
         :class:`bool`
             Whether this command is nsfw or not
         """
-        return self.base_command.nsfw
+        return self.base_command.is_nsfw
 
     @property
     def mention(self) -> str:
