@@ -27,12 +27,20 @@ from __future__ import annotations
 
 from typing import (
     Any,
+    Set,
+    Dict,
     Union,
+    Iterable,
+    Awaitable,
+    Coroutine,
+    Sequence,
     Optional,
     Iterable,
     Callable,
     TypeVar,
-    TYPE_CHECKING
+    Protocol,
+    TYPE_CHECKING,
+    runtime_checkable
 )
 
 import os
@@ -42,38 +50,86 @@ import json
 import array
 import asyncio
 import logging
+
+import aiohttp
 import colorama
+import warnings
+import datetime
+import functools
+
 import collections.abc
 import unicodedata
 from base64 import b64encode
 from bisect import bisect_left
-import datetime
-from .enums import TimestampStyle
-import functools
+from abc import abstractmethod
+
 from inspect import isawaitable as _isawaitable, signature as _signature
 from operator import attrgetter
 
-
-import warnings
-
 from .errors import InvalidArgument
+from .enums import TimestampStyle
 
 if TYPE_CHECKING:
-    from typing_extensions import ParamSpec, Self
-
+    from typing_extensions import ParamSpec, TypeGuard, Self
     from .guild import Guild
     from .channel import VoiceChannel
     from .permissions import Permissions
+    from .invite import Invite
+    from .template import Template
 
     P = ParamSpec('P')
 
+    MaybeAwaitableFunc = Callable[P, 'MaybeAwaitable[T]']  # We need to use it as a string here because it's not defined yet
+
 
 T = TypeVar('T')
+_Iterable = TypeVar('_Iterable', bound=Iterable)
+MaybeAwaitable = Union[Awaitable[T], T]
 
 DISCORD_EPOCH = 1420070400000
 MAX_ASYNCIO_SECONDS = 3456000
 
 colorama.init()
+
+__all__ = (
+    'MISSING',
+    'SupportsStr',
+    'cached_property',
+    'cached_slot_property',
+    'SequenceProxy',
+    'SnowflakeList',
+    '_bytes_to_base64_data',
+    '_get_as_snowflake',
+    '_get_mime_type_for_image',
+    '_parse_ratelimit_header',
+    '_string_width',
+    '_unique',
+    'async_all',
+    'copy_doc',
+    'create_voice_activity',
+    'deprecated',
+    'deprecation_warning',
+    'escape_markdown',
+    'escape_mentions',
+    'find',
+    'get',
+    'maybe_coroutine',
+    'oauth_url',
+    'parse_time',
+    'remove_markdown',
+    'resolve_invite',
+    'resolve_template',
+    'sane_wait_for',
+    'sleep_until',
+    'setup_logging',
+    'snowflake_time',
+    'stream_supports_colour',
+    'styled_timestamp',
+    'time_snowflake',
+    'to_json',
+    'utcnow',
+    'valid_icon_size',
+)
 
 
 class _MISSING:
@@ -98,9 +154,25 @@ class _MISSING:
 MISSING = _MISSING()
 
 
+@runtime_checkable
+class _SupportsStr(Protocol):
+    """
+    An ABC with one abstract method ``__str__``.
+    This as an annotation means that this can be any object that has a :meth:`object.__str__` method
+    """
+    __slots__ = ()
+
+    @abstractmethod
+    def __str__(self) -> int:
+        pass
+
+
+SupportsStr = Union[str, _SupportsStr]
+
+
 class cached_property:
-    def __init__(self, function):
-        self.function = function
+    def __init__(self, function: Callable):
+        self.function: Callable = function
         self.__doc__ = getattr(function, '__doc__')
 
     def __get__(self, instance, owner):
@@ -114,9 +186,9 @@ class cached_property:
 
 
 class CachedSlotProperty:
-    def __init__(self, name, function):
-        self.name = name
-        self.function = function
+    def __init__(self, name: str, function: Callable):
+        self.name: str = name
+        self.function: Callable = function
         self.__doc__ = getattr(function, '__doc__')
 
     def __get__(self, instance, owner):
@@ -131,8 +203,8 @@ class CachedSlotProperty:
             return value
 
 
-def cached_slot_property(name):
-    def decorator(func):
+def cached_slot_property(name: str) -> Callable[[T], CachedSlotProperty]:
+    def decorator(func: Callable) -> CachedSlotProperty:
         return CachedSlotProperty(name, func)
 
     return decorator
@@ -158,14 +230,14 @@ class SequenceProxy(collections.abc.Sequence):
     def __reversed__(self):
         return reversed(self.__proxied)
 
-    def index(self, value, *args, **kwargs):
+    def index(self, value: Any, *args, **kwargs):
         return self.__proxied.index(value, *args, **kwargs)
 
     def count(self, value):
         return self.__proxied.count(value)
 
 
-def parse_time(timestamp: str):
+def parse_time(timestamp: str) -> Optional[datetime.datetime]:
     if timestamp:
         return datetime.datetime(*map(int, re.split(r'\D', timestamp.replace('+00:00', ''))))
     return None
@@ -183,9 +255,7 @@ def deprecated(instead: Optional[str] = None) -> Callable[[Callable[P, T]], Call
     def actual_decorator(func: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(func)
         def decorated(*args: P.args, **kwargs: P.kwargs) -> T:
-            warnings.simplefilter('always', DeprecationWarning)  # turn off filter
             deprecation_warning(func.__name__, instead)
-            warnings.simplefilter('default', DeprecationWarning)  # reset filter
             return func(*args, **kwargs)
         return decorated
     return actual_decorator
@@ -249,7 +319,7 @@ def utcnow() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def snowflake_time(id: int):
+def snowflake_time(id: int) -> datetime.datetime:
     """
     Parameters
     -----------
@@ -264,7 +334,7 @@ def snowflake_time(id: int):
     return datetime.datetime.utcfromtimestamp(((id >> 22) + DISCORD_EPOCH) / 1000)
 
 
-def time_snowflake(datetime_obj, high=False):
+def time_snowflake(datetime_obj: datetime.datetime, high: bool = False) -> int:
     """
     Returns a numeric snowflake pretending to be created at the given date.
 
@@ -284,7 +354,7 @@ def time_snowflake(datetime_obj, high=False):
     return (discord_millis << 22) + (2**22-1 if high else 0)
 
 
-def find(predicate, seq):
+def find(predicate: Callable[[T], bool], seq: Iterable[T]) -> Optional[T]:
     """
     A helper to return the first element found in the sequence
     that meets the predicate. For example: ::
@@ -311,7 +381,7 @@ def find(predicate, seq):
     return None
 
 
-def get(iterable, **attrs):
+def get(iterable: Iterable[T], **attrs: Any) -> Optional[T]:
     r"""A helper that returns the first element in the iterable that meets
     all the traits passed in ``attrs``. This is an alternative for
     :func:`~discord.utils.find`.
@@ -435,13 +505,13 @@ async def create_voice_activity(channel: VoiceChannel, target_application_id: in
     return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
 
 
-def _unique(iterable):
+def _unique(iterable: _Iterable[T]) -> _Iterable[T]:
     seen = set()
     adder = seen.add
-    return [x for x in iterable if not (x in seen or adder(x))]
+    return type(iterable)(x for x in iterable if not (x in seen or adder(x)))
 
 
-def _get_as_snowflake(data, key):
+def _get_as_snowflake(data: Dict[str, Any], key: str) -> Optional[int]:
     try:
         value = data[key]
     except KeyError:
@@ -450,7 +520,7 @@ def _get_as_snowflake(data, key):
         return value and int(value)
 
 
-def _get_mime_type_for_image(data):
+def _get_mime_type_for_image(data: bytes) -> str:
     if data.startswith(b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'):
         return 'image/png'
     elif data[0:3] == b'\xff\xd8\xff' or data[6:10] in (b'JFIF', b'Exif'):
@@ -463,18 +533,18 @@ def _get_mime_type_for_image(data):
         raise InvalidArgument('Unsupported image type given')
 
 
-def _bytes_to_base64_data(data):
+def _bytes_to_base64_data(data: bytes) -> str:
     fmt = 'data:{mime};base64,{data}'
     mime = _get_mime_type_for_image(data)
     b64 = b64encode(data).decode('ascii')
     return fmt.format(mime=mime, data=b64)
 
 
-def to_json(obj):
+def to_json(obj: Any) -> str:
     return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
 
 
-def _parse_ratelimit_header(request, *, use_clock=False):
+def _parse_ratelimit_header(request: aiohttp.ClientResponse, *, use_clock: bool = False) -> float:
     reset_after = request.headers.get('X-Ratelimit-Reset-After')
     if use_clock or not reset_after:
         utc = datetime.timezone.utc
@@ -485,7 +555,7 @@ def _parse_ratelimit_header(request, *, use_clock=False):
         return float(reset_after)
 
 
-async def maybe_coroutine(f, *args, **kwargs):
+async def maybe_coroutine(f: MaybeAwaitableFunc[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
     value = f(*args, **kwargs)
     if _isawaitable(value):
         return await value
@@ -493,7 +563,11 @@ async def maybe_coroutine(f, *args, **kwargs):
         return value
 
 
-async def async_all(gen, *, check=_isawaitable):
+async def async_all(
+        gen: Iterable[Union[T, Awaitable[T]]],
+        *,
+        check: Callable[[Union[T, Awaitable[T]]], TypeGuard[Awaitable[T]]] = _isawaitable
+) -> bool:
     for elem in gen:
         if check(elem):
             elem = await elem
@@ -501,7 +575,8 @@ async def async_all(gen, *, check=_isawaitable):
             return False
     return True
 
-async def sane_wait_for(futures, *, timeout):
+
+async def sane_wait_for(futures: Iterable[Awaitable[T]], *, timeout: Optional[float]) -> Set[asyncio.Task[T]]:
     ensured = [
         asyncio.ensure_future(fut) for fut in futures
     ]
@@ -512,7 +587,8 @@ async def sane_wait_for(futures, *, timeout):
 
     return done
 
-async def sleep_until(when, result=None):
+
+async def sleep_until(when: datetime.datetime, result: Optional[T] = None) -> Optional[T]:
     """|coro|
 
     Sleep until a specified time.
@@ -531,15 +607,14 @@ async def sleep_until(when, result=None):
     """
     if when.tzinfo is None:
         when = when.replace(tzinfo=datetime.timezone.utc)
-    now = datetime.datetime.now(datetime.timezone.utc)
-    delta = (when - now).total_seconds()
+    delta = (when - utcnow()).total_seconds()
     while delta > MAX_ASYNCIO_SECONDS:
         await asyncio.sleep(MAX_ASYNCIO_SECONDS)
         delta -= MAX_ASYNCIO_SECONDS
     return await asyncio.sleep(max(delta, 0), result)
 
 
-def valid_icon_size(size):
+def valid_icon_size(size: int) -> bool:
     """Icons must be power of 2 within [16, 4096]."""
     return not size & (size - 1) and size in range(16, 4097)
 
@@ -558,18 +633,18 @@ class SnowflakeList(array.array):
 
     __slots__ = ()
 
-    def __new__(cls, data, *, is_sorted=False):
-        return array.array.__new__(cls, 'Q', data if is_sorted else sorted(data))
+    def __new__(cls, data, *, is_sorted=False) -> Self:
+        return array.array.__new__(cls, 'Q', data if is_sorted else sorted(data))  # type: ignore
 
-    def add(self, element):
+    def add(self, element: int) -> None:
         i = bisect_left(self, element)
         self.insert(i, element)
 
-    def get(self, element):
+    def get(self, element: int) -> Optional[int]:
         i = bisect_left(self, element)
         return self[i] if i != len(self) and self[i] == element else None
 
-    def has(self, element):
+    def has(self, element: int) -> bool:
         i = bisect_left(self, element)
         return i != len(self) and self[i] == element
 
@@ -577,7 +652,7 @@ class SnowflakeList(array.array):
 _IS_ASCII = re.compile(r'^[\x00-\x7f]+$')
 
 
-def _string_width(string, *, _IS_ASCII=_IS_ASCII):
+def _string_width(string: str, *, _IS_ASCII: re.Pattern = _IS_ASCII) -> int:
     """Returns string's width."""
     match = _IS_ASCII.match(string)
     if match:
@@ -588,7 +663,7 @@ def _string_width(string, *, _IS_ASCII=_IS_ASCII):
     return sum(2 if func(char) in UNICODE_WIDE_CHAR_TYPE else 1 for char in string)
 
 
-def resolve_invite(invite):
+def resolve_invite(invite: Union[Invite, str]) -> str:
     """
     Resolves an invite from a :class:`~discord.Invite`, URL or code.
 
@@ -613,7 +688,7 @@ def resolve_invite(invite):
     return invite
 
 
-def resolve_template(code):
+def resolve_template(code: Union[Template, str]) -> str:
     """
     Resolves a template code from a :class:`~discord.Template`, URL or code.
 
@@ -652,7 +727,7 @@ _URL_REGEX = r'(?P<url><[^: >]+:\/[^ >]+>|(?:https?|steam):\/\/[^\s<]+[^<.,:;\"\
 _MARKDOWN_STOCK_REGEX = r'(?P<markdown>[_\\~|\*`]|%s)' % _MARKDOWN_ESCAPE_COMMON
 
 
-def remove_markdown(text, *, ignore_links=True):
+def remove_markdown(text: str, *, ignore_links: bool = True) -> str:
     """A helper function that removes markdown characters.
 
     .. versionadded:: 1.7
@@ -686,7 +761,7 @@ def remove_markdown(text, *, ignore_links=True):
     return re.sub(regex, replacement, text, 0, re.MULTILINE)
 
 
-def escape_markdown(text, *, as_needed=False, ignore_links=True):
+def escape_markdown(text: str, *, as_needed: bool = False, ignore_links: bool = True) -> str:
     r"""A helper function that escapes Discord's markdown.
 
     Parameters
@@ -728,7 +803,7 @@ def escape_markdown(text, *, as_needed=False, ignore_links=True):
         return _MARKDOWN_ESCAPE_REGEX.sub(r'\\\1', text)
 
 
-def escape_mentions(text):
+def escape_mentions(text: str) -> str:
     """A helper function that escapes everyone, here, role, and user mentions.
 
     .. note::
