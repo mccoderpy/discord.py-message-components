@@ -25,68 +25,34 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
-from collections import namedtuple
 from typing import (
-    Optional
+    Any,
+    Dict,
+    Optional,
+    TYPE_CHECKING
 )
+
 from typing_extensions import Literal
 
 import discord.abc
 from .flags import PublicUserFlags
-from .utils import snowflake_time, _bytes_to_base64_data, parse_time
-from .enums import DefaultAvatar, UserFlags, HypeSquadHouse, PremiumType, try_enum
-from .errors import ClientException
+from .utils import snowflake_time, _bytes_to_base64_data
+from .enums import DefaultAvatar, try_enum
 from .colour import Colour
 from .asset import Asset
-from .utils import deprecated
 
-class Profile(namedtuple('Profile', 'flags user mutual_guilds connected_accounts premium_since')):
-    __slots__ = ()
+if TYPE_CHECKING:
+    import datetime
+    from .abc import GuildChannel
+    from .channel import DMChannel
+    from .guild import Guild
+    from .message import Message
+    from .permissions import Permissions
+    from .state import ConnectionState
 
-    @property
-    def nitro(self):
-        return self.premium_since is not None
-
-    premium = nitro
-
-    def _has_flag(self, o):
-        v = o.value
-        return (self.flags & v) == v
-
-    @property
-    def staff(self):
-        return self._has_flag(UserFlags.staff)
-
-    @property
-    def partner(self):
-        return self._has_flag(UserFlags.partner)
-
-    @property
-    def bug_hunter(self):
-        return self._has_flag(UserFlags.bug_hunter)
-
-    @property
-    def early_supporter(self):
-        return self._has_flag(UserFlags.early_supporter)
-
-    @property
-    def hypesquad(self):
-        return self._has_flag(UserFlags.hypesquad)
-
-    @property
-    def hypesquad_houses(self):
-        flags = (UserFlags.hypesquad_bravery, UserFlags.hypesquad_brilliance, UserFlags.hypesquad_balance)
-        return [house for house, flag in zip(HypeSquadHouse, flags) if self._has_flag(flag)]
-
-    @property
-    def team_user(self):
-        return self._has_flag(UserFlags.team_user)
-
-    @property
-    def system(self):
-        return self._has_flag(UserFlags.system)
 
 _BaseUser = discord.abc.User
+
 
 class BaseUser(_BaseUser):
     __slots__ = (
@@ -94,14 +60,14 @@ class BaseUser(_BaseUser):
         'hex_banner_color', 'bot', 'system', '_public_flags', '_state'
     )
 
-    def __init__(self, *, state, data):
-        self._state = state
+    def __init__(self, *, state: ConnectionState, data: Dict[str, Any]):
+        self._state: ConnectionState = state
         self._update(data)
 
     def __str__(self):
         return '{0.name}#{0.discriminator}'.format(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object):
         return isinstance(other, _BaseUser) and other.id == self.id
 
     def __ne__(self, other):
@@ -110,7 +76,7 @@ class BaseUser(_BaseUser):
     def __hash__(self):
         return self.id >> 22
 
-    def _update(self, data):
+    def _update(self, data: Dict[str, Any]) -> None:
         self.name = data['username']
         self.id = int(data['id'])
         self.discriminator = data['discriminator']
@@ -127,7 +93,7 @@ class BaseUser(_BaseUser):
         self.system = data.get('system', False)
 
     @classmethod
-    def _copy(cls, user):
+    def _copy(cls, user) -> User:
         self = cls.__new__(cls)  # bypass __init__
 
         self.name = user.name
@@ -142,7 +108,7 @@ class BaseUser(_BaseUser):
 
         return self
 
-    def _to_minimal_user_json(self):
+    def _to_minimal_user_json(self) -> Dict[str, Any]:
         return {
             'username': self.name,
             'id': self.id,
@@ -159,7 +125,7 @@ class BaseUser(_BaseUser):
         return PublicUserFlags._from_value(self._public_flags)
 
     @property
-    def avatar_url(self):
+    def avatar_url(self) -> Asset:
         """:class:`Asset`: Returns an :class:`Asset` for the avatar the user has.
 
         If the user does not have a traditional avatar, an asset for
@@ -170,11 +136,11 @@ class BaseUser(_BaseUser):
         """
         return self.avatar_url_as(format=None, size=1024)
 
-    def is_avatar_animated(self):
+    def is_avatar_animated(self) -> bool:
         """:class:`bool`: Indicates if the user has an animated avatar."""
         return bool(self.avatar and self.avatar.startswith('a_'))
 
-    def avatar_url_as(self, *, format=None, static_format='webp', size=1024):
+    def avatar_url_as(self, *, format: Optional[str] = None, static_format='webp', size=1024) -> Asset:
         """Returns an :class:`Asset` for the avatar the user has.
 
         If the user does not have a traditional avatar, an asset for
@@ -211,12 +177,12 @@ class BaseUser(_BaseUser):
         return Asset._from_avatar(self._state, self, format=format, static_format=static_format, size=size)
 
     @property
-    def default_avatar(self):
+    def default_avatar(self) -> DefaultAvatar:
         """:class:`DefaultAvatar`: Returns the default avatar for a given user. This is calculated by the user's discriminator."""
         return try_enum(DefaultAvatar, int(self.discriminator) % len(DefaultAvatar))
 
     @property
-    def default_avatar_url(self):
+    def default_avatar_url(self) -> Asset:
         """:class:`Asset`: Returns a URL for a user's default avatar."""
         return Asset(self._state, '/embed/avatars/{}.png'.format(self.default_avatar.value))
 
@@ -237,11 +203,13 @@ class BaseUser(_BaseUser):
         """:class:`bool`: Indicates if the user has an animated banner."""
         return bool(self.banner and self.banner.startswith('a_'))
 
-    def banner_url_as(self,
-                      *,
-                      format: str = None,
-                      static_format: Literal['png', 'jpeg', 'webp', 'gif'] = 'webp',
-                      size: int = 1024) -> Optional[Asset]:
+    def banner_url_as(
+            self,
+            *,
+            format: Optional[str] = None,
+            static_format: Literal['png', 'jpeg', 'webp', 'gif'] = 'webp',
+            size: int = 1024
+    ) -> Optional[Asset]:
         """Returns an :class:`Asset` for the banner the user has. Could be ``None``.
 
         The format must be one of 'webp', 'jpeg', 'jpg', 'png' or 'gif', and
@@ -275,7 +243,7 @@ class BaseUser(_BaseUser):
         return Asset._from_banner(self._state, self, format=format, static_format=static_format, size=size)
 
     @property
-    def colour(self):
+    def colour(self) -> Colour:
         """:class:`Colour`: A property that returns a colour denoting the rendered colour
         for the user. This always returns :meth:`Colour.default`.
 
@@ -284,7 +252,7 @@ class BaseUser(_BaseUser):
         return Colour.default()
 
     @property
-    def color(self):
+    def color(self) -> Colour:
         """:class:`Colour`: A property that returns a color denoting the rendered color
         for the user. This always returns :meth:`Colour.default`.
 
@@ -293,11 +261,11 @@ class BaseUser(_BaseUser):
         return self.colour
 
     @property
-    def mention(self):
+    def mention(self) -> str:
         """:class:`str`: Returns a string that allows you to mention the given user."""
         return '<@{0.id}>'.format(self)
 
-    def permissions_in(self, channel):
+    def permissions_in(self, channel: GuildChannel) -> Permissions:
         """An alias for :meth:`abc.GuildChannel.permissions_for`.
 
         Basically equivalent to:
@@ -314,14 +282,14 @@ class BaseUser(_BaseUser):
         return channel.permissions_for(self)
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime.datetime:
         """:class:`datetime.datetime`: Returns the user's creation time in UTC.
 
         This is when the user's Discord account was created."""
         return snowflake_time(self.id)
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         """:class:`str`: Returns the user's display name.
 
         For regular users this is just their username, but
@@ -330,7 +298,7 @@ class BaseUser(_BaseUser):
         """
         return self.name
 
-    def mentioned_in(self, message):
+    def mentioned_in(self, message: Message):
         """Checks if the user is mentioned in the specified message.
 
         Parameters
@@ -348,6 +316,7 @@ class BaseUser(_BaseUser):
             return True
 
         return any(user.id == self.id for user in message.mentions)
+
 
 class ClientUser(BaseUser):
     """Represents your Discord user.
@@ -399,13 +368,13 @@ class ClientUser(BaseUser):
         return '<ClientUser id={0.id} name={0.name!r} discriminator={0.discriminator!r}' \
                ' bot={0.bot} mfa_enabled={0.mfa_enabled}>'.format(self)
 
-    def _update(self, data):
+    def _update(self, data: Dict[str, Any]) -> None:
         super()._update(data)
         self.locale = data.get('locale')
         self._flags = data.get('flags', 0)
         self.mfa_enabled = data.get('mfa_enabled', False)
 
-    async def edit(self, **fields):
+    async def edit(self, **fields) -> None:
         """|coro|
 
         Edits the current profile of the client.
@@ -455,49 +424,6 @@ class ClientUser(BaseUser):
         data = await http.edit_profile(**args)
         self._update(data)
 
-    @deprecated()
-    async def create_group(self, *recipients):
-        r"""|coro|
-
-        Creates a group direct message with the recipients
-        provided. These recipients must be have a relationship
-        of type :attr:`RelationshipType.friend`.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Parameters
-        -----------
-        \*recipients: :class:`User`
-            An argument :class:`list` of :class:`User` to have in
-            your group.
-
-        Raises
-        -------
-        HTTPException
-            Failed to create the group direct message.
-        ClientException
-            Attempted to create a group with only one recipient.
-            This does not include yourself.
-
-        Returns
-        -------
-        :class:`GroupChannel`
-            The new group channel.
-        """
-
-        from .channel import GroupChannel
-
-        if len(recipients) < 2:
-            raise ClientException('You must have two or more recipients to create a group.')
-
-        users = [str(u.id) for u in recipients]
-        data = await self._state.http.start_group(self.id, users)
-        return GroupChannel(me=self, data=data, state=self._state)
-
 
 class User(BaseUser, discord.abc.Messageable):
     """Represents a Discord user.
@@ -546,7 +472,7 @@ class User(BaseUser, discord.abc.Messageable):
         return ch
 
     @property
-    def dm_channel(self):
+    def dm_channel(self) -> Optional[DMChannel]:
         """Optional[:class:`DMChannel`]: Returns the channel associated with this user if it exists.
 
         If this returns ``None``, you can create a DM channel by calling the
@@ -555,7 +481,7 @@ class User(BaseUser, discord.abc.Messageable):
         return self._state._get_private_channel_by_user(self.id)
 
     @property
-    def mutual_guilds(self):
+    def mutual_guilds(self) -> List[Guild]:
         """List[:class:`Guild`]: The guilds that the user shares with the client.
 
         .. note::
@@ -566,7 +492,7 @@ class User(BaseUser, discord.abc.Messageable):
         """
         return [guild for guild in self._state._guilds.values() if guild.get_member(self.id)]
 
-    async def create_dm(self):
+    async def create_dm(self) -> DMChannel:
         """|coro|
 
         Creates a :class:`DMChannel` with this user.
@@ -586,42 +512,3 @@ class User(BaseUser, discord.abc.Messageable):
         state = self._state
         data = await state.http.start_private_message(self.id)
         return state.add_dm_channel(data)
-
-    @deprecated()
-    async def profile(self):
-        """|coro|
-
-        Gets the user's profile.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Raises
-        -------
-        Forbidden
-            Not allowed to fetch profiles.
-        HTTPException
-            Fetching the profile failed.
-
-        Returns
-        --------
-        :class:`Profile`
-            The profile of the user.
-        """
-
-        state = self._state
-        data = await state.http.get_user_profile(self.id)
-
-        def transform(d):
-            return state._get_guild(int(d['id']))
-
-        since = data.get('premium_since')
-        mutual_guilds = list(filter(None, map(transform, data.get('mutual_guilds', []))))
-        return Profile(flags=data['user'].get('flags', 0),
-                       premium_since=parse_time(since),
-                       mutual_guilds=mutual_guilds,
-                       user=self,
-                       connected_accounts=data['connected_accounts'])
