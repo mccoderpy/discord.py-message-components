@@ -30,7 +30,15 @@ import sys
 import copy
 import asyncio
 
-from typing import Union, Optional, List, Any, TYPE_CHECKING, Coroutine
+from typing import (
+    Any,
+    List,
+    Union,
+    Mapping,
+    Optional,
+    Coroutine,
+    TYPE_CHECKING
+)
 
 from .iterators import HistoryIterator
 from .context_managers import Typing
@@ -50,7 +58,9 @@ if TYPE_CHECKING:
     from .embeds import Embed
     from .sticker import GuildSticker
     from .components import ActionRow, Button, BaseSelect
+    from .member import Member
     from .message import Message, MessageReference
+    from .channel import CategoryChannel
 
 
 MISSING = utils.MISSING
@@ -397,7 +407,7 @@ class GuildChannel:
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
-    def overwrites_for(self, obj: Union[Role, User]):
+    def overwrites_for(self, obj: Union[Role, User]) -> PermissionOverwrite:
         """Returns the channel-specific overwrites for a member or a role.
 
         Parameters
@@ -428,7 +438,7 @@ class GuildChannel:
         return PermissionOverwrite()
 
     @property
-    def overwrites(self):
+    def overwrites(self) -> Mapping[Union[Role, Member], PermissionOverwrite]:
         """Returns all of the channel's overwrites.
 
         This is returned as a dictionary where the key contains the target which
@@ -461,7 +471,7 @@ class GuildChannel:
         return ret
 
     @property
-    def category(self):
+    def category(self) -> Optional[CategoryChannel]:
         """Optional[:class:`~discord.CategoryChannel`]: The category this channel belongs to.
 
         If there is no category then this is ``None``.
@@ -469,7 +479,7 @@ class GuildChannel:
         return self.guild.get_channel(self.category_id)
 
     @property
-    def permissions_synced(self):
+    def permissions_synced(self) -> bool:
         """:class:`bool`: Whether or not the permissions for this channel are synced with the
         category it belongs to.
 
@@ -480,7 +490,7 @@ class GuildChannel:
         category = self.guild.get_channel(self.category_id)
         return bool(category and category.overwrites == self.overwrites)
 
-    def permissions_for(self, member):
+    def permissions_for(self, member: Member) -> Permissions:
         """Handles permission resolution for the current :class:`~discord.Member`.
 
         This function takes into consideration the following cases:
@@ -570,7 +580,8 @@ class GuildChannel:
             base.embed_links = False
             base.attach_files = False
             base.create_public_threads = False
-            base.use_slash_commands = False
+            base.create_private_threads = False
+            base.use_application_commands = False
 
         # if you can't read a channel then you have no permissions there
         if not base.read_messages:
