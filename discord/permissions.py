@@ -170,8 +170,12 @@ class Permissions(BaseFlags):
 
         .. versionchanged:: 1.7
            Added :attr:`stream`, :attr:`priority_speaker` and :attr:`use_slash_commands` permissions.
+
+        .. versionchanged:: 2.0
+            Added :attr:`start_embedded_activities`, :attr:`moderate_members`, :attr:`manage_events`, :attr:`create_private_threads`,
+            :attr:`create_puplic_threads`, :attr:`manage_threads`, :attr:`send_messages_in_threads`, :attr:`request_to_speak` and :attr:`use_external_stickers`
         """
-        return cls(0b10110011111101111111111101010001)
+        return cls(0b11111111110110011111101111111111101010001)
 
     @classmethod
     def general(cls):
