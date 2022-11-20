@@ -37,9 +37,8 @@ __all__ = (
     'Cog',
 )
 
-from ... import InvalidArgument, Permissions
+from discord import MISSING, InvalidArgument, Permissions
 from discord.application_commands import *
-from ...abc import MISSING
 
 
 class CogMeta(type):
