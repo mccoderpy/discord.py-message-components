@@ -17,17 +17,10 @@ __license__ = 'MIT'
 __copyright__ = 'Copyright 2015-2021 Rapptz & 2021-present mccoderpy'
 __version__ = '2.0a'
 
-try:
-    with open('./version.txt') as fp:
-        __version__ = fp.read()
-    del fp
-except FileNotFoundError:
-    pass
-
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
-from collections import namedtuple
 import logging
+from collections import namedtuple
 
 
 from .client import Client
@@ -58,7 +51,7 @@ from .object import Object
 from .reaction import Reaction
 from . import utils, opus, abc
 from .enums import *
-from .embeds import Embed
+from .embeds import *
 from .mentions import AllowedMentions
 from .shard import AutoShardedClient, ShardInfo
 from .player import *
@@ -73,10 +66,12 @@ from .sticker import Sticker, GuildSticker, StickerPack
 from .scheduled_event import GuildScheduledEvent
 from .automod import *
 
+MISSING = utils.MISSING
+
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
-version_info = VersionInfo(major=2, minor=0, micro=0, releaselevel='alpha', serial=0)
-
-del VersionInfo, namedtuple
+version_info: VersionInfo = VersionInfo(major=2, minor=0, micro=0, releaselevel='alpha', serial=0)
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
+
+del VersionInfo, namedtuple
