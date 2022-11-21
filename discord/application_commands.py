@@ -1781,6 +1781,10 @@ class SubCommandGroup(SlashCommandOption):
             sub_command.parent = self
 
     @property
+    def _state(self):
+        return self.parent._state
+
+    @property
     def disabled(self) -> bool:
         return self._disabled
 
