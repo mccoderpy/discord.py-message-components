@@ -37,22 +37,24 @@ import traceback
 import warnings
 
 from typing import (
+    Any,
+    Dict,
     List,
     Union,
-    Optional,
-    Dict,
-    Any,
-    Awaitable,
+    Tuple,
     AnyStr,
-    Pattern,
+    TypeVar,
+    Iterator,
+    Optional,
     Callable,
+    Awaitable,
+    Coroutine,
     TYPE_CHECKING
 )
 
-
 from .auto_updater import AutoUpdateChecker
 from .sticker import StickerPack
-from .user import User, Profile
+from .user import ClientUser, User
 from .invite import Invite
 from .template import Template
 from .widget import Widget
@@ -76,10 +78,32 @@ from .appinfo import AppInfo
 from .application_commands import *
 
 if TYPE_CHECKING:
-    from .abc import Messageable, GuildChannel
+    import datetime
+    from re import Pattern
+
+    from .abc import (
+        GuildChannel,
+        Messageable,
+        PrivateChannel,
+        VoiceProtocol,
+        Snowflake
+    )
+    from .components import Button, BaseSelect
     from .emoji import Emoji
-    from .permissions import Permissions
+    from .flags import Intents
+    from .interactions import ApplicationCommandInteraction, ComponentInteraction, ModalSubmitInteraction
+    from .member import Member
     from .message import Message
+    from .permissions import Permissions
+    from .sticker import Sticker
+
+    _ClickCallback = Callable[[ComponentInteraction, Button], Coroutine[Any, Any, Any]]
+    _SelectCallback = Callable[[ComponentInteraction, BaseSelect], Coroutine[Any, Any, Any]]
+    _SubmitCallback = Callable[[ModalSubmitInteraction], Coroutine[Any, Any, Any]]
+
+
+T = TypeVar('T')
+Coro = TypeVar('Coro', bound=Callable[..., Coroutine[Any, Any, Any]])
 
 log = logging.getLogger(__name__)
 MISSING = utils.MISSING
@@ -351,7 +375,7 @@ class Client:
         self._ready.set()
 
     @property
-    def latency(self):
+    def latency(self) -> float:
         """:class:`float`: Measures latency between a HEARTBEAT and a HEARTBEAT_ACK in seconds.
 
         This could be referred to as the Discord WebSocket protocol latency.
@@ -359,7 +383,7 @@ class Client:
         ws = self.ws
         return float('nan') if not ws else ws.latency
 
-    def is_ws_ratelimited(self):
+    def is_ws_ratelimited(self) -> bool:
         """:class:`bool`: Whether the websocket is currently rate limited.
 
         This can be useful to know when deciding whether you should query members
@@ -372,27 +396,27 @@ class Client:
         return False
 
     @property
-    def user(self):
+    def user(self) -> ClientUser:
         """Optional[:class:`.ClientUser`]: Represents the connected client. ``None`` if not logged in."""
         return self._connection.user
 
     @property
-    def guilds(self):
+    def guilds(self) -> List[Guild]:
         """List[:class:`.Guild`]: The guilds that the connected client is a member of."""
         return self._connection.guilds
 
     @property
-    def emojis(self):
+    def emojis(self) -> List[Emoji]:
         """List[:class:`.Emoji`]: The emojis that the connected client has."""
         return self._connection.emojis
 
     @property
-    def stickers(self):
+    def stickers(self) -> List[Sticker]:
         """List[:class:`.Sticker`]: The stickers that the connected client has."""
         return self._connection.stickers
 
     @property
-    def cached_messages(self):
+    def cached_messages(self) -> utils.SequenceProxy[Message]:
         """Sequence[:class:`.Message`]: Read-only list of messages the connected client has cached.
 
         .. versionadded:: 1.1
@@ -400,7 +424,7 @@ class Client:
         return utils.SequenceProxy(self._connection._messages or [])
 
     @property
-    def private_channels(self):
+    def private_channels(self) -> List[PrivateChannel]:
         """List[:class:`.abc.PrivateChannel`]: The private channels that the connected client is participating on.
 
         .. note::
@@ -411,18 +435,18 @@ class Client:
         return self._connection.private_channels
 
     @property
-    def voice_clients(self):
+    def voice_clients(self) -> List[VoiceProtocol]:
         """List[:class:`.VoiceProtocol`]: Represents a list of voice connections.
 
         These are usually :class:`.VoiceClient` instances.
         """
         return self._connection.voice_clients
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         """:class:`bool`: Specifies if the client's internal cache is ready for use."""
         return self._ready.is_set()
 
-    async def _run_event(self, coro, event_name, *args, **kwargs):
+    async def _run_event(self, coro: Coro, event_name: str, *args, **kwargs):
         try:
             await coro(*args, **kwargs)
         except asyncio.CancelledError:
@@ -433,12 +457,12 @@ class Client:
             except asyncio.CancelledError:
                 pass
 
-    def _schedule_event(self, coro, event_name, *args, **kwargs):
+    def _schedule_event(self, coro: Coro, event_name: str, *args, **kwargs) -> _ClientEventTask:
         wrapped = self._run_event(coro, event_name, *args, **kwargs)
         # Schedules the task
         return _ClientEventTask(original_coro=coro, event_name=event_name, coro=wrapped, loop=self.loop)
 
-    def dispatch(self, event, *args, **kwargs):
+    def dispatch(self, event: str, *args, **kwargs) -> None:
         log.debug('Dispatching event %s', event)
         method = 'on_' + event
 
@@ -483,7 +507,7 @@ class Client:
         else:
             self._schedule_event(coro, method, *args, **kwargs)
 
-    async def on_error(self, event_method, *args, **kwargs):
+    async def on_error(self, event_method: str, *args, **kwargs) -> None:
         """|coro|
 
         The default error handler provided by the client.
@@ -495,7 +519,12 @@ class Client:
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
 
-    async def on_application_command_error(self, cmd, interaction, exception):
+    async def on_application_command_error(
+            self,
+            cmd: ApplicationCommand,
+            interaction: ApplicationCommandInteraction,
+            exception: BaseException
+    ) -> None:
         """|coro|
 
         The default error handler when an Exception was raised when invoking an application-command.
@@ -506,14 +535,11 @@ class Client:
         """
         if hasattr(cmd, 'on_error'):
             return
-        if interaction.command.type.chat_input and cmd.type == OptionType.sub_command:
-            if cmd.parent.type == OptionType.sub_command_group:
-                name = f'sub-command {cmd.name} of sub-command-group {cmd.parent.name} of command {cmd.parent.parent.name}'
-            else:
-                name = f'sub-command {cmd.name} of command {cmd.parent.name}'
+        if isinstance(cmd, (SlashCommand, SubCommand)):
+            name = cmd.qualified_name
         else:
-            name = f'command {cmd.name}'
-        print('Ignoring exception in {type} {name}({id})'.format(
+            name = cmd.name
+        print('Ignoring exception in {type} "{name}" ({id})'.format(
             type=str(interaction.command.type).upper(),
             name=name,
             id=interaction.command.id
@@ -522,7 +548,7 @@ class Client:
         )
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
-    async def _request_sync_commands(self, is_cog_reload: bool = False, *, reload_failed: bool = False, cog=None):
+    async def _request_sync_commands(self, is_cog_reload: bool = False, *, reload_failed: bool = False) -> None:
         """Used to sync commands if the ``GUILD_CREATE`` stream is over or a :class:`~discord.ext.commands.Cog` was reloaded.
 
         .. warning::
@@ -694,7 +720,7 @@ class Client:
         # toes of those who need to override their own hook.
         await self.before_identify_hook(shard_id, initial=initial)
 
-    async def before_identify_hook(self, shard_id, *, initial=False):
+    async def before_identify_hook(self, shard_id: int, *, initial: bool = False):
         """|coro|
 
         A hook that is called before IDENTIFYing a _session. This is useful
@@ -718,7 +744,7 @@ class Client:
 
     # login state management
 
-    async def login(self, token: str):
+    async def login(self, token: str) -> None:
         """|coro|
 
         Logs in the client with the specified credentials.
@@ -761,7 +787,7 @@ class Client:
         """
         await self.close()
 
-    async def connect(self, *, reconnect=True):
+    async def connect(self, *, reconnect: bool = True) -> None:
         """|coro|
 
         Creates a websocket connection and lets the websocket listen
@@ -852,7 +878,7 @@ class Client:
                 # This is apparently what the official Discord client does.
                 ws_params.update(sequence=self.ws.sequence, resume=True, session=self.ws.session_id, resume_gateway_url=self.ws.resume_gateway_url)
 
-    async def close(self):
+    async def close(self) -> None:
         """|coro|
 
         Closes the connection to Discord.
@@ -876,7 +902,7 @@ class Client:
         self._ws_connected.clear()
         self._ready.clear()
 
-    def clear(self):
+    def clear(self) -> None:
         """Clears the internal state of the bot.
 
         After this, the bot can be considered "re-opened", i.e. :meth:`is_closed`
@@ -889,7 +915,7 @@ class Client:
         self._connection.clear()
         self.http.recreate()
 
-    async def start(self, token: str, reconnect: bool = True):
+    async def start(self, token: str, reconnect: bool = True) -> None:
         """|coro|
 
         A shorthand coroutine for :meth:`login` + :meth:`connect`.
@@ -1013,19 +1039,19 @@ class Client:
 
     # properties
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         """:class:`bool`: Indicates if the websocket connection is closed."""
         return self._closed
 
     @property
-    def activity(self):
+    def activity(self) -> Optional[BaseActivity]:
         """Optional[:class:`.BaseActivity`]: The activity being used upon
         logging in.
         """
         return create_activity(self._connection._activity)
 
     @activity.setter
-    def activity(self, value):
+    def activity(self, value: Optional[BaseActivity]):
         if value is None:
             self._connection._activity = None
         elif isinstance(value, BaseActivity):
@@ -1034,7 +1060,7 @@ class Client:
             raise TypeError('activity must derive from BaseActivity.')
 
     @property
-    def allowed_mentions(self):
+    def allowed_mentions(self) -> Optional[AllowedMentions]:
         """Optional[:class:`~discord.AllowedMentions`]: The allowed mention configuration.
 
         .. versionadded:: 1.4
@@ -1042,14 +1068,14 @@ class Client:
         return self._connection.allowed_mentions
 
     @allowed_mentions.setter
-    def allowed_mentions(self, value):
+    def allowed_mentions(self, value: Optional[AllowedMentions]):
         if value is None or isinstance(value, AllowedMentions):
             self._connection.allowed_mentions = value
         else:
             raise TypeError('allowed_mentions must be AllowedMentions not {0.__class__!r}'.format(value))
 
     @property
-    def intents(self):
+    def intents(self) -> Intents:
         """:class:`~discord.Intents`: The intents configured for this connection.
 
         .. versionadded:: 1.5
@@ -1059,7 +1085,7 @@ class Client:
     # helpers/getters
 
     @property
-    def users(self):
+    def users(self) -> List[User]:
         """List[:class:`~discord.User`]: Returns a list of all the users the bot can see."""
         return list(self._connection._users.values())
 
@@ -1157,7 +1183,7 @@ class Client:
         """
         return self._connection.get_emoji(id)
 
-    def get_all_channels(self):
+    def get_all_channels(self) -> Iterator[GuildChannel]:
         """A generator that retrieves every :class:`.abc.GuildChannel` the client can 'access'.
 
         This is equivalent to: ::
@@ -1182,7 +1208,7 @@ class Client:
             for channel in guild.channels:
                 yield channel
 
-    def get_all_members(self):
+    def get_all_members(self) -> Iterator[Member]:
         """Returns a generator with every :class:`.Member` the client can see.
 
         This is equivalent to: ::
@@ -1202,14 +1228,20 @@ class Client:
 
     # listeners/waiters
 
-    async def wait_until_ready(self):
+    async def wait_until_ready(self) -> None:
         """|coro|
 
         Waits until the client's internal cache is all ready.
         """
         await self._ready.wait()
 
-    def wait_for(self, event, *, check=None, timeout: Optional[float] = None):
+    def wait_for(
+            self,
+            event: str,
+            *,
+            check: Optional[Callable[[Any, ...], bool]] = None,
+            timeout: Optional[float] = None
+    ) -> Optional[Tuple[Any, ...]]:
         """|coro|
 
         Waits for a WebSocket event to be dispatched.
@@ -1308,7 +1340,7 @@ class Client:
 
     # event registration
 
-    def event(self, coro):
+    def event(self, coro: Coro) -> Coro:
         """A decorator that registers an event to listen to.
 
         You can find more info about the events on the :ref:`documentation below <discord-api-events>`.
@@ -1336,9 +1368,10 @@ class Client:
         log.debug('%s has successfully been registered as an event', coro.__name__)
         return coro
 
-    def on_click(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
+    def on_click(
+            self,
+            custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
+    ) -> Callable[[_ClickCallback], _ClickCallback]:
         """
          A decorator with wich you can assign a function to a specific :class:`~discord.Button` (or its custom_id).
 
@@ -1366,26 +1399,26 @@ class Client:
         -------
         .. code-block:: python
 
-            # the Button
+            # the button
             Button(label='Hey im a cool blue Button',
                     custom_id='cool blue Button',
                     style=ButtonStyle.blurple)
 
-            # function that's called when the Button pressed
+            # function that's called when the button pressed
             @client.on_click(custom_id='^cool blue Button$')
             async def cool_blue_button(i: discord.ComponentInteraction, button: Button):
                 await i.respond(f'Hey you pressed a {button.custom_id}!', hidden=True)
 
         Returns
         -------
-        The decorator for the function called when the Button clicked
+        The decorator for the function called when the button clicked
 
         Raise
         -----
         :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func: Awaitable[Any]):
+        def decorator(func: _ClickCallback) -> _ClickCallback:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
 
@@ -1404,9 +1437,10 @@ class Client:
 
         return decorator
 
-    def on_select(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
+    def on_select(
+            self,
+            custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
+    ) -> Callable[[_SelectCallback], _SelectCallback]:
         """
         A decorator with which you can assign a function to a specific :class:`~discord.SelectMenu` (or its custom_id).
 
@@ -1452,7 +1486,7 @@ class Client:
         :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func: Awaitable[Any]):
+        def decorator(func: _SelectCallback) -> _SelectCallback:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
 
@@ -1471,9 +1505,10 @@ class Client:
 
         return decorator
 
-    def on_submit(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
+    def on_submit(
+            self,
+            custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
+    ) -> Callable[[_SubmitCallback], _SubmitCallback]:
         """
          A decorator with wich you can assign a function to a specific :class:`~discord.Modal` (or its custom_id).
 
@@ -1517,7 +1552,7 @@ class Client:
         :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func: Awaitable[Any]):
+        def decorator(func: _SubmitCallback) -> _SubmitCallback:
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError('event registered must be a coroutine function')
 
@@ -2049,7 +2084,7 @@ class Client:
             return cmd
         return decorator
 
-    async def _sync_commands(self):
+    async def _sync_commands(self) -> None:
         if not hasattr(self, 'app'):
             await self.application_info()
         state = self._connection  # Speedup attribute access
@@ -2254,7 +2289,7 @@ class Client:
 
         log.info('Successful synced all global and guild-specific application-commands.')
 
-    def _get_application_command(self, cmd_id):
+    def _get_application_command(self, cmd_id: int) -> Optional[ApplicationCommand]:
         return self._application_commands.get(cmd_id, None)
 
     def _remove_application_command(self, command: ApplicationCommand, from_cache: bool = True):
@@ -2291,7 +2326,7 @@ class Client:
     @property
     def global_application_commands(self) -> List[ApplicationCommand]:
         """
-        Returns a list of all global application command that is registered for the bot
+        Returns a list of all global application commands that are registered for the bot
 
         .. note::
             This requires the bot running and all commands cached, otherwise the list will be empty
@@ -2299,7 +2334,7 @@ class Client:
         Returns
         --------
         List[:class:`ApplicationCommand`]
-            A list of registered global application commands of the bot
+            A list of registered global application commands for the bot
         """
         commands = []
         for command in self.application_commands:
@@ -2307,10 +2342,18 @@ class Client:
                 commands.append(command)
         return commands
 
-    async def change_presence(self, *, activity=None, status=None, afk=False):
+    async def change_presence(
+            self,
+            *,
+            activity: Optional[BaseActivity] = None,
+            status: Optional[Status] = 'online'
+    ) -> None:
         """|coro|
 
         Changes the client's presence.
+
+        .. versionchanged:: 2.0
+                Removed the ``afk`` parameter
 
         Example
         ---------
@@ -2327,10 +2370,6 @@ class Client:
         status: Optional[:class:`.Status`]
             Indicates what status to change to. If ``None``, then
             :attr:`.Status.online` is used.
-        afk: Optional[:class:`bool`]
-            Indicates if you are going AFK. This allows the discord
-            client to know how to handle push notifications better
-            for you in case you are actually idle and not lying.
 
         Raises
         ------
@@ -2348,7 +2387,7 @@ class Client:
             status_enum = status
             status = str(status)
 
-        await self.ws.change_presence(activity=activity, status=status, afk=afk)
+        await self.ws.change_presence(activity=activity, status=status)
 
         for guild in self._connection.guilds:
             me = guild.me
@@ -2364,7 +2403,13 @@ class Client:
 
     # Guild stuff
 
-    def fetch_guilds(self, *, limit: Optional[int] = 100, before=None, after=None):
+    def fetch_guilds(
+            self,
+            *,
+            limit: Optional[int] = 100,
+            before: Union[Snowflake, datetime.datetime, None] = None,
+            after: Union[Snowflake, datetime.datetime, None] = None
+    ) -> GuildIterator:
         """Retrieves an :class:`.AsyncIterator` that enables receiving your guilds.
 
         .. note::
@@ -2417,7 +2462,7 @@ class Client:
         """
         return GuildIterator(self, limit=limit, before=before, after=after)
 
-    async def fetch_template(self, code):
+    async def fetch_template(self, code: Union[Template, str]) -> Template:
         """|coro|
 
         Gets a :class:`.Template` from a discord.new URL or code.
@@ -2443,7 +2488,7 @@ class Client:
         data = await self.http.get_template(code)
         return Template(data=data, state=self._connection)
 
-    async def fetch_guild(self, guild_id):
+    async def fetch_guild(self, guild_id: int) -> Guild:
         """|coro|
 
         Retrieves a :class:`.Guild` from an ID.
@@ -2477,7 +2522,14 @@ class Client:
         data = await self.http.get_guild(guild_id)
         return Guild(data=data, state=self._connection)
 
-    async def create_guild(self, name, region=None, icon=None, *, code=None):
+    async def create_guild(
+            self,
+            name: str,
+            region: Optional[VoiceRegion] = None,
+            icon: Optional[bytes] = None,
+            *,
+            code: Optional[str] = None
+    ) -> Guild:
         """|coro|
 
         Creates a :class:`.Guild`.
@@ -2526,7 +2578,7 @@ class Client:
 
     # Invite management
 
-    async def fetch_invite(self, url, *, with_counts=True):
+    async def fetch_invite(self, url: Union[Invite, str], *, with_counts: bool = True) -> Invite:
         """|coro|
 
         Gets an :class:`.Invite` from a discord.gg URL or ID.
@@ -2563,7 +2615,7 @@ class Client:
         data = await self.http.get_invite(invite_id, with_counts=with_counts)
         return Invite.from_incomplete(state=self._connection, data=data)
 
-    async def delete_invite(self, invite):
+    async def delete_invite(self, invite: Union[Invite, str]) -> None:
         """|coro|
 
         Revokes an :class:`.Invite`, URL, or ID to an invite.
@@ -2591,7 +2643,7 @@ class Client:
 
     # Miscellaneous stuff
 
-    async def fetch_widget(self, guild_id):
+    async def fetch_widget(self, guild_id: int) -> Widget:
         """|coro|
 
         Gets a :class:`.Widget` from a guild ID.
@@ -2621,7 +2673,7 @@ class Client:
 
         return Widget(state=self._connection, data=data)
 
-    async def application_info(self):
+    async def application_info(self) -> AppInfo:
         """|coro|
 
         Retrieves the bot's application information.
@@ -2674,52 +2726,7 @@ class Client:
         data = await self.http.get_user(user_id)
         return User(state=self._connection, data=data)
 
-    @utils.deprecated()
-    async def fetch_user_profile(self, user_id):
-        """|coro|
-
-        Gets an arbitrary user's profile.
-
-        .. deprecated:: 1.7
-
-        .. note::
-
-            This can only be used by non-bot accounts.
-
-        Parameters
-        ------------
-        user_id: :class:`int`
-            The ID of the user to fetch their profile for.
-
-        Raises
-        -------
-        :exc:`.Forbidden`
-            Not allowed to fetch profiles.
-        :exc:`.HTTPException`
-            Fetching the profile failed.
-
-        Returns
-        --------
-        :class:`.Profile`
-            The profile of the user.
-        """
-
-        state = self._connection
-        data = await self.http.get_user_profile(user_id)
-
-        def transform(d):
-            return state._get_guild(int(d['id']))
-
-        since = data.get('premium_since')
-        mutual_guilds = list(filter(None, map(transform, data.get('mutual_guilds', []))))
-        user = data['user']
-        return Profile(flags=user.get('flags', 0),
-                       premium_since=utils.parse_time(since),
-                       mutual_guilds=mutual_guilds,
-                       user=User(data=user, state=state),
-                       connected_accounts=data['connected_accounts'])
-
-    async def fetch_channel(self, channel_id):
+    async def fetch_channel(self, channel_id: int):
         """|coro|
 
         Retrieves a :class:`.abc.GuildChannel` or :class:`.abc.PrivateChannel` with the specified ID.
@@ -2761,7 +2768,7 @@ class Client:
 
         return channel
 
-    async def fetch_webhook(self, webhook_id):
+    async def fetch_webhook(self, webhook_id: int):
         """|coro|
 
         Retrieves a :class:`.Webhook` with the specified ID.
@@ -2783,7 +2790,7 @@ class Client:
         data = await self.http.get_webhook(webhook_id)
         return Webhook.from_state(data, state=self._connection)
 
-    async def fetch_all_nitro_stickers(self):
+    async def fetch_all_nitro_stickers(self) -> List[StickerPack]:
         """
         Retrieves a :class:`list` with all build-in :class:`~discord.StickerPack` 's.
 
