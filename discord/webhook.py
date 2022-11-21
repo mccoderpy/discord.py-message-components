@@ -648,7 +648,7 @@ class Webhook(Hashable):
         return cls(data, adapter=adapter)
 
     @classmethod
-    def from_url(cls, url, *, adapter):
+    def from_url(cls, url: str, *, adapter: WebhookAdapter):
         """Creates a partial :class:`Webhook` from a webhook URL.
 
         Parameters
@@ -672,7 +672,7 @@ class Webhook(Hashable):
             A partial webhook is just a webhook object with an ID and a token.
         """
 
-        m = re.search(r'discord(?:app)?.com/api/webhooks/(?P<id>[0-9]{17,20})/(?P<token>[A-Za-z0-9\.\-\_]{60,68})', url)
+        m = re.search(r'discord(?:app)?.com/api(?:/v\d+)?/webhooks/(?P<id>[0-9]{17,20})/(?P<token>[A-Za-z0-9\.\-\_]{60,68})', url)
         if m is None:
             raise InvalidArgument('Invalid webhook URL given.')
         data = m.groupdict()
