@@ -25,7 +25,7 @@ from collections import namedtuple
 
 from .client import Client
 from .appinfo import AppInfo
-from .user import User, ClientUser, Profile
+from .user import User, ClientUser
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .activity import *
