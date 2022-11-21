@@ -886,12 +886,15 @@ class SubCommand(SlashCommandOption):
         self.connector = kwargs.get('connector', {})
         self.guild_id = kwargs.get('guild_id', parent.guild_id)
         self._disabled = False
-        self._state = None
         self.autocomplete_func = None
         super().__init__(OptionType.sub_command, name=name, description=description,
                          name_localizations=name_localizations, description_localizations=description_localizations,
                          __options=options
                          )
+
+    @property
+    def _state(self):
+        return self.parent._state
 
     @property
     def disabled(self) -> bool:
@@ -927,7 +930,7 @@ class SubCommand(SlashCommandOption):
         return parent
 
     @property
-    def nsfw(self) -> bool:
+    def is_nsfw(self) -> bool:
         """
         Whether this command is nsfw
 
