@@ -23,11 +23,88 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
+from typing import (
+    Any,
+    Dict,
+    List,
+    Type,
+    Union,
+    Optional,
+    Protocol,
+    TYPE_CHECKING
+)
 
 import datetime
 
 from . import utils
 from .colour import Colour
+
+__all__ = (
+    'Embed',
+)
+
+
+class EmbedProxy:
+    def __init__(self, layer: Dict[str, Any]):
+        self.__dict__.update(layer)
+
+    def __len__(self) -> int:
+        return len(self.__dict__)
+
+    def __repr__(self) -> str:
+        return 'EmbedProxy(%s)' % ', '.join(('%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')))
+
+    def __getattr__(self, attr: str):
+        return EmptyEmbed
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, EmbedProxy) and self.__dict__ == other.__dict__
+
+    @utils.deprecated()  # You should not try to edit a value by updating the proxy
+    def __setattr__(self, key: str, value: Any):
+        self.__dict__[key] = value
+
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+    class _EmbedMediaProxy(Protocol):
+        url: Optional[str]
+        proxy_url: Optional[str]
+        width: Optional[int]
+        height: Optional[int]
+
+
+    class _EmbedVideoProxy(Protocol):
+        url: Optional[str]
+        width: Optional[int]
+        height: Optional[int]
+
+
+    class _EmbedAuthorProxy(Protocol):
+        name: str
+        url: Optional[str]
+        proxy_icon_url: Optional[str]
+
+
+    class _EmbedFooterProxy(Protocol):
+        text: Optional[str]
+        icon_url: Optional[str]
+
+
+    class _EmbedProviderProxy(Protocol):
+        name: Optional[str]
+        url: Optional[str]
+
+
+    class _EmbedFieldProxy(Protocol):
+        name: Optional[str]
+        value: Optional[str]
+        inline: bool
+
+MISSING = utils.MISSING
 
 
 class _EmptyEmbed:
@@ -42,23 +119,7 @@ class _EmptyEmbed:
 
 
 EmptyEmbed = _EmptyEmbed()
-
-
-class EmbedProxy:
-    def __init__(self, layer):
-        self.__dict__.update(layer)
-
-    def __len__(self):
-        return len(self.__dict__)
-
-    def __repr__(self):
-        return 'EmbedProxy(%s)' % ', '.join(('%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')))
-
-    def __getattr__(self, attr):
-        return EmptyEmbed
-
-    def __setattr__(self, key, value):
-        self.__dict__[key] = value
+StrOrEmpty = Union[utils.SupportsStr, _EmptyEmbed]
 
 
 class Embed:
@@ -69,7 +130,7 @@ class Embed:
         .. describe:: len(x)
 
             Returns the total size of the embed.
-            Useful for checking if it's within the 6000 character limit.
+            Useful for checking if it's within the 6000-character limit.
 
     Certain properties return an ``EmbedProxy``, a type
     that acts similar to a regular :class:`dict` except using dotted access,
@@ -78,7 +139,7 @@ class Embed:
     :attr:`Embed.Empty`.
 
     For ease of use, all parameters that expect a :class:`str` are implicitly
-    casted to :class:`str` for you.
+    cast to :class:`str` for you.
 
     Attributes
     -----------
@@ -112,37 +173,26 @@ class Embed:
 
     Empty = EmptyEmbed
 
-    def __init__(self, **kwargs):
-        # swap the colour/color aliases
-        try:
-            colour = kwargs['colour']
-        except KeyError:
-            colour = kwargs.get('color', EmptyEmbed)
-
-        self.colour = colour
-        self.title = kwargs.get('title', EmptyEmbed)
-        self.type = kwargs.get('type', 'rich')
-        self.url = kwargs.get('url', EmptyEmbed)
-        self.description = kwargs.get('description', EmptyEmbed)
-
-        if self.title is not EmptyEmbed:
-            self.title = str(self.title)
-
-        if self.description is not EmptyEmbed:
-            self.description = str(self.description)
-
-        if self.url is not EmptyEmbed:
-            self.url = str(self.url)
-
-        try:
-            timestamp = kwargs['timestamp']
-        except KeyError:
-            pass
-        else:
-            self.timestamp = timestamp
+    def __init__(
+            self,
+            *,
+            title: Union[utils.SupportsStr, _EmptyEmbed] = EmptyEmbed,
+            description: Union[utils.SupportsStr, _EmptyEmbed] = EmptyEmbed,
+            color: Union[Colour, int, _EmptyEmbed] = EmptyEmbed,
+            timestamp: Union[datetime.datetime, _EmptyEmbed] = EmptyEmbed,
+            url: Union[utils.SupportsStr, _EmptyEmbed] = EmptyEmbed,
+            type: utils.SupportsStr = 'rich',
+            colour: Union[Colour, int, _EmptyEmbed] = EmptyEmbed
+    ):
+        self.title: Union[str, _EmptyEmbed] = str(title) if title is not EmptyEmbed else title
+        self.description: Union[str, _EmptyEmbed] = str(description) if description is not EmptyEmbed else description
+        self.colour = color if color is not EmptyEmbed else colour
+        self.url: Union[str, _EmptyEmbed] = str(url) if url is not EmptyEmbed else url
+        self.timestamp = timestamp
+        self.type: str = str(type)
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls: Type[Embed], data: Dict[str, Any]) -> Embed:
         """Converts a :class:`dict` to a :class:`Embed` provided it is in the
         format that Discord expects it to be in.
 
@@ -197,11 +247,11 @@ class Embed:
 
         return self
 
-    def copy(self):
+    def copy(self) -> Embed:
         """Returns a shallow copy of the embed."""
         return Embed.from_dict(self.to_dict())
 
-    def __len__(self):
+    def __len__(self) -> int:
         total = len(self.title) + len(self.description)
         for field in getattr(self, '_fields', []):
             total += len(field['name']) + len(field['value'])
@@ -223,11 +273,11 @@ class Embed:
         return total
 
     @property
-    def colour(self):
+    def colour(self) -> Union[Colour, _EmptyEmbed]:
         return getattr(self, '_colour', EmptyEmbed)
 
     @colour.setter
-    def colour(self, value):
+    def colour(self, value: Union[Colour, int, _EmptyEmbed]):
         if isinstance(value, (Colour, _EmptyEmbed)):
             self._colour = value
         elif isinstance(value, int):
@@ -238,27 +288,27 @@ class Embed:
     color = colour
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> Union[datetime.datetime, _EmptyEmbed]:
         return getattr(self, '_timestamp', EmptyEmbed)
 
     @timestamp.setter
-    def timestamp(self, value):
+    def timestamp(self, value: Union[datetime.datetime, _EmptyEmbed]):
         if isinstance(value, (datetime.datetime, _EmptyEmbed)):
             self._timestamp = value
         else:
             raise TypeError("Expected datetime.datetime or Embed.Empty received %s instead" % value.__class__.__name__)
 
     @property
-    def footer(self):
+    def footer(self) -> _EmbedFooterProxy:
         """Union[:class:`EmbedProxy`, :attr:`Empty`]: Returns an ``EmbedProxy`` denoting the footer contents.
 
         See :meth:`set_footer` for possible values you can access.
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_footer', {}))
+        return EmbedProxy(getattr(self, '_footer', {}))  # type: ignore
 
-    def set_footer(self, *, text=EmptyEmbed, icon_url=EmptyEmbed):
+    def set_footer(self, *, text: StrOrEmpty = EmptyEmbed, icon_url: StrOrEmpty = EmptyEmbed) -> Self:
         """Sets the footer for the embed content.
 
         This function returns the class instance to allow for fluent-style
@@ -282,7 +332,7 @@ class Embed:
         return self
 
     @property
-    def image(self):
+    def image(self) -> _EmbedMediaProxy:
         """Union[:class:`EmbedProxy`, :attr:`Empty`]: Returns an ``EmbedProxy`` denoting the image contents.
 
         Possible attributes you can access are:
@@ -294,9 +344,9 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_image', {}))
+        return EmbedProxy(getattr(self, '_image', {}))  # type: ignore
 
-    def set_image(self, *, url):
+    def set_image(self, *, url: StrOrEmpty) -> Self:
         """Sets the image for the embed content.
 
         This function returns the class instance to allow for fluent-style
@@ -308,7 +358,8 @@ class Embed:
         Parameters
         -----------
         url: :class:`str`
-            The source URL for the image. Only HTTP(S) and discords `attachment://` protocol is supported.
+            The source URL for the image.
+            Only HTTP(S) and discords `attachment:// <https://discord.com/developers/docs/reference#uploading-files>`_ protocol is supported.
         """
 
         if url is EmptyEmbed:
@@ -324,7 +375,7 @@ class Embed:
         return self
 
     @property
-    def thumbnail(self):
+    def thumbnail(self) -> _EmbedMediaProxy:
         """Union[:class:`EmbedProxy`, :attr:`Empty`]: Returns an ``EmbedProxy`` denoting the thumbnail contents.
 
         Possible attributes you can access are:
@@ -336,9 +387,9 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_thumbnail', {}))
+        return EmbedProxy(getattr(self, '_thumbnail', {}))  # type: ignore
 
-    def set_thumbnail(self, *, url):
+    def set_thumbnail(self, *, url: StrOrEmpty) -> Self:
         """Sets the thumbnail for the embed content.
 
         This function returns the class instance to allow for fluent-style
@@ -366,7 +417,7 @@ class Embed:
         return self
 
     @property
-    def video(self):
+    def video(self) -> _EmbedVideoProxy:
         """Union[:class:`EmbedProxy`, :attr:`Empty`]: Returns an ``EmbedProxy`` denoting the video contents.
 
         Possible attributes include:
@@ -377,33 +428,39 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_video', {}))
+        return EmbedProxy(getattr(self, '_video', {}))  # type: ignore
 
     @video.setter
-    def video(self, value):
-        self._video = value
+    def video(self, value: utils.SupportsStr):
+        self._video = str(value)
 
     @property
-    def provider(self):
+    def provider(self) -> _EmbedProviderProxy:
         """Union[:class:`EmbedProxy`, :attr:`Empty`]: Returns an ``EmbedProxy`` denoting the provider contents.
 
         The only attributes that might be accessed are ``name`` and ``url``.
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_provider', {}))
+        return EmbedProxy(getattr(self, '_provider', {}))  # type: ignore
 
     @property
-    def author(self):
+    def author(self) -> _EmbedAuthorProxy:
         """Union[:class:`EmbedProxy`, :attr:`Empty`]: Returns an ``EmbedProxy`` denoting the author contents.
 
         See :meth:`set_author` for possible values you can access.
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_author', {}))
+        return EmbedProxy(getattr(self, '_author', {}))  # type: ignore
 
-    def set_author(self, *, name, url=EmptyEmbed, icon_url=EmptyEmbed):
+    def set_author(
+            self,
+            *,
+            name: utils.SupportsStr,
+            url: StrOrEmpty = EmptyEmbed,
+            icon_url: StrOrEmpty = EmptyEmbed
+    ):
         """Sets the author for the embed content.
 
         This function returns the class instance to allow for fluent-style
@@ -431,7 +488,7 @@ class Embed:
 
         return self
 
-    def remove_author(self):
+    def remove_author(self) -> Self:
         """Clears embed's author information.
 
         This function returns the class instance to allow for fluent-style
@@ -447,16 +504,16 @@ class Embed:
         return self
 
     @property
-    def fields(self):
+    def fields(self) -> List[_EmbedFieldProxy]:
         """List[Union[``EmbedProxy``, :attr:`Empty`]]: Returns a :class:`list` of ``EmbedProxy`` denoting the field contents.
 
         See :meth:`add_field` for possible values you can access.
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return [EmbedProxy(d) for d in getattr(self, '_fields', [])]
+        return [EmbedProxy(d) for d in getattr(self, '_fields', [])]  # type: ignore
 
-    def add_field(self, *, name, value, inline=True):
+    def add_field(self, *, name: utils.SupportsStr, value: utils.SupportsStr, inline: bool = True) -> Self:
         """Adds a field to the embed object.
 
         This function returns the class instance to allow for fluent-style
@@ -485,7 +542,7 @@ class Embed:
 
         return self
 
-    def insert_field_at(self, index, *, name, value, inline=True):
+    def insert_field_at(self, index: int, *, name: utils.SupportsStr, value: utils.SupportsStr, inline: bool = True):
         """Inserts a field before a specified index to the embed.
 
         This function returns the class instance to allow for fluent-style
@@ -518,14 +575,14 @@ class Embed:
 
         return self
 
-    def clear_fields(self):
+    def clear_fields(self) -> None:
         """Removes all fields from this embed."""
         try:
             self._fields.clear()
         except AttributeError:
             self._fields = []
 
-    def remove_field(self, index):
+    def remove_field(self, index: int) -> None:
         """Removes a field at a specified index.
 
         If the index is invalid or out of bounds then the error is
@@ -546,7 +603,7 @@ class Embed:
         except (AttributeError, IndexError):
             pass
 
-    def set_field_at(self, index, *, name, value, inline=True):
+    def set_field_at(self, index: int, *, name: utils.SupportsStr, value: utils.SupportsStr, inline: bool = True):
         """Modifies a field to the embed object.
 
         The index must point to a valid pre-existing field.
@@ -581,7 +638,7 @@ class Embed:
         field['inline'] = inline
         return self
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Converts this embed object into a dict."""
 
         # add in the raw data into the dict
@@ -612,7 +669,7 @@ class Embed:
                 else:
                     result['timestamp'] = timestamp.replace(tzinfo=datetime.timezone.utc).isoformat()
 
-        # add in the non raw attribute ones
+        # add in the non-raw attribute ones
         if self.type:
             result['type'] = self.type
 
@@ -625,4 +682,3 @@ class Embed:
         if self.title:
             result['title'] = self.title
         return result
-
