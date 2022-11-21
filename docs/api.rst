@@ -1034,104 +1034,15 @@ Utility Functions
 
 .. autofunction:: discord.utils.styled_timestamp
 
-MISSING
---------
+.. data:: MISSING
 
-.. object:: MISSING
+    The ``MISSING`` object is a special object used as default value in places where :obj:`None` cant be used as it is a valid value too.
+    For example in the most ``edit`` functions.
 
-    The ``MISSING`` is a special object used as default value in places where :obj:`None` cant be used as it is a valid value too.
-    For example in ``edit`` functions.
 
-Profile
----------
+.. data:: discord.utils.SupportsStr
 
-.. class:: Profile
-
-    A namedtuple representing a user's Discord public profile.
-
-    .. deprecated:: 1.7
-
-    .. attribute:: user
-
-        The :class:`User` the profile belongs to.
-
-        :type: :class:`User`
-    .. attribute:: premium
-
-        A boolean indicating if the user has premium (i.e. Discord Nitro).
-
-        :type: :class:`bool`
-    .. attribute:: nitro
-
-        An alias for :attr:`premium`.
-    .. attribute:: premium_since
-
-        A naive UTC datetime indicating how long the user has been premium since.
-        This could be ``None`` if not applicable.
-
-        :type: :class:`datetime.datetime`
-    .. attribute:: staff
-
-        A boolean indicating if the user is Discord Staff.
-
-        :type: :class:`bool`
-    .. attribute:: partner
-
-        A boolean indicating if the user is a Discord Partner.
-
-        :type: :class:`bool`
-    .. attribute:: bug_hunter
-
-        A boolean indicating if the user is a Bug Hunter.
-
-        :type: :class:`bool`
-    .. attribute:: early_supporter
-
-        A boolean indicating if the user has had premium before 10 October, 2018.
-
-        :type: :class:`bool`
-    .. attribute:: hypesquad
-
-        A boolean indicating if the user is in Discord HypeSquad.
-
-        :type: :class:`bool`
-    .. attribute:: hypesquad_houses
-
-        A list of :class:`HypeSquadHouse` that the user is in.
-
-        :type: List[:class:`HypeSquadHouse`]
-    .. attribute:: team_user
-
-        A boolean indicating if the user is in part of a team.
-
-        .. versionadded:: 1.3
-
-        :type: :class:`bool`
-
-    .. attribute:: system
-
-        A boolean indicating if the user is officially part of the Discord urgent message system.
-
-        .. versionadded:: 1.3
-
-        :type: :class:`bool`
-
-    .. attribute:: mutual_guilds
-
-        A list of :class:`Guild` that the :class:`ClientUser` shares with this
-        user.
-
-        :type: List[:class:`Guild`]
-
-    .. attribute:: connected_accounts
-
-        A list of dict objects indicating the accounts the user has connected.
-
-        An example entry can be seen below: ::
-
-            {"type": "twitch", "id": "92473777", "name": "discordapp"}
-
-        :type: List[Dict[:class:`str`, :class:`str`]]
+    The ``SupportsStr`` object is a special annotation that means that this can any object that is already a :class:`str` or has a :meth:`~object.__str__`  method.
 
 .. _discord-api-enums:
 
