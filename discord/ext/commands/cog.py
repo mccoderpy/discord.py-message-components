@@ -365,12 +365,12 @@ class Cog(metaclass=CogMeta):
         -------
         .. code-block:: python3
 
-            # the Button
+            # the button
             Button(label='Hey im a cool blue Button',
                    custom_id='cool blue Button',
                    style=ButtonStyle.blurple)
 
-            # function that's called when the Button pressed
+            # function that's called when the button pressed
             @command.Cog.on_click(custom_id='cool blue Button')
             async def cool_blue_button(self, i: discord.ComponentInteraction, button):
                 await i.respond(f'Hey you pressed a `{button.custom_id}`!', hidden=True)
