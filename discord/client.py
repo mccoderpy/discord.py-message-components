@@ -539,7 +539,7 @@ class Client:
             name = cmd.qualified_name
         else:
             name = cmd.name
-        print('Ignoring exception in {type} "{name}" ({id})'.format(
+        print('Ignoring exception in {type} command "{name}" ({id})'.format(
             type=str(interaction.command.type).upper(),
             name=name,
             id=interaction.command.id
