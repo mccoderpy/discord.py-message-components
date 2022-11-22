@@ -935,6 +935,7 @@ class UserSelect(BaseSelect):
     def type(self) -> ComponentType:
         return ComponentType.UserSelect
 
+    @utils.cached_property
     def values(self) -> Optional[List[Union[Member, User]]]:
         """
         The members/users that were selected
@@ -962,6 +963,7 @@ class RoleSelect(BaseSelect):
     def type(self) -> ComponentType:
         return ComponentType.RoleSelect
 
+    @utils.cached_property
     def values(self) -> Optional[List[Role]]:
         """
         The roles that were selected
@@ -988,6 +990,7 @@ class MentionableSelect(BaseSelect):
     def type(self) -> ComponentType:
         return ComponentType.MentionableSelect
 
+    @utils.cached_property
     def values(self) -> Optional[List[Union[Member, User, Role]]]:
         """
         The members/users and roles that were selected
@@ -1054,6 +1057,7 @@ class ChannelSelect(BaseSelect):
                     types.append(c)
         self._channel_types = types
 
+    @utils.cached_property
     def values(self) -> Optional[List[Union[GuildChannel, Messageable]]]:
         """
         The channels that were selected
