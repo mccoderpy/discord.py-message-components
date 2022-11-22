@@ -277,6 +277,7 @@ class IntegrationApplication:
     description: :class:`str`
         The application's description. Can be an empty string.
     summary: :class:`str`
+        .. deprecated:: 2.0
         The summary of the application. Can be an empty string.
     user: Optional[:class:`User`]
         The bot user on this application.
