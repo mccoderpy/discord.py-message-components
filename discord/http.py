@@ -1681,9 +1681,7 @@ class HTTPClient:
         return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id))
 
     def get_automod_rule(self, guild_id: int, rule_id: int):
-        return self.request(
-            Route('GET', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)
-            )
+        return self.request(Route('GET', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id))
 
     def create_automod_rule(self, guild_id: int, data: dict, reason: str = None):
         r = Route('POST', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id)
@@ -1700,6 +1698,12 @@ class HTTPClient:
     # Misc
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
+    
+    def get_role_connections_metadata(self, application_id: int):
+        return self.request(Route('GET', f'/applications/{application_id}/role-connections/metadata'))
+
+    def edit_role_connections_metadata(self, application_id: int, data: List[Dict[str, Any]]):
+        return self.request(Route('PUT', f'/applications/{application_id}/role-connections/metadata'), json=data)
 
     async def get_gateway(self, *, encoding='json', v=10, zlib=True):
         try:
