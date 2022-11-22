@@ -67,7 +67,7 @@ from inspect import isawaitable as _isawaitable, signature as _signature
 from operator import attrgetter
 
 from .errors import InvalidArgument
-from .enums import TimestampStyle
+from .enums import TimestampStyle, VoiceActivityApplication
 
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec, TypeGuard, Self
@@ -501,7 +501,7 @@ def styled_timestamp(
     return f'<t:{unix_timestamp}:{str(style)}>'
 
 
-async def create_voice_activity(channel: VoiceChannel, target_application_id: int, **kwargs):
+async def create_voice_activity(channel: VoiceChannel, target_application_id: VoiceActivityApplication, **kwargs):
     return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
 
 

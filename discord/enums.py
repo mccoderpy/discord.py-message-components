@@ -73,7 +73,9 @@ __all__ = (
     'AutoModEventType',
     'AutoModTriggerType',
     'AutoModKeywordPresetType',
-    'PostSortOrder'
+    'PostSortOrder',
+    'AppRoleConnectionMetadataType',
+    'VoiceActivityApplication',
 )
 
 
