@@ -989,6 +989,17 @@ class PostSortOrder(Enum):
     creation_date   = 1
 
 
+class AppRoleConnectionMetadataType(Enum):
+    int_less_than_or_equal         = 1
+    int_greater_than_or_equal      = 2
+    int_equal                      = 3
+    int_not_equal                  = 4
+    datetime_less_than_or_equal    = 5
+    datetime_greater_than_or_equal = 6
+    bool_equal                     = 7
+    bool_not_equal                 = 8
+
+
 def try_enum(cls: Type[Enum], val: Any):
     """A function that tries to turn the value into enum ``cls``.
 
