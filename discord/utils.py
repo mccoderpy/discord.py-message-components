@@ -959,7 +959,7 @@ def setup_logging(
     logger.setLevel(level)
     logger.addHandler(handler)
 
-    if level <= logging.INFO:
+    if logger.isEnabledFor(logging.INFO):
         level_name = logging.getLevelName(level)
         if supports_color:
             fmt = f'Started colored logging for \x1b[32m%s\x1b[0m with handler \x1b[32m%s\x1b[0m on level {dict(_ColourFormatter.LEVEL_COLOURS)[level]}%s\x1b[0m.'
