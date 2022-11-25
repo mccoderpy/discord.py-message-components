@@ -29,7 +29,9 @@ from typing import (
     Any,
     Set,
     Dict,
+    List,
     Union,
+    Tuple,
     Iterable,
     Awaitable,
     Coroutine,
@@ -505,10 +507,13 @@ async def create_voice_activity(channel: VoiceChannel, target_application_id: in
     return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
 
 
-def _unique(iterable: _Iterable[T]) -> _Iterable[T]:
+def _unique(iterable: _Iterable[T]) -> Union[List[T], Tuple[T], Set[T]]:
     seen = set()
     adder = seen.add
-    return type(iterable)(x for x in iterable if not (x in seen or adder(x)))
+    origin_type = type(iterable)
+    if origin_type not in {list, tuple, set}:
+        origin_type = list
+    return origin_type([x for x in iterable if not (x in seen or adder(x))])
 
 
 def _get_as_snowflake(data: Dict[str, Any], key: str) -> Optional[int]:
@@ -856,13 +861,6 @@ class _ColourFormatter(logging.Formatter):
     # 100-107 are the same as the bright ones but for the background.
     # 1 means bold, 2 means dim, 0 means reset, and 4 means underline.
 
-    # LEVEL_COLOURS = [
-    #     (logging.DEBUG, '\x1b[40;1m'),
-    #     (logging.INFO, '\x1b[34;1m'),
-    #     (logging.WARNING, '\x1b[33;1m'),
-    #     (logging.ERROR, '\x1b[31m'),
-    #     (logging.CRITICAL, '\x1b[41m'),
-    # ]
     LEVEL_COLOURS = [
         (logging.DEBUG, colorama.Back.BLACK + colorama.Style.BRIGHT),
         (logging.INFO, colorama.Fore.BLUE + colorama.Style.BRIGHT),
