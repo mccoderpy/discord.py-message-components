@@ -960,6 +960,12 @@ class Client:
         advanced users, this can be disabled by passing :obj:`None` to
         the ``log_handler`` parameter.
 
+        .. warning::
+
+            This function must be the last function to call due to the fact that it
+            is blocking. That means that registration of events or anything being
+            called after this function call will not execute until it returns.
+
         Parameters
         -----------
         token: :class:`str`
@@ -986,12 +992,6 @@ class Client:
             By default, only the library logger (``'discord'``) is set up. If this
             is set to :obj:`True` then the root logger is set up as well.
             Defaults to :obj:`False`.
-
-        .. warning::
-
-            This function must be the last function to call due to the fact that it
-            is blocking. That means that registration of events or anything being
-            called after this function call will not execute until it returns.
         """
         loop = self.loop
 
