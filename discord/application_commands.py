@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .state import ConnectionState
     from .ext.commands import Cog, Greedy, Converter
-    from .interactions import BaseInteraction
+    from .interactions import ApplicationCommandInteraction
 
 __all__ = (
     'Localizations',
@@ -1390,7 +1390,7 @@ class SlashCommand(ApplicationCommand):
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
-    async def _parse_arguments(self, interaction: BaseInteraction):
+    async def _parse_arguments(self, interaction: ApplicationCommandInteraction):
         to_invoke = self
         params = {}
         options = interaction.data.options
@@ -1428,8 +1428,7 @@ class SlashCommand(ApplicationCommand):
                 else:
                     _id = int(option.value)
                     if option.type == OptionType.user:
-                        params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[
-                            _id] or _id
+                        params[name] = interaction.guild.get_member(_id) or resolved.members.get(_id, None) or resolved.users.get(_id, None) or _id
                     elif option.type == OptionType.role:
                         params[name] = resolved.roles[_id] or _id
                     elif option.type == OptionType.channel:
@@ -1439,8 +1438,7 @@ class SlashCommand(ApplicationCommand):
                         try:
                             params[name] = resolved.roles[_id]
                         except KeyError:
-                            params[name] = interaction.guild.get_member(_id) or resolved.members[_id] or resolved.users[
-                                _id] or _id
+                            params[name] = interaction.guild.get_member(_id) or resolved.members.get(_id, None) or resolved.users.get(_id, None) or _id
                     elif option.type == OptionType.attachment:
                         params[name] = resolved.attachments[_id] or _id
 
@@ -1564,7 +1562,7 @@ async def _transform_greedy_pos(ctx, param, required, converter, value):
     return result
 
 
-async def transform(interaction, param, converter, value) -> Any:
+async def transform(interaction: ApplicationCommandInteraction, param: SlashCommandOption, converter, value: Any) -> Any:
     from .ext.commands.converter import _Greedy
     if type(converter) is _Greedy:
         return await _transform_greedy_pos(interaction, param, param.required, converter.converter, value)
@@ -1668,7 +1666,7 @@ class UserCommand(ApplicationCommand):
             **data
         )._fill_data(data)
 
-    async def _parse_arguments(self, interaction):
+    async def _parse_arguments(self, interaction: ApplicationCommandInteraction):
         await self.invoke(interaction, interaction.target)
 
 
@@ -1719,7 +1717,7 @@ class MessageCommand(ApplicationCommand):
             **data
         )._fill_data(data)
 
-    async def _parse_arguments(self, interaction):
+    async def _parse_arguments(self, interaction: ApplicationCommandInteraction):
         await self.invoke(interaction, interaction.target)
 
 
