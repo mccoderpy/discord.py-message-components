@@ -834,11 +834,11 @@ def escape_mentions(text: str) -> str:
     return re.sub(r'@(everyone|here|[!&]?[0-9]{17,20})', '@\u200b\\1', text)
 
 
-# Thanks discord.py for this logger, it's grat, so we take this :)
+# Thanks discord.py for their concept for this, it's grat, so we build up on it :)
 def stream_supports_colour(stream: Any) -> bool:
-    # Pycharm and Vscode support colour in their inbuilt editors
+    # Pycharm and Vscode support colour in their inbuilt editors but normal files opened in them usually does not
     if 'PYCHARM_HOSTED' in os.environ or os.environ.get('TERM_PROGRAM') == 'vscode':
-        return True
+        return stream in (sys.stdout, sys.stderr)
 
     is_a_tty = hasattr(stream, 'isatty') and stream.isatty()
     if sys.platform != 'win32':
@@ -846,7 +846,7 @@ def stream_supports_colour(stream: Any) -> bool:
 
     # ANSICON checks for things like ConEmu
     # WT_SESSION checks if this is Windows Terminal
-    # Sometimes however WT_SESSION is not present, so we check for the SESSIONNAME
+    # SESSIONNAME checks if this is CMD
     return is_a_tty and ('ANSICON' in os.environ or 'WT_SESSION' in os.environ or os.environ.get('SESSIONNAME', '') == 'Console')
 
 
@@ -898,12 +898,14 @@ class _ColourFormatter(logging.Formatter):
 
 
 def setup_logging(
-    *,
-    handler: logging.Handler = MISSING,
-    formatter: logging.Formatter = MISSING,
-    level: int = MISSING,
-    root: bool = True,
-) -> None:
+        name: str = MISSING,
+        *,
+        handler: logging.Handler = MISSING,
+        formatter: logging.Formatter = MISSING,
+        level: int = MISSING,
+        root: bool = True,
+
+) -> logging.Logger:
     """A helper function to set up logging.
     This is superficially similar to :func:`logging.basicConfig` but
     uses different defaults and a colour formatter if the stream can
@@ -915,6 +917,8 @@ def setup_logging(
 
     Parameters
     -----------
+    name: :class:`str`
+        The name that should be used for the logger if ``root`` is :obj:`False`. This defaults to the module name.
     handler: :class:`logging.Handler`
         The log handler to use for the library's logger.
         The default log handler if not provided is :class:`logging.StreamHandler`.
@@ -923,10 +927,15 @@ def setup_logging(
         defaults to a colour based logging formatter (if available). If colour
         is not available then a simple logging formatter is provided.
     level: :class:`int`
-        The default log level for the library's logger. Defaults to ``logging.INFO``.
+        The default log level for the library's logger. Defaults to :obj:`logging.INFO`.
     root: :class:`bool`
         Whether to set up the root logger rather than the library logger.
-        Unlike the default for :class:`~discord.Client`, this defaults to ``True``.
+        Unlike the default for :class:`~discord.Client`, this defaults to :obj:`True`.
+
+    Returns
+    -------
+    :class:`logging.Logger`
+        The logger that has been set up.
     """
 
     if level is MISSING:
@@ -947,13 +956,16 @@ def setup_logging(
             formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
             supports_color = False
     else:
-        supports_color = stream_supports_colour(handler.stream) if isinstance(handler, logging.StreamHandler) else MISSING
+        supports_color = stream_supports_colour(handler.stream) if isinstance(handler, logging.StreamHandler) else False
 
     if root:
         logger = logging.getLogger()
     else:
-        library, _, _ = __name__.partition('.')
-        logger = logging.getLogger(library)
+        if name is not MISSING:
+            logger = logging.getLogger(name)
+        else:
+            library, _, _ = __name__.partition('.')
+            logger = logging.getLogger(library)
 
     handler.setFormatter(formatter)
     logger.setLevel(level)
@@ -971,3 +983,5 @@ def setup_logging(
             handler_name,
             level_name
         )
+
+    return logger
