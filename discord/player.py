@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import threading
 import traceback
 import subprocess
+# TODO: find a replacement for audioop at is deprecated and slated for removal in 3.13
 import audioop
 import asyncio
 import logging

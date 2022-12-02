@@ -517,7 +517,7 @@ class BaseSelect(BaseComponent):
     @property
     def max_values(self) -> int:
         """:class:`int`: The maximum number of items that can be chosen; default 1, max. 25."""
-        return self._min_values
+        return self._max_values
 
     @max_values.setter
     def max_values(self, value: int):
