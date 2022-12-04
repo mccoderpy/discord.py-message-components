@@ -888,12 +888,14 @@ class Client:
 
         for voice in self.voice_clients:
             try:
-                await voice.disconnect()
+                await voice.disconnect()  # type: ignore
             except Exception:
                 # if an error happens during disconnects, disregard it.
                 pass
 
         await self.http.close()
+        if self._auto_update_checker:
+            await self._auto_update_checker.close()
         self._closed = True
 
         if self.ws is not None and self.ws.open:
