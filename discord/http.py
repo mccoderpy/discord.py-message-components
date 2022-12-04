@@ -1689,9 +1689,9 @@ class HTTPClient:
         r = Route('POST', '/guilds/{guild_id}/auto-moderation/rules', guild_id=guild_id)
         return self.request(r, json=data, reason=reason)
 
-    def edit_automod_rule(self, guild_id: int, rule_id: int, data: dict, reason: str = None):
+    def edit_automod_rule(self, guild_id: int, rule_id: int, fields: Dict[str, Any], reason: Optional[str] = None):
         r = Route('PATCH', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)
-        return self.request(r, json=data, reason=reason)
+        return self.request(r, json=fields, reason=reason)
 
     def delete_automod_rule(self, guild_id: int, rule_id: int, reason: str = None):
         r = Route('DELETE', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)

@@ -44,12 +44,13 @@ from . import utils
 from .role import Role
 from .object import Object
 from .abc import GuildChannel, Snowflake
-from .utils import SnowflakeList
+from .utils import SnowflakeList, MISSING
 from .errors import ClientException
 from .enums import AutoModEventType, AutoModKeywordPresetType, AutoModActionType, AutoModTriggerType, try_enum
 
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
     from .state import ConnectionState
     from .guild import Guild
     from .user import User
@@ -121,7 +122,7 @@ class AutoModAction:
         return base
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> AutoModAction:
+    def from_dict(cls, data: Dict[str, Any]) -> Self:
         action_type = try_enum(AutoModActionType, data['type'])
         metadata = data['metadata']
         if action_type.timeout_user:
@@ -187,11 +188,11 @@ class AutoModTriggerMetadata:
                 This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
 
         regex_patterns: Optional[List[Union[:class:`str`, :class`~re.Pattern`]]]
-            Regular expression patterns which will be matched against content (Maximum of 10, each max. 75 characters long)
+            Regular expression patterns which will be matched against content (Maximum of 10, each max. 260 characters long)
 
             .. warning::
                 Only <Rust `https://docs.rs/regex/latest/regex/`>_ flowered RegEx patterns are currently supported by Discord.
-                So things like look arounds are not allowed as they are not supported in Rust.
+                So things like lookarounds are not allowed as they are not supported in Rust.
 
             .. note::
                 This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
@@ -206,7 +207,7 @@ class AutoModTriggerMetadata:
             Substrings which should be excluded from the blacklist.
 
             .. note::
-                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
+                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset` :attr:`~AutoModTriggerType.keyword`
 
         total_mentions_limit: Optional[:class:`int`]
             Total number of unique role and user mentions allowed per message (Maximum of 50)
@@ -226,8 +227,8 @@ class AutoModTriggerMetadata:
             raise TypeError('regex_patterns can only be used with AutoModRule\'s of type keyword')
         self.regex_patterns: List[Pattern] = [_re_compile(pattern) for pattern in regex_patterns if not isinstance(pattern, Pattern)]
         self.presets: List[AutoModKeywordPresetType] = presets or []
-        if exempt_words and not presets:
-            raise TypeError('exempt_words can only be used with presets')
+        if exempt_words and not (presets or keyword_filter):
+            raise TypeError('exempt_words can only be used with keyword_filter or preset')
         self.exempt_words: Optional[List[str]] = exempt_words
         self.total_mentions_limit: Optional[int] = total_mentions_limit
 
@@ -325,23 +326,30 @@ class AutoModTriggerMetadata:
 
     def to_dict(self) -> Dict[str, Any]:
         if self.keyword_filter:
-            return {
+            base = {
                 'keyword_filter': self.keyword_filter,
                 'regex_patterns': [
                     pattern.pattern for pattern in self.regex_patterns
                 ]
             }
+            if self.exempt_words is not None:
+                base['allow_list'] = self.exempt_words
+            return base
         else:
             if self.presets:
-                base = {'presets': [int(p) for p in self.presets]}
-                if self.exempt_words:
+                base = {
+                    'presets': [int(p) for p in self.presets]
+                }
+                if self.exempt_words is not None:
                     base['allow_list'] = self.exempt_words
                 return base
             elif self.total_mentions_limit:
-                return {'mention_total_limit': self.total_mentions_limit}
+                return {
+                    'mention_total_limit': self.total_mentions_limit
+                }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> AutoModTriggerMetadata:
+    def from_dict(cls, data: Dict[str, Any]) -> Self:
         self = cls.__new__(cls)
         presets = data.get('presets', None)
         if presets:
@@ -349,7 +357,8 @@ class AutoModTriggerMetadata:
             self.exempt_words = data.get('allow_list', [])
         else:
             self.keyword_filter = data.get('keyword_filter', None)
-            self.regex_patterns = data.get('regex_patterns', [])
+            self.regex_patterns = data.get('regex_patterns', None)
+            self.exempt_words = data.get('allow_list', None)
         self.total_mentions_limit = data.get('mention_total_limit', None)
         return self
 
@@ -503,29 +512,43 @@ class AutoModRule:
         """
         await self._state.http.delete_automod_rule(self.guild.id, self.id, reason=reason)
 
-    async def edit(self, *, reason: Optional[str] = None, **payload) -> AutoModRule:
+    async def edit(
+            self,
+            *,
+            name: str = MISSING,
+            event_type: AutoModEventType = MISSING,
+            trigger_type: AutoModTriggerType = MISSING,
+            trigger_metadata: AutoModTriggerMetadata = MISSING,
+            actions: List[AutoModAction] = MISSING,
+            enabled: bool = MISSING,
+            exempt_roles: List[Snowflake] = MISSING,
+            exempt_channels: List[Snowflake] = MISSING,
+            reason: Optional[str] = None,
+    ) -> AutoModRule:
         """|coro|
 
         Edits the automod rule, this requires the :attr:`~Permissions.manage_server` permission.
-
+        
+        You only need to provide the parameters you want to edit the.
+        
         Parameters
         ----------
-        name: Optional[:class:`str`]
+        name: :class:`str`
             The name, the rule should have. Only valid if it's not a preset rule.
-        event_type: Optional[:class:`~discord.AutoModEventType`]
-            Indicates in what event context a rule should be checked
-        trigger_type: Optional[:class:`~discord.AutoModTriggerType`]
+        event_type: :class:`~discord.AutoModEventType`
+            Indicates in what event context a rule should be checked.
+        trigger_type: :class:`~discord.AutoModTriggerType`
             Characterizes the type of content which can trigger the rule
-        trigger_metadata: Optional[:class:`~discord.AutoModTriggerMetadata`]
+        trigger_metadata: :class:`~discord.AutoModTriggerMetadata`
             Additional data used to determine whether a rule should be triggered.
             Different fields are relevant based on the value of :attr:`~AutoModRule.trigger_type`.
-        actions: Optional[List[:class:`~discord.AutoModAction`]]
+        actions: List[:class:`~discord.AutoModAction`]
             The actions which will execute when the rule is triggered.
-        enabled: Optional[:class:`bool`]
-            Whether the rule is enabled, default :obj:`True`.
-        exempt_roles: Optional[List[:class:`.Snowflake`]]
+        enabled: :class:`bool`
+            Whether the rule is enabled.
+        exempt_roles: List[:class:`.Snowflake`]
             Up to 20 :class:`~discord.Role`'s, that should not be affected by the rule.
-        exempt_channels: Optional[List[:class:`.Snowflake`]]
+        exempt_channels: List[:class:`.Snowflake`]
             Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`'s, that should not be affected by the rule.
         reason: Optional[:class:`str`]
             The reason for editing the rule. Shows up in the audit log.
@@ -542,66 +565,44 @@ class AutoModRule:
         :class:`AutoModRule`
             The updated rule on success.
         """
-        data = {}
+        payload = {}
 
-        try:
-            name: str = payload['name']
-        except KeyError:
-            pass
-        else:
-            data['name'] = name
+        if name is not MISSING:
+            payload['name'] = name
 
-        try:
-            event_type: AutoModEventType = payload['event_type']
-        except KeyError:
-            pass
-        else:
-            data['event_type'] = int(event_type)
+        if event_type is not MISSING:
+            payload['event_type'] = event_type.value
 
-        try:
-            trigger_type = payload['trigger_type']
-        except KeyError:
-            pass
-        else:
-            data['trigger_type'] = int(trigger_type)
-
-        try:
-            trigger_metadata: AutoModTriggerMetadata = payload['trigger_metadata']
-        except KeyError:
-            pass
-        else:
-            data['trigger_metadata'] = trigger_metadata.to_dict()
-
-        try:
-            exempt_channels: List[Snowflake] = payload['exempt_channels']
-        except KeyError:
-            exempt_channels = self._exempt_channels
-        data['exempt_channels'] = exempt_channels = [str(c.id) for c in exempt_channels]
+        if trigger_type is not MISSING:
+            payload['trigger_type'] = trigger_type.value
         
-        try:
-            actions: List[AutoModAction] = payload['actions']
-        except KeyError:
-            pass
+        if trigger_metadata is not MISSING:
+            payload['trigger_metadata'] = trigger_metadata.to_dict()
+        
+        if actions is not MISSING:
+            payload['actions'] = [action.to_dict() for action in actions]
         else:
+            actions = self.actions if exempt_channels is not MISSING else MISSING
+        
+        if exempt_channels is not MISSING:
+            payload['exempt_channels'] = _exempt_channels = [str(c.id) for c in exempt_channels]
+        else:
+            _exempt_channels = self._exempt_channels
+            
+        if actions is not MISSING:
             for action in actions:  # Add the channels where messages should be logged to, to the exempted channels
-                if action.type.send_alert_message and str(action.channel_id) not in exempt_channels:
-                    exempt_channels.append(str(action.channel_id))
-            data['actions'] = [a.to_dict() for a in actions]
+                if action.type.send_alert_message:
+                    channel_id = str(action.channel_id)
+                    if channel_id not in _exempt_channels:
+                        _exempt_channels.append(channel_id)
 
-        try:
-            enabled: bool = payload['enabled']
-        except KeyError:
-            pass
-        else:
-            data['enabled'] = enabled
+        if enabled is not MISSING:
+            payload['enabled'] = enabled
 
-        try:
-            exempt_roles: List[Snowflake] = payload['exempt_roles']
-        except KeyError:
-            pass
-        else:
-            data['exempt_roles'] = [str(r.id) for r in exempt_roles]
-        data = await self._state.http.edit_automod_rule(self.guild.id, self.id, data=data, reason=reason)
+        if exempt_roles is not MISSING:
+            payload['exempt_roles'] = [str(r.id) for r in exempt_roles]
+        
+        data = await self._state.http.edit_automod_rule(self.guild.id, self.id, fields=payload, reason=reason)
         return self._update(data)
 
 

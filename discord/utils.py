@@ -507,7 +507,7 @@ async def create_voice_activity(channel: VoiceChannel, target_application_id: in
     return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
 
 
-def _unique(iterable: _Iterable[T]) -> Union[List[T], Tuple[T], Set[T]]:
+def _unique(iterable: _Iterable[T]) -> _Iterable[T]:
     seen = set()
     adder = seen.add
     origin_type = type(iterable)
