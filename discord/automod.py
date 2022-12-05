@@ -440,7 +440,7 @@ class AutoModRule:
         """
         for role_id in self._exempt_roles:
             role = self.guild.get_role(int(role_id))
-            yield role or Object(role_id, _type=Role, state=self._state)
+            yield role or Object(role_id, type=Role, state=self._state)
 
     @property
     def exempt_channels(self) -> Iterator[Union[GuildChannel, Object]]:
@@ -454,7 +454,7 @@ class AutoModRule:
 
                 for channel_id in self._exempt_channels:
                     channel = self.guild.get_role(int(channel_id))
-                    yield channel or Object(channel_id, _type=GuildChannel, state=self._state)
+                    yield channel or Object(channel_id, type=GuildChannel, state=self._state)
 
         Yields
         -------
@@ -463,7 +463,7 @@ class AutoModRule:
         """
         for channel_id in self._exempt_channels:
             channel = self.guild.get_role(int(channel_id))
-            yield channel or Object(channel_id, _type=GuildChannel, state=self._state)
+            yield channel or Object(channel_id, type=GuildChannel, state=self._state)
         
     @property
     def creator(self) -> Optional[Member]:
