@@ -12,13 +12,12 @@ class BanCommand(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.Cog.slash_command(
-        description='Ban a member',
+        description='Ban a user',
         options=[
             Option(
                 name='user',
                 description='The user which should be banned',
-                option_type=discord.Member,
-                required=True
+                option_type=discord.Member
             ),
             Option(
                 name='reason',
@@ -28,10 +27,7 @@ class BanCommand(commands.Cog):
             )
         ]
     )
-    async def ban(self, ctx: APPCI, user: discord.Member, reason: Optional[str] = None):
-
-        if reason is None:
-            reason = "No reason"
+    async def ban(self, ctx: APPCI, user: discord.Member, reason: Optional[str] = "No reason"):
 
         await user.ban(reason=reason)
 
