@@ -23,10 +23,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
+from typing import Optional, List
 from .member import Member
-from .user import User
 from .message import Message
+from .partial_emoji import PartialEmoji
 
 
 class _RawReprMixin:
@@ -53,13 +53,13 @@ class RawMessageDeleteEvent(_RawReprMixin):
     __slots__ = ('message_id', 'channel_id', 'guild_id', 'cached_message')
 
     def __init__(self, data):
-        self.message_id = int(data['id'])
-        self.channel_id = int(data['channel_id'])
-        self.cached_message = None
+        self.message_id: int = int(data['id'])
+        self.channel_id: int = int(data['channel_id'])
+        self.cached_message optional[Message] = None
         try:
-            self.guild_id = int(data['guild_id'])
+            self.guild_id: Optional[int] = int(data['guild_id'])
         except KeyError:
-            self.guild_id = None
+            self.guild_id: Optional[int] = None
 
 
 class RawBulkMessageDeleteEvent(_RawReprMixin):
@@ -81,13 +81,13 @@ class RawBulkMessageDeleteEvent(_RawReprMixin):
 
     def __init__(self, data):
         self.message_ids = {int(x) for x in data.get('ids', [])}
-        self.channel_id = int(data['channel_id'])
-        self.cached_messages = []
+        self.channel_id: int = int(data['channel_id'])
+        self.cached_messages: List[Message] = []
 
         try:
-            self.guild_id = int(data['guild_id'])
+            self.guild_id: Optional[int] = int(data['guild_id'])
         except KeyError:
-            self.guild_id = None
+            self.guild_id: Optional[int] = None
 
 
 class RawMessageUpdateEvent(_RawReprMixin):
@@ -116,15 +116,15 @@ class RawMessageUpdateEvent(_RawReprMixin):
     __slots__ = ('message_id', 'channel_id', 'guild_id', 'data', 'cached_message')
 
     def __init__(self, data):
-        self.message_id = int(data['id'])
-        self.channel_id = int(data['channel_id'])
+        self.message_id: int = int(data['id'])
+        self.channel_id: int = int(data['channel_id'])
         self.data = data
-        self.cached_message = None
+        self.cached_message: Optional[Message] = None
 
         try:
-            self.guild_id = int(data['guild_id'])
+            self.guild_id: Optional[int] = int(data['guild_id'])
         except KeyError:
-            self.guild_id = None
+            self.guild_id: Optional[int] = None
 
 
 class RawReactionActionEvent(_RawReprMixin):
@@ -160,17 +160,17 @@ class RawReactionActionEvent(_RawReprMixin):
                  'event_type', 'member')
 
     def __init__(self, data, emoji, event_type):
-        self.message_id = int(data['message_id'])
-        self.channel_id = int(data['channel_id'])
-        self.user_id = int(data['user_id'])
-        self.emoji = emoji
-        self.event_type = event_type
-        self.member = None
+        self.message_id: int = int(data['message_id'])
+        self.channel_id: int = int(data['channel_id'])
+        self.user_id: int = int(data['user_id'])
+        self.emoji: PartialEmoji = emoji
+        self.event_type: str = event_type
+        self.member: Optional[Member] = None
 
         try:
-            self.guild_id = int(data['guild_id'])
+            self.guild_id: Optional[int] = int(data['guild_id'])
         except KeyError:
-            self.guild_id = None
+            self.guild_id: Optional[int] = None
 
 
 class RawReactionClearEvent(_RawReprMixin):
@@ -189,13 +189,13 @@ class RawReactionClearEvent(_RawReprMixin):
     __slots__ = ('message_id', 'channel_id', 'guild_id')
 
     def __init__(self, data):
-        self.message_id = int(data['message_id'])
-        self.channel_id = int(data['channel_id'])
+        self.message_id: int = int(data['message_id'])
+        self.channel_id: int = int(data['channel_id'])
 
         try:
-            self.guild_id = int(data['guild_id'])
+            self.guild_id: Optional[int] = int(data['guild_id'])
         except KeyError:
-            self.guild_id = None
+            self.guild_id: Optional[int] = None
 
 
 class RawReactionClearEmojiEvent(_RawReprMixin):
@@ -218,11 +218,11 @@ class RawReactionClearEmojiEvent(_RawReprMixin):
     __slots__ = ('message_id', 'channel_id', 'guild_id', 'emoji')
 
     def __init__(self, data, emoji):
-        self.emoji = emoji
-        self.message_id = int(data['message_id'])
-        self.channel_id = int(data['channel_id'])
+        self.emoji: PartialEmoji = emoji
+        self.message_id: int = int(data['message_id'])
+        self.channel_id: int = int(data['channel_id'])
 
         try:
-            self.guild_id = int(data['guild_id'])
+            self.guild_id: Optional[int] = int(data['guild_id'])
         except KeyError:
-            self.guild_id = None
+            self.guild_id: Optional[int] = None
