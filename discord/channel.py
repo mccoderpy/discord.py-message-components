@@ -2284,6 +2284,7 @@ class ForumPost(ThreadChannel):
             name: str = MISSING,
             tags: Sequence[ForumTag] = MISSING,
             pinned: bool = MISSING,
+            archived: bool = MISSING,
             auto_archive_duration: AutoArchiveDuration = MISSING,
             locked: bool = MISSING,
             slowmode_delay: int = MISSING,
@@ -2305,7 +2306,8 @@ class ForumPost(ThreadChannel):
             .. note::
 
                 Per forum, only one post can be pinned.
-
+        archived: Optional[:class:`bool`]
+            Whether the thread is archived
         auto_archive_duration: :class:`AutoArchiveDuration`
             The new amount of minutes after that the post will stop showing in the channel list
             after ``auto_archive_duration`` minutes of inactivity.
@@ -2331,6 +2333,9 @@ class ForumPost(ThreadChannel):
             flags.pinned = pinned
             payload['flags'] = flags.value
 
+        if archived is not MISSING:
+            payload['archived'] = archived
+            
         if auto_archive_duration is not MISSING:
             auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
             if not isinstance(auto_archive_duration, AutoArchiveDuration):
