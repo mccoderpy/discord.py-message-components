@@ -23,6 +23,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
+from typing import (
+    overload,
+    Union,
+    Optional,
+    TYPE_CHECKING
+)
+
+if TYPE_CHECKING:
+    from typing_extensions import (
+        Literal
+    )
+    from io import BufferedIOBase
+    from os import PathLike
 
 import threading
 import traceback
@@ -56,6 +71,7 @@ if sys.platform != 'win32':
     CREATE_NO_WINDOW = 0
 else:
     CREATE_NO_WINDOW = 0x08000000
+
 
 class AudioSource:
     """Represents an audio stream.
@@ -103,6 +119,7 @@ class AudioSource:
     def __del__(self):
         self.cleanup()
 
+
 class PCMAudio(AudioSource):
     """Represents raw 16-bit 48KHz stereo PCM audio source.
 
@@ -119,6 +136,7 @@ class PCMAudio(AudioSource):
         if len(ret) != OpusEncoder.FRAME_SIZE:
             return b''
         return ret
+
 
 class FFmpegAudio(AudioSource):
     """Represents an FFmpeg (or AVConv) based AudioSource.
@@ -172,6 +190,7 @@ class FFmpegAudio(AudioSource):
 
         self._process = self._stdout = None
 
+
 class FFmpegPCMAudio(FFmpegAudio):
     """An audio source from FFmpeg (or AVConv).
 
@@ -206,8 +225,41 @@ class FFmpegPCMAudio(FFmpegAudio):
     ClientException
         The subprocess failed to be created.
     """
+    
+    @overload
+    def __init__(
+            self,
+            source: Union[str, PathLike[str]],
+            *,
+            executable='ffmpeg',
+            pipe: Literal[False] = False,
+            stderr=None,
+            before_options: Optional[str] = None,
+            options: Optional[str] = None
+    ): ...
 
-    def __init__(self, source, *, executable='ffmpeg', pipe=False, stderr=None, before_options=None, options=None):
+    @overload
+    def __init__(
+            self,
+            source: BufferedIOBase,
+            *,
+            executable='ffmpeg',
+            pipe: Literal[True] = True,
+            stderr=None,
+            before_options: Optional[str] = None,
+            options: Optional[str] = None
+    ): ...
+
+    def __init__(
+            self,
+            source: Union[str, PathLike[str], BufferedIOBase],
+            *,
+            executable='ffmpeg',
+            pipe=False,
+            stderr=None,
+            before_options=None,
+            options=None
+    ):
         args = []
         subprocess_kwargs = {'stdin': source if pipe else subprocess.DEVNULL, 'stderr': stderr}
 
@@ -233,6 +285,7 @@ class FFmpegPCMAudio(FFmpegAudio):
 
     def is_opus(self):
         return False
+
 
 class FFmpegOpusAudio(FFmpegAudio):
     """An audio source from FFmpeg (or AVConv).
@@ -496,6 +549,7 @@ class FFmpegOpusAudio(FFmpegAudio):
     def is_opus(self):
         return True
 
+
 class PCMVolumeTransformer(AudioSource):
     """Transforms a previous :class:`AudioSource` to have volume controls.
 
@@ -543,6 +597,7 @@ class PCMVolumeTransformer(AudioSource):
     def read(self):
         ret = self.original.read()
         return audioop.mul(ret, 2, min(self._volume, 2.0))
+
 
 class AudioPlayer(threading.Thread):
     DELAY = OpusEncoder.FRAME_LENGTH / 1000.0
