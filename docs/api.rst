@@ -2208,6 +2208,11 @@ of :class:`enum.Enum`.
 
         Represents a sticker with a lottie image.
 
+    .. attribute:: gif
+
+        Represents a sticker with a gif image.
+
+
 .. class:: EventEntityType
 
     The location where a :class:`GuildScheduledEvent` will be scheduled at

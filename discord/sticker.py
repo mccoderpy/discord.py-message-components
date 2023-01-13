@@ -76,7 +76,7 @@ class StickerPack(Hashable):
 
     @property
     def stickers(self) -> Tuple[Sticker]:
-        "Tuple[:class:`Sticker`]: The stickers of the pack"
+        """Tuple[:class:`Sticker`]: The stickers of the pack"""
         return self.__stickers
 
     @stickers.setter

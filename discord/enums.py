@@ -956,6 +956,7 @@ class StickerType(Enum):
     png     = 1
     apng    = 2
     lottie  = 3
+    gif     = 4
 
     def __str__(self):
         return getattr(self, 'name', None)

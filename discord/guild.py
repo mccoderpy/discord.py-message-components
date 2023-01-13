@@ -2680,7 +2680,7 @@ class Guild(Hashable):
 
     async def create_sticker(
             self, name: str,
-            file: Union[UploadFile, 'PathLike[str]', 'PathLike[bytes]'],
+            file: Union[UploadFile, PathLike[str], PathLike[bytes]],
             tags: Union[str, List[str]],
             description: str = None,
             *,
@@ -2702,7 +2702,7 @@ class Guild(Hashable):
         description: Optional[:class:`str`]
             The description of the sticker (None or 2-100 characters).
         file: Union[:class:`UploadFile`, :class:`str`]
-            The sticker file to upload or the path to it, must be a PNG, APNG, or Lottie JSON file, max 500 KB
+            The sticker file to upload or the path to it, must be a PNG, APNG, GIF or Lottie JSON file, max 500 KB
         reason: Optional[:class:`str`]
             The reason for creating the sticker., shows up in the audit-log.
 
@@ -2731,9 +2731,14 @@ class Guild(Hashable):
         if len(tags) > 200:
             raise ValueError(f'The tags could be max. 200 characters in length; {len(tags)}.')
         try:
-            data = await self._state.http.create_guild_sticker(guild_id=self.id, name=name, description=description,
-                                                               tags=tags, file=file, reason=reason
-                                                               )
+            data = await self._state.http.create_guild_sticker(
+                guild_id=self.id,
+                name=name,
+                description=description,
+                tags=tags,
+                file=file,
+                reason=reason
+            )
         finally:
             file.close()
         return self._state.store_sticker(data)
