@@ -45,6 +45,7 @@ from typing import (
 from .permissions import Permissions, PermissionOverwrite
 from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, PostSortOrder, try_enum
 from .components import Button, SelectMenu, ActionRow
+from .iterators import ThreadMemberIterator
 from .mixins import Hashable
 from . import utils, abc
 from .flags import ChannelFlags
@@ -876,7 +877,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     def members(self) -> List[ThreadMember]:
         """List[:class:`Member`]: Returns a list with cached members of this thread"""
         return list(self._members.values())
-
+    
     @property
     def locked(self) -> bool:
         """:class:`bool`: Whether the threads conversation is locked by a moderator.
@@ -1071,25 +1072,51 @@ class ThreadChannel(abc.Messageable, Hashable):
 
         return await self._state.http.remove_thread_member(channel_id=self.id, member_id=member_id)
 
-    async def fetch_members(self) -> List[ThreadMember]:
+    async def fetch_members(
+            self,
+            limit: int = 100,
+            after: Union[abc.Snowflake, datetime.datetime] = None,
+            
+    ) -> ThreadMemberIterator:
         """
-        Fetch the members that currently joined this thread
+        Returns a list of :class:`ThreadMemberIterator` that allows to retrieve the currently joined members of this thread.
 
         .. note::
 
-            This requires :func:`Intents.members` to be enabled
+            This requires :func:`Intents.members` to be enabled and will also add the members retrieved to :attr:`members`
+        
+        
+        Examples
+        ---------
 
-        Returns
-        --------
-        List[:class:`ThreadMember`]
-            A list of members that has joined this thread
+        Usage ::
+
+            print(f'The thread {channel.name} has the following members:\n')
+            async for member in thread.fetch_members(limit=200):
+                print(member)
+
+        Flattening into a list: ::
+
+            messages = await thread.fetch_members(limit=123).flatten()
+            # messages is now a list of ThreadMember...
+
+        All parameters are optional.
+        
+        Parameters
+        -----------
+        limit: :class:`int`
+            The limit of thread members to retrieve - defaults to 100
+        after: Union[:class:`int`, :class:`datetime.datetime`]
+            Get thread members after this user ID
+        
+        Yields
+        -------
+        :class:`~discord.ThreadMember`
+            The thread member
         """
         if not self._state.intents.members:
             raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this API-call.')
-        r = await self._state.http.list_thread_members(channel_id=self.id)
-        for thread_member in r:
-            self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
-        return self.members
+        return ThreadMemberIterator(thread=self, limit=limit, after=after)
 
     async def delete(self, *, reason: Optional[str] = None) -> None:
         """|coro|

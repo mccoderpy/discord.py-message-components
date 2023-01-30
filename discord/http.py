@@ -890,8 +890,24 @@ class HTTPClient:
         )
         return self.request(r)
 
-    def list_thread_members(self, channel_id):
-        return self.request(Route('GET', '/channels/{channel_id}/thread-members', channel_id=channel_id))
+    def list_thread_members(
+            self,
+            channel_id: int,
+            with_member: bool = False,
+            *,
+            limit: int = 100,
+            after: Optional[int] = None
+    ):
+        query_params = {
+            'with_member': with_member,
+            'limit': limit
+        }
+        if after:
+            query_params['after'] = after
+        return self.request(
+            Route('GET', '/channels/{channel_id}/thread-members', channel_id=channel_id),
+            params=query_params
+        )
 
     def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
         if type not in ('public', 'privat'):
