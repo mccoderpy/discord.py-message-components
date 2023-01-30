@@ -3244,7 +3244,7 @@ Member
 GuildMemberFlags
 ~~~~~~~~~~~~~~~~
 
-.. attributeable:: GuildMemberFlags
+.. attributetable:: GuildMemberFlags
 
 .. autoclass:: GuildMemberFlags()
     :members:

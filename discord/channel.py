@@ -1078,20 +1078,18 @@ class ThreadChannel(abc.Messageable, Hashable):
             after: Union[abc.Snowflake, datetime.datetime] = None,
             
     ) -> ThreadMemberIterator:
-        """
-        Returns a list of :class:`ThreadMemberIterator` that allows to retrieve the currently joined members of this thread.
+        """Returns a list of :class:`ThreadMemberIterator` that allows to retrieve the currently joined members of this thread.
 
         .. note::
 
             This requires :func:`Intents.members` to be enabled and will also add the members retrieved to :attr:`members`
         
-        
         Examples
         ---------
 
         Usage ::
-
-            print(f'The thread {channel.name} has the following members:\n')
+            
+            print(f"The thread {channel.name} has the following members:\n")
             async for member in thread.fetch_members(limit=200):
                 print(member)
 
