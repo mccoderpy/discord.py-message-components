@@ -127,8 +127,8 @@ html_logo = '../images/Banner_Konturen.png'
 html_favicon = './images/discord_py_message_components_logo.ico'
 
 extlinks = {
-    'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-'),
-    'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-')
+    'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-%s'),
+    'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-%s')
 }
 
 rst_prolog = """
