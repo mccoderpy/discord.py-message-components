@@ -49,6 +49,7 @@ from .activity import create_activity
 from .permissions import Permissions
 from .voice_client import VoiceProtocol, VoiceClient
 from .enums import Status, try_enum
+from .flags import GuildMemberFlags
 from .colour import Colour
 from .object import Object
 from .errors import NotInVoiceChannel
@@ -224,6 +225,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         The guild that the member belongs to.
     nick: Optional[:class:`str`]
         The guild specific nickname of the user.
+    flags: :class:`GuildMemberFlags`
+        Guild specific flags for the member
     pending: :class:`bool`
         Whether the member is pending member verification.
 
@@ -234,7 +237,7 @@ class Member(discord.abc.Messageable, _BaseUser):
     """
 
     __slots__ = ('_roles', 'joined_at', 'premium_since', '_client_status',
-                 'activities', 'guild', 'pending', 'nick', 'guild_avatar', 'guild_banner', 'guild_bio',
+                 'activities', 'guild', 'flags', 'pending', 'nick', 'guild_avatar', 'guild_banner', 'guild_bio',
                  '_user', '_state', '_communication_disabled_until')
 
     def __init__(self, *, data, guild, state):
@@ -249,6 +252,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         }
         self.activities = tuple(map(create_activity, data.get('activities', [])))
         self.nick = data.get('nick', None)
+        self.flags = GuildMemberFlags._from_value(data.get('flags', 0))
         self.pending = data.get('pending', False)
         self.guild_avatar = data.get('avatar', None)
         self.guild_banner = data.get('banner', None)
@@ -281,6 +285,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.premium_since = utils.parse_time(data.get('premium_since'))
         self._update_roles(data)
         self.nick = data.get('nick', None)
+        self.flags = GuildMemberFlags._from_value(data.get('flags', 0))
         self.pending = data.get('pending', False)
 
     @classmethod
@@ -318,6 +323,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.nick = member.nick
         self.guild_avatar = member.guild_avatar
         self.pending = member.pending
+        self.flags = member.flags
         self.activities = member.activities
         self._state = member._state
 
@@ -345,6 +351,12 @@ class Member(discord.abc.Messageable, _BaseUser):
             self.pending = data['pending']
         except KeyError:
             pass
+        
+        try:
+            self.flags = GuildMemberFlags._from_value(data['flags'])
+        except KeyError:
+            pass
+        
 
         try:
             self._communication_disabled_until = data['communication_disabled_until']
@@ -797,6 +809,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         +------------------------------+--------------------------------------+
         | voice_channel                | :attr:`Permissions.move_members`     |
         +------------------------------+--------------------------------------+
+        | flags                        | :attr:`Permissions.moderate_members` |
+        +------------------------------+--------------------------------------+
         | communication_disabled_until | :attr:`Permissions.moderate_members` |
         +------------------------------+--------------------------------------+
 
@@ -823,6 +837,9 @@ class Member(discord.abc.Messageable, _BaseUser):
         voice_channel: Optional[:class:`VoiceChannel`]
             The voice channel to move the member to.
             Pass ``None`` to kick them from voice.
+        flags: Optional[:class:`GuildMemberFlags`]
+            The new flags for this member.
+            Note that you currently only update the ``bypasses_verification`` flag value.
         communication_disabled_until: Optional[:class:`datetime.datetime`]
             Temporarily puts the member in timeout until this time.
             If :obj:`None`, then the member  is removed from timeout.
@@ -898,9 +915,16 @@ class Member(discord.abc.Messageable, _BaseUser):
             pass
         else:
             payload['roles'] = tuple(r.id for r in roles)
-
+        
         try:
-            communication_disabled_until: Optional[datetime.datetime] = fields.pop('communication_disabled_until')
+            flags: GuildMemberFlags = fields['flags']
+        except KeyError:
+            pass
+        else:
+            payload['flags'] = flags.value
+        
+        try:
+            communication_disabled_until: Optional[datetime.datetime] = fields['communication_disabled_until']
         except KeyError:
             pass
         else:

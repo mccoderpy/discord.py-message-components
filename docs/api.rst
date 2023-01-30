@@ -3241,6 +3241,14 @@ Member
     .. automethod:: typing
         :async-with:
 
+GuildMemberFlags
+~~~~~~~~~~~~~~~~
+
+.. attributeable:: GuildMemberFlags
+
+.. autoclass:: GuildMemberFlags()
+    :members:
+
 Spotify
 ~~~~~~~~
 
