@@ -1078,7 +1078,7 @@ class ThreadChannel(abc.Messageable, Hashable):
             after: Union[abc.Snowflake, datetime.datetime] = None,
             
     ) -> ThreadMemberIterator:
-        """Returns a list of :class:`ThreadMemberIterator` that allows to retrieve the currently joined members of this thread.
+        """Returns a :class:`ThreadMemberIterator` that allows to retrieve the currently joined members of this thread.
 
         .. note::
 
