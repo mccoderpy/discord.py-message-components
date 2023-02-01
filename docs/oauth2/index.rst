@@ -4,6 +4,7 @@ OAuth2
 =======
 
 .. warning::
+
     **This feature is new in the library and not fully developed yet.**
 
     You can test and use it but be aware that this can change the behavior at any time.
