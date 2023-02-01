@@ -3,6 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://docs.discord4py.dev/">
+  <meta property="og:site_name" content="discord4py documentation">
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="og:locale" content="en-US">
+  <meta property="og:description" content="Documentation for the discord4py api-wrapper">
+  <meta name="description" content="Documentation for the discord4py api-wrapper">
+  <!--meta data-react-helmet="true" property="og:image" content="https://discord.com/assets/652f40427e1f5186ad54836074898279.png">
+  <meta data-react-helmet="true" property="twitter:image" content="https://discord.com/assets/652f40427e1f5186ad54836074898279.png"!-->
   <title>{{ title|striptags|e }}{{ titlesuffix }}</title>
   {%- block extrahead %} {% endblock %}
   <!-- end extra head -->
@@ -22,6 +31,12 @@
   {%- endblock %}
   {%- block scripts %}
   <script id="documentation_options" data-url_root="{{ pathto('', 1) }}" src="{{ pathto('_static/documentation_options.js', 1) }}"></script>
+  <script type="text/javascript">
+
+    window.addEventListener('load', function () {
+      document.head.insertAdjacentHTML('beforeEnd', `<meta property="og:title" content="discord4py documentation - ${document.getElementById(document.location.hash.replace('#', '')).children[0].innerText}">`)
+    })
+  </script>
   {%- for js in script_files %}
   {{ js_tag(js) }}
   {%- endfor %}
