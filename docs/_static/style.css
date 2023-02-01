@@ -1154,6 +1154,7 @@ rect.highlighted {
 
 .table-wrapper {
   overflow-x: auto;
+  width: fit-content;
 }
 
 table.docutils {
@@ -1195,7 +1196,7 @@ table.docutils tbody tr:last-child td {
 
 table.docutils thead tr td p,
 table.docutils tfoot tr td p,
-table.docutils tbody tr td p,
+/*table.docutils tbody tr td p/*/
 table.docutils thead tr td ul,
 table.docutils tfoot tr td ul,
 table.docutils tbody tr td ul,
