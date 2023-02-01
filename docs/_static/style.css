@@ -1326,6 +1326,7 @@ div.code-block-caption {
     max-height: calc(100vh - 2em);
     overflow-y: auto;
     margin: 1em;
+    width: -webkit-fill-available;
   }
 
   #sidebar a {
@@ -1369,8 +1370,8 @@ div.code-block-caption {
     grid-template-areas:
       "h h h h h h h h h h h h h h h h"
       "n n n n n n n n n n n n n n n n"
-      "s s s . . c c c c c c c c c . ."
-      "s s s f f f f f f f f f f f f f"
+      "s s s s . c c c c c c c c c c ."
+      "s s s s f f f f f f f f f f f f"
   }
 
   header > nav {

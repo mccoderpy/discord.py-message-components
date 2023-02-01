@@ -78,24 +78,26 @@ autodoc_typehints = 'none'
 
 # Links used for cross-referencing stuff in other documentation
 intersphinx_mapping = {
-  'py': ('https://docs.python.org/3', None),
-  'aio': ('https://docs.aiohttp.org/en/stable/', None),
-  'req': ('http://docs.python-requests.org/en/latest/', 'requests.inv')
+    'py': ('https://docs.python.org/3', None),
+    'aio': ('https://docs.aiohttp.org/en/stable/', None),
+    'req': ('http://docs.python-requests.org/en/latest/', 'requests.inv')
 }
 
 html_context = {
-  'discord_invite': 'https://discord.gg/sb69muSqsg',
-  'discord_extensions': [
-    ('discord.ext.commands', 'ext/commands'),
-    ('discord.ext.tasks', 'ext/tasks'),
-  ],
+    'discord_invite': 'https://discord.gg/sb69muSqsg',
+    'discord_extensions': [
+        ('discord.ext.commands', 'ext/commands'),
+        ('discord.ext.tasks', 'ext/tasks'),
+        ('discord.oauth2', 'oauth2')
+    ],
+    'github_url': 'https://github.com/mccoderpy/discord.py-message-components'
 }
 
 resource_links = {
-  'discord': 'https://discord.gg/sb69muSqsg',
-  'issues': 'https://github.com/mccoderpy/discord.py-message-components/issues',
-  'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
-  'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
+    'discord': 'https://discord.gg/sb69muSqsg',
+    'issues': 'https://github.com/mccoderpy/discord.py-message-components/issues',
+    'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
+    'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
 }
 
 show_authors = True
@@ -162,10 +164,10 @@ html_search_scorer = '_static/scorer.js'
 pygments_style = 'friendly'
 
 html_js_files = [
-  'custom.js',
-  'settings.js',
-  'copy.js',
-  'sidebar.js',
+    'custom.js',
+    'settings.js',
+    'copy.js',
+    'sidebar.js',
 ]
 
 # The master toctree document.
