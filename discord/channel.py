@@ -1084,19 +1084,19 @@ class ThreadChannel(abc.Messageable, Hashable):
 
             This requires :func:`Intents.members` to be enabled and will also add the members retrieved to :attr:`members`
         
-        Examples
-        ---------
-
-        Usage ::
+        .. toggle-header::
+            :header: Examples
             
-            print(f"The thread {channel.name} has the following members:\n")
-            async for member in thread.fetch_members(limit=200):
-                print(member)
-
-        Flattening into a list: ::
-
-            messages = await thread.fetch_members(limit=123).flatten()
-            # messages is now a list of ThreadMember...
+            Usage ::
+                
+                print(f"The thread {channel.name} has the following members:\n")
+                async for member in thread.fetch_members(limit=200):
+                    print(member)
+    
+            Flattening into a list: ::
+    
+                messages = await thread.fetch_members(limit=123).flatten()
+                # messages is now a list of ThreadMember...
 
         All parameters are optional.
         
@@ -1108,7 +1108,7 @@ class ThreadChannel(abc.Messageable, Hashable):
             Get thread members after this user ID
         
         Yields
-        -------
+        ------
         :class:`~discord.ThreadMember`
             The thread member
         """

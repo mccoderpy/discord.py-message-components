@@ -1,3 +1,6 @@
+:og:title: discord4py documentation
+:og:description: Welcome to the documentation for the discord4py api-wrapper
+
 .. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
 
 .. image:: ./images/drop_down_icon.svg

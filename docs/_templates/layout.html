@@ -3,13 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://docs.discord4py.dev/">
-  <meta property="og:site_name" content="discord4py documentation">
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="og:locale" content="en-US">
-  <meta property="og:description" content="Documentation for the discord4py api-wrapper">
-  <meta name="description" content="Documentation for the discord4py api-wrapper">
+  <meta name="theme-color" content="#5865F2">
   <title>{{ title|striptags|e }}{{ titlesuffix }}</title>
   {%- block extrahead %} {% endblock %}
   <!-- end extra head -->
@@ -29,12 +23,6 @@
   {%- endblock %}
   {%- block scripts %}
   <script id="documentation_options" data-url_root="{{ pathto('', 1) }}" src="{{ pathto('_static/documentation_options.js', 1) }}"></script>
-  <script type="text/javascript">
-
-    window.addEventListener('load', function () {
-      document.head.insertAdjacentHTML('beforeEnd', `<meta property="og:title" content="discord4py documentation - ${document.getElementById(document.location.hash.replace('#', '')).children[0].innerText}">`)
-    })
-  </script>
   {%- for js in script_files %}
   {{ js_tag(js) }}
   {%- endfor %}
@@ -95,7 +83,7 @@
     <div class="sub-header grid-item">
       <label for="documentation_select">{{ _('View Documentation For') }}</label>
       <select id="documentation_select" onchange="window.location = this.value;">
-        {%- if pagename is prefixedwith 'ext/' %}
+        {%- if pagename is prefixedwith(('ext/', 'oauth2')) %}
         <option value="{{ pathto(master_doc)|e }}">discord</option>
         {%- else %}
         <option value="{{ pathto(pagename) }}" selected>discord</option>

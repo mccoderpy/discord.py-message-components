@@ -30,7 +30,7 @@ sys.path.append(os.path.abspath('extensions'))
 
 
 project = 'discord.py-message-components'
-copyright = '2022, Mathieu Corsham aka. mccoder.py'
+copyright = '2023, Mathieu Corsham aka. mccoder.py'
 author = 'Mathieu Corsham aka. mccoder.py'
 
 version = ''
@@ -99,6 +99,15 @@ resource_links = {
     'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
     'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
 }
+
+ogp_site_url = 'https://docs.discord4py.dev/'
+ogp_image = f'https://docs.discord4py.dev/en/{branch}/_images/discord4py-logo.png'
+ogp_site_name = 'docs.discord4py.dev'
+
+ogp_custom_meta_tags = [
+    '<meta name="theme-color" content="#5865F2">'
+]
+ogp_enable_meta_description = True
 
 show_authors = True
 html_last_updated_fmt = '%b %d %Y'
