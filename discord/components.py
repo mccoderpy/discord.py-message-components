@@ -79,7 +79,7 @@ class BaseComponent:
             custom_id: Union[str, int] = None,
             disabled: bool = False
     ) -> None:
-        self.custom_id = custom_id
+        self.custom_id = int(custom_id) if custom_id.isdigit() else custom_id
         self.disabled = disabled
 
     @property
