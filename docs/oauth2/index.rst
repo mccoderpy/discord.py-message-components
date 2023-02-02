@@ -1,3 +1,6 @@
+:og:title: discord4py OAuth2 documentation
+:og:description: Use discord4pys build-in oauth2 package to interact with discords OAuth2 API
+
 .. currentmodule:: discord.oauth2
 
 OAuth2
