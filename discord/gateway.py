@@ -503,41 +503,39 @@ class DiscordWebSocket:
             self.resume_gateway_url = f'{data["resume_gateway_url"]}?{self.gateway.split("?")[-1]}'  # Weird way doing this but should prevent any future issues with that
             # pass back shard ID to ready handler
             data['__shard_id__'] = self.shard_id
+            
             handler = logging.getLogger('discord').handlers[-1]
-            if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
-                log.info(
-                    'Shard ID %s has connected to Gateway (Session ID: %s): %s',
-                    self.shard_id,
-                    self.session_id,
-                    ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)])
-                )
-            else:
-                log.info(
-                    'Shard ID %s has connected to Gateway (Session ID: %s): %s',
-                    self.shard_id,
-                    self.session_id,
-                    ', '.join(trace)
-                )
+            is_debug_logging = handler.level <= logging.DEBUG
+            
+            log.info(
+                f'Shard ID %s has connected to Gateway (Session ID: %s){": Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
+                self.shard_id,
+                self.session_id
+            )
+            if is_debug_logging:
+                if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
+                    log.debug('Trace: %s', ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)]))
+                else:
+                    log.debug('Trace: %s', ', '.join(trace))
 
         elif event == 'RESUMED':
             self._trace = trace = data.get('_trace', [])
             # pass back the shard ID to the resumed handler
             data['__shard_id__'] = self.shard_id
+            
             handler = logging.getLogger('discord').handlers[-1]
-            if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
-                log.info(
-                    'Shard ID %s has successfully RESUMED _session %s under trace %s.',
-                     self.shard_id,
-                    self.session_id,
-                    ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)])
-                )
-            else:
-                log.info(
-                    'Shard ID %s has successfully RESUMED _session %s under trace %s.',
-                    self.shard_id,
-                    self.session_id,
-                    ', '.join(trace)
-                )
+            is_debug_logging = handler.level <= logging.DEBUG
+
+            log.info(
+                f'Shard ID %s has connected to Gateway (Session ID: %s){": Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
+                self.shard_id,
+                self.session_id
+            )
+            if is_debug_logging:
+                if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
+                    log.debug('Trace: %s', ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)]))
+                else:
+                    log.debug('Trace: %s', ', '.join(trace))
 
         try:
             func = self._discord_parsers[event]
