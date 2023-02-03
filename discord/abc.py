@@ -400,7 +400,7 @@ class GuildChannel:
     @property
     def jump_url(self):
         """:class:`str`: Returns a URL that allows the client to jump to the referenced channel."""
-        return f'https://discord.com/channels/{self.guild_id}/{self.id}'  # type: ignore
+        return f'https://discord.com/channels/{self.guild.id}/{self.id}'  # type: ignore
 
     @property
     def created_at(self):
