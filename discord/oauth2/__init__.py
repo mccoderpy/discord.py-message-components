@@ -11,4 +11,6 @@ https://discord.com/developers/docs/topics/oauth2
 :license: MIT, see LICENSE for more details.
 """
 
+from .client import *
+from .models import *
 from .scopes import *
