@@ -645,7 +645,7 @@ class SlashCommandOption:
     ) -> None:
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
-            if issubclass(option_type, Converter) or converter is Greedy:
+            if issubclass(type(option_type), Converter) or converter is Greedy:
                 converter = copy.copy(option_type)
                 option_type = str
             option_type, channel_type = OptionType.from_type(option_type)
