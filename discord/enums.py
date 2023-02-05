@@ -439,9 +439,9 @@ class OptionType(Enum):
             else:
                 t = args[0]  # not the best solution, but we shall not get here
         if isinstance(t, int):
-            return cls.try_value(t)
+            return try_enum(cls, t), None
         elif isinstance(t, str):
-            return cls[t]
+            return cls[t], None
         if issubclass(t, str):
             return cls.string, None
         if issubclass(t, bool):
