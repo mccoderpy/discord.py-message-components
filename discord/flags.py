@@ -325,6 +325,11 @@ class MessageFlags(BaseFlags):
     def failed_to_mention_some_roles_in_thread(self):
         """:class:`bool`: Returns ``True`` if the message failed to mention some roles and add their members to the thread."""
         return 256
+    
+    @flag_value
+    def suppress_notifications(self):
+        """:class:`bool`: Returns ``True`` if the message is "silent" (does not trigger pus-notifications)"""
+        return 4096
 
 
 @fill_with_flags()
