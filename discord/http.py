@@ -624,6 +624,7 @@ class HTTPClient:
     async def close(self):
         if self.__session:
             await self.__session.close()
+            await asyncio.sleep(0.025)  # wait for the connection to be released
 
     def _token(self, token):
         self.token = token

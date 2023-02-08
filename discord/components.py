@@ -895,7 +895,13 @@ class TextInput(BaseComponent):
         self.required: bool = required
         self.value: Optional[str] = value
         self.placeholder: Optional[str] = placeholder
-
+    
+    def __str__(self) -> str:
+        return self.value
+    
+    def __repr__(self) -> str:
+        return f'<TextInput {", ".join(["%s=%s" % (k, str(v)) for k, v in self.__dict__.items()])}>'
+    
     @property
     def type(self) -> ComponentType:
         return ComponentType.TextInput

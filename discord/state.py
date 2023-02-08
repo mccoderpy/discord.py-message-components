@@ -64,6 +64,8 @@ from .interactions import BaseInteraction, InteractionType
 if TYPE_CHECKING:
     from .http import HTTPClient
 
+from .types.gateway import ReadyEvent
+
 
 class ChunkRequest:
     def __init__(self, guild_id, loop, resolver, *, cache=True):
@@ -497,7 +499,7 @@ class ConnectionState:
         finally:
             self._ready_task = None
 
-    def parse_ready(self, data):
+    def parse_ready(self, data: ReadyEvent):
         if self._ready_task is not None:
             self._ready_task.cancel()
 
@@ -520,7 +522,7 @@ class ConnectionState:
                 pass
             else:
                 # flags will always be present here
-                self.application_flags = ApplicationFlags._from_value(application['flags'])  # type: ignore
+                self.application_flags = ApplicationFlags._from_value(application['flags'])
                 self.application_id = utils._get_as_snowflake(application, 'id')
 
         self.call_handlers('connect')
@@ -1462,7 +1464,7 @@ class AutoShardedConnectionState(ConnectionState):
         # sync the application-commands
         await self._get_client()._request_sync_commands()
 
-    def parse_ready(self, data):
+    def parse_ready(self, data: ReadyEvent):
         if not hasattr(self, '_ready_state'):
             self._ready_state = asyncio.Queue()
 
