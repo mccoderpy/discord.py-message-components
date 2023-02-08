@@ -429,7 +429,7 @@ class HTTPClient:
             loop: Optional[asyncio.AbstractEventLoop] = None,
             unsync_clock: bool = True,
             api_version: int = 10,
-            api_error_locale: Optional[Locale] = None
+            api_error_locale: Optional[Locale] = 'en-US'
     ):
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.connector = connector
@@ -442,7 +442,7 @@ class HTTPClient:
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
         self.api_version = api_version
-        self.api_error_locale = api_error_locale or Locale.en_US
+        self.api_error_locale = str(api_error_locale)
         Route.BASE = f'https://discord.com/api/v{api_version}'
 
         user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
@@ -464,7 +464,7 @@ class HTTPClient:
             'autoclose': False,
             'headers': {
                 'User-Agent': self.user_agent,
-                'X-Discord-Locale': self.api_error_locale.value
+                'X-Discord-Locale': self.api_error_locale
             },
             'compress': compress
         }
@@ -484,7 +484,7 @@ class HTTPClient:
         # header creation
         headers = {
             'User-Agent': self.user_agent,
-            'X-Discord-Locale': self.api_error_locale.value
+            'X-Discord-Locale': self.api_error_locale
         }
 
         if self.token is not None:

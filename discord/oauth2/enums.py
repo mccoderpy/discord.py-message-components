@@ -26,7 +26,10 @@ DEALINGS IN THE SOFTWARE.
 
 from ..enums import Enum
 
-__all__ = ('OAuth2Scope',)
+__all__ = (
+    'OAuth2Scope',
+    'GrantType'
+)
 
 
 class OAuth2Scope(Enum):
@@ -140,3 +143,12 @@ class OAuth2Scope(Enum):
     RPC_WRITE_VOICE                          = 'rpc.voice.write'
     VOICE                                    = 'voice'
     CREATE_WEBHOOK                           = 'webhook.incoming'
+    
+    def __str__(self) -> str:
+        return self.value
+
+
+class GrantType(Enum):
+    AUTHORIZATION_CODE = 'authorization_code'
+    CLIENT_CREDENTIALS = 'client_credentials'
+    REFRESH_TOKEN      = 'refresh_token'

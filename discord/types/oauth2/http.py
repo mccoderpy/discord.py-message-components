@@ -23,19 +23,44 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
 from typing import (
-    List,
-    Protocol,
-    runtime_checkable,
-    Union
+    List
 )
 
-SnowflakeID = Union[int, str]
+from typing_extensions import (
+    NotRequired,
+    TypedDict
+)
+
+from ..appinfo import PartialAppInfo
+from ..user import User
+
+__all__ = (
+    'AccessTokenResponse',
+    'ClientCredentialsAccessTokenResponse',
+    'CurrentAuthorizationInfoResponse',
+)
 
 
-@runtime_checkable
-class SnowflakeObject(Protocol):
-    id: SnowflakeID
+class AccessTokenResponse(TypedDict):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: str
+    scope: str
 
 
-SnowflakeList = List[SnowflakeID]
+class ClientCredentialsAccessTokenResponse(TypedDict):
+    access_token: str
+    token_type: str
+    expires_in: int
+    scope: str
+
+
+class CurrentAuthorizationInfoResponse(TypedDict):
+    application: PartialAppInfo
+    scopes: List[str]
+    expires: str
+    user: NotRequired[User]

@@ -25,12 +25,81 @@ DEALINGS IN THE SOFTWARE.
 """
 
 from typing import (
+    List,
+    Optional
+)
+from typing_extensions import (
     TypedDict,
+    NotRequired
 )
 
 from .snowflake import SnowflakeID
+from .user import BaseUser
+
+__all__ = (
+    'TeamMember',
+    'Team',
+    'GatewayAppInfo',
+    'PartialAppInfo',
+    'AppInfo',
+)
+
+
+class TeamMember(TypedDict):
+    membership_state: int
+    permissions: List[str]
+    team_id: SnowflakeID
+    user: BaseUser
+
+
+class Team(TypedDict):
+    id: SnowflakeID
+    name: str
+    icon: Optional[str]
+    members: List[TeamMember]
+    owner_user_id: SnowflakeID
 
 
 class GatewayAppInfo(TypedDict):
     id: SnowflakeID
     flags: int
+
+
+class PartialAppInfo(TypedDict):
+    id: SnowflakeID
+    name: str
+    icon: NotRequired[str]
+    description: str
+    type: int
+    hook: bool
+    bot_public: bool
+    bot_require_code_grant: bool
+    verify_key: str
+    flags: NotRequired[int]
+
+
+class InstallParams(TypedDict):
+    scopes: List[str]
+    permissions: str
+
+
+class AppInfo(PartialAppInfo):
+    icon: Optional[str]
+    description: str
+    rpc_origins: NotRequired[str]
+    bot_public: bool
+    bot_require_code_grant: bool
+    terms_of_service_url: NotRequired[str]
+    privacy_policy_url: NotRequired[str]
+    owner: NotRequired[BaseUser]
+    verify_key: str
+    team: Optional[Team]
+    guild_id: NotRequired[SnowflakeID]
+    primary_sku_id: NotRequired[SnowflakeID]
+    slug: NotRequired[str]
+    cover_image: NotRequired[str]
+    flags: NotRequired[int]
+    tags: NotRequired[List[str]]
+    install_params: NotRequired[InstallParams]
+    custom_install_url: NotRequired[str]
+    role_connections_verification_url: NotRequired[str]

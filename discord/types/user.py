@@ -23,9 +23,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 from typing import (
-    TypedDict,
+    Optional,
+    TypedDict
+)
+from typing_extensions import (
+    NotRequired
 )
 
 from .snowflake import SnowflakeID
@@ -44,3 +49,15 @@ class ClientUser(BaseUser):
     verified: bool
     mfa_enabled: bool
     flags: int
+
+
+class User(BaseUser):
+    system: NotRequired[bool]
+    mfa_enabled: NotRequired[bool]
+    banner: NotRequired[Optional[str]]
+    accent_color: NotRequired[Optional[int]]
+    locale: NotRequired[str]
+    verified: NotRequired[bool]
+    email: NotRequired[Optional[str]]
+    flags: NotRequired[int]
+    premium_type: NotRequired[int]

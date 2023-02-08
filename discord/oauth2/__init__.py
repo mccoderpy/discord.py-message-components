@@ -12,5 +12,6 @@ https://discord.com/developers/docs/topics/oauth2
 """
 
 from .client import *
+from .enums import *
+from .errors import *
 from .models import *
-from .scopes import *

@@ -38,13 +38,14 @@ from typing_extensions import (
     Self
 )
 
-from ..types.oauth2.models import *
-
 from ..utils import (
     utcnow
 )
 
-from .scopes import OAuth2Scope
+from .enums import OAuth2Scope
+from .errors import (
+    AccessTokenNotRefreshable
+)
 
 from datetime import (
     datetime,
@@ -54,11 +55,13 @@ from datetime import (
 
 if TYPE_CHECKING:
     from .client import OAuth2Client
+    from ..types.oauth2.models import *
+    from ..types.oauth2.http import AccessTokenResponse
     
 T = TypeVar('T')
 
 __all__ = (
-    'AccessToken'
+    'AccessToken',
 )
 
 
@@ -90,7 +93,7 @@ class AccessToken:
     `access token response <https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-response>`_
     from discord.
     
-    This can be also used to store additional data that can be accessed through get item.
+    This can be also used to store additional data that can be accessed through getitem.
     """
     def __init__(
             self,
@@ -131,8 +134,8 @@ class AccessToken:
         self._scopes: Set[OAuth2Scope] = {OAuth2Scope(scope) for scope in scopes}
         self.additional_data: Dict[str, Any] = additional_data
     
-    def __str__(self) -> str:
-        return self._access_token
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} expires_at={self.expires_at.isoformat()} scopes={", ".join(str(s) for s in self.scopes)}>'
     
     def __getitem__(self, item: str) -> Any:
         return self.additional_data.get(item)
@@ -149,6 +152,7 @@ class AccessToken:
     
     @client.setter
     def client(self, value: OAuth2Client):
+        from .client import OAuth2Client  # avoid circular import
         if not isinstance(value, OAuth2Client):
             raise ValueError('Attribute client must be an instance of discord.oauth2.OAuth2Client')
         self._client = value
@@ -172,7 +176,7 @@ class AccessToken:
     @property
     def refresh_token(self) -> Optional[str]:
         """:class:`str`: The refresh token that is required to refresh the access token when it is expired"""
-        return self.refresh_token
+        return self._refresh_token
     
     @property
     def scopes(self) -> Set[OAuth2Scope]:
@@ -186,23 +190,41 @@ class AccessToken:
     @classmethod
     def with_client(cls, client: OAuth2Client, /, **data) -> AccessToken:
         self = cls(**data)
-        self.client = client
+        self._client = client
         return self
     
     @classmethod
     def from_raw_data(cls, client: OAuth2Client, data: AccessTokenData) -> AccessToken:
         expires_at = convert_to_datetime(data.pop('expires_in'), from_delta=True)
-        return cls.with_client(client, expires_at=expires_at, **data)
+        scopes = data.pop('scope', '').split(' ')
+        return cls.with_client(client, expires_at=expires_at, scopes=scopes, **data)
+    
+    def _update(self, data: AccessTokenResponse) -> Self:
+        self._access_token = data['access_token']
+        self._expires_at = convert_to_datetime(data['expires_in'], from_delta=True)
+        self._refresh_token = data['refresh_token']
+    
+    def to_dict(self) -> AccessTokenData:
+        base = {
+            'access_token': self.access_token,
+            'expires_at': self.expires_at.isoformat(),
+            'scopes': [s.value for s in self.scopes],
+            'refresh_token': self.refresh_token
+        }
+        refresh_token = self.refresh_token
+        if refresh_token:
+            base['refresh_token'] = refresh_token
+        return base
         
     async def refresh(self, *, force: bool = False) -> Self:
         """|coro|
         
-        Refreshes the access token and returns the new one.
+        Refreshes the access token when possible and returns the new one.
         If the token is still valid it will instantly return it unless ``force`` is set.
         This also updates the :attr:`expires_at` and :attr:`refresh_token`.
         
         .. note::
-            This is only available when :attr:`.client` is set
+            This is only available when :attr:`.client` and :attr:`refresh_token` is set
         
         Parameters
         ----------
@@ -211,6 +233,8 @@ class AccessToken:
         
         Raises
         ------
+        TokenNotRefreshable:
+            The access token is not refreshable
         AttributeError:
             The client attribute is not set
         
@@ -222,8 +246,59 @@ class AccessToken:
         if not self.is_expired() and not force:
             return self.access_token
         
+        if not self.refresh_token:
+            raise AccessTokenNotRefreshable()
+        
         client = self.client
         if not client:
             raise AttributeError('client attribute is not set so you can\'t call this from the access token directly')
-        return self._client.refresh_access_token(self)
+        await self._client.refresh_access_token(self)
+        return self
+    
+    async def revoke(self) -> None:
+        """|coro|
+        
+        Revokes the access token.
+        
+        .. note::
+            This is only available when :attr:`.client` is set
+        
+        Raises
+        ------
+        AttributeError:
+            The client attribute is not set
+        """
+        
+        client = self.client
+        if not client:
+            raise AttributeError('client attribute is not set so you can\'t call this from the access token directly')
+        
+        await self._client.revoke_access_token(self)
+        
+    async def fetch_info(self):
+        """|coro|
+        
+        Fetches the authorization information for the access token.
+        
+        .. note::
+            This is only available when :attr:`.client` is set
+        
+        Raises
+        ------
+        AttributeError:
+            The client attribute is not set
+        
+        Returns
+        -------
+        :class:`~discord.oauth2.OAuth2AuthInfo`:
+            The authorization information
+        """
+        client = self.client
+        if not client:
+            raise AttributeError('client attribute is not set so you can\'t call this from the access token directly')
+        
+        data = await self._client.fetch_access_token_info(self)
+        return data
+        
+    
         

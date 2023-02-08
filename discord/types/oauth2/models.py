@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2023-present mccoderpy
+Copyright (c) 2021-present mccoderpy
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -28,18 +28,19 @@ from __future__ import annotations
 from typing import (
     List,
     TYPE_CHECKING,
-    Union,
-    TypeAlias
+    TypeAlias,
+    Union
 )
 
 from typing_extensions import (
-    TypedDict,
-    NotRequired
+    NotRequired,
+    TypedDict
 )
 
-if TYPE_CHECKING:
-    from datetime import datetime
 
+from datetime import datetime
+
+from ..snowflake import SnowflakeID
 
 __all__ = (
     'DatetimeLike',
@@ -54,10 +55,5 @@ class AccessTokenData(TypedDict):
     expires_at: DatetimeLike
     refresh_token: NotRequired[str]
     scopes: NotRequired[List[str]]
-    user_id: NotRequired[Union[str, int]]  # TODO: replace typehint with SnowflakeID
+    user_id: NotRequired[SnowflakeID]
     ...
-
-
-    
-    
-    

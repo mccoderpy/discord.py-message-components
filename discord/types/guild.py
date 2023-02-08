@@ -24,12 +24,14 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 from typing import (
-    List,
-    Optional,
-    TypedDict
+    Optional
 )
 
-from typing_extensions import Literal, NotRequired
+from typing_extensions import (
+    Literal,
+    NotRequired,
+    TypedDict
+)
 
 from .snowflake import SnowflakeID
 
@@ -87,5 +89,3 @@ class Guild(TypedDict):
     # nsfw_level: GuildNSFWLevel
     # stickers: NotRequired[List[GuildSticker]]
     premium_progress_bar_enabled: bool
-    
-    

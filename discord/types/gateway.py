@@ -29,9 +29,12 @@ from typing import (
     List,
     Dict,
     Optional,
-    TypedDict,
+
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    TypedDict
+)
 
 from .appinfo import GatewayAppInfo
 from .guild import UnavailableGuild

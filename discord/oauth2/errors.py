@@ -23,3 +23,38 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from ..errors import DiscordException
+
+__all__ = (
+    'OAuth2Error',
+    'AccessTokenExpired',
+    'AccessTokenNotRefreshable',
+    'InvalidAuthorizationCode',
+)
+
+
+class OAuth2Error(DiscordException):
+    """Base class for all OAuth2 errors."""
+    pass
+
+
+class AccessTokenExpired(OAuth2Error):
+    """Exception raised when an access token has expired."""
+    def __init__(self, refreshable: bool = True):
+        if refreshable:
+            msg = 'This access token has expired and needs to be refreshed first.'
+        else:
+            msg = 'This access token has expired and the user must re-authorize the application.'
+        super().__init__(msg)
+
+
+class AccessTokenNotRefreshable(OAuth2Error):
+    """Exception raised when a token is not refreshable."""
+    def __init__(self):
+        super().__init__('This token is not refreshable as it is missing a refresh_token')
+
+
+class InvalidAuthorizationCode(OAuth2Error):
+    """Exception raised when an invalid authorization code is used."""
+    def __init__(self):
+        super().__init__('The authorization code is invalid or has expired.')

@@ -25,11 +25,14 @@ DEALINGS IN THE SOFTWARE.
 """
 from typing import (
     List,
-    Optional,
-    TypedDict
+    Optional
 )
 
-from typing_extensions import Literal, NotRequired
+from typing_extensions import (
+    Literal,
+    TypedDict,
+    NotRequired
+)
 
 from .snowflake import SnowflakeID, SnowflakeList
 from .user import BaseUser
@@ -44,4 +47,3 @@ class BaseEmoji(TypedDict):
     managed: NotRequired[bool]         # Whether this emoji is managed
     animated: NotRequired[bool]        # Whether this emoji is animated
     available: NotRequired[bool]       # Whether this emoji can be used, may be false due to loss of Server Boosts
-
