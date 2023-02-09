@@ -85,43 +85,32 @@ class Localizations:
     """
     Represents a :class:`dict` with localized values.
     These are used for application-commands, options and choices ``name_localizations`` and ``description_localizations``
-
-    +--------+-------------------------+---------------------+
-    | Locale |      Language Name      |     Native Name     |
-    |        | (lowercase also usable) |                     |
-    +========+=========================+=====================+
-    | da     | Danish                  | Dansk               |
-    | de     | German                  | Deutsch             |
-    | en_GB  | English, UK             | English, UK         |
-    | en_US  | English, US             | English, US         |
-    | es_ES  | Spanish                 | Español             |
-    | fr     | French                  | Français            |
-    | hr     | Croatian                | Hrvatski            |
-    | it     | Italian                 | Italiano            |
-    | lt     | Lithuanian              | Lietuviškai         |
-    | hu     | Hungarian               | Magyar              |
-    | nl     | Dutch                   | Nederlands          |
-    | no     | Norwegian               | Norsk               |
-    | pl     | Polish                  | Polski              |
-    | pt_BR  | Portuguese/Brazilian    | Português do Brasil |
-    | ro     | Romanian, Romania       | Română              |
-    | fi     | Finnish                 | Suomi               |
-    | sv_SE  | Swedish                 | Svenska             |
-    | vi     | Vietnamese              | Tiếng Việt          |
-    | tr     | Turkish                 | Türkçe              |
-    | cs     | Czech                   | Čeština             |
-    | el     | Greek                   | Ελληνικά            |
-    | bg     | Bulgarian               | български           |
-    | ru     | Russian                 | Pусский             |
-    | uk     | Ukrainian               | Українська          |
-    | hi     | Hindi                   | हिन्दी              |
-    | th     | Thai                    | ไทย                 |
-    | zh_CN  | Chinese, China          | 中文                  |
-    | ja     | Japanese                | 日本語                 |
-    | zh_TW  | Chinese, Taiwan         | 繁體中文                |
-    | ko     | Korean                  | 한국어                 |
-    +--------+-------------------------+---------------------+
-
+    
+    See :class:`~discord.Locale` for a list of available locals.
+    
+    Example
+    -------
+    
+    .. code-block:: python3
+        
+        Localizations(
+            en_US='Hello World!',
+            de='Hallo Welt!',
+            fr='Bonjour le monde!'
+            uk='Привіт світ!'
+        )
+    
+    Using the full language name is also possible.
+    
+    .. code-block:: python3
+    
+        Localizations(
+            english_us='Hello World!',
+            german='Hallo Welt!',
+            french='Bonjour le monde!'
+            ukrainian='Привіт світ!'
+        )
+    
     Parameters
     ----------
     kwargs: Any
@@ -645,7 +634,7 @@ class SlashCommandOption:
     ) -> None:
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
-            if issubclass(option_type, Converter) or converter is Greedy:
+            if issubclass(type(option_type), Converter) or converter is Greedy:
                 converter = copy.copy(option_type)
                 option_type = str
             option_type, channel_type = OptionType.from_type(option_type)

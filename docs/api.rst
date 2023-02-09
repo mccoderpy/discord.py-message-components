@@ -1285,6 +1285,46 @@ of :class:`enum.Enum`.
 
 .. class:: Locale
 
+    Valid locals that are used at different places in the discord api.
+
+    .. note::
+        Usually you can use the lowercase ``Language Name`` (spaces replaced with underscores) as a valid locale too.
+
+    ==================== ==========================  =====================
+    Locale               Language Name               Native Name
+    ==================== ==========================  =====================
+    .. attribute:: da    Danish                        Dansk
+    .. attribute:: de    German                        Deutsch
+    .. attribute:: en_GB English, UK                   English, UK
+    .. attribute:: en_US English, US                   English, US
+    .. attribute:: es_ES Spanish                       Español
+    .. attribute:: fr    French                        Français
+    .. attribute:: hr    Croatian                      Hrvatski
+    .. attribute:: it    Italian                       Italiano
+    .. attribute:: lt    Lithuanian                    Lietuviškai
+    .. attribute:: hu    Hungarian                     Magyar
+    .. attribute:: nl    Dutch                         Nederlands
+    .. attribute:: no    Norwegian                     Norsk
+    .. attribute:: pl    Polish                        Polski
+    .. attribute:: pt_BR Portuguese/Brazilian          Português do Brasil
+    .. attribute:: ro    Romanian, Romania             Română
+    .. attribute:: fi    Finnish                       Suomi
+    .. attribute:: sv_SE Swedish                       Svenska
+    .. attribute:: vi    Vietnamese                    Tiếng Việt
+    .. attribute:: tr    Turkish                       Türkçe
+    .. attribute:: cs    Czech                         Čeština
+    .. attribute:: el    Greek                         Ελληνικά
+    .. attribute:: bg    Bulgarian                     български
+    .. attribute:: ru    Russian                       Pусский
+    .. attribute:: uk    Ukrainian                     Українська
+    .. attribute:: hi    Hindi                         हिन्दी
+    .. attribute:: th    Thai                          ไทย
+    .. attribute:: zh_CN Chinese, China                中文
+    .. attribute:: ja    Japanese                      日本語
+    .. attribute:: zh_TW Chinese, Taiwan               繁體中文
+    .. attribute:: ko    Korean                        한국어
+    ==================== ==========================  =====================
+
 .. class:: ActivityType
 
     Specifies the type of :class:`Activity`. This is used to check how to
@@ -3321,13 +3361,16 @@ ThreadChannel
 .. autoclass:: ThreadChannel()
     :members:
     :inherited-members:
-    :exclude-members: history, typing
+    :exclude-members: history, typing, fetch_members
 
     .. automethod:: history
         :async-for:
 
     .. automethod:: typing
         :async-with:
+
+    .. automethod:: fetch_members
+        :async-for:
 
 ThreadMember
 ~~~~~~~~~~~~~~
@@ -3354,8 +3397,6 @@ VoiceChannel
     .. automethod:: typing
         :async-with:
 
-
-
 StageChannel
 ~~~~~~~~~~~~~
 
@@ -3381,6 +3422,16 @@ ForumPost
 .. autoclass:: ForumPost()
     :members:
     :inherited-members:
+    :exclude-members: history, typing, fetch_members
+
+    .. automethod:: history
+        :async-for:
+
+    .. automethod:: typing
+        :async-with:
+
+    .. automethod:: fetch_members
+        :async-for:
 
 CategoryChannel
 ~~~~~~~~~~~~~~~~~

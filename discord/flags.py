@@ -325,6 +325,14 @@ class MessageFlags(BaseFlags):
     def failed_to_mention_some_roles_in_thread(self):
         """:class:`bool`: Returns ``True`` if the message failed to mention some roles and add their members to the thread."""
         return 256
+    
+    @flag_value
+    def suppress_notifications(self):
+        """:class:`bool`: Returns ``True`` if the message is "silent".
+        
+        The user(s) will still see a mention in the channel, but no push or desktop notification will be sent.
+        """
+        return 4096
 
 
 @fill_with_flags()
