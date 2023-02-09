@@ -505,10 +505,11 @@ class DiscordWebSocket:
             data['__shard_id__'] = self.shard_id
             
             handler = logging.getLogger('discord').handlers[-1]
-            is_debug_logging = handler.level <= logging.DEBUG
+            handler_level = handler.level
+            is_debug_logging = handler_level == logging.DEBUG
             
             log.info(
-                f'Shard ID %s has connected to Gateway (Session ID: %s){": Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
+                f'Shard ID %s has connected to Gateway (Session ID: %s){" - Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
                 self.shard_id,
                 self.session_id
             )
@@ -524,10 +525,11 @@ class DiscordWebSocket:
             data['__shard_id__'] = self.shard_id
             
             handler = logging.getLogger('discord').handlers[-1]
-            is_debug_logging = handler.level <= logging.DEBUG
+            handler_level = handler.level
+            is_debug_logging = handler_level == logging.DEBUG
 
             log.info(
-                f'Shard ID %s has connected to Gateway (Session ID: %s){": Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
+                f'Shard ID %s has resumed session %s{" - Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
                 self.shard_id,
                 self.session_id
             )

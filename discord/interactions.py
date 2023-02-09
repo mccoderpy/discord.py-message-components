@@ -25,48 +25,37 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
-from typing import (
-    Union,
-    Optional,
-    Sequence,
-    List,
-    Dict,
-    Any,
-    TYPE_CHECKING
-)
+import asyncio
+import logging
+from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Union)
 
 from typing_extensions import Literal
 
-import asyncio
-import logging
-
 from . import abc, utils
-from .role import Role
-from .user import User
-from .file import File
-from .guild import Guild
-from .embeds import Embed
-from .member import Member
-from .http import HTTPClient, handle_message_parameters, handle_interaction_message_parameters
-from .reaction import Reaction
-from .flags import MessageFlags
-from .permissions import Permissions
-from .mentions import AllowedMentions
-from .message import Message, Attachment
-
+from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel
 from .components import *
-from .channel import _channel_factory, TextChannel, VoiceChannel, DMChannel, ThreadChannel
-from .errors import NotFound, HTTPException, InvalidArgument, AlreadyResponded, UnknownInteraction
+from .embeds import Embed
 from .enums import (
-    InteractionType,
     ApplicationCommandType,
     ComponentType,
     InteractionCallbackType,
-    Locale,
+    InteractionType, Locale,
     MessageType,
     OptionType,
     try_enum
 )
+from .errors import AlreadyResponded, HTTPException, NotFound, UnknownInteraction
+from .file import File
+from .flags import MessageFlags
+from .guild import Guild
+from .http import handle_interaction_message_parameters, handle_message_parameters, HTTPClient
+from .member import Member
+from .mentions import AllowedMentions
+from .message import Attachment, Message
+from .permissions import Permissions
+from .reaction import Reaction
+from .role import Role
+from .user import User
 
 if TYPE_CHECKING:
     import datetime
@@ -96,7 +85,7 @@ class EphemeralMessage:
     """
     Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
     """
-    # This class will be removed in the future when we switched to use a Webhook message model instead
+    # This class will be removed in the future when we switched to use the WebhookMessage model instead
     def __init__(self, *, state, channel, data, interaction):
         self._state: ConnectionState = state
         self.__interaction__: BaseInteraction = interaction
@@ -277,7 +266,7 @@ class EphemeralMessage:
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
-            suppress: Optional[bool] = False,
+            suppress: bool = False,
             delete_after: Optional[float] = None
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
@@ -288,12 +277,15 @@ class EphemeralMessage:
         -----------
         content: Optional[:class:`str`]
             The new content to replace the message with.
-            Could be ``None`` to remove the content.y
+            Could be ``None`` to remove the content.
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
-            Could be ``None`` to remove the embed.
+            Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds
+            A list containing up to 10 embeds`to send.
+            If ``None`` or empty, all embeds will be removed.
+            
+            If passed, ``embed`` does also count towards the limit of 10 embeds.
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
             A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
             Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
@@ -314,10 +306,8 @@ class EphemeralMessage:
                 Only needed when ``attachments`` are passed, otherwise will be ignored.
 
         suppress: :class:`bool`
-            Whether to suppress embeds for the message. This removes
-            all the embeds if set to ``True``. If set to ``False``
-            this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~.Permissions.manage_messages`.
+            Whether to suppress embeds for the message. If ``True`` this will remove all embeds from the message.
+            If `´False`` it adds them back.
         delete_after: :class:`float`
             If provided, the number of seconds to wait in the background
             before deleting the response we just edited. If the deletion fails,
@@ -561,12 +551,12 @@ class BaseInteraction:
             keep_existing_attachments: bool = False,
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
-            suppress: Optional[bool] = False
+            suppress_embeds: Optional[bool] = False
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
-        Responds to the interaction by editing the original or callback message depending on the :attr:`~BaseInteraction.type`.
-
+        Responds to the interaction by editing the original or callback message depending on the :attr:`BaseInteraction.type`.
+        
         Parameters
         -----------
         content: Optional[:class:`str`]
@@ -574,16 +564,19 @@ class BaseInteraction:
             Could be ``None`` to remove the content.
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
-            Could be ``None`` to remove the embed.
+            Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds
+            A list containing up to 10 embeds`to send.
+            If ``None`` or empty, all embeds will be removed.
+            
+            If passed, ``embed`` does also count towards the limit of 10 embeds.
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
             A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
             Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
-            If  an empty list (``[]``) is passed, all attachment will be removed.
+            If ``None`` or empty, all attachments will be removed.
 
             .. note::
 
@@ -591,16 +584,15 @@ class BaseInteraction:
 
         keep_existing_attachments: :class:`bool`
             Whether to auto-add existing attachments to ``attachments``, default :obj:`False`.
-
+            
             .. note::
 
                 Only needed when ``attachments`` are passed, otherwise will be ignored.
 
-        suppress: :class:`bool`
+        suppress_embeds: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
             this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~.Permissions.manage_messages`.
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
             before deleting the response we just edited. If the deletion fails,
@@ -612,8 +604,21 @@ class BaseInteraction:
             to the object, otherwise it uses the attributes set in :attr:`~discord.Client.allowed_mentions`.
             If no object is passed at all then the defaults given by :attr:`~discord.Client.allowed_mentions`
             are used instead.
-
-
+        
+        Raises
+        -------
+        TypeError
+            The interaction was already responded to with a modal,
+            or it is an application-command that was not responded to.
+        NotFound:
+            The interaction is expired.
+        HTTPException
+            Editing the message failed.
+        
+        Returns
+        --------
+        Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+            The edited message.
         """
         if self.deferred_modal:
             if self.type.Component:
@@ -626,7 +631,7 @@ class BaseInteraction:
                     keep_existing_attachments=keep_existing_attachments,
                     allowed_mentions=allowed_mentions,
                     delete_after=delete_after,
-                    suppress=suppress
+                    suppress_embeds=suppress_embeds
                 )
             else:
                 raise TypeError('You can\'t edit the message as it does not exist when using `respond_with_modal`.')
@@ -639,10 +644,10 @@ class BaseInteraction:
             else:
                 response_type = InteractionCallbackType.update_msg
 
-        if suppress:
-            m = self.callback_message.flags.value if self.type.ApplicationCommand else self.message.flags.value
-            flags = MessageFlags._from_value(m)
-            flags.suppress_embeds = True
+        if suppress_embeds is not MISSING:
+            m = self.callback_message if self.type.ApplicationCommand else self.message
+            flags = MessageFlags._from_value(m.flags.value)
+            flags.suppress_embeds = suppress_embeds
         else:
             flags = MISSING
 
@@ -702,8 +707,10 @@ class BaseInteraction:
         if is_hidden:
             self.deferred_hidden = True
         self.deferred = True
+        
         if delete_after is not None:
             await msg.delete(delay=delete_after)
+        
         return msg
 
     async def respond(
@@ -717,7 +724,8 @@ class BaseInteraction:
             files: Optional[List[File]] = None,
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = None,
-            suppress: bool = False,
+            suppress_embeds: bool = False,
+            suppress_notifications: bool = False,
             hidden: bool = False
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
@@ -733,7 +741,9 @@ class BaseInteraction:
         embed: :class:`~discord.Embed`
             The rich embed for the content.
         embeds: List[:class:`~discord.Embed`]
-            A list containing up to ten embeds
+            A list containing up to 10 embeds.
+            
+            If passed, ``embed`` also counts towards the limit of 10.
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
             A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
             Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
@@ -741,11 +751,10 @@ class BaseInteraction:
             The file to upload.
         files: List[:class:`~discord.File`]
             A :class:`list` of files to upload. Must be a maximum of 10.
-        suppress: :class:`bool`
-            Whether to suppress embeds for the message. This removes
-            all the embeds if set to ``True``. If set to ``False``
-            this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~discord..Permissions.manage_messages` for messages that aren't from the bot.
+        suppress_embeds: :class:`bool`
+            Whether to suppress embeds for the message.
+        suppress_notifications: :class:`bool`
+            Whether to suppress desktop- & push-notifications for the post starter-message.
         delete_after: :class:`float`
             If provided, the number of seconds to wait in the background
             before deleting the response we just sent. If the deletion fails,
@@ -758,7 +767,16 @@ class BaseInteraction:
             If no object is passed at all then the defaults given by :attr:`~discord.Client.allowed_mentions`
             are used instead.
         hidden: Optional[:class:`bool`]
-            If :obj:`True` the message will be only visible for the performer of the interaction (e.g. :attr:`~discord.BaseInteraction.author`).
+            If :obj:`True` the message will be only visible for the performer of the interaction (e.g. :attr:`.author`).
+        
+        Raises
+        -------
+        TypeError
+            This interaction was already responded to with a modal.
+        NotFound
+            The interaction has expired.
+        HTTPException
+            Responding to the interaction failed.
         """
 
         if self.deferred_modal:
@@ -768,10 +786,9 @@ class BaseInteraction:
             self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
         flags = MessageFlags._from_value(0)
-        if hidden:
-            flags.ephemeral = True
-        if suppress:
-            flags.suppress_embeds = True
+        flags.ephemeral = hidden
+        flags.suppress_embeds = suppress_embeds
+        flags.suppress_notifications = suppress_notifications
 
         is_initial = False
         response_type = MISSING
@@ -832,8 +849,10 @@ class BaseInteraction:
 
         if not isinstance(data, dict):
             data = await self.get_original_callback(raw=True)
-        is_hidden = MessageFlags._from_value(data['flags']).ephemeral
 
+        # We can't use the value from the params here because the message might be an edit/followup of the initial (hidden or not) response.
+        # Anyway, this will be removed in the future when we switched to use the webhook message modell for interactions.
+        is_hidden = MessageFlags._from_value(data['flags']).ephemeral
         if is_hidden:
             msg = EphemeralMessage(state=self._state, channel=self.channel, data=data, interaction=self)
         else:
@@ -859,6 +878,13 @@ class BaseInteraction:
         ----------
         modal: :class:`~discord.Modal`
             The modal to send.
+        
+        Raises
+        -------
+        AlreadyResponded
+            This interaction was already responded to.
+        HTTPException
+            Responding to the interaction failed.
         """
         if not self.deferred:
             data = await self._state.http.post_initial_response(
@@ -872,7 +898,7 @@ class BaseInteraction:
         self.deferred_modal = True
         return data
 
-    async def get_original_callback(self, raw: bool = False) -> Optional[Union[Message, EphemeralMessage, dict]]:
+    async def get_original_callback(self, raw: bool = False) -> Union[Message, EphemeralMessage, dict]:
         """|coro|
         Fetch the original callback-message of the interaction.
 
@@ -884,6 +910,11 @@ class BaseInteraction:
         ----------
         raw: Optional[:class:`bool`]
             Whether to return the raw data from the api instead of a :class:`~discord.Message`/:class:`EphemeralMessage`.
+        
+        Returns
+        -------
+        Union[:class:`~discord.Message`,:class:`EphemeralMessage`], :class:`dict`]
+            The original callback-message of the interaction.
         """
         data = await self._state.http.get_original_interaction_response(self._token, self._application_id)
         if raw:
@@ -906,7 +937,8 @@ class BaseInteraction:
 
         Returns
         -------
-        The :class:`~discord.Message`/:class:`~discord.EphemeralMessage` or ``None`` if there is none.
+        Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
+            The followup or ``None`` if there is none.
         """
         return self.messages.get(id, None)
 
@@ -922,21 +954,18 @@ class BaseInteraction:
     @property
     def author(self) -> Union[Member, User]:
         """
-        The :class:`~discord.Member` that invoked the interaction. If :attr:`~BaseInteraction.channel` is of type :class:`discords.ChannelType.private` or the user has left the guild, then it is a :class:`~discord.User` instead.
-
-        :return: Union[:class:`~discord.Member`, :class:`~discord.User`]
+        Union[:class:`~discord.Member`, :class:`~discord.User`]: The :class:`~discord.Member` that invoked the interaction.
+        If :attr:`.channel` is of type :class:`~discords.ChannelType.private` or the user has left the guild,
+        then it is a :class:`~discord.User` instead.
         """
         return self.member if self.member is not None else self.user
 
     @property
     def channel(self) -> Union[DMChannel, TextChannel, ThreadChannel, VoiceChannel]:
-        """
+        """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`]:
         The channel where the interaction was invoked in.
-
-        :returns: Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`]
         """
-        return getattr(self, '_channel', self.guild.get_channel(self.channel_id)
-        if self.guild_id else self._state.get_channel(self.channel_id))
+        return getattr(self, '_channel', self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id))
 
     @channel.setter
     def channel(self, channel):
@@ -977,7 +1006,8 @@ class BaseInteraction:
 
 class ApplicationCommandInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when a :class:`discord.SlashCommand`, :class:`discord.UserCommand` or :class:`discord.MessageCommand` is used.
+    Represents the data of an interaction that will be received when a :class:`~discord.SlashCommand`,
+    :class:`~discord.UserCommand` or :class:`~discord.MessageCommand` is used.
     """
 
     def __init__(self, *args, **kwargs):
@@ -1005,7 +1035,14 @@ class ApplicationCommandInteraction(BaseInteraction):
         ----------
         hidden: Optional[:class:`bool`]
             Weather only the author of the command should see this
-
+        
+        Raises
+        ------
+        AlreadyResponded
+            The interaction has already been responded to.
+        UnknownInteraction
+            The interaction has expired.
+        
         Returns
         -------
         Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]:
@@ -1017,7 +1054,7 @@ class ApplicationCommandInteraction(BaseInteraction):
 
 class ComponentInteraction(BaseInteraction):
     """
-    Represents the data of an interaction which will be received when a :class:`~discord.SelectMenu` or :class:`~discord.Button` is used.
+    Represents the data of an interaction which will be received when any :class:`~discord.BaseSelect` or :class:`~discord.Button` is used.
     """
 
     @property
@@ -1042,7 +1079,7 @@ class ComponentInteraction(BaseInteraction):
             self,
             type: Union[Literal[7], InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
             hidden: bool = False
-            ) -> Message:
+    ) -> Message:
         """
         Defers the interaction.
 
@@ -1055,7 +1092,14 @@ class ComponentInteraction(BaseInteraction):
 
              .. note::
                 Only for :attr:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``).
-
+        
+        Raises
+        ------
+        AlreadyResponded
+            The interaction has already been responded to.
+        UnknownInteraction
+            The interaction has expired.
+        
         Returns
         -------
         Optional[Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]]:
@@ -1067,7 +1111,8 @@ class ComponentInteraction(BaseInteraction):
 
 class AutocompleteInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when autocomplete for a :class:`~discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` set to :obj:`True`.
+    Represents the data of an interaction that will be received when autocomplete for a
+    :class:`~discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` is set to :obj:`True`.
     """
 
     @property
@@ -1167,7 +1212,14 @@ class ModalSubmitInteraction(BaseInteraction):
         ----------
         hidden: Optional[:class:`bool`]
             Weather only the author of the modal should see this
-
+        
+        Raises
+        ------
+        AlreadyResponded
+            The interaction has already been responded to.
+        UnknownInteraction
+            The interaction has expired.
+        
         Returns
         -------
         Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]:
