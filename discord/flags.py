@@ -328,7 +328,10 @@ class MessageFlags(BaseFlags):
     
     @flag_value
     def suppress_notifications(self):
-        """:class:`bool`: Returns ``True`` if the message is "silent" (does not trigger pus-notifications)"""
+        """:class:`bool`: Returns ``True`` if the message is "silent".
+        
+        The user(s) will still see a mention in the channel, but no push or desktop notification will be sent.
+        """
         return 4096
 
 
