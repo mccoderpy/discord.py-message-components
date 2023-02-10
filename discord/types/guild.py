@@ -114,10 +114,10 @@ class UnavailableGuild(TypedDict):
 class PartialGuild(TypedDict):
     id: SnowflakeID
     name: str
+    features: List[str]
     icon: NotRequired[str]
     owner: NotRequired[bool]
     permissions: NotRequired[str]
-    features: List[str]
 
 
 class RoleTag(TypedDict):

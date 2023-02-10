@@ -25,6 +25,10 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+import asyncio
+import logging
+import sys
+import weakref
 from typing import (
     Coroutine,
     List,
@@ -32,38 +36,36 @@ from typing import (
     TYPE_CHECKING,
     Union
 )
-from typing_extensions import NoReturn
 
-import sys
-import asyncio
 import aiohttp
-import logging
-import weakref
+from typing_extensions import NoReturn
 
 from .. import __version__
 from ..errors import (
-    HTTPException,
-    Forbidden,
-    NotFound,
     DiscordServerError,
+    Forbidden,
+    HTTPException,
+    NotFound
 )
 from ..http import (
-    Route,
+    json_or_text,
     MaybeUnlock,
-    json_or_text
+    Route
 )
 from ..utils import (
-    to_json,
     _parse_ratelimit_header,
-    MISSING
+    MISSING,
+    to_json
 )
 
 if TYPE_CHECKING:
+    from ..enums import Locale
     from ..utils import SupportsStr
-    from ..types.user import User
+    from ..types.user import User, GuildMember
     from ..types.oauth2.http import *
     from ..types.appinfo import AppInfo
-    from ..enums import Locale
+    from ..types.guild import PartialGuild
+   
 
 __all__ = ('OAuth2HTTPClient',)
 
@@ -77,7 +79,9 @@ class OAuth2HTTPClient:
     """
     SUCCESS_LOG = '{method} {url} has received {text}'
     REQUEST_LOG = '{method} {url} with {json} has returned {status}'
-
+    
+    __session: aiohttp.ClientSession
+    
     def __init__(
             self,
             client_id: int,
@@ -95,7 +99,6 @@ class OAuth2HTTPClient:
         self.__client_secret: str = client_secret
         self.loop = loop
         self.connector = connector
-        self.__session: aiohttp.ClientSession = None  # filled in OAuth2Client.start
         self._locks = weakref.WeakValueDictionary()
         self._global_over = asyncio.Event()
         self._global_over.set()
@@ -327,7 +330,7 @@ class OAuth2HTTPClient:
             before: Optional[SupportsStr] = MISSING,
             after: Optional[SupportsStr] = MISSING,
             limit: Optional[int] = MISSING
-    ) -> Coroutine[List[PartialGuildResponse]]:
+    ) -> Coroutine[List[PartialGuild]]:
         r = Route('GET', '/users/@me/guilds')
         
         params = {}
@@ -340,11 +343,11 @@ class OAuth2HTTPClient:
         
         return self.request(r, authorization=f'Bearer {access_token}', params=params)
     
-    def get_user_guild_member(self, access_token: SupportsStr, guild_id: int) -> Coroutine[MemberResponse]:
+    def get_user_guild_member(self, access_token: SupportsStr, guild_id: int) -> Coroutine[GuildMember]:
         r = Route('GET', '/users/@me/guilds/{guild_id}/member', guild_id=guild_id)
         return self.request(r, authorization=f'Bearer {access_token}')
     
-    def get_user_connections(self, access_token: SupportsStr) -> Coroutine[List[ConnectionResponse]]:
+    def get_user_connections(self, access_token: SupportsStr) -> Coroutine[List[ConnectionData]]:
         r = Route('GET', '/users/@me/connections')
         return self.request(r, authorization=f'Bearer {access_token}')
     
@@ -353,18 +356,17 @@ class OAuth2HTTPClient:
             access_token: SupportsStr,
             /,
             application_id: Optional[SupportsStr] = None
-    ) -> Coroutine[RoleConnection]:
+    ) -> Coroutine[ApplicationRoleConnectionData]:
         r = Route('GET', '/users/@me/applications/{application_id}/role-connection', application_id=application_id or self.client_id)
         return self.request(r, authorization=f'Bearer {access_token}')
     
     def update_user_application_role_connection(
             self,
             access_token: SupportsStr,
-            data: RoleConnection,
+            data: ApplicationRoleConnectionData,
             *,
             application_id: Optional[SupportsStr] = None,
             
-    ) -> Coroutine[RoleConnection]:
+    ) -> Coroutine[ApplicationRoleConnectionData]:
         r = Route('PUT', '/users/@me/applications/{application_id}/role-connection', application_id=application_id or self.client_id)
         return self.request(r, authorization=f'Bearer {access_token}', json=data)
-    
