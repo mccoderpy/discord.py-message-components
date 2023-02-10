@@ -27,61 +27,55 @@ from __future__ import annotations
 
 from typing import (
     List,
-    Optional,
-    TypedDict
+    Optional
 )
 
 from typing_extensions import (
-    NotRequired
+    Literal,
+    NotRequired,
+    TypedDict
 )
 
 from .snowflake import SnowflakeID
+from .user import BaseUser
 
 __all__ = (
-    'BaseUser',
-    'ClientUser',
-    'User',
-    'GuildMember',
+    'StickerPack',
+    'Sticker',
+    'GuildSticker'
 )
 
+StickerFormatType = Literal[1, 2, 3, 4]
 
-class BaseUser(TypedDict):
-    username: str
-    public_flags: int
+
+class StickerPack(TypedDict):
     id: SnowflakeID
-    discriminator: str
-    bot: bool
-    avatar: str
+    stickers: List[Sticker]
+    name: str
+    sku_id: SnowflakeID
+    cover_sticker_id: NotRequired[SnowflakeID]
+    description: str
+    banner_asset_id: NotRequired[SnowflakeID]
 
 
-class ClientUser(BaseUser):
-    verified: bool
-    mfa_enabled: bool
-    flags: int
+class Sticker(TypedDict):
+    id: SnowflakeID
+    pack_id: NotRequired[SnowflakeID]
+    type: Literal[1]
+    name: str
+    description: Optional[str]
+    tags: str
+    format_type: StickerFormatType
+    sort_value: NotRequired[int]
 
 
-class User(BaseUser):
-    system: NotRequired[bool]
-    mfa_enabled: NotRequired[bool]
-    banner: NotRequired[Optional[str]]
-    accent_color: NotRequired[Optional[int]]
-    locale: NotRequired[str]
-    verified: NotRequired[bool]
-    email: NotRequired[Optional[str]]
-    flags: NotRequired[int]
-    premium_type: NotRequired[int]
-
-
-class GuildMember(TypedDict):
-    user: BaseUser
-    nick: NotRequired[Optional[str]]
-    avatar: NotRequired[Optional[str]]
-    roles: List[SnowflakeID]
-    joined_at: str
-    premium_since: NotRequired[Optional[str]]
-    deaf: bool
-    mute: bool
-    flags: int
-    pending: NotRequired[bool]
-    permissions: NotRequired[str]
-    communication_disabled_until: NotRequired[Optional[str]]
+class GuildSticker(TypedDict):
+    id: SnowflakeID
+    type: Literal[2]
+    name: str
+    description: Optional[str]
+    tags: str
+    format_type: StickerFormatType
+    available: bool
+    guild_id: SnowflakeID
+    user: NotRequired[BaseUser]

@@ -27,61 +27,36 @@ from __future__ import annotations
 
 from typing import (
     List,
-    Optional,
-    TypedDict
+    Optional
 )
 
 from typing_extensions import (
-    NotRequired
+    Literal,
+    NotRequired,
+    TypedDict
 )
 
 from .snowflake import SnowflakeID
 
 __all__ = (
-    'BaseUser',
-    'ClientUser',
-    'User',
-    'GuildMember',
+    'Overwrite',
+    'GuildChannel',
 )
 
+ChannelType = Literal[0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15]
 
-class BaseUser(TypedDict):
-    username: str
-    public_flags: int
+
+class Overwrite(TypedDict):
     id: SnowflakeID
-    discriminator: str
-    bot: bool
-    avatar: str
+    type: Literal[0, 1]
+    allow: str
+    deny: str
 
 
-class ClientUser(BaseUser):
-    verified: bool
-    mfa_enabled: bool
-    flags: int
-
-
-class User(BaseUser):
-    system: NotRequired[bool]
-    mfa_enabled: NotRequired[bool]
-    banner: NotRequired[Optional[str]]
-    accent_color: NotRequired[Optional[int]]
-    locale: NotRequired[str]
-    verified: NotRequired[bool]
-    email: NotRequired[Optional[str]]
-    flags: NotRequired[int]
-    premium_type: NotRequired[int]
-
-
-class GuildMember(TypedDict):
-    user: BaseUser
-    nick: NotRequired[Optional[str]]
-    avatar: NotRequired[Optional[str]]
-    roles: List[SnowflakeID]
-    joined_at: str
-    premium_since: NotRequired[Optional[str]]
-    deaf: bool
-    mute: bool
-    flags: int
-    pending: NotRequired[bool]
-    permissions: NotRequired[str]
-    communication_disabled_until: NotRequired[Optional[str]]
+class GuildChannel(TypedDict):
+    id: SnowflakeID
+    type: ChannelType
+    name: NotRequired[Optional[str]]
+    position: NotRequired[int]
+    parent_id: NotRequired[Optional[SnowflakeID]]
+    permission_overwrites: NotRequired[List[Overwrite]]

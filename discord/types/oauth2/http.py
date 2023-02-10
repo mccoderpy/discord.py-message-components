@@ -26,22 +26,47 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
-    List
+    Dict,
+    List,
+    Optional
 )
 
-from typing_extensions import (
-    NotRequired,
-    TypedDict
-)
+from typing_extensions import (Literal, NotRequired, TypedDict)
 
 from ..appinfo import PartialAppInfo
 from ..user import User
 
 __all__ = (
     'AccessTokenResponse',
+    'ApplicationRoleConnectionData',
     'ClientCredentialsAccessTokenResponse',
+    'ConnectionData',
+    'ConnectionService',
     'CurrentAuthorizationInfoResponse',
 )
+
+VisibilityType = Literal[0, 1]
+ConnectionService = Literal[
+    'battlenet',
+    'ebay',
+    'epicgames',
+    'facebook',
+    'github',
+    'instagram',
+    'leagueoflegends',
+    'paypal',
+    'playstation',
+    'reddit',
+    'riotgames',
+    'spotify',
+    'skype',
+    'steam',
+    'tiktok',
+    'twitch',
+    'twitter',
+    'xbox',
+    'youtube'
+]
 
 
 class AccessTokenResponse(TypedDict):
@@ -64,3 +89,22 @@ class CurrentAuthorizationInfoResponse(TypedDict):
     scopes: List[str]
     expires: str
     user: NotRequired[User]
+
+
+class ConnectionData(TypedDict):
+    id: str
+    name: str
+    type: ConnectionService
+    revoked: NotRequired[bool]
+    integrations: List[Dict[str, str]]
+    verified: bool
+    friend_sync: bool
+    show_activity: bool
+    two_way_link: bool
+    visibility: int
+
+
+class ApplicationRoleConnectionData(TypedDict):
+    platform_name: Optional[str]
+    platform_username: Optional[str]
+    metadata: Dict[str, str]

@@ -37,6 +37,10 @@ from typing_extensions import (
 from .snowflake import SnowflakeID, SnowflakeList
 from .user import BaseUser
 
+__all__ = (
+    'BaseEmoji',
+)
+
 
 class BaseEmoji(TypedDict):
     id: Optional[SnowflakeID]          # The ID of the emoji

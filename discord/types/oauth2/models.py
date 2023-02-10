@@ -25,20 +25,19 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import (
     List,
-    TYPE_CHECKING,
+    Optional,
     TypeAlias,
     Union
 )
 
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict
 )
-
-
-from datetime import datetime
 
 from ..snowflake import SnowflakeID
 
@@ -48,6 +47,7 @@ __all__ = (
 )
 
 DatetimeLike: TypeAlias = Union[int, str, datetime]
+RoleConnectionMetadataType = Literal[1, 2, 3, 4, 5, 6, 7, 8]
 
 
 class AccessTokenData(TypedDict):
