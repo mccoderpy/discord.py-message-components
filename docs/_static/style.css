@@ -82,7 +82,7 @@ Historically however, thanks to:
   --main-h6-header-text: var(--grey-4);
   --main-h4-header-border: var(--grey-4);
   --header-link: var(--grey-6);
-  --header-link-hover-text: var(--blue);
+  --header-link-hover-text: var(--blue-2);
   --header-link-hover-text-visited: var(--purple);
   --admonition-background: var(--grey-2);
   --note-background: var(--blue-1);
@@ -146,7 +146,7 @@ Historically however, thanks to:
   --main-h6-header-text: var(--grey-5);
   --main-h4-header-border: var(--grey-2);
   --header-link: var(--grey-2);
-  --header-link-hover-text: var(--grey-6);
+  --header-link-hover-text: var(--blue-2);
   --admonition-background: var(--grey-8);
   --note-background: var(--blue-3);
   --note-text: var(--white);
@@ -606,7 +606,7 @@ div.modal-content {
 div.modal-content > span.close {
   color: #888;
   float: right;
-  font-weight: bol;
+  font-weight: bold;
   -moz-user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
@@ -732,11 +732,9 @@ a.headerlink {
   padding: 0 4px 0 4px;
   text-decoration: none;
   visibility: hidden;
-  content:
 }
 
 a.headerlink:hover {
-  background-color: var(--header-link);
   color: var(--header-link-hover-text);
 }
 
