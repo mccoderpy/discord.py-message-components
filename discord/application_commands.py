@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .state import ConnectionState
     from .ext.commands import Cog, Greedy, Converter
-    from .interactions import ApplicationCommandInteraction
+    from .interactions import ApplicationCommandInteraction, BaseInteraction
 
 __all__ = (
     'Localizations',
@@ -110,6 +110,21 @@ class Localizations:
             french='Bonjour le monde!'
             ukrainian='Привіт світ!'
         )
+    
+    You can also use this to build localized responses.
+    
+    .. code-block:: python3
+        
+        @slash_command(name='hello', description='Says hello to you.')
+        async def hello_command(interaction: ApplicationCommandInteraction):
+            response = Localizations(
+                en_US='Hello World!',
+                de='Hallo Welt!',
+                fr='Bonjour le monde!'
+                uk='Привіт світ!',
+                ...
+            ).from_target(interaction)  # of curse you can store the localizations somewhere else and import/load them.
+            await interaction.respond(response)
     
     Parameters
     ----------
