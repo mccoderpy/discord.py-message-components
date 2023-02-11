@@ -931,8 +931,10 @@ class HypeSquadHouse(Enum):
 
 
 class PremiumType(Enum):
+    none = 0
     nitro_classic = 1
     nitro = 2
+    nitro_basic = 3
 
 
 class TeamMembershipState(Enum):
