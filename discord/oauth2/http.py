@@ -61,7 +61,7 @@ from ..utils import (
 if TYPE_CHECKING:
     from ..enums import Locale
     from ..utils import SupportsStr
-    from ..types.user import User, GuildMember
+    from ..types.user import UserPayload, GuildMember
     from ..types.oauth2.http import *
     from ..types.appinfo import AppInfo
     from ..types.guild import PartialGuild
@@ -319,7 +319,7 @@ class OAuth2HTTPClient:
         r = Route('GET', '/oauth2/@me')
         return self.request(r, authorization=f'Bearer {access_token}')
     
-    def get_user(self, access_token: SupportsStr) -> Coroutine[User]:
+    def get_user(self, access_token: SupportsStr) -> Coroutine[UserPayload]:
         r = Route('GET', '/users/@me')
         return self.request(r, authorization=f'Bearer {access_token}')
         

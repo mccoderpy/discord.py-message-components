@@ -34,7 +34,7 @@ from typing import (
 from typing_extensions import (Literal, NotRequired, TypedDict)
 
 from ..appinfo import PartialAppInfo
-from ..user import User
+from ..user import UserPayload
 
 __all__ = (
     'AccessTokenResponse',
@@ -88,7 +88,7 @@ class CurrentAuthorizationInfoResponse(TypedDict):
     application: PartialAppInfo
     scopes: List[str]
     expires: str
-    user: NotRequired[User]
+    user: NotRequired[UserPayload]
 
 
 class ConnectionData(TypedDict):

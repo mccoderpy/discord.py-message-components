@@ -40,7 +40,7 @@ from .snowflake import SnowflakeID
 __all__ = (
     'BaseUser',
     'ClientUser',
-    'User',
+    'UserPayload',
     'GuildMember',
 )
 
@@ -60,7 +60,7 @@ class ClientUser(BaseUser):
     flags: int
 
 
-class User(BaseUser):
+class UserPayload(BaseUser):
     system: NotRequired[bool]
     mfa_enabled: NotRequired[bool]
     banner: NotRequired[Optional[str]]
