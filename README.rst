@@ -1,4 +1,8 @@
-.. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
+.. |flag_ua| image:: ./images/flag_ua.png
+   :alt: Ukraine
+   :width: 30px
+   :height: 30px
+   :scale: 100%
 
 |flag_ua| Welcome to discord.py-message-components'! |flag_ua|
 ==============================================================

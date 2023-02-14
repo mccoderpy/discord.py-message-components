@@ -1,4 +1,8 @@
-.. |flag_ua| image:: https://mccoder-py-needs.to-sleep.xyz/r/ua.png
+.. |flag_ua| image:: ./images/flag_ua.png
+   :alt: Ukraine
+   :width: 30px
+   :height: 30px
+   :scale: 100%
 
 .. image:: ./images/drop_down_icon.svg
 
