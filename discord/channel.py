@@ -1501,7 +1501,7 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         await self._edit(options, reason=reason)
 
 
-class StageChannel(VocalGuildChannel):
+class StageChannel(VocalGuildChannel, abc.Messageable):
     """Represents a Discord guild stage channel.
 
     .. versionadded:: 1.7
@@ -1547,7 +1547,7 @@ class StageChannel(VocalGuildChannel):
         The region for the stage channel's voice communication.
         A value of ``None`` indicates automatic voice region detection.
     """
-    __slots__ = ('topic',)
+    __slots__ = ('topic', 'last_message_id')
 
     def __repr__(self):
         attrs = [
@@ -1561,7 +1561,7 @@ class StageChannel(VocalGuildChannel):
             ('category_id', self.category_id)
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
-
+    
     def _update(self, guild, data):
         super()._update(guild, data)
         self.topic = data.get('topic')
@@ -1569,7 +1569,10 @@ class StageChannel(VocalGuildChannel):
     @staticmethod
     def channel_type():
         return ChannelType.stage_voice
-
+    
+    async def _get_channel(self):
+        return self
+    
     @property
     def requesting_to_speak(self):
         """List[:class:`Member`]: A list of members who are requesting to speak in the stage channel."""
@@ -1628,6 +1631,7 @@ class StageChannel(VocalGuildChannel):
         """
 
         await self._edit(options, reason=reason)
+
 
 class CategoryChannel(abc.GuildChannel, Hashable):
     """Represents a Discord channel category.
