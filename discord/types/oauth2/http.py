@@ -91,12 +91,32 @@ class CurrentAuthorizationInfoResponse(TypedDict):
     user: NotRequired[UserPayload]
 
 
+class IntegrationAccount(TypedDict):
+    id: str
+    name: str
+
+
+class PartialIntegration(TypedDict):
+    id: str
+    name: str
+    type: str
+    enabled: bool
+    syncing: NotRequired[bool]
+    role_id: NotRequired[str]
+    enable_emoticons: NotRequired[bool]
+    expire_behavior: NotRequired[int]
+    expire_grace_period: NotRequired[int]
+    user: NotRequired[UserPayload]
+    account: IntegrationAccount
+    synced_at: NotRequired[str]
+
+
 class ConnectionData(TypedDict):
     id: str
     name: str
     type: ConnectionService
     revoked: NotRequired[bool]
-    integrations: List[Dict[str, str]]
+    integrations: NotRequired[List[PartialIntegration]]
     verified: bool
     friend_sync: bool
     show_activity: bool

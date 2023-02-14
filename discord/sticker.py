@@ -26,17 +26,17 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
-    Optional,
     List,
+    Optional,
     Tuple,
     TYPE_CHECKING,
     Union
 )
 
-from .mixins import Hashable
 from .asset import Asset
-from .utils import snowflake_time, get as utils_get
 from .enums import StickerType, try_enum
+from .mixins import Hashable
+from .utils import get as utils_get, snowflake_time
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -44,6 +44,13 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .user import User
     from .state import ConnectionState
+
+
+__all__ = (
+    'StickerPack',
+    'Sticker',
+    'GuildSticker'
+)
 
 
 class StickerPack(Hashable):

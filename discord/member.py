@@ -225,8 +225,6 @@ class Member(discord.abc.Messageable, _BaseUser):
         The guild that the member belongs to.
     nick: Optional[:class:`str`]
         The guild specific nickname of the user.
-    flags: :class:`GuildMemberFlags`
-        Guild specific flags for the member
     pending: :class:`bool`
         Whether the member is pending member verification.
 
@@ -237,7 +235,7 @@ class Member(discord.abc.Messageable, _BaseUser):
     """
 
     __slots__ = ('_roles', 'joined_at', 'premium_since', '_client_status',
-                 'activities', 'guild', 'flags', 'pending', 'nick', 'guild_avatar', 'guild_banner', 'guild_bio',
+                 'activities', 'guild', '_flags', 'pending', 'nick', 'guild_avatar', 'guild_banner', 'guild_bio',
                  '_user', '_state', '_communication_disabled_until')
 
     def __init__(self, *, data, guild, state):
@@ -252,7 +250,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         }
         self.activities = tuple(map(create_activity, data.get('activities', [])))
         self.nick = data.get('nick', None)
-        self.flags = GuildMemberFlags._from_value(data.get('flags', 0))
+        self._flags = data.get('flags', 0)
         self.pending = data.get('pending', False)
         self.guild_avatar = data.get('avatar', None)
         self.guild_banner = data.get('banner', None)
@@ -273,6 +271,11 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     def __hash__(self):
         return hash(self._user)
+
+    @property
+    def flags(self) -> GuildMemberFlags:
+        """:class:`GuildMemberFlags`: Guild specific flags for the member."""
+        return GuildMemberFlags._from_value(self._flags)
 
     @classmethod
     def _from_message(cls, *, message, data):

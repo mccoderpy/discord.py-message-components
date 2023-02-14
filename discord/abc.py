@@ -161,6 +161,7 @@ class User(metaclass=abc.ABCMeta):
             return True
         return NotImplemented
 
+
 class PrivateChannel(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a private Discord channel.
 
