@@ -30,7 +30,8 @@ from copy import copy
 from typing import (
     Dict,
     List,
-    Optional
+    Optional,
+    TYPE_CHECKING,
 )
 
 from typing_extensions import Self
@@ -40,6 +41,15 @@ from .http import OAuth2HTTPClient
 from .models import *
 from ..errors import HTTPException
 from ..utils import (MISSING, SupportsStr)
+
+
+if TYPE_CHECKING:
+    from ..types.guild import PartialGuildPayload
+    from ..types.user import GuildMember as GuildMemberPayload
+
+__all__ = (
+    'OAuth2Client',
+)
 
 
 class OAuth2Client:
@@ -164,7 +174,6 @@ class OAuth2Client:
         """
         await self.http.revoke_access_token(access_token.access_token)
         self.loop.create_task(self.remove_revoked_access_token(access_token))
-        self.loop.create_task(self.store_access_tokens())
     
     async def fetch_access_token_info(self, access_token: AccessToken, /):
         """|coro|
@@ -179,7 +188,7 @@ class OAuth2Client:
         data = await self.http.get_current_auth_info(access_token.access_token)
         return data
     
-    async def fetch_user(self, access_token: AccessToken, /) -> User:
+    async def fetch_user(self, access_token: AccessToken, /, *, raw: bool = False) -> User:
         """|coro|
         
         Fetches the user associated with the access token. Requires the :attr:`OAuth2Scope.IDENTIFY` scope.
@@ -191,13 +200,17 @@ class OAuth2Client:
         
         Returns
         -------
-        :class:`discord.User`
+        :class:`discord.oauth2.User`
             The user associated with the access token
+        :class:`dict`
+            The raw data if ``raw`` is ``True
         """
         data = await self.http.get_user(access_token.access_token)
-        return data
+        if raw:
+            return data
+        return User(client=self, data=data)
     
-    async def fetch_guilds(self, access_token: AccessToken) -> List[PartialGuild]:
+    async def fetch_guilds(self, access_token: AccessToken, *, raw: bool = False) -> List[PartialGuild]:
         """|coro|
         
         Fetches the guilds the current user is a member of. Requires the :attr:`OAuth2Scope.GUILDS` scope.
@@ -206,11 +219,22 @@ class OAuth2Client:
         ----------
         access_token: :class:`.AccessToken`
             The access token to fetch the guilds for
+        raw: :class:`bool`
+            Whether to return the raw data, defaults to ``False``
+        
+        Returns
+        -------
+        List[:class:`discord.oauth2.PartialGuild`]
+            The guilds the current user is a member of
+        List[:class:`dict`]
+            The raw data if ``raw`` is ``True``
         """
         data = await self.http.get_user_guilds(access_token.access_token)
-        return data
+        if raw:
+            return data
+        return [PartialGuild(client=self, data=d) for d in data]
     
-    async def fetch_guild_member(self, access_token, guild_id: SupportsStr) -> GuildMember:
+    async def fetch_guild_member(self, access_token, guild_id: SupportsStr, *, raw: bool = False) -> GuildMember:
         """|coro|
         
         Fetches the guild member of the current user in the guild. Requires the :attr:`OAuth2Scope.READ_GUILD_MEMBERS` scope.
@@ -221,16 +245,22 @@ class OAuth2Client:
             The access token to fetch the guild member for
         guild_id: :class:`SupportsStr`
             The ID of the guild to fetch the guild member for
+        raw: :class:`bool`
+            Whether to return the raw data, defaults to ``False``
         
         Returns
         -------
         :class:`discord.GuildMember`
             The guild member of the current user in the guild
+        :class:`dict`
+            The raw data if ``raw`` is ``True``
         """
         data = await self.http.get_user_guild_member(access_token.access_token, guild_id)
-        return data
+        if raw:
+            return data
+        return GuildMember(client=self, data=data)
     
-    async def fetch_connections(self, access_token: AccessToken) -> List[Connection]:
+    async def fetch_connections(self, access_token: AccessToken, *, raw: bool = False) -> Union[List[Connection], List[ConnectionData]]:
         """|coro|
         
         Fetches the connections of the current user. Requires the :attr:`OAuth2Scope.CONNECTIONS` scope.
@@ -244,9 +274,13 @@ class OAuth2Client:
         -------
         List[:class:`.Connection`]
             The connections of the current user
+        :class:`dict`
+            The raw data if ``raw`` is ``True``
         """
         data = await self.http.get_user_connections(access_token.access_token)
-        return data
+        if raw:
+            return data
+        return [Connection(client=self, data=d) for d in data]
     
     async def fetch_user_app_role_connection(self, access_token: AccessToken) -> RoleConnection:
         """|coro|
