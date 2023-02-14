@@ -251,7 +251,18 @@ class OAuth2HTTPClient:
         if self.__session:
             await self.__session.close()
             await asyncio.sleep(0.025)  # wait for the connection to be released
-
+    
+    async def get_from_cdn(self, url: str) -> bytes:
+        async with self.__session.get(url) as resp:
+            if resp.status == 200:
+                return await resp.read()
+            elif resp.status == 404:
+                raise NotFound(resp, 'asset not found')
+            elif resp.status == 403:
+                raise Forbidden(resp, 'cannot retrieve asset')
+            else:
+                raise HTTPException(resp, 'failed to get asset')
+    
     def exchange_authorization_token(
             self,
             code: str,
@@ -343,7 +354,7 @@ class OAuth2HTTPClient:
         
         return self.request(r, authorization=f'Bearer {access_token}', params=params)
     
-    def get_user_guild_member(self, access_token: SupportsStr, guild_id: int) -> Coroutine[GuildMember]:
+    def get_user_guild_member(self, access_token: SupportsStr, guild_id: SupportsStr) -> Coroutine[GuildMember]:
         r = Route('GET', '/users/@me/guilds/{guild_id}/member', guild_id=guild_id)
         return self.request(r, authorization=f'Bearer {access_token}')
     
