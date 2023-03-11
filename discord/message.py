@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from .state import ConnectionState
     from .mentions import AllowedMentions
     from .abc import Messageable
+    from .sticker import GuildSticker
 
 
 __all__ = (
@@ -1409,7 +1410,23 @@ class Message(Hashable):
         """
         await self._state.http.clear_reactions(self.channel.id, self.id)
 
-    async def reply(self, content=None, **kwargs):
+    async def reply(
+            self,
+            content=None,
+            tts: bool = False,
+            embed: Optional[Embed] = None,
+            embeds: Optional[List[Embed]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
+            file: Optional[File] = None,
+            files: Optional[List[File]] = None,
+            stickers: Optional[List[GuildSticker]] = None,
+            delete_after: Optional[float] = None,
+            nonce: Optional[int] = None,
+            allowed_mentions: Optional[AllowedMentions] = None,
+            mention_author: Optional[bool] = None,
+            suppress_embeds: bool = False,
+            suppress_notifications: bool = False
+    ):
         """|coro|
 
         A shortcut method to :meth:`.abc.Messageable.send` to reply to the
@@ -1433,7 +1450,23 @@ class Message(Hashable):
             The message that was sent.
         """
 
-        return await self.channel.send(content, reference=self, **kwargs)
+        return await self.channel.send(
+            content,
+            reference=self,
+            tts=tts,
+            embed=embed,
+            embeds=embeds,
+            components=components,
+            file=file,
+            files=files,
+            stickers=stickers,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+            mention_author=mention_author,
+            suppress_embeds=suppress_embeds,
+            suppress_notifications=suppress_notifications
+        )
 
     async def create_thread(
             self,
