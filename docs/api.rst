@@ -3837,6 +3837,8 @@ The following exceptions are thrown by the library.
 .. autoexception:: HTTPException
     :members:
 
+.. autoexception:: Unauthorized
+
 .. autoexception:: Forbidden
 
 .. autoexception:: NotFound
@@ -3879,6 +3881,7 @@ Exception Hierarchy
             - :exc:`NoMoreItems`
             - :exc:`GatewayNotFound`
             - :exc:`HTTPException`
+                - :exc:`Unauthorized`
                 - :exc:`Forbidden`
                 - :exc:`NotFound`
                 - :exc:`DiscordServerError`

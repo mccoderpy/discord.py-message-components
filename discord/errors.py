@@ -25,6 +25,32 @@ DEALINGS IN THE SOFTWARE.
 """
 import traceback
 
+__all__ = (
+    'AlreadyResponded',
+    'DiscordException',
+    'DiscordWarning',
+    'ClientException',
+    'NoMoreItems',
+    'GatewayNotFound',
+    'HTTPException',
+    'InvalidArgument',
+    'LoginFailure',
+    'ConnectionClosed',
+    'PrivilegedIntentsRequired',
+    'InvalidData',
+    'Unauthorized',
+    'Forbidden',
+    'NotFound',
+    'DiscordServerError',
+    'URLAndCustomIDNotAlowed',
+    'UnknownInteraction',
+    'EmptyActionRow',
+    'NotInVoiceChannel',
+    'RecordingException',
+    'ThreadIsArchived',
+    'MissingPermissionsToCreateThread'
+)
+
 
 class DiscordException(Exception):
     """Base exception class for discord.py
@@ -125,6 +151,16 @@ class HTTPException(DiscordException):
             fmt += ': {2}'
 
         super().__init__(fmt.format(self.response, self.code, self.text))
+
+
+class Unauthorized(HTTPException):
+    """Exception that's thrown for when status code 401 occurs.
+    
+    Subclass of :exc:`HTTPException`
+    
+    .. versionadded:: 2.0
+    """
+    pass
 
 
 class Forbidden(HTTPException):
