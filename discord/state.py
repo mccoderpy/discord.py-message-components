@@ -618,17 +618,21 @@ class ConnectionState:
 
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        thread = ThreadChannel(state=self, guild=guild, data=data)
-        if isinstance(thread.parent_channel, ForumChannel):
-            post = ForumPost(state=self, guild=guild, data=data)
-            guild._add_post(post)
-            self.dispatch('post_create', post)
+        parent_channel = guild.get_channel(int(data['parent_id']))
+        
+        if isinstance(parent_channel, ForumChannel):
+            if not parent_channel.get_post(int(data['id'])):
+                post = ForumPost(state=self, guild=guild, data=data)
+                guild._add_post(post)
+                self.dispatch('post_create', post)
         else:
-            message = self._get_message(thread.id)
-            if message:
-                message._thread = thread
-            guild._add_thread(thread)
-            self.dispatch('thread_create', thread)
+            if not parent_channel.get_thread(int(data['id'])):
+                thread = ThreadChannel(state=self, guild=guild, data=data)
+                message = self._get_message(thread.id)
+                if message:
+                    message._thread = thread
+                guild._add_thread(thread)
+                self.dispatch('thread_create', thread)
 
     def parse_thread_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
