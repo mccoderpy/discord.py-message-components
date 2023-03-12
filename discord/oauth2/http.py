@@ -30,10 +30,12 @@ import logging
 import sys
 import weakref
 from typing import (
+    Any,
     Coroutine,
     List,
     Optional,
     TYPE_CHECKING,
+    TypeVar,
     Union
 )
 
@@ -44,6 +46,7 @@ from .. import __version__
 from ..errors import (
     DiscordServerError,
     Forbidden,
+    Unauthorized,
     HTTPException,
     NotFound
 )
@@ -59,13 +62,18 @@ from ..utils import (
 )
 
 if TYPE_CHECKING:
+    from . import types
+    from ..types import (
+        app_command,
+        guild,
+        user
+    )
     from ..enums import Locale
     from ..utils import SupportsStr
-    from ..types.user import UserPayload, GuildMember
-    from ..types.oauth2.http import *
-    from ..types.appinfo import AppInfo
-    from ..types.guild import PartialGuild
-   
+    
+    T = TypeVar('T')
+    Response = Coroutine[None, None, T]
+    
 
 __all__ = ('OAuth2HTTPClient',)
 
@@ -126,7 +134,7 @@ class OAuth2HTTPClient:
             content_type: Optional[str] = None,
             authorization: Optional[str] = None,
             **kwargs
-    ) -> Union[dict, str]:
+    ) -> Any:
         bucket = route.bucket
         method = route.method
         url = route.url
@@ -224,7 +232,9 @@ class OAuth2HTTPClient:
                             continue
                     
                         # the usual error cases
-                        if r.status == 403:
+                        if r.status == 401:
+                            raise Unauthorized(r, data)
+                        elif r.status == 403:
                             raise Forbidden(r, data)
                         elif r.status == 404:
                             raise NotFound(r, data)
@@ -267,7 +277,7 @@ class OAuth2HTTPClient:
             self,
             code: str,
             redirect_uri: str
-    ) -> Coroutine[AccessTokenResponse]:
+    ) -> Response[types.AccessToken]:
         r = Route('POST', '/oauth2/token')
         data = {
             'client_id': self.client_id,
@@ -282,7 +292,7 @@ class OAuth2HTTPClient:
             content_type='application/x-www-form-urlencoded'
         )
     
-    def exchange_client_credentials(self, scopes: List[SupportsStr]) -> Coroutine[ClientCredentialsAccessTokenResponse]:
+    def exchange_client_credentials(self, scopes: List[SupportsStr]) -> Response[types.ClientCredentialsAccessToken]:
         r = Route('POST', '/oauth2/token')
         data = {
             'grant_type': 'client_credentials',
@@ -295,7 +305,7 @@ class OAuth2HTTPClient:
             auth=aiohttp.BasicAuth(self.client_id, self.__client_secret)
         )
     
-    def exchange_refresh_token(self, refresh_token: str) -> Coroutine[AccessTokenResponse]:
+    def exchange_refresh_token(self, refresh_token: str) -> Response[types.AccessToken]:
         r = Route('POST', '/oauth2/token')
         data = {
             'client_id': self.client_id,
@@ -309,10 +319,10 @@ class OAuth2HTTPClient:
             content_type='application/x-www-form-urlencoded'
         )
     
-    def revoke_access_token(self, access_token: str) -> Coroutine[NoReturn]:
+    def revoke_access_token(self, access_token: SupportsStr) -> Response[NoReturn]:
         r = Route('POST', '/oauth2/token/revoke')
         params = {
-            'token': access_token,
+            'token': str(access_token),
             'token_type_hint': 'access_token'
         }
         return self.request(
@@ -322,15 +332,11 @@ class OAuth2HTTPClient:
             content_type='application/x-www-form-urlencoded'
         )
     
-    def get_current_application_info(self) -> Coroutine[AppInfo]:
-        r = Route('GET', '/oauth2/applications/@me')
-        return self.request(r, authorization=f'Basic {self.__client_secret}')
-    
-    def get_current_auth_info(self, access_token: SupportsStr) -> Coroutine[CurrentAuthorizationInfoResponse]:
+    def get_current_auth_info(self, access_token: SupportsStr) -> Coroutine[types.CurrentAuthorizationInfo]:
         r = Route('GET', '/oauth2/@me')
         return self.request(r, authorization=f'Bearer {access_token}')
     
-    def get_user(self, access_token: SupportsStr) -> Coroutine[UserPayload]:
+    def get_user(self, access_token: SupportsStr) -> Response[types.User]:
         r = Route('GET', '/users/@me')
         return self.request(r, authorization=f'Bearer {access_token}')
         
@@ -341,7 +347,7 @@ class OAuth2HTTPClient:
             before: Optional[SupportsStr] = MISSING,
             after: Optional[SupportsStr] = MISSING,
             limit: Optional[int] = MISSING
-    ) -> Coroutine[List[PartialGuild]]:
+    ) -> Response[List[guild.PartialGuild]]:
         r = Route('GET', '/users/@me/guilds')
         
         params = {}
@@ -354,30 +360,105 @@ class OAuth2HTTPClient:
         
         return self.request(r, authorization=f'Bearer {access_token}', params=params)
     
-    def get_user_guild_member(self, access_token: SupportsStr, guild_id: SupportsStr) -> Coroutine[GuildMember]:
+    def get_user_guild_member(self, access_token: SupportsStr, guild_id: SupportsStr) -> Response[user.Member]:
         r = Route('GET', '/users/@me/guilds/{guild_id}/member', guild_id=guild_id)
         return self.request(r, authorization=f'Bearer {access_token}')
     
-    def get_user_connections(self, access_token: SupportsStr) -> Coroutine[List[ConnectionData]]:
+    def add_guild_member(
+            self,
+            access_token: SupportsStr,
+            bot_token: SupportsStr,
+            *,
+            guild_id: SupportsStr,
+            user_id: SupportsStr,
+            nick: Optional[SupportsStr] = MISSING,
+            roles: Optional[List[SupportsStr]] = MISSING,
+            mute: Optional[bool] = MISSING,
+            deaf: Optional[bool] = MISSING
+    ) -> Response[Union[user.Member, NoReturn]]:
+        r = Route('PUT', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)
+        data = {
+            'access_token': str(access_token),
+        }
+        if nick is not MISSING:
+            data['nick'] = str(nick)
+        if roles is not MISSING:
+            data['roles'] = [str(r) for r in roles]
+        if mute is not MISSING:
+            data['mute'] = mute
+        if deaf is not MISSING:
+            data['deaf'] = deaf
+        
+        return self.request(r, authorization=f'Bot {bot_token}', json=data)
+    
+    def get_user_connections(self, access_token: SupportsStr) -> Response[List[types.Connection]]:
         r = Route('GET', '/users/@me/connections')
         return self.request(r, authorization=f'Bearer {access_token}')
     
     def get_user_application_role_connection(
             self,
             access_token: SupportsStr,
-            /,
+            *,
             application_id: Optional[SupportsStr] = None
-    ) -> Coroutine[ApplicationRoleConnectionData]:
+    ) -> Response[types.RoleConnection]:
         r = Route('GET', '/users/@me/applications/{application_id}/role-connection', application_id=application_id or self.client_id)
         return self.request(r, authorization=f'Bearer {access_token}')
     
     def update_user_application_role_connection(
             self,
-            access_token: SupportsStr,
-            data: ApplicationRoleConnectionData,
-            *,
-            application_id: Optional[SupportsStr] = None,
-            
-    ) -> Coroutine[ApplicationRoleConnectionData]:
+            access_token: SupportsStr, *,
+            data: types.RoleConnection,
+            application_id: Optional[SupportsStr] = None
+    ) -> Response[types.RoleConnection]:
         r = Route('PUT', '/users/@me/applications/{application_id}/role-connection', application_id=application_id or self.client_id)
+        return self.request(r, authorization=f'Bearer {access_token}', json=data)
+    
+    def get_all_application_command_permissions(
+            self,
+            access_token: SupportsStr, *,
+            guild_id: SupportsStr,
+            application_id: Optional[SupportsStr] = None
+    ) -> Response[List[app_command.GuildApplicationCommandPermissions]]:
+        r = Route(
+            'GET',
+            '/applications/{application_id}/guilds/{guild_id}/commands/permissions',
+            application_id=application_id or self.client_id,
+            guild_id=guild_id
+        )
+        return self.request(r, authorization=f'Bearer {access_token}')
+    
+    def get_application_command_permissions(
+            self,
+            access_token: SupportsStr, *,
+            guild_id: SupportsStr,
+            command_id: SupportsStr,
+            application_id: Optional[SupportsStr] = None
+    ) -> Response[app_command.GuildApplicationCommandPermissions]:
+        r = Route(
+            'GET',
+            '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+            application_id=application_id or self.client_id,
+            guild_id=guild_id,
+            command_id=command_id
+        )
+        return self.request(r, authorization=f'Bearer {access_token}')
+    
+    def update_application_command_permissions(
+            self,
+            access_token: SupportsStr, *,
+            application_id: SupportsStr,
+            guild_id: SupportsStr,
+            command_id: SupportsStr,
+            permissions: List[app_command.ApplicationCommandPermission]
+    ) -> Response[app_command.GuildApplicationCommandPermissions]:
+        r = Route(
+            'PUT',
+            '/applications/{application_id}/guilds/{guild_id}/commands/{command_id}/permissions',
+            application_id=application_id or self.client_id,
+            guild_id=guild_id,
+            command_id=command_id
+        )
+        data = {
+            'permissions': permissions
+        }
         return self.request(r, authorization=f'Bearer {access_token}', json=data)

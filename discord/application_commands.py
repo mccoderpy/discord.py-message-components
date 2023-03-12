@@ -46,10 +46,10 @@ import inspect
 import warnings
 from types import FunctionType
 
-from .utils import async_all, find, get, snowflake_time
+from .utils import async_all, find, get, snowflake_time, SupportsStr
 from .abc import GuildChannel
 from .channel import PartialMessageable
-from .enums import ApplicationCommandType, ChannelType, OptionType, Locale, try_enum
+from .enums import ApplicationCommandType, ChannelType, OptionType, Locale, AppCommandPermissionType, try_enum
 from .permissions import Permissions
 
 if TYPE_CHECKING:
@@ -57,7 +57,10 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .state import ConnectionState
     from .ext.commands import Cog, Greedy, Converter
-    from .interactions import ApplicationCommandInteraction
+    from .interactions import ApplicationCommandInteraction, BaseInteraction
+    from .types import (
+        app_command
+    )
 
 __all__ = (
     'Localizations',
@@ -72,7 +75,9 @@ __all__ = (
     'GuildOnlySubCommand',
     'UserCommand',
     'MessageCommand',
-    'generate_options'
+    'generate_options',
+    'GuildAppCommandPermissions',
+    'AppCommandPermission'
 )
 
 api_docs = 'https://discord.com/developers/docs'
@@ -124,8 +129,7 @@ class Localizations:
 
     """
 
-    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__']
-                      )  # type: ignore
+    __slots__ = tuple([locale_name for locale_name in getattr(Locale, '_enum_member_map_')] + ['__languages_dict__'])  # type: ignore
 
     def __init__(self, **localizations) -> None:
 
@@ -2075,3 +2079,109 @@ def generate_options(
                                )
         )
     return options
+
+
+class GuildAppCommandPermissions:
+    """
+    Represents a list of permissions for an application command in a guild.
+    
+    Attributes
+    ----------
+    command_id: :class:`int`
+        The ID of the application command.
+    application_id: :class:`int`
+        The ID of the application.
+    guild_id: :class:`int`
+        The ID of the guild.
+    permissions: List[:class:`AppCommandPermission`]
+        The permissions for the guild's application commands.
+    """
+    def __init__(self, *, data: app_command.GuildApplicationCommandPermissions):
+        self.command_id: int = int(data['id'])
+        self.application_id: int = int(data['application_id'])
+        self.guild_id: int = int(data['guild_id'])
+        self.permissions: List[AppCommandPermission] = [AppCommandPermission(**p) for p in data['permissions']]
+        
+    def to_dict(self) -> dict:
+        return {
+            'id': self.guild_id,
+            'permissions': [p.to_dict() for p in self.permissions]
+        }
+
+
+class AppCommandPermission:
+    """
+    Represents a permission for an application command.
+
+    Attributes
+    ----------
+    id: Union[:class:`str`, :class:`int`]
+        The ID of the role, user, or channel.
+        
+        .. note::
+             
+             This can be the guild ID for the default role (``@everyone``) or guild ID - 1 for all channels.
+             
+    type: :class:`AppCommandPermissionType`
+        The target this permission applies to.
+    permission: :class:`bool`
+        ``True`` to allow, ``False`` to disallow.
+    """
+    def __init__(
+            self,
+            id: Union[int, str],
+            type: AppCommandPermissionType,
+            permission: bool
+    ):
+        """
+        Represents a permission for an application command.
+        
+        Parameters
+        ----------
+        id: Union[:class:`str`, :class:`int`]
+            The ID of the role, user, or channel.
+            
+            .. note::
+                 
+                 This can be the guild ID for the default role (``@everyone``) or guild ID - 1 for all channels.
+        
+        type: :class:`AppCommandPermissionType`
+            The target this permission applies to.
+        permission: :class:`bool`
+            ``True`` to allow, ``False`` to disallow.
+        """
+        self.id: int = int(id)
+        self.type: AppCommandPermissionType = type
+        self.permission: bool = permission
+        
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'type': self.type.value,
+            'permission': self.permission
+        }
+    
+    @classmethod
+    async def all_channels(cls, guild_id: SupportsStr, permission: bool) -> AppCommandPermission:
+        """
+        Creates a new AppCommandPermission for all channels in a guild.
+        
+        This is equivalent to:
+        
+        .. code-block:: python3
+        
+            AppCommandPermission(guild_id - 1, AppCommandPermissionType.ROLE, permission)
+        
+        Parameters
+        ----------
+        guild_id: Union[:class:`str`, :class:`int`]
+            The guild ID.
+        permission: :class:`bool`
+            The permission.
+        
+        Returns
+        -------
+        :class:`AppCommandPermission`
+            The new AppCommandPermission.
+        """
+        return cls(int(guild_id) - 1, AppCommandPermissionType.ROLE, permission)
