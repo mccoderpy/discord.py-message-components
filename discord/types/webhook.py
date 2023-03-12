@@ -23,14 +23,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+
 from __future__ import annotations
 
-from datetime import datetime
 from typing import (
-    List,
-    Optional,
-    TypeAlias,
-    Union
+    Optional
 )
 
 from typing_extensions import (
@@ -38,22 +35,27 @@ from typing_extensions import (
     NotRequired,
     TypedDict
 )
-
-from ..snowflake import SnowflakeID
-
-__all__ = (
-    'DatetimeLike',
-    'AccessTokenData'
+from . import (
+    channel,
+    guild,
+    user
 )
 
-DatetimeLike: TypeAlias = Union[int, str, datetime]
-RoleConnectionMetadataType = Literal[1, 2, 3, 4, 5, 6, 7, 8]
+
+WebhookType = Literal[1, 2, 3]
 
 
-class AccessTokenData(TypedDict):
-    access_token: str
-    expires_at: DatetimeLike
-    refresh_token: NotRequired[str]
-    scopes: NotRequired[List[str]]
-    user_id: NotRequired[SnowflakeID]
-    ...
+class Webhook(TypedDict):
+    id: str
+    type: WebhookType
+    guild_id: NotRequired[str]
+    channel_id: Optional[str]
+    user: NotRequired[user.User]
+    name: Optional[str]
+    avatar: Optional[str]
+    token: NotRequired[str]
+    application_id: Optional[str]
+    source_guild: NotRequired[guild.PartialGuild]
+    source_channel: NotRequired[channel.PartialChannel]
+    url: NotRequired[str]
+    

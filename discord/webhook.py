@@ -688,7 +688,7 @@ class Webhook(Hashable):
     @property
     def url(self):
         """:class:`str` : Returns the webhook's url."""
-        return 'https://discord.com/api/webhooks/{}/{}'.format(self.id, self.token)
+        return WebhookAdapter.BASE + '/webhooks/{}/{}'.format(self.id, self.token)
 
     @classmethod
     def partial(cls, id, token, *, adapter):
@@ -779,6 +779,11 @@ class Webhook(Hashable):
     def from_state(cls, data, state):
         session = state.http._HTTPClient__session
         return cls(data, adapter=AsyncWebhookAdapter(session=session), state=state)
+    
+    @classmethod
+    def from_oauth2(cls, data, client):
+        session = client.http._OAuth2HTTPClient__session
+        return cls(data, adapter=AsyncWebhookAdapter(session=session))
 
     @property
     def guild(self):
@@ -886,7 +891,7 @@ class Webhook(Hashable):
             raise InvalidArgument('This webhook does not have a token associated with it')
 
         return self._adapter.delete_webhook(reason=reason)
-
+    
     def edit(self, *, reason=None, **kwargs):
         """|maybecoro|
 
@@ -952,12 +957,12 @@ class Webhook(Hashable):
             username: str = MISSING,
             avatar_url: Union[str, Asset] = MISSING,
             tts: bool = False,
-            file: Optional[File] = None,
-            files: Optional[Sequence[File]] = None,
-            embed: Optional[Embed] = None,
-            embeds: Optional[Sequence[Embed]] = None,
-            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
-            allowed_mentions: Optional[AllowedMentions] = None,
+            file: Optional[File] = MISSING,
+            files: Optional[Sequence[File]] = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Optional[Sequence[Embed]] = MISSING,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = MISSING,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
             suppress_embeds: bool = False,
             suppress_notifications: bool = False
     ):
