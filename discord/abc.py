@@ -1113,9 +1113,10 @@ class Messageable(metaclass=abc.ABCMeta):
         else:
             reference = MISSING
 
-        if suppress_embeds or suppress_notifications:
+        if suppress_embeds or suppress_notifications or is_voice_message:
             from .flags import MessageFlags
-            flags = MessageFlags._from_value(4)
+            flags = MessageFlags._from_value(0)
+            flags.suppress_embeds = suppress_embeds
             flags.suppress_notifications = suppress_notifications
         else:
             flags = MISSING
