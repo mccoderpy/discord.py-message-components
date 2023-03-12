@@ -76,6 +76,7 @@ class PartialAppInfo(TypedDict):
     bot_require_code_grant: bool
     verify_key: str
     flags: NotRequired[int]
+    tags: List[str]
 
 
 class InstallParams(TypedDict):
@@ -84,22 +85,16 @@ class InstallParams(TypedDict):
 
 
 class AppInfo(PartialAppInfo):
-    icon: Optional[str]
-    description: str
-    rpc_origins: NotRequired[str]
-    bot_public: bool
-    bot_require_code_grant: bool
+    rpc_origins: NotRequired[List[str]]
     terms_of_service_url: NotRequired[str]
     privacy_policy_url: NotRequired[str]
     owner: NotRequired[BaseUser]
-    verify_key: str
     team: Optional[Team]
     guild_id: NotRequired[SnowflakeID]
     primary_sku_id: NotRequired[SnowflakeID]
     slug: NotRequired[str]
     cover_image: NotRequired[str]
-    flags: NotRequired[int]
-    tags: NotRequired[List[str]]
     install_params: NotRequired[InstallParams]
     custom_install_url: NotRequired[str]
     role_connections_verification_url: NotRequired[str]
+    interactions_endpoint_url: NotRequired[str]
