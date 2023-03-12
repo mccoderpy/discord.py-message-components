@@ -19,14 +19,34 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import datetime
-from typing import Optional, TYPE_CHECKING, overload
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    overload
+)
+from typing_extensions import Literal
+
+from .asset import Asset
 from .utils import _get_as_snowflake, parse_time
 from .role import Role
 from .user import User
 from .errors import InvalidArgument
 from .enums import try_enum, ExpireBehaviour
+
+if TYPE_CHECKING:
+    from .guild import Guild
+    from .state import ConnectionState
+    from .types.integration import (
+        Integration as IntegrationPayload,
+        IntegrationAccount as IntegrationAccountPayload,
+        IntegrationApplication as IntegrationApplicationPayload,
+        StreamIntegration as StreamIntegrationPayload,
+        BotIntegration as BotIntegrationPayload,
+        IntegrationType
+    )
 
 __all__ = (
     'IntegrationAccount',
@@ -34,15 +54,15 @@ __all__ = (
     'Integration',
     'StreamIntegration',
     'BotIntegration',
+    '_integration_factory'
 )
-
-if TYPE_CHECKING:
-    from .guild import Guild
 
 
 class IntegrationAccount:
     """Represents an integration account.
+    
     .. versionadded:: 1.4
+    
     Attributes
     -----------
     id: :class:`int`
@@ -53,9 +73,9 @@ class IntegrationAccount:
 
     __slots__ = ('id', 'name')
 
-    def __init__(self, data) -> None:
+    def __init__(self, data: IntegrationAccountPayload) -> None:
         self.id: Optional[int] = _get_as_snowflake(data, 'id')
-        self.name: str = data.pop('name')
+        self.name: str = data['name']
 
     def __repr__(self) -> str:
         return f'<IntegrationAccount id={self.id} name={self.name!r}>'
@@ -63,7 +83,9 @@ class IntegrationAccount:
 
 class Integration:
     """Represents a guild integration.
+    
     .. versionadded:: 1.4
+    
     Attributes
     -----------
     id: :class:`int`
@@ -93,9 +115,9 @@ class Integration:
         'enabled',
     )
 
-    def __init__(self, *, data, guild: 'Guild') -> None:
-        self.guild = guild
-        self._state = guild._state
+    def __init__(self, *, data: IntegrationPayload, guild: Guild) -> None:
+        self.guild: Guild = guild
+        self._state: ConnectionState = guild._state
         self._from_data(data)
 
     def __repr__(self):
@@ -116,6 +138,7 @@ class Integration:
         Deletes the integration.
         You must have the :attr:`~Permissions.manage_guild` permission to
         do this.
+        
         Raises
         -------
         Forbidden
@@ -128,7 +151,9 @@ class Integration:
 
 class StreamIntegration(Integration):
     """Represents a stream integration for Twitch or YouTube.
-    .. versionadded:: 1.8
+    
+    .. versionadded:: 2.0
+    
     Attributes
     ----------
     id: :class:`int`
@@ -172,7 +197,7 @@ class StreamIntegration(Integration):
         'subscriber_count'
     )
 
-    def _from_data(self, data) -> None:
+    def _from_data(self, data: StreamIntegrationPayload) -> None:
         super()._from_data(data)
         self.revoked: bool = data['revoked']
         self.expire_behaviour: ExpireBehaviour = try_enum(ExpireBehaviour, data['expire_behavior'])
@@ -203,6 +228,7 @@ class StreamIntegration(Integration):
         Edits the integration.
         You must have the :attr:`~Permissions.manage_guild` permission to
         do this.
+        
         Parameters
         -----------
         expire_behaviour: :class:`ExpireBehaviour`
@@ -211,6 +237,7 @@ class StreamIntegration(Integration):
             The period (in days) where the integration will ignore lapsed subscriptions.
         enable_emoticons: :class:`bool`
             Where emoticons should be synced for this integration (currently twitch only).
+        
         Raises
         -------
         Forbidden
@@ -252,6 +279,7 @@ class StreamIntegration(Integration):
         Syncs the integration.
         You must have the :attr:`~Permissions.manage_guild` permission to
         do this.
+        
         Raises
         -------
         Forbidden
@@ -265,7 +293,9 @@ class StreamIntegration(Integration):
 
 class IntegrationApplication:
     """Represents an application for a bot integration.
-    .. versionadded:: 1.8
+    
+    .. versionadded:: 2.0
+    
     Attributes
     ----------
     id: :class:`int`
@@ -276,8 +306,6 @@ class IntegrationApplication:
         The application's icon hash.
     description: :class:`str`
         The application's description. Can be an empty string.
-    summary: :class:`str`
-        The summary of the application. Can be an empty string.
     user: Optional[:class:`User`]
         The bot user on this application.
     """
@@ -287,24 +315,52 @@ class IntegrationApplication:
         'name',
         'icon',
         'description',
-        'summary',
         'user',
+        '_state',
     )
 
-    def __init__(self, *, data, state):
+    def __init__(self, *, data: IntegrationApplicationPayload, state: ConnectionState):
+        self._state: ConnectionState = state
         self.id: int = int(data['id'])
         self.name: str = data['name']
         self.icon: Optional[str] = data['icon']
         self.description: str = data['description']
-        self.summary: str = data['summary']
         user = data.get('bot')
         self.user: Optional[User] = User(state=state, data=user) if user else None
+    
+    def icon_url(self) -> Asset:
+        """Returns an :class:`Asset` for the application's icon."""
+        return self.icon_url_as()
+    
+    def icon_url_as(
+            self,
+            *,
+            format: Literal['png', 'jpg', 'jpeg', 'webp'] = 'webp',
+            size: int = 1024
+    ) -> Asset:
+        """
+        Returns an :class:`Asset` for the application's icon.
+        
+        Parameters
+        -----------
+        format: Optional[:class:`str`]
+            The format to attempt to convert the image to. Defaults to ``webp``.
+        size: :class:`int`
+            The size of the image to return. Defaults to 1024.
+        
+        Returns
+        -------
+        :class:`Asset`
+            The resulting CDN asset.
+        """
+        return Asset._from_icon(self._state, self, 'app', format=format, size=size)
 
 
 class BotIntegration(Integration):
     """Represents a bot integration on discord.
 
-    .. versionadded:: 1.8
+    .. versionadded:: 2.0
+    
     Attributes
     ----------
     id: :class:`int`
@@ -327,12 +383,12 @@ class BotIntegration(Integration):
 
     __slots__ = Integration.__slots__ + ('application',)
 
-    def _from_data(self, data) -> None:
+    def _from_data(self, data: BotIntegrationPayload) -> None:
         super()._from_data(data)
         self.application = IntegrationApplication(data=data['application'], state=self._state)
 
 
-def _integration_factory(value):
+def _integration_factory(value: IntegrationType):
     if value == 'discord':
         return BotIntegration, value
     elif value in ('twitch', 'youtube'):
