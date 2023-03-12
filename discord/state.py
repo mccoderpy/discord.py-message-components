@@ -667,7 +667,6 @@ class ConnectionState:
                     thread.starter_message._thread = None
         self.dispatch('thread_delete', thread)
 
-
     def parse_thread_member_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
         thread = guild.get_channel(int(data['id']))
@@ -802,7 +801,7 @@ class ConnectionState:
         if message is not None:
             try:
                 reaction = message._clear_emoji(emoji)
-            except (AttributeError, ValueError): # eventual consistency lol
+            except (AttributeError, ValueError):  # eventual consistency lol
                 pass
             else:
                 if reaction:

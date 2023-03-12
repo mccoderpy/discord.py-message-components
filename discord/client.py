@@ -1243,7 +1243,7 @@ class Client:
             *,
             check: Optional[Callable[[Any, ...], bool]] = None,
             timeout: Optional[float] = None
-    ) -> Optional[Tuple[Any, ...]]:
+    ) -> Optional[Tuple[Coro, ...]]:
         """|coro|
 
         Waits for a WebSocket event to be dispatched.
@@ -2693,7 +2693,7 @@ class Client:
         data = await self.http.application_info()
         if 'rpc_origins' not in data:
             data['rpc_origins'] = None
-        self.app = app = AppInfo(self._connection, data)
+        self.app = app = AppInfo(state=self._connection, data=data)
         return app
 
     async def fetch_user(self, user_id):
