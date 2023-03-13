@@ -2370,7 +2370,7 @@ class Guild(Hashable):
         .. versionchanged:: 1.6
             Can now pass ``int`` to ``colour`` keyword-only parameter.
         
-        .. versionadeded:: 2.0
+        .. versionadded:: 2.0
             Added the ``icon`` and ``unicode_emoji`` keyword-only parameters.
         
         .. note::
