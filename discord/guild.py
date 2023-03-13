@@ -487,7 +487,7 @@ class Guild(Hashable):
         """
         List[:class:`AutoModRules`]: A list of auto moderation rules that are cached.
 
-        ... admonition:: Reliable Fetching
+        .. admonition:: Reliable Fetching
             :class: helpful
             
             This property is only reliable if :meth:`~Guild.automod_rules` was used before.

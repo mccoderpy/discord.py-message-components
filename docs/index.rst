@@ -120,8 +120,8 @@ Meta
 If you're looking for something related to the project itself, it's here.
 
 .. toctree::
-  :maxdepth: 1
+    :maxdepth: 1
 
-  whats_new
-  version_guarantees
-  migrating
+    whats_new
+    version_guarantees
+    migrating

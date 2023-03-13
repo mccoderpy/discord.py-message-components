@@ -150,7 +150,7 @@ rst_prolog = """
 .. _coroutine_link: https://docs.python.org/3/library/asyncio-task.html#coroutine
 .. |bugreport| replace:: |bugreport_link|_
 .. |bugreport_link| replace:: *bug report*
-.. _bugreport_link: replace:: https://discord4py.dev/bugreport
+.. _bugreport_link: https://discord4py.dev/bugreport
 """
 
 # Add any paths that contain templates here, relative to this directory.
