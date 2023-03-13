@@ -65,6 +65,8 @@ if TYPE_CHECKING:
 __all__ = (
     'Localizations',
     'ApplicationCommand',
+    'GuildAppCommandPermissions',
+    'AppCommandPermission',
     'SlashCommand',
     'GuildOnlySlashCommand',
     'SlashCommandOption',
