@@ -333,6 +333,11 @@ class MessageFlags(BaseFlags):
         The user(s) will still see a mention in the channel, but no push or desktop notification will be sent.
         """
         return 4096
+    
+    @flag_value
+    def is_voice_message(self):
+        """:class:`bool`: Returns ``True`` if the message is a voice message."""
+        return 8192
 
 
 @fill_with_flags()
