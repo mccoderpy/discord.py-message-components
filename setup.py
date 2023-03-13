@@ -114,6 +114,7 @@ setup(
         "aiohttp",
         "chardet",
         "yarl",
+        'aiosignal',
         "async-timeout",
         "typing-extensions",
         "attrs",
