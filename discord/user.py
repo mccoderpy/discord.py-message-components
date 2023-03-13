@@ -141,7 +141,12 @@ class BaseUser(_BaseUser):
         """:class:`bool`: Indicates if the user has an animated avatar."""
         return bool(self.avatar and self.avatar.startswith('a_'))
 
-    def avatar_url_as(self, *, format: Optional[str] = None, static_format='webp', size=1024) -> Asset:
+    def avatar_url_as(
+            self, *,
+            format: Optional[Literal['png', 'jpg', 'jpeg', 'webp', 'gif']] = None,
+            static_format: Literal['png', 'jpg', 'jpeg', 'webp'] = 'webp',
+            size=1024
+    ) -> Asset:
         """Returns an :class:`Asset` for the avatar the user has.
 
         If the user does not have a traditional avatar, an asset for
@@ -207,8 +212,8 @@ class BaseUser(_BaseUser):
     def banner_url_as(
             self,
             *,
-            format: Optional[str] = None,
-            static_format: Literal['png', 'jpeg', 'webp', 'gif'] = 'webp',
+            format: Optional[Literal['png', 'jpg', 'jpeg', 'webp', 'gif']] = None,
+            static_format: Literal['png', 'jpg', 'jpeg', 'webp'] = 'webp',
             size: int = 1024
     ) -> Optional[Asset]:
         """Returns an :class:`Asset` for the banner the user has. Could be ``None``.

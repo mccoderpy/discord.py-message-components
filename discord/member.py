@@ -34,15 +34,14 @@ from operator import attrgetter
 from typing import (
     Optional,
     Union,
+    List,
     Coroutine,
     TYPE_CHECKING
 )
 
 from typing_extensions import Literal
 
-import discord.abc
-
-from . import utils
+from . import utils, abc
 from .asset import Asset
 from .user import BaseUser, User
 from .activity import create_activity
@@ -56,6 +55,18 @@ from .errors import NotInVoiceChannel
 
 if TYPE_CHECKING:
     from .abc import Connectable
+    from .role import Role
+    from .activity import BaseActivity, Spotify
+    from .message import Message
+    from .channel import ThreadChannel, VoiceChannel
+
+
+MISSING = utils.MISSING
+
+__all__ = (
+    'VoiceState',
+    'Member',
+)
 
 
 class VoiceState:
@@ -178,11 +189,11 @@ def flatten_user(cls):
     return cls
 
 
-_BaseUser = discord.abc.User
+_BaseUser = abc.User
 
 
 @flatten_user
-class Member(discord.abc.Messageable, _BaseUser):
+class Member(abc.Messageable, _BaseUser):
     """Represents a Discord member to a :class:`Guild`.
 
     This implements a lot of the functionality of :class:`User`.
@@ -288,7 +299,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.premium_since = utils.parse_time(data.get('premium_since'))
         self._update_roles(data)
         self.nick = data.get('nick', None)
-        self.flags = GuildMemberFlags._from_value(data.get('flags', 0))
+        self._flags = data.get('flags', 0)
         self.pending = data.get('pending', False)
 
     @classmethod
@@ -326,7 +337,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         self.nick = member.nick
         self.guild_avatar = member.guild_avatar
         self.pending = member.pending
-        self.flags = member.flags
+        self._flags = member._flags
         self.activities = member.activities
         self._state = member._state
 
@@ -356,7 +367,7 @@ class Member(discord.abc.Messageable, _BaseUser):
             pass
         
         try:
-            self.flags = GuildMemberFlags._from_value(data['flags'])
+            self._flags = data['flags']
         except KeyError:
             pass
         
@@ -393,12 +404,12 @@ class Member(discord.abc.Messageable, _BaseUser):
             return to_return, u
 
     @property
-    def status(self):
+    def status(self) -> Status:
         """:class:`Status`: The member's overall status. If the value is unknown, then it will be a :class:`str` instead."""
         return try_enum(Status, self._client_status[None])
 
     @property
-    def raw_status(self):
+    def raw_status(self) -> str:
         """:class:`str`: The member's overall status as a string value.
 
         .. versionadded:: 1.5
@@ -411,26 +422,26 @@ class Member(discord.abc.Messageable, _BaseUser):
         self._client_status[None] = str(value)
 
     @property
-    def mobile_status(self):
+    def mobile_status(self) ->  Status:
         """:class:`Status`: The member's status on a mobile device, if applicable."""
         return try_enum(Status, self._client_status.get('mobile', 'offline'))
 
     @property
-    def desktop_status(self):
+    def desktop_status(self) -> Status:
         """:class:`Status`: The member's status on the desktop client, if applicable."""
         return try_enum(Status, self._client_status.get('desktop', 'offline'))
 
     @property
-    def web_status(self):
+    def web_status(self) -> Status:
         """:class:`Status`: The member's status on the web client, if applicable."""
         return try_enum(Status, self._client_status.get('web', 'offline'))
 
-    def is_on_mobile(self):
+    def is_on_mobile(self) -> bool:
         """:class:`bool`: A helper function that determines if a member is active on a mobile device."""
         return 'mobile' in self._client_status
 
     @property
-    def colour(self):
+    def colour(self) -> Colour:
         """:class:`Colour`: A property that returns a colour denoting the rendered colour
         for the member. If the default colour is the one rendered then an instance
         of :meth:`Colour.default` is returned.
@@ -449,7 +460,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return Colour.default()
 
     @property
-    def color(self):
+    def color(self) -> Colour:
         """:class:`Colour`: A property that returns a color denoting the rendered color for
         the member. If the default color is the one rendered then an instance of :meth:`Colour.default`
         is returned.
@@ -465,7 +476,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return self._roles
 
     @property
-    def roles(self):
+    def roles(self) -> List[Role]:
         """List[:class:`Role`]: A :class:`list` of :class:`Role` that the member belongs to. Note
         that the first element of this list is always the default '@everyone'
         role.
@@ -483,14 +494,14 @@ class Member(discord.abc.Messageable, _BaseUser):
         return result
 
     @property
-    def mention(self):
+    def mention(self) -> str:
         """:class:`str`: Returns a string that allows you to mention the member."""
         if self.nick:
             return '<@!%s>' % self.id
         return '<@%s>' % self.id
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         """:class:`str`: Returns the user's display name.
 
         For regular users this is just their username, but
@@ -504,11 +515,13 @@ class Member(discord.abc.Messageable, _BaseUser):
         """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if any."""
         return self.guild_avatar_url_as()
 
-    def guild_avatar_url_as(self,
-                            *,
-                            format: str = None,
-                            static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
-                            size: int = 1024) -> Optional[Asset]:
+    def guild_avatar_url_as(
+            self,
+            *,
+            format: Optional[Literal['jpeg', 'jpg', 'webp', 'png', 'gif']] = None,
+            static_format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp',
+            size: int = 1024
+    ) -> Optional[Asset]:
         """Returns an :class:`Asset` for the guild-specific avatar of the member if any, else :obj:`None`.
 
         The format must be one of 'webp', 'jpeg', or 'png'. The
@@ -518,6 +531,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         -----------
         format: :class:`str`
             The format to attempt to convert the avatar to.
+        static_format: :class:`str`
+            The format to attempt to convert the avatar to if the avatar is animated.
         size: :class:`int`
             The size of the image to display.
 
@@ -534,7 +549,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         if self.guild_avatar:
             return Asset._from_guild_avatar(self._state, self, static_format=static_format, format=format, size=size)
 
-    def is_guild_avatar_animated(self):
+    def is_guild_avatar_animated(self) -> bool:
         """:class:`bool`: Indicates if the member has an animated guild-avatar."""
         return bool(self.guild_avatar and self.guild_avatar.startswith('a_'))
 
@@ -543,10 +558,12 @@ class Member(discord.abc.Messageable, _BaseUser):
         """:class:`Asset`: Returns the guild-specific avatar asset for the member if he has one, else the default avatar asset"""
         return self.guild_avatar_url or self.avatar_url
 
-    def display_avatar_url_as(self,
-                              format: str = None,
-                              static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
-                              size: int = 1024) -> Optional[Asset]:
+    def display_avatar_url_as(
+            self,
+            format: Optional[Literal['jpeg', 'jpg', 'webp', 'png', 'gif']] = None,
+            static_format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp',
+            size: int = 1024
+    ) -> Asset:
         """:class:`Asset`: Same behaviour as :meth:`User.avatar_url_as` and :meth:`.guild_avatar_url_as` but it prefers the guild-specific avatar"""
         if self.guild_avatar:
             return self.guild_avatar_url_as(format=format, static_format=static_format, size=size)
@@ -557,11 +574,13 @@ class Member(discord.abc.Messageable, _BaseUser):
         """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if any."""
         return self.guild_banner_url_as()
 
-    def guild_banner_url_as(self,
-                            *,
-                            format: str = None,
-                            static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
-                            size: int = 1024) -> Optional[Asset]:
+    def guild_banner_url_as(
+            self,
+            *,
+            format: Optional[Literal['jpeg', 'jpg', 'webp', 'png', 'gif']] = None,
+            static_format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp',
+            size: int = 1024
+    ) -> Optional[Asset]:
         """Returns an :class:`Asset` for the guild-specific banner of the member if any, else :obj:`None`.
 
         The format must be one of 'webp', 'jpeg', 'gif' or 'png'. The
@@ -571,6 +590,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         -----------
         format: :class:`str`
             The format to attempt to convert the banner to.
+        static_format: :class:`str`
+            The format to attempt to convert the banner to if the banner is animated.
         size: :class:`int`
             The size of the image to display.
 
@@ -586,7 +607,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
         return Asset._from_guild_banner(self._state, self, static_format=static_format, format=format, size=size)
 
-    def is_guild_banner_animated(self):
+    def is_guild_banner_animated(self) -> bool:
         """:class:`bool`: Indicates if the member has an animated guild-banner."""
         return bool(self.guild_banner and self.guild_banner.startswith('a_'))
 
@@ -595,17 +616,19 @@ class Member(discord.abc.Messageable, _BaseUser):
         """Optional[:class:`Asset`]: Returns the guild-specific banner asset for the member if he has one, else the default banner asset if any."""
         return self.guild_banner_url or self.banner_url
 
-    def display_banner_url_as(self,
-                              format: str = None,
-                              static_format: Literal['jpeg', 'jpg', 'webp', 'png', 'gif'] = 'webp',
-                              size: int = 1024) -> Optional[Asset]:
-        """:class:`Asset`: Same behaviour as :meth:`User.banner_url_as` and :meth:`.guild_banner_url_as` but it prefers the guild-specific banner"""
+    def display_banner_url_as(
+            self,
+            format: Optional[Literal['jpeg', 'jpg', 'webp', 'png', 'gif']] = None,
+            static_format: Literal['jpeg', 'jpg', 'webp', 'png'] = 'webp',
+            size: int = 1024
+    ) -> Optional[Asset]:
+        """Optional[:class:`Asset`]: Same behaviour as :meth:`User.banner_url_as` and :meth:`~Member.guild_banner_url_as` but it prefers the guild-specific banner"""
         if self.guild_banner:
             return self.guild_banner_url_as(format=format, static_format=static_format, size=size)
         return self.banner_url_as(format=format, static_format=static_format, size=size)
 
     @property
-    def activity(self):
+    def activity(self) -> Optional[Union[BaseActivity, Spotify]]:
         """Union[:class:`BaseActivity`, :class:`Spotify`]: Returns the primary
         activity the user is currently doing. Could be ``None`` if no activity is being done.
 
@@ -622,7 +645,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         if self.activities:
             return self.activities[0]
 
-    def mentioned_in(self, message):
+    def mentioned_in(self, message: Message) -> bool:
         """Checks if the member is mentioned in the specified message.
 
         Parameters
@@ -643,7 +666,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         return any(self._roles.has(role.id) for role in message.role_mentions)
 
-    def permissions_in(self, channel):
+    def permissions_in(self, channel: Union[abc.GuildChannel, ThreadChannel]) -> Permissions:
         """An alias for :meth:`abc.GuildChannel.permissions_for`.
 
         Basically equivalent to:
@@ -665,7 +688,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return channel.permissions_for(self)
 
     @property
-    def top_role(self):
+    def top_role(self) -> Role:
         """:class:`Role`: Returns the member's highest role.
 
         This is useful for figuring where a member stands in the role
@@ -715,7 +738,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     @utils.deprecated('Member.timeout')
     async def mute(self, until: datetime.datetime, *, reason: Optional[str] = None) -> Member:
-        await self.edit(communication_disabled_until=until, reason=reason)
+        return await self.edit(communication_disabled_until=until, reason=reason)
 
     async def timeout(self, until: Union[datetime.datetime, datetime.timedelta], *, reason: Optional[str] = None) -> Member:
         """|coro|
@@ -742,9 +765,9 @@ class Member(discord.abc.Messageable, _BaseUser):
         TypeError
             The passed :class:`~datetime.datetime` object is not timezone aware
         Forbidden
-            The bot missing access to timeout this member
+            The bot missing access to time out this member
         HTTPException
-            Timeouting the member failed
+            Sending the member to timeout failed
         """
         if isinstance(until, datetime.timedelta):
             until = utils.utcnow() + until
@@ -792,7 +815,19 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
         await self.guild.kick(self, reason=reason)
 
-    async def edit(self, *, reason: Optional[str] = None, **fields):
+    async def edit(
+            self,
+            *,
+            nick: Optional[str] = MISSING,
+            mute: bool = MISSING,
+            deafen: bool = MISSING,
+            suppress: bool = MISSING,
+            roles: Optional[List[Role]] = MISSING,
+            voice_channel: Optional[VoiceChannel] = MISSING,
+            flags: Optional[GuildMemberFlags] = MISSING,
+            communication_disabled_until: Optional[datetime.datetime] = MISSING,
+            reason: Optional[str] = None
+    ) -> Member:
         """|coro|
 
         Edits the member's data.
@@ -867,29 +902,21 @@ class Member(discord.abc.Messageable, _BaseUser):
         guild_id = self.guild.id
         me = self._state.self_id == self.id
         payload = {}
-
-        try:
-            nick = fields['nick']
-        except KeyError:
-            # nick not present so...
-            pass
-        else:
+        
+        if nick is not MISSING:
             nick = nick or ''
             if me:
                 await http.change_my_nickname(guild_id, nick, reason=reason)
             else:
                 payload['nick'] = nick
-
-        deafen = fields.get('deafen')
-        if deafen is not None:
-            payload['deaf'] = deafen
-
-        mute = fields.get('mute')
-        if mute is not None:
+        
+        if mute is not MISSING:
             payload['mute'] = mute
-
-        suppress = fields.get('suppress')
-        if suppress is not None:
+        
+        if deafen is not MISSING:
+            payload['deaf'] = deafen
+        
+        if suppress is not MISSING:
             voice_state_payload = {
                 'channel_id': self.voice.channel.id,
                 'suppress': suppress,
@@ -904,33 +931,17 @@ class Member(discord.abc.Messageable, _BaseUser):
                 if not suppress:
                     voice_state_payload['request_to_speak_timestamp'] = datetime.datetime.utcnow().isoformat()
                 await http.edit_voice_state(guild_id, self.id, voice_state_payload)
-
-        try:
-            vc = fields['voice_channel']
-        except KeyError:
-            pass
-        else:
-            payload['channel_id'] = vc and vc.id
-
-        try:
-            roles = fields['roles']
-        except KeyError:
-            pass
-        else:
+        
+        if voice_channel is not MISSING:
+            payload['channel_id'] = voice_channel and voice_channel.id
+        
+        if roles is not MISSING:
             payload['roles'] = tuple(r.id for r in roles)
         
-        try:
-            flags: GuildMemberFlags = fields['flags']
-        except KeyError:
-            pass
-        else:
+        if flags is not MISSING:
             payload['flags'] = flags.value
         
-        try:
-            communication_disabled_until: Optional[datetime.datetime] = fields['communication_disabled_until']
-        except KeyError:
-            pass
-        else:
+        if communication_disabled_until is not MISSING:
             if communication_disabled_until:
                 if not communication_disabled_until.tzinfo:
                     raise TypeError(
@@ -940,7 +951,7 @@ class Member(discord.abc.Messageable, _BaseUser):
                 payload['communication_disabled_until'] = communication_disabled_until.isoformat()
             else:
                 payload['communication_disabled_until'] = None
-
+        
         if payload:
             data = await http.edit_member(guild_id, self.id, reason=reason, **payload)
             self._update(data)

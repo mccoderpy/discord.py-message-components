@@ -63,7 +63,7 @@ from .channel import _channel_factory, PartialMessageable
 from .enums import ChannelType, ApplicationCommandType, Locale
 from .mentions import AllowedMentions
 from .errors import *
-from .enums import Status, VoiceRegion, OptionType
+from .enums import Status, VoiceRegion
 from .gateway import *
 from .activity import BaseActivity, create_activity
 from .voice_client import VoiceClient

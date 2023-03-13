@@ -990,7 +990,7 @@ class HTTPClient:
         r = Route('PATCH', '/guilds/{guild_id}/voice-states/{user_id}', guild_id=guild_id, user_id=user_id)
         return self.request(r, json=payload)
 
-    def edit_member(self, guild_id, user_id, *, reason=None, **fields):
+    def edit_member(self, guild_id, user_id, *, reason=None, fields):
         r = Route('PATCH', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)
         return self.request(r, json=fields, reason=reason)
 
@@ -1488,7 +1488,7 @@ class HTTPClient:
     def replace_roles(self, user_id, guild_id, role_ids, *, reason=None):
         return self.edit_member(guild_id=guild_id, user_id=user_id, roles=role_ids, reason=reason)
 
-    def create_role(self, guild_id, *, reason=None, **fields):
+    def create_role(self, guild_id, *, reason=None, fields):
         r = Route('POST', '/guilds/{guild_id}/roles', guild_id=guild_id)
         return self.request(r, json=fields, reason=reason)
 

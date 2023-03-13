@@ -37,7 +37,7 @@ import inspect
 import gc
 
 import os
-from typing import Union, TYPE_CHECKING
+from typing import Union, Callable, TYPE_CHECKING
 
 from .guild import Guild
 from .activity import BaseActivity
@@ -63,6 +63,9 @@ from .interactions import BaseInteraction, InteractionType
 
 if TYPE_CHECKING:
     from .http import HTTPClient
+    from .client import Client
+    from .shard import AutoShardedClient
+    from .gateway import DiscordWebSocket
 
 from .types.gateway import ReadyEvent
 
@@ -119,6 +122,9 @@ async def logging_coroutine(coroutine, *, info):
 
 
 class ConnectionState:
+    _get_client: Callable[[], Client]
+    _get_websocket: Callable[[int], DiscordWebSocket]
+    
     def __init__(self, *, dispatch, handlers, hooks, syncer, http, loop, **options):
         self.loop = loop
         self.http: HTTPClient = http
@@ -1370,6 +1376,9 @@ class ConnectionState:
 
 
 class AutoShardedConnectionState(ConnectionState):
+    _get_client: Callable[[], AutoShardedClient]
+    _get_websocket: Callable[[int, int], DiscordWebSocket]
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._ready_task = None
