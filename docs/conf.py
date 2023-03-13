@@ -75,6 +75,7 @@ language = 'en'
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members']
 autodoc_typehints = 'none'
+autoclass_content = 'both'  # document class docstring and __init__ docstring
 
 # Links used for cross-referencing stuff in other documentation
 intersphinx_mapping = {
@@ -119,14 +120,14 @@ html_permalinks_icon = '<span class="fa fa-link" aria-hidden="true"></span>'
 # }
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+# html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+# html_short_title = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -147,6 +148,9 @@ rst_prolog = """
 .. |maybecoro| replace:: This function *could be a* |coroutine_link|_.
 .. |coroutine_link| replace:: *coroutine*
 .. _coroutine_link: https://docs.python.org/3/library/asyncio-task.html#coroutine
+.. |bugreport| replace:: |bugreport_link|_
+.. |bugreport_link| replace:: *bug report*
+.. _bugreport_link: replace:: https://discord4py.dev/bugreport
 """
 
 # Add any paths that contain templates here, relative to this directory.

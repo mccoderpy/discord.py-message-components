@@ -28,7 +28,8 @@ from ..enums import Enum
 
 __all__ = (
     'OAuth2Scope',
-    'GrantType'
+    'GrantType',
+    'ConnectionService',
 )
 
 
@@ -152,3 +153,81 @@ class GrantType(Enum):
     AUTHORIZATION_CODE = 'authorization_code'
     CLIENT_CREDENTIALS = 'client_credentials'
     REFRESH_TOKEN      = 'refresh_token'
+
+
+class ConnectionService(Enum):
+    """Represents the service of a :class:`Connection`.
+    
+    .. container:: operations
+    
+        .. describe:: str(x)
+    
+            Returns the connection type's name.
+    
+    +----------------------------------+----------------------+
+    | Name                             | Value                |
+    +==================================+======================+
+    | .. attribute:: Battlenet         | battlenet            |
+    +----------------------------------+----------------------+
+    | .. attribute:: Crunchyroll       | crunchyroll          |
+    +----------------------------------+----------------------+
+    | .. attribute:: eBay              | ebay                 |
+    +----------------------------------+----------------------+
+    | .. attribute:: Epic_Games        | epicgames            |
+    +----------------------------------+----------------------+
+    | .. attribute:: Facebook          | facebook             |
+    +----------------------------------+----------------------+
+    | .. attribute:: GitHub            | github               |
+    +----------------------------------+----------------------+
+    | .. attribute:: Instagram         | instagram            |
+    +----------------------------------+----------------------+
+    | .. attribute:: League_of_Legends | leagueoflegends      |
+    +----------------------------------+----------------------+
+    | .. attribute:: PayPal            | paypal               |
+    +----------------------------------+----------------------+
+    | .. attribute:: Playstation       | playstation          |
+    +----------------------------------+----------------------+
+    | .. attribute:: Reddit            | reddit               |
+    +----------------------------------+----------------------+
+    | .. attribute:: Riotgames         | riotgames            |
+    +----------------------------------+----------------------+
+    | .. attribute:: Skype             | skype                |
+    +----------------------------------+----------------------+
+    | .. attribute:: Spotify           | spotify              |
+    +----------------------------------+----------------------+
+    | .. attribute:: Steam             | steam                |
+    +----------------------------------+----------------------+
+    | .. attribute:: TikTok            | tiktok               |
+    +----------------------------------+----------------------+
+    | .. attribute:: Twitch            | twitch               |
+    +----------------------------------+----------------------+
+    | .. attribute:: Twitter           | twitter              |
+    +----------------------------------+----------------------+
+    | .. attribute:: xBox              | xbox                 |
+    +----------------------------------+----------------------+
+    | .. attribute:: YouTube           | youtube              |
+    +----------------------------------+----------------------+
+    """
+    Battlenet   = 'battlenet'
+    Crunchyroll = 'crunchyroll'
+    eBay        = 'ebay'
+    Epic_Games   = 'epicgames'
+    Facebook    = 'facebook'
+    GitHub      = 'github'
+    Instagram   = 'instagram'
+    League_of_Legends = 'leagueoflegends'
+    PayPal      = 'paypal'
+    Playstation = 'playstation'
+    Reddit      = 'reddit'
+    Riotgames   = 'riotgames'
+    Skype       = 'skype'
+    Spotify     = 'spotify'
+    Steam       = 'steam'
+    TikTok      = 'tiktok'
+    Twitch      = 'twitch'
+    Twitter     = 'twitter'
+    xBox        = 'xbox'
+    YouTube     = 'youtube'
+    
+    def __str__(self) -> str:
+        return self.value

@@ -8,9 +8,9 @@ OAuth2
 
 .. warning::
 
-    **This feature is new in the library and not fully developed yet.**
+    **This feature is new in the library and may miss some parts.**
 
-    You can test and use it but be aware that this can change the behavior at any time.
+    If you find anything that looks wrong whether it is a bug/missing feature or something in the documentation, please fill out a |bugreport|
 
     *PS: As always, feel free to contribute to it and help us improve.*
 
@@ -32,7 +32,8 @@ Manuals
 
 These pages go into great detail about everything the API can do.
 
+
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     Main Oauth2 API <api.rst>

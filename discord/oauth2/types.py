@@ -55,6 +55,7 @@ __all__ = (
     'CurrentAuthorizationInfo',
     'IntegrationAccount',
     'PartialUser',
+    'PartialGuildIntegration',
     'RoleConnection',
     'User'
 )
@@ -142,6 +143,11 @@ class CurrentAuthorizationInfo(TypedDict):
 class IntegrationAccount(TypedDict):
     id: str
     name: str
+
+
+class PartialGuildIntegration(TypedDict):
+    pass
+    # TODO: Find out the structure of this
 
 
 class Connection(TypedDict):
