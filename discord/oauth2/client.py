@@ -350,6 +350,13 @@ class OAuth2Client:
                     )
     
     async def start(self) -> Self:
+        """|coro|
+        
+        Starts the client. This will start the internal HTTP client and call the :attr:`on_startup` event.
+        
+        .. important::
+            This must be called before any other requests are made.
+        """
         self.setup_logging()
         
         if not self.loop:
