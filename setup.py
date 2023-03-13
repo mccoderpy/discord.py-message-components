@@ -108,7 +108,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Utilities'
     ],
-    packages=['discord', 'discord.bin', 'discord.oauth2', 'discord.ext.commands', 'discord.ext.tasks'],
+    packages=['discord', 'discord.types', 'discord.bin', 'discord.oauth2', 'discord.ext.commands', 'discord.ext.tasks'],
     include_package_data=True,
     install_requires=[
         "aiohttp",
