@@ -31,23 +31,39 @@ from typing import (
     Optional
 )
 
-from typing_extensions import (Literal, NotRequired, TypedDict)
+from typing_extensions import (
+    Literal,
+    NotRequired,
+    TypedDict
+)
 
-from ..appinfo import PartialAppInfo
-from ..user import UserPayload
+from discord.types import (
+    appinfo,
+    integration,
+    user,
+    webhook
+)
+
 
 __all__ = (
-    'AccessTokenResponse',
-    'ApplicationRoleConnectionData',
-    'ClientCredentialsAccessTokenResponse',
-    'ConnectionData',
+    'AccessToken',
+    'AccessTokenWithAbsoluteTime',
+    'ClientCredentialsAccessToken',
+    'ClientCredentialsAccessTokenWithAbsoluteTime',
+    'Connection',
     'ConnectionService',
-    'CurrentAuthorizationInfoResponse',
+    'CurrentAuthorizationInfo',
+    'IntegrationAccount',
+    'PartialUser',
+    'RoleConnection',
+    'User'
 )
+
 
 VisibilityType = Literal[0, 1]
 ConnectionService = Literal[
     'battlenet',
+    'crunchyroll',
     'ebay',
     'epicgames',
     'facebook',
@@ -67,28 +83,60 @@ ConnectionService = Literal[
     'xbox',
     'youtube'
 ]
+PremiumType = Literal[0, 1, 2, 3]
+RoleConnectionMetadataType = Literal[1, 2, 3, 4, 5, 6, 7, 8]
 
 
-class AccessTokenResponse(TypedDict):
+class _AccessToken(TypedDict):
     access_token: str
     token_type: str
-    expires_in: int
+
+
+class AccessToken(_AccessToken):
     refresh_token: str
-    scope: str
-
-
-class ClientCredentialsAccessTokenResponse(TypedDict):
-    access_token: str
-    token_type: str
     expires_in: int
     scope: str
+    webhook: NotRequired[webhook.Webhook]
 
 
-class CurrentAuthorizationInfoResponse(TypedDict):
-    application: PartialAppInfo
+class AccessTokenWithAbsoluteTime(_AccessToken):
+    refresh_token: str
+    expires_at: str
+    scopes: List[str]
+    webhook_url: NotRequired[str]
+
+
+class ClientCredentialsAccessToken(_AccessToken):
+    expires_in: int
+    scope: str
+    webhook: NotRequired[webhook.Webhook]
+
+
+class ClientCredentialsAccessTokenWithAbsoluteTime(_AccessToken):
+    expires_at: str
+    scopes: List[str]
+    webhook_url: NotRequired[str]
+
+
+class PartialUser(user.BaseUser):
+    avatar_decoration: Optional[str]
+    public_flags: NotRequired[int]
+
+
+class User(user.User):
+    mfa_enabled: NotRequired[bool]
+    locale: NotRequired[str]
+    verified: NotRequired[bool]
+    email: NotRequired[Optional[str]]
+    flags: NotRequired[int]
+    premium_type: PremiumType
+
+
+class CurrentAuthorizationInfo(TypedDict):
+    application: appinfo.PartialAppInfo
     scopes: List[str]
     expires: str
-    user: NotRequired[UserPayload]
+    user: NotRequired[user.BaseUser]
 
 
 class IntegrationAccount(TypedDict):
@@ -96,27 +144,12 @@ class IntegrationAccount(TypedDict):
     name: str
 
 
-class PartialIntegration(TypedDict):
-    id: str
-    name: str
-    type: str
-    enabled: bool
-    syncing: NotRequired[bool]
-    role_id: NotRequired[str]
-    enable_emoticons: NotRequired[bool]
-    expire_behavior: NotRequired[int]
-    expire_grace_period: NotRequired[int]
-    user: NotRequired[UserPayload]
-    account: IntegrationAccount
-    synced_at: NotRequired[str]
-
-
-class ConnectionData(TypedDict):
+class Connection(TypedDict):
     id: str
     name: str
     type: ConnectionService
     revoked: NotRequired[bool]
-    integrations: NotRequired[List[PartialIntegration]]
+    integrations: NotRequired[List[integration.PartialIntegration]]
     verified: bool
     friend_sync: bool
     show_activity: bool
@@ -124,7 +157,7 @@ class ConnectionData(TypedDict):
     visibility: int
 
 
-class ApplicationRoleConnectionData(TypedDict):
+class RoleConnection(TypedDict):
     platform_name: Optional[str]
     platform_username: Optional[str]
     metadata: Dict[str, str]

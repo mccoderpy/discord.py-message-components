@@ -35,53 +35,74 @@ from typing_extensions import (
     NotRequired
 )
 
-from .snowflake import SnowflakeID
+from .snowflake import SnowflakeID, SnowflakeList
 
 __all__ = (
     'BaseUser',
+    'User',
     'ClientUser',
-    'UserPayload',
-    'GuildMember',
+    'PartialMember',
+    'Member',
+    'MemberWithUser',
+    'UserWithMember'
 )
 
 
 class BaseUser(TypedDict):
-    username: str
-    public_flags: int
     id: SnowflakeID
+    username: str
     discriminator: str
-    bot: bool
-    avatar: str
+    avatar: Optional[str]
 
 
-class ClientUser(BaseUser):
-    verified: bool
-    mfa_enabled: bool
-    flags: int
-
-
-class UserPayload(BaseUser):
+class User(BaseUser, total=False):
+    public_flags: NotRequired[int]
+    bot: NotRequired[bool]
     system: NotRequired[bool]
-    mfa_enabled: NotRequired[bool]
+    avatar_decoration: NotRequired[str]
     banner: NotRequired[Optional[str]]
+    banner_color: NotRequired[Optional[str]]
     accent_color: NotRequired[Optional[int]]
-    locale: NotRequired[str]
+
+
+class ClientUser(User, total=False):
     verified: NotRequired[bool]
-    email: NotRequired[Optional[str]]
+    mfa_enabled: NotRequired[bool]
     flags: NotRequired[int]
-    premium_type: NotRequired[int]
+    # There are some other fields, but they are not usable by bots so empty
 
 
-class GuildMember(TypedDict):
-    user: BaseUser
-    nick: NotRequired[Optional[str]]
-    avatar: NotRequired[Optional[str]]
-    roles: List[SnowflakeID]
-    joined_at: str
-    premium_since: NotRequired[Optional[str]]
+class PartialMember(TypedDict):
+    roles: SnowflakeList
     deaf: bool
     mute: bool
+    joined_at: str
     flags: int
+    
+
+class Member(PartialMember):
+    avatar: NotRequired[Optional[str]]
+    user: User
+    nick: NotRequired[Optional[str]]
+    premium_since: NotRequired[Optional[str]]
     pending: NotRequired[bool]
     permissions: NotRequired[str]
     communication_disabled_until: NotRequired[Optional[str]]
+    
+
+class _OptionalMemberWithUser(PartialMember):
+    avatar: NotRequired[Optional[str]]
+    nick: NotRequired[Optional[str]]
+    premium_since: Optional[str]
+    pending: NotRequired[bool]
+    permissions: NotRequired[str]
+    communication_disabled_until: NotRequired[Optional[str]]
+
+
+class MemberWithUser(_OptionalMemberWithUser):
+    user: User
+
+
+class UserWithMember(User, total=False):
+    member: _OptionalMemberWithUser
+
