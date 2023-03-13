@@ -75,9 +75,7 @@ __all__ = (
     'GuildOnlySubCommand',
     'UserCommand',
     'MessageCommand',
-    'generate_options',
-    'GuildAppCommandPermissions',
-    'AppCommandPermission'
+    'generate_options'
 )
 
 api_docs = 'https://discord.com/developers/docs'
@@ -129,7 +127,8 @@ class Localizations:
 
     """
 
-    __slots__ = tuple([locale_name for locale_name in getattr(Locale, '_enum_member_map_')] + ['__languages_dict__'])  # type: ignore
+    __slots__ = tuple([locale_name for locale_name in Locale._enum_member_map_] + ['__languages_dict__']
+                      )  # type: ignore
 
     def __init__(self, **localizations) -> None:
 

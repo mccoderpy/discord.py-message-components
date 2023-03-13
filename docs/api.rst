@@ -1183,6 +1183,82 @@ of :class:`enum.Enum`.
         Discovery requirements for 3 weeks in a row.
 
         .. versionadded:: 1.7
+    .. attribute:: thread_created
+
+        The system message denoting that a thread has been created.
+
+        .. versionadded:: 2.0
+    .. attribute:: reply
+
+        A message that is a reply to another message.
+
+        .. versionadded:: 2.0
+    .. attribute::  chat_input_command
+
+        A message that is a slash command.
+
+        .. versionadded:: 2.0
+    .. attribute::  thread_starter_message
+
+        A message that is the first message in a thread.
+
+        .. versionadded:: 2.0
+    .. attribute:: guild_invite_reminder
+
+        The system message denoting that a guild invite reminder has been sent.
+
+        .. versionadded:: 2.0
+    .. attribute:: context_menu_command
+
+        A message that is a context menu command.
+
+        .. versionadded:: 2.0
+    .. attribute:: automoderation_action
+
+        A log message from discords auto moderation system.
+
+        .. versionadded:: 2.0
+    .. attribute:: role_subscription_purchase
+
+        A message informing about a role subscription purchase.
+
+        .. versionadded:: 2.0
+    .. attribute:: interaction_premium_upsell
+
+        A message informing about a premium upsell.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_start
+
+        A message informing about a stage starting.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_end
+
+        A message informing about a stage ending.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_speaker_change
+
+        A message informing about a stage having a new speaker.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_raise_hand
+
+        A message informing about someone raising their hand in a stage.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_topic_change
+
+        A message informing about the topic of a stage been changed.
+
+        .. versionadded:: 2.0
+    .. attribute:: guild_application_premium_subscription
+
+        The system message denoting that a member has subscribed to a guild application.
+
+        .. versionadded:: 2.4
+
 
 .. class:: ComponentType
 
