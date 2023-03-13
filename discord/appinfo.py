@@ -169,7 +169,7 @@ class AppInfo:
         self.custom_install_url: Optional[str] = data.get('custom_install_url', None)
         install_params = data.get('install_params', None)
         
-        self.install_params: Optional[InstallParams] = InstallParams(install_params) if install_params else None
+        self.install_params: Optional[InstallParams] = InstallParams(install_params['scopes'], install_params['permissions']) if install_params else None
         
         self.tags: List[str] = data.get('tags', [])
         self._flags: int = data.get('flags', 0)
