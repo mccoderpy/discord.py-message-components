@@ -45,7 +45,7 @@ from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
-from .errors import InvalidArgument, HTTPException, NotFound
+from .errors import InvalidArgument, HTTPException
 from .components import ActionRow, Button, BaseSelect
 from .embeds import Embed
 from .member import Member
@@ -61,7 +61,8 @@ from .channel import PartialMessageable
 if TYPE_CHECKING:
     from .state import ConnectionState
     from .mentions import AllowedMentions
-    from .abc import Messageable
+    from .abc import Messageable, Snowflake
+    from .sticker import GuildSticker
 
 
 __all__ = (
@@ -1235,7 +1236,7 @@ class Message(Hashable):
 
         await self._state.http.publish_message(self.channel.id, self.id)
 
-    async def pin(self, *, reason=None):
+    async def pin(self, *, reason: Optional[str] = None):
         """|coro|
 
         Pins the message.
@@ -1264,7 +1265,7 @@ class Message(Hashable):
         await self._state.http.pin_message(self.channel.id, self.id, reason=reason)
         self.pinned = True
 
-    async def unpin(self, *, reason=None):
+    async def unpin(self, *, reason: Optional[str] = None):
         """|coro|
 
         Unpins the message.
@@ -1292,7 +1293,7 @@ class Message(Hashable):
         await self._state.http.unpin_message(self.channel.id, self.id, reason=reason)
         self.pinned = False
 
-    async def add_reaction(self, emoji):
+    async def add_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]):
         """|coro|
 
         Add a reaction to the message.
@@ -1323,7 +1324,7 @@ class Message(Hashable):
         emoji = convert_emoji_reaction(emoji)
         await self._state.http.add_reaction(self.channel.id, self.id, emoji)
 
-    async def remove_reaction(self, emoji, member):
+    async def remove_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str], member: Snowflake):
         """|coro|
 
         Remove a reaction by the member from the message.
@@ -1362,7 +1363,7 @@ class Message(Hashable):
         else:
             await self._state.http.remove_reaction(self.channel.id, self.id, emoji, member.id)
 
-    async def clear_reaction(self, emoji):
+    async def clear_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]):
         """|coro|
 
         Clears a specific reaction from the message.
@@ -1409,7 +1410,23 @@ class Message(Hashable):
         """
         await self._state.http.clear_reactions(self.channel.id, self.id)
 
-    async def reply(self, content=None, **kwargs):
+    async def reply(
+            self,
+            content=None,
+            tts: bool = False,
+            embed: Optional[Embed] = None,
+            embeds: Optional[List[Embed]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
+            file: Optional[File] = None,
+            files: Optional[List[File]] = None,
+            stickers: Optional[List[GuildSticker]] = None,
+            delete_after: Optional[float] = None,
+            nonce: Optional[int] = None,
+            allowed_mentions: Optional[AllowedMentions] = None,
+            mention_author: Optional[bool] = None,
+            suppress_embeds: bool = False,
+            suppress_notifications: bool = False
+    ):
         """|coro|
 
         A shortcut method to :meth:`.abc.Messageable.send` to reply to the
@@ -1433,7 +1450,23 @@ class Message(Hashable):
             The message that was sent.
         """
 
-        return await self.channel.send(content, reference=self, **kwargs)
+        return await self.channel.send(
+            content,
+            reference=self,
+            tts=tts,
+            embed=embed,
+            embeds=embeds,
+            components=components,
+            file=file,
+            files=files,
+            stickers=stickers,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+            mention_author=mention_author,
+            suppress_embeds=suppress_embeds,
+            suppress_notifications=suppress_notifications
+        )
 
     async def create_thread(
             self,
@@ -1506,7 +1539,7 @@ class Message(Hashable):
         self._thread = thread
         return thread
 
-    def to_reference(self, *, fail_if_not_exists=True):
+    def to_reference(self, *, fail_if_not_exists: bool = True):
         """Creates a :class:`~discord.MessageReference` from the current message.
 
         .. versionadded:: 1.6
@@ -1631,7 +1664,7 @@ class PartialMessage(Hashable):
         """Optional[:class:`Guild`]: The guild that the partial message belongs to, if applicable."""
         return getattr(self.channel, 'guild', None)
 
-    async def fetch(self):
+    async def fetch(self) -> Message:
         """|coro|
 
         Fetches the partial message to a full :class:`Message`.

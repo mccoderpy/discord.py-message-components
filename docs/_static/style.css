@@ -49,7 +49,7 @@ Historically however, thanks to:
   --blue-5: #002275;
   --blue-6: #000f40;
 
-  --purple: #ac00f9
+  --purple: #ac00f9;
 
   --settings: var(--grey-1);
   --settings-hover: var(--grey-1-8);
@@ -82,7 +82,7 @@ Historically however, thanks to:
   --main-h6-header-text: var(--grey-4);
   --main-h4-header-border: var(--grey-4);
   --header-link: var(--grey-6);
-  --header-link-hover-text: var(--blue);
+  --header-link-hover-text: var(--blue-2);
   --header-link-hover-text-visited: var(--purple);
   --admonition-background: var(--grey-2);
   --note-background: var(--blue-1);
@@ -146,7 +146,7 @@ Historically however, thanks to:
   --main-h6-header-text: var(--grey-5);
   --main-h4-header-border: var(--grey-2);
   --header-link: var(--grey-2);
-  --header-link-hover-text: var(--grey-6);
+  --header-link-hover-text: var(--blue-2);
   --admonition-background: var(--grey-8);
   --note-background: var(--blue-3);
   --note-text: var(--white);
@@ -606,7 +606,7 @@ div.modal-content {
 div.modal-content > span.close {
   color: #888;
   float: right;
-  font-weight: bol;
+  font-weight: bold;
   -moz-user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
@@ -732,11 +732,9 @@ a.headerlink {
   padding: 0 4px 0 4px;
   text-decoration: none;
   visibility: hidden;
-  content:
 }
 
 a.headerlink:hover {
-  background-color: var(--header-link);
   color: var(--header-link-hover-text);
 }
 
@@ -1154,6 +1152,7 @@ rect.highlighted {
 
 .table-wrapper {
   overflow-x: auto;
+  width: fit-content;
 }
 
 table.docutils {
@@ -1195,7 +1194,7 @@ table.docutils tbody tr:last-child td {
 
 table.docutils thead tr td p,
 table.docutils tfoot tr td p,
-table.docutils tbody tr td p,
+/*table.docutils tbody tr td p/*/
 table.docutils thead tr td ul,
 table.docutils tfoot tr td ul,
 table.docutils tbody tr td ul,
@@ -1326,6 +1325,7 @@ div.code-block-caption {
     max-height: calc(100vh - 2em);
     overflow-y: auto;
     margin: 1em;
+    width: -webkit-fill-available;
   }
 
   #sidebar a {
@@ -1369,8 +1369,8 @@ div.code-block-caption {
     grid-template-areas:
       "h h h h h h h h h h h h h h h h"
       "n n n n n n n n n n n n n n n n"
-      "s s s . . c c c c c c c c c . ."
-      "s s s f f f f f f f f f f f f f"
+      "s s s s . c c c c c c c c c c ."
+      "s s s s f f f f f f f f f f f f"
   }
 
   header > nav {

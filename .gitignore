@@ -1,6 +1,6 @@
 todo.md
 test.py
-examples-test.py
+/local-tests/
 voice_test.py
 main-api.py
 cprint.py
@@ -17,3 +17,4 @@ __pycache__
 # Default ignored files
 /shelf/
 workspace.xml
+/loca-tests/

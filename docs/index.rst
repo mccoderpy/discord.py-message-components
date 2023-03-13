@@ -1,3 +1,6 @@
+:og:title: discord4py documentation
+:og:description: Welcome to the documentation for the discord4py api-wrapper
+
 .. |flag_ua| image:: ./images/flag_ua.png
    :alt: Ukraine
    :width: 30px
@@ -111,6 +114,7 @@ These pages go into great detail about everything the API can do.
 
   api
   Interactions <Interactions/index.rst>
+  OAuth2 <oauth2/index.rst>
   discord.ext.commands API Reference <ext/commands/api.rst>
   discord.ext.tasks API Reference <ext/tasks/index.rst>
 
@@ -120,8 +124,8 @@ Meta
 If you're looking for something related to the project itself, it's here.
 
 .. toctree::
-  :maxdepth: 1
+    :maxdepth: 1
 
-  whats_new
-  version_guarantees
-  migrating
+    whats_new
+    version_guarantees
+    migrating

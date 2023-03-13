@@ -91,6 +91,7 @@ class Sidebar {
           this.activeLink = heading;
         }
         this.activeLink.parentElement.classList.add('active');
+        this.activeLink.parentElement.scrollIntoView({ block: 'nearest', inline: 'start' });
       }
     }
   }

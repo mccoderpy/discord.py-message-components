@@ -1334,26 +1334,26 @@ of :class:`enum.Enum`.
    | .. attribute:: pong                     |   1   | ACK a ``Ping``                                   | ACK a Ping to Discord       |                     ~                      |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    | .. attribute:: msg_with_source          |   4   | respond to an interaction with a message         | :class:`Interaction.respond`| .. toggle-header::                         |
-   |                                         |       |                                                  |                             |    :header: **Click for example**          |
+   |                                         |       |                                                  |                             |    :header: **Click to view example**      |
    |                                         |       |                                                  |                             |                                            |
    |                                         |       |                                                  |                             |    .. image:: imgs/ict4example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for msg_with_source    |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    |                                         |       |                                                  |                             | .. toggle-header::                         |
-   | .. attribute:: deferred_msg_with_source |   5   | ACK an interaction and edit a response later,    | Possible                    |    :header: **Click for example**          |
+   | .. attribute:: deferred_msg_with_source |   5   | ACK an interaction and edit a response later,    | Possible                    |    :header: **Click to view example**      |
    |                                         |       | the user sees a loading state                    | :attr:`response_type`       |                                            |
    |                                         |       |                                                  | for _defer                  |    .. image:: imgs/ict5example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for                    |
    |                                         |       |                                                  |                             |             deferred_msg_with_source       |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    | .. attribute:: deferred_update_msg      |   6   | for components, ACK an interaction and edit      | Possible                    | .. toggle-header::                         |
-   |                                         |       | the original message later;                      | :attr:`response_type`       |    :header: **Click for example**          |
+   |                                         |       | the original message later;                      | :attr:`response_type`       |    :header: **Click to view example**      |
    |                                         |       | the user does not see a loading state            | for _defer                  |                                            |
    |                                         |       |                                                  |                             |    .. image:: imgs/ict6example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for deferred_update_msg|
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    | .. attribute:: update_msg               |   7   | for components,                                  | :class:`Interaction.edit`   | .. toggle-header::                         |
-   |                                         |       | edit the message the component was attached to   |                             |    :header: **Click for example**          |
+   |                                         |       | edit the message the component was attached to   |                             |    :header: **Click to view example**      |
    |                                         |       |                                                  |                             |                                            |
    |                                         |       |                                                  |                             |    .. image:: imgs/ict7example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for update_msg         |
@@ -3913,6 +3913,8 @@ The following exceptions are thrown by the library.
 .. autoexception:: HTTPException
     :members:
 
+.. autoexception:: Unauthorized
+
 .. autoexception:: Forbidden
 
 .. autoexception:: NotFound
@@ -3955,6 +3957,7 @@ Exception Hierarchy
             - :exc:`NoMoreItems`
             - :exc:`GatewayNotFound`
             - :exc:`HTTPException`
+                - :exc:`Unauthorized`
                 - :exc:`Forbidden`
                 - :exc:`NotFound`
                 - :exc:`DiscordServerError`

@@ -63,7 +63,7 @@ To install the developer (alpha/beta) version from the `developer-branch <https:
 
 .. warning::
 
-    Of curse you need to have git installed on your device. If you need help with this take a look **→** `here <https://github.com/git-guides/install-git>`_ **←**
+    Of course you need to have git installed on your device. If you need help with this take a look **→** `here <https://github.com/git-guides/install-git>`_ **←**
 
 Virtual Environments
 ~~~~~~~~~~~~~~~~~~~~~

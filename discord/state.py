@@ -37,7 +37,7 @@ import inspect
 import gc
 
 import os
-from typing import Union, TYPE_CHECKING
+from typing import Union, Callable, TYPE_CHECKING
 
 from .guild import Guild
 from .activity import BaseActivity
@@ -63,6 +63,11 @@ from .interactions import BaseInteraction, InteractionType
 
 if TYPE_CHECKING:
     from .http import HTTPClient
+    from .client import Client
+    from .shard import AutoShardedClient
+    from .gateway import DiscordWebSocket
+
+from .types.gateway import ReadyEvent
 
 
 class ChunkRequest:
@@ -117,6 +122,9 @@ async def logging_coroutine(coroutine, *, info):
 
 
 class ConnectionState:
+    _get_client: Callable[[], Client]
+    _get_websocket: Callable[[int], DiscordWebSocket]
+    
     def __init__(self, *, dispatch, handlers, hooks, syncer, http, loop, **options):
         self.loop = loop
         self.http: HTTPClient = http
@@ -497,7 +505,7 @@ class ConnectionState:
         finally:
             self._ready_task = None
 
-    def parse_ready(self, data):
+    def parse_ready(self, data: ReadyEvent):
         if self._ready_task is not None:
             self._ready_task.cancel()
 
@@ -520,7 +528,7 @@ class ConnectionState:
                 pass
             else:
                 # flags will always be present here
-                self.application_flags = ApplicationFlags._from_value(application['flags'])  # type: ignore
+                self.application_flags = ApplicationFlags._from_value(application['flags'])
                 self.application_id = utils._get_as_snowflake(application, 'id')
 
         self.call_handlers('connect')
@@ -616,17 +624,21 @@ class ConnectionState:
 
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        thread = ThreadChannel(state=self, guild=guild, data=data)
-        if isinstance(thread.parent_channel, ForumChannel):
-            post = ForumPost(state=self, guild=guild, data=data)
-            guild._add_post(post)
-            self.dispatch('post_create', post)
+        parent_channel = guild.get_channel(int(data['parent_id']))
+        
+        if isinstance(parent_channel, ForumChannel):
+            if not parent_channel.get_post(int(data['id'])):
+                post = ForumPost(state=self, guild=guild, data=data)
+                guild._add_post(post)
+                self.dispatch('post_create', post)
         else:
-            message = self._get_message(thread.id)
-            if message:
-                message._thread = thread
-            guild._add_thread(thread)
-            self.dispatch('thread_create', thread)
+            if not parent_channel.get_thread(int(data['id'])):
+                thread = ThreadChannel(state=self, guild=guild, data=data)
+                message = self._get_message(thread.id)
+                if message:
+                    message._thread = thread
+                guild._add_thread(thread)
+                self.dispatch('thread_create', thread)
 
     def parse_thread_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
@@ -660,7 +672,6 @@ class ConnectionState:
                 if thread.starter_message:
                     thread.starter_message._thread = None
         self.dispatch('thread_delete', thread)
-
 
     def parse_thread_member_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
@@ -796,7 +807,7 @@ class ConnectionState:
         if message is not None:
             try:
                 reaction = message._clear_emoji(emoji)
-            except (AttributeError, ValueError): # eventual consistency lol
+            except (AttributeError, ValueError):  # eventual consistency lol
                 pass
             else:
                 if reaction:
@@ -1365,6 +1376,9 @@ class ConnectionState:
 
 
 class AutoShardedConnectionState(ConnectionState):
+    _get_client: Callable[[], AutoShardedClient]
+    _get_websocket: Callable[[int, int], DiscordWebSocket]
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._ready_task = None
@@ -1462,7 +1476,7 @@ class AutoShardedConnectionState(ConnectionState):
         # sync the application-commands
         await self._get_client()._request_sync_commands()
 
-    def parse_ready(self, data):
+    def parse_ready(self, data: ReadyEvent):
         if not hasattr(self, '_ready_state'):
             self._ready_state = asyncio.Queue()
 

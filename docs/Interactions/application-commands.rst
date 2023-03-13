@@ -68,3 +68,18 @@ MessageCommand
     :members:
     :inherited-members:
 
+GuildAppCommandPermissions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: GuildAppCommandPermissions
+
+.. autoclass:: GuildAppCommandPermissions()
+    :members:
+
+AppCommandPermissions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: AppCommandPermission
+
+.. autoclass:: AppCommandPermission()
+    :members:
