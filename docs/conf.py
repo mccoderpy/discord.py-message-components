@@ -144,6 +144,8 @@ extlinks = {
 }
 
 rst_prolog = """
+:tocdepth: 3
+
 .. |coro| replace:: This function is a |coroutine_link|_.
 .. |maybecoro| replace:: This function *could be a* |coroutine_link|_.
 .. |coroutine_link| replace:: *coroutine*

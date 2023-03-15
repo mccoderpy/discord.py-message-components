@@ -1,7 +1,9 @@
+sphinx
 sphinxcontrib-contentui==0.2.5
+sphinxcontrib-websupport
 sphinxcontrib-trio
 sphinxext-opengraph
-Jinja2 >.0.3
+Jinja2>0.3
 pygments
 typing-extensions
 aiohttp>=3.8.0,<4
