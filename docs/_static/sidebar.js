@@ -78,10 +78,12 @@ class Sidebar {
   }
 
   setActiveLink(section) {
-    if (this.activeLink) {
+    let sectionSelected = this.activeLink?.href.split('#')[1] === section?.id;
+    if (this.activeLink && !sectionSelected) {
       this.activeLink.parentElement.classList.remove('active');
     }
-    if (section) {
+
+    if (section && !sectionSelected) {
       this.activeLink = document.querySelector(`#sidebar a[href="#${section.id}"]`);
       if (this.activeLink) {
         let headingChildren = this.activeLink.parentElement.parentElement;
@@ -90,8 +92,18 @@ class Sidebar {
         if (heading && headingChildren.style.display === 'none') {
           this.activeLink = heading;
         }
+
         this.activeLink.parentElement.classList.add('active');
-        this.activeLink.parentElement.scrollIntoView({ block: 'nearest', inline: 'start' });
+        //this.setTimeout = window.setTimeout.bind(window);
+        //this.clearTimeout = window.clearTimeout.bind(window);
+        let scrollToActiveLink = (activeLink) => {
+            activeLink.parentElement.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+        }
+        setTimeout(
+            scrollToActiveLink,
+            200,
+            this.activeLink
+        );
       }
     }
   }
