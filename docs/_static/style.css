@@ -464,6 +464,8 @@ aside .material-icons,
   margin: 1em 1em 0 0;
 }
 
+/* TODO: Add a blurry mask to the begin and end of the first ul inside the div in the sidebar when there is overflow in this direction */
+
 #sidebar ul {
   list-style: none;
   margin: 1em 2em 2em 1em;
@@ -790,13 +792,13 @@ main ol ol {
 }
 
 main ol > li {
-  list-style: none;
   margin: 0 0 0 1.9em;
   padding: 2px 1px;
   position: relative;
 }
 
 main ol > li::before {
+  display: none;
   content: counter(li) ".";
   counter-increment: li;
   top: -2px;
@@ -1319,13 +1321,13 @@ div.code-block-caption {
   }
 
   #sidebar {
-    display: inline-block;
+    display: grid;
     position: sticky;
     top: 1em;
     max-height: calc(100vh - 2em);
     overflow-y: auto;
     margin: 1em;
-    width: -webkit-fill-available;
+    width: auto;
   }
 
   #sidebar a {
