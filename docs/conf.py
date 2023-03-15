@@ -136,7 +136,7 @@ html_logo = '../images/Banner_Konturen.png'
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = './images/discord_py_message_components_logo.ico'
+html_favicon = './images/discord4py-logo.ico'
 
 extlinks = {
     'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-%s'),
