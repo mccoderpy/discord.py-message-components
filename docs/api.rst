@@ -1183,6 +1183,82 @@ of :class:`enum.Enum`.
         Discovery requirements for 3 weeks in a row.
 
         .. versionadded:: 1.7
+    .. attribute:: thread_created
+
+        The system message denoting that a thread has been created.
+
+        .. versionadded:: 2.0
+    .. attribute:: reply
+
+        A message that is a reply to another message.
+
+        .. versionadded:: 2.0
+    .. attribute::  chat_input_command
+
+        A message that is a slash command.
+
+        .. versionadded:: 2.0
+    .. attribute::  thread_starter_message
+
+        A message that is the first message in a thread.
+
+        .. versionadded:: 2.0
+    .. attribute:: guild_invite_reminder
+
+        The system message denoting that a guild invite reminder has been sent.
+
+        .. versionadded:: 2.0
+    .. attribute:: context_menu_command
+
+        A message that is a context menu command.
+
+        .. versionadded:: 2.0
+    .. attribute:: automoderation_action
+
+        A log message from discords auto moderation system.
+
+        .. versionadded:: 2.0
+    .. attribute:: role_subscription_purchase
+
+        A message informing about a role subscription purchase.
+
+        .. versionadded:: 2.0
+    .. attribute:: interaction_premium_upsell
+
+        A message informing about a premium upsell.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_start
+
+        A message informing about a stage starting.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_end
+
+        A message informing about a stage ending.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_speaker_change
+
+        A message informing about a stage having a new speaker.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_raise_hand
+
+        A message informing about someone raising their hand in a stage.
+
+        .. versionadded:: 2.0
+    .. attribute:: stage_topic_change
+
+        A message informing about the topic of a stage been changed.
+
+        .. versionadded:: 2.0
+    .. attribute:: guild_application_premium_subscription
+
+        The system message denoting that a member has subscribed to a guild application.
+
+        .. versionadded:: 2.4
+
 
 .. class:: ComponentType
 
@@ -1258,32 +1334,72 @@ of :class:`enum.Enum`.
    | .. attribute:: pong                     |   1   | ACK a ``Ping``                                   | ACK a Ping to Discord       |                     ~                      |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    | .. attribute:: msg_with_source          |   4   | respond to an interaction with a message         | :class:`Interaction.respond`| .. toggle-header::                         |
-   |                                         |       |                                                  |                             |    :header: **Click for example**          |
+   |                                         |       |                                                  |                             |    :header: **Click to view example**      |
    |                                         |       |                                                  |                             |                                            |
    |                                         |       |                                                  |                             |    .. image:: imgs/ict4example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for msg_with_source    |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    |                                         |       |                                                  |                             | .. toggle-header::                         |
-   | .. attribute:: deferred_msg_with_source |   5   | ACK an interaction and edit a response later,    | Possible                    |    :header: **Click for example**          |
+   | .. attribute:: deferred_msg_with_source |   5   | ACK an interaction and edit a response later,    | Possible                    |    :header: **Click to view example**      |
    |                                         |       | the user sees a loading state                    | :attr:`response_type`       |                                            |
    |                                         |       |                                                  | for _defer                  |    .. image:: imgs/ict5example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for                    |
    |                                         |       |                                                  |                             |             deferred_msg_with_source       |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    | .. attribute:: deferred_update_msg      |   6   | for components, ACK an interaction and edit      | Possible                    | .. toggle-header::                         |
-   |                                         |       | the original message later;                      | :attr:`response_type`       |    :header: **Click for example**          |
+   |                                         |       | the original message later;                      | :attr:`response_type`       |    :header: **Click to view example**      |
    |                                         |       | the user does not see a loading state            | for _defer                  |                                            |
    |                                         |       |                                                  |                             |    .. image:: imgs/ict6example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for deferred_update_msg|
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
    | .. attribute:: update_msg               |   7   | for components,                                  | :class:`Interaction.edit`   | .. toggle-header::                         |
-   |                                         |       | edit the message the component was attached to   |                             |    :header: **Click for example**          |
+   |                                         |       | edit the message the component was attached to   |                             |    :header: **Click to view example**      |
    |                                         |       |                                                  |                             |                                            |
    |                                         |       |                                                  |                             |    .. image:: imgs/ict7example.gif         |
    |                                         |       |                                                  |                             |       :alt: Example for update_msg         |
    +-----------------------------------------+-------+--------------------------------------------------+-----------------------------+--------------------------------------------+
 
 .. class:: Locale
+
+    Valid locals that are used at different places in the discord api.
+
+    .. note::
+        Usually you can use the lowercase ``Language Name`` (spaces replaced with underscores) as a valid locale too.
+
+    ==================== ==========================  =====================
+    Locale               Language Name               Native Name
+    ==================== ==========================  =====================
+    .. attribute:: da    Danish                        Dansk
+    .. attribute:: de    German                        Deutsch
+    .. attribute:: en_GB English, UK                   English, UK
+    .. attribute:: en_US English, US                   English, US
+    .. attribute:: es_ES Spanish                       Español
+    .. attribute:: fr    French                        Français
+    .. attribute:: hr    Croatian                      Hrvatski
+    .. attribute:: it    Italian                       Italiano
+    .. attribute:: lt    Lithuanian                    Lietuviškai
+    .. attribute:: hu    Hungarian                     Magyar
+    .. attribute:: nl    Dutch                         Nederlands
+    .. attribute:: no    Norwegian                     Norsk
+    .. attribute:: pl    Polish                        Polski
+    .. attribute:: pt_BR Portuguese/Brazilian          Português do Brasil
+    .. attribute:: ro    Romanian, Romania             Română
+    .. attribute:: fi    Finnish                       Suomi
+    .. attribute:: sv_SE Swedish                       Svenska
+    .. attribute:: vi    Vietnamese                    Tiếng Việt
+    .. attribute:: tr    Turkish                       Türkçe
+    .. attribute:: cs    Czech                         Čeština
+    .. attribute:: el    Greek                         Ελληνικά
+    .. attribute:: bg    Bulgarian                     български
+    .. attribute:: ru    Russian                       Pусский
+    .. attribute:: uk    Ukrainian                     Українська
+    .. attribute:: hi    Hindi                         हिन्दी
+    .. attribute:: th    Thai                          ไทย
+    .. attribute:: zh_CN Chinese, China                中文
+    .. attribute:: ja    Japanese                      日本語
+    .. attribute:: zh_TW Chinese, Taiwan               繁體中文
+    .. attribute:: ko    Korean                        한국어
+    ==================== ==========================  =====================
 
 .. class:: ActivityType
 
@@ -2207,6 +2323,11 @@ of :class:`enum.Enum`.
     .. attribute:: lottie
 
         Represents a sticker with a lottie image.
+
+    .. attribute:: gif
+
+        Represents a sticker with a gif image.
+
 
 .. class:: EventEntityType
 
@@ -3236,6 +3357,14 @@ Member
     .. automethod:: typing
         :async-with:
 
+GuildMemberFlags
+~~~~~~~~~~~~~~~~
+
+.. attributetable:: GuildMemberFlags
+
+.. autoclass:: GuildMemberFlags()
+    :members:
+
 Spotify
 ~~~~~~~~
 
@@ -3308,13 +3437,16 @@ ThreadChannel
 .. autoclass:: ThreadChannel()
     :members:
     :inherited-members:
-    :exclude-members: history, typing
+    :exclude-members: history, typing, fetch_members
 
     .. automethod:: history
         :async-for:
 
     .. automethod:: typing
         :async-with:
+
+    .. automethod:: fetch_members
+        :async-for:
 
 ThreadMember
 ~~~~~~~~~~~~~~
@@ -3341,8 +3473,6 @@ VoiceChannel
     .. automethod:: typing
         :async-with:
 
-
-
 StageChannel
 ~~~~~~~~~~~~~
 
@@ -3368,6 +3498,16 @@ ForumPost
 .. autoclass:: ForumPost()
     :members:
     :inherited-members:
+    :exclude-members: history, typing, fetch_members
+
+    .. automethod:: history
+        :async-for:
+
+    .. automethod:: typing
+        :async-with:
+
+    .. automethod:: fetch_members
+        :async-for:
 
 CategoryChannel
 ~~~~~~~~~~~~~~~~~
@@ -3773,6 +3913,8 @@ The following exceptions are thrown by the library.
 .. autoexception:: HTTPException
     :members:
 
+.. autoexception:: Unauthorized
+
 .. autoexception:: Forbidden
 
 .. autoexception:: NotFound
@@ -3815,6 +3957,7 @@ Exception Hierarchy
             - :exc:`NoMoreItems`
             - :exc:`GatewayNotFound`
             - :exc:`HTTPException`
+                - :exc:`Unauthorized`
                 - :exc:`Forbidden`
                 - :exc:`NotFound`
                 - :exc:`DiscordServerError`

@@ -24,6 +24,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+from __future__ import annotations
+
 import asyncio
 import datetime
 from collections import namedtuple
@@ -38,6 +40,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .abc import Snowflake, Messageable
     from .scheduled_event import GuildScheduledEvent
+    from .channel import ThreadChannel
     
 
 from .errors import NoMoreItems
@@ -47,6 +50,19 @@ from .audit_logs import AuditLogEntry
 
 OLDEST_OBJECT = Object(id=0)
 BanEntry = namedtuple('BanEntry', 'reason user')
+
+
+__all__ = (
+    'BanEntry',
+    'AuditLogIterator',
+    'BanIterator',
+    'EventUsersIterator',
+    'GuildIterator',
+    'HistoryIterator',
+    'MemberIterator',
+    'ReactionIterator',
+    'ThreadMemberIterator',
+)
 
 
 class _AsyncIterator:
@@ -689,6 +705,94 @@ class MemberIterator(_AsyncIterator):
     def create_member(self, data):
         from .member import Member
         return Member(data=data, guild=self.guild, state=self.state)
+
+
+class ThreadMemberIterator(_AsyncIterator):
+    def __init__(
+            self,
+            thread: ThreadChannel,
+            limit: int = 100,
+            after: Optional[Union[Snowflake, datetime.datetime]] = None,
+            with_member: bool = False
+    ):
+        self.state = state = thread._state
+        self.guild = thread.guild
+        self.thread = thread
+        self.channel_id = thread.id
+        self.limit = limit
+
+        if isinstance(after, datetime.datetime):
+            after = Object(id=time_snowflake(after, high=True))
+
+        self.after: Optional[Object] = after
+
+        self.with_member = with_member
+        self.members = asyncio.Queue()
+        self.getter = state.http.list_thread_members
+
+        self._retrieve_members = self._retrieve_members_after_strategy
+
+    async def next(self):
+        if self.members.empty():
+            await self.fill_members()
+
+        try:
+            return self.members.get_nowait()
+        except asyncio.QueueEmpty:
+            raise NoMoreItems()
+
+    def _get_retrieve(self):
+        l = self.limit
+        if l is None or l > 100:
+            r = 100
+        else:
+            r = l
+        self.retrieve = r
+        return r > 0
+
+    async def fill_members(self):
+        # this is a hack because >circular imports<
+        from .member import Member
+        from .channel import ThreadMember
+
+        guild = self.guild
+        state = self.state
+        thread = self.thread
+        with_member = self.with_member
+        cache_joined = state.member_cache_flags.joined
+        cache_online = state.member_cache_flags.online
+
+        if self._get_retrieve():
+
+            data = await self._retrieve_members(self.retrieve)
+            if self.limit is None or len(data) < 100:
+                self.limit = 0
+
+            if not with_member or guild is None or isinstance(guild, Object):
+                for element in data:
+                    thread_member = ThreadMember(state=state, guild=guild, data=element)
+                    thread._add_member(thread_member)
+                    await self.members.put(thread_member)
+                    
+            else:
+                for element in data:
+                    member = Member(data=element.pop('member'), guild=guild, state=state)
+                    if cache_joined or (cache_online and 'online' in member.raw_status):
+                        guild._add_member(member)
+                    thread_member = ThreadMember(state=state, guild=guild, data=element)
+                    thread._add_member(thread_member)
+                    await self.members.put(thread_member)
+
+    async def _retrieve_members_after_strategy(self, retrieve: int):
+        """Retrieve thread members using after parameter."""
+        after = self.after.id if self.after else None
+        data = await self.getter(self.channel_id, limit=retrieve, after=after, with_member=self.with_member)
+        if len(data):
+            if self.limit is not None:
+                self.limit -= retrieve
+            self.after = Object(id=int(data[0]['user_id']))
+            data = reversed(data)
+        return data
 
 
 class EventUsersIterator(_AsyncIterator):

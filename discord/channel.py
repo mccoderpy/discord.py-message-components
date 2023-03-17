@@ -25,33 +25,33 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+import asyncio
 import datetime
 import time
-import asyncio
-
 from typing import (
-    TYPE_CHECKING,
+    Any,
     Callable,
-    Union,
+    Coroutine,
+    Dict,
+    List,
     Optional,
     Sequence,
-    Coroutine,
-    List,
     Tuple,
-    Dict,
-    Any
+    TYPE_CHECKING,
+    Union
 )
 
-from .permissions import Permissions, PermissionOverwrite
-from .enums import ChannelType, VoiceRegion, AutoArchiveDuration, PostSortOrder, try_enum
-from .components import Button, SelectMenu, ActionRow
-from .mixins import Hashable
-from . import utils, abc
-from .flags import ChannelFlags
+from . import abc, utils
 from .asset import Asset
-from .errors import ClientException, NoMoreItems, InvalidArgument, ThreadIsArchived
+from .components import ActionRow, BaseSelect, Button
+from .enums import AutoArchiveDuration, ChannelType, PostSortOrder, try_enum, VoiceRegion
+from .errors import ClientException, InvalidArgument, NoMoreItems, ThreadIsArchived
+from .flags import ChannelFlags, MessageFlags
 from .http import handle_message_parameters
+from .iterators import ThreadMemberIterator
+from .mixins import Hashable
 from .partial_emoji import PartialEmoji
+from .permissions import PermissionOverwrite, Permissions
 
 if TYPE_CHECKING:
     from .state import ConnectionState
@@ -876,7 +876,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     def members(self) -> List[ThreadMember]:
         """List[:class:`Member`]: Returns a list with cached members of this thread"""
         return list(self._members.values())
-
+    
     @property
     def locked(self) -> bool:
         """:class:`bool`: Whether the threads conversation is locked by a moderator.
@@ -1071,25 +1071,55 @@ class ThreadChannel(abc.Messageable, Hashable):
 
         return await self._state.http.remove_thread_member(channel_id=self.id, member_id=member_id)
 
-    async def fetch_members(self) -> List[ThreadMember]:
-        """
-        Fetch the members that currently joined this thread
+    def fetch_members(
+            self,
+            limit: int = 100,
+            after: Union[abc.Snowflake, datetime.datetime] = None,
+            
+    ) -> ThreadMemberIterator:
+        """Returns a :class:`ThreadMemberIterator` that allows to retrieve the currently joined members of this thread.
 
         .. note::
+            This requires the :func:`~Intents.members` intent to be enabled and will also add the members retrieved to :attr:`members`
+        
+        Examples
+        ---------
+        
+        Usage ::
 
-            This requires :func:`Intents.members` to be enabled
+            print(f"The thread {channel.name} has the following members:\\n")
+            async for member in thread.fetch_members(limit=200):
+                print(member)
 
-        Returns
-        --------
-        List[:class:`ThreadMember`]
-            A list of members that has joined this thread
+
+        Flattening into a list ::
+
+            messages = await thread.fetch_members(limit=123).flatten()
+            # messages is now a list of ThreadMember...
+
+
+        All parameters are optional.
+        
+        Parameters
+        ----------
+        limit: :class:`int`
+            The limit of thread members to retrieve - defaults to 100
+        after: Union[:class:`int`, :class:`datetime.datetime`]
+            Get thread members after this user ID
+        
+        Raises
+        ------
+        ~discord.ClientException
+            The :attr:`~Intents.members` intent is not enabled.
+        
+        Yields
+        -------
+        :class:`~discord.ThreadMember`
+            A member of this thread
         """
         if not self._state.intents.members:
             raise ClientException('You need to enable the GUILD_MEMBERS Intent to use this API-call.')
-        r = await self._state.http.list_thread_members(channel_id=self.id)
-        for thread_member in r:
-            self._add_member(ThreadMember(state=self._state, guild=self.guild, data=thread_member))
-        return self.members
+        return ThreadMemberIterator(thread=self, limit=limit, after=after)
 
     async def delete(self, *, reason: Optional[str] = None) -> None:
         """|coro|
@@ -1471,7 +1501,7 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         await self._edit(options, reason=reason)
 
 
-class StageChannel(VocalGuildChannel):
+class StageChannel(VocalGuildChannel, abc.Messageable):
     """Represents a Discord guild stage channel.
 
     .. versionadded:: 1.7
@@ -1517,7 +1547,7 @@ class StageChannel(VocalGuildChannel):
         The region for the stage channel's voice communication.
         A value of ``None`` indicates automatic voice region detection.
     """
-    __slots__ = ('topic',)
+    __slots__ = ('topic', 'last_message_id')
 
     def __repr__(self):
         attrs = [
@@ -1531,7 +1561,7 @@ class StageChannel(VocalGuildChannel):
             ('category_id', self.category_id)
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
-
+    
     def _update(self, guild, data):
         super()._update(guild, data)
         self.topic = data.get('topic')
@@ -1539,7 +1569,10 @@ class StageChannel(VocalGuildChannel):
     @staticmethod
     def channel_type():
         return ChannelType.stage_voice
-
+    
+    async def _get_channel(self):
+        return self
+    
     @property
     def requesting_to_speak(self):
         """List[:class:`Member`]: A list of members who are requesting to speak in the stage channel."""
@@ -1598,6 +1631,7 @@ class StageChannel(VocalGuildChannel):
         """
 
         await self._edit(options, reason=reason)
+
 
 class CategoryChannel(abc.GuildChannel, Hashable):
     """Represents a Discord channel category.
@@ -2806,21 +2840,19 @@ class ForumChannel(abc.GuildChannel, Hashable):
             content: Any = None,
             embed: Optional[Embed] = None,
             embeds: Sequence[Embed] = None,
-            components: Optional[List[Union[ActionRow, List[Union[Button, SelectMenu]]]]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
             file: Optional[File] = None,
             files: Sequence[File] = None,
             allowed_mentions: Optional[AllowedMentions] = None,
-            suppress: bool = False,
+            suppress_embeds: bool = False,
+            supress_notifications: bool = False,
             auto_archive_duration: Optional[AutoArchiveDuration] = None,
             slowmode_delay: int = 0,
             reason: Optional[str] = None
     ) -> ForumPost:
         """|coro|
 
-        Creates a new post in this forum.
-
-        You must have the :attr:`~Permissions.create_posts` permission to
-        use this.
+        Creates a new post in this forum. Requires the :attr:`~Permissions.create_posts` permission.
 
         Parameters
         -----------
@@ -2835,7 +2867,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             A embed of the post starter-message.
         embeds: List[:class:`Embed`]
             A list of up to 10 embeds to include in the post starter-message.
-        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
+        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`BaseSelect`]]]]
             A list of components to include in the post starter-message.
         file: Optional[class:`File`]
             A file to include in the post starter-message.
@@ -2843,8 +2875,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
             A list of files to include in the post starter-message.
         allowed_mentions: Optional[:class:`AllowedMentions`]
             The allowed mentions for the post.
-        suppress: Optional[:class:`bool`]
+        suppress_embeds: Optional[:class:`bool`]
             Whether to suppress embeds in the post starter-message.
+        supress_notifications: Optional[:class:`bool`]
+            Whether to suppress desktop- & push-notifications for the post starter-message.
+            
+            Users will still see a ping-symbol when they are mentioned in the message, or the message is in a dm channel.
         auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
             The duration after the post will be archived automatically when inactive.
         slowmode_delay: Optional[:class:`int`]
@@ -2870,10 +2906,10 @@ class ForumChannel(abc.GuildChannel, Hashable):
         if self.flags.require_tags and not tags:
             raise InvalidArgument('This forum requires at least one tag provided when creating a post.')
 
-        if suppress:
-            from .message import MessageFlags
+        if suppress_embeds or supress_notifications:
             flags = MessageFlags._from_value(0)
-            flags.suppress_embeds = True
+            flags.suppress_embeds = suppress_embeds
+            flags.suppress_notifications = supress_notifications
         else:
             flags = MISSING
 

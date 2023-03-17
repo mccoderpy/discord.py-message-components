@@ -79,7 +79,7 @@ class BaseComponent:
             custom_id: Union[str, int] = None,
             disabled: bool = False
     ) -> None:
-        self.custom_id = custom_id
+        self.custom_id = int(custom_id) if custom_id and custom_id.isdigit() else custom_id
         self.disabled = disabled
 
     @property
@@ -396,12 +396,10 @@ class Button(BaseComponent):
 
 
 class SelectOption:
-
     """
-    A class that creates an option for a :class:`SelectMenu`
-    and represents it in a :class:`SelectMenu` in the components of a :class:`discord.Message`.
+    A class that represents an option for a :class:`SelectMenu`
 
-    Parameters
+    Attributes
     ----------
     label: :class:`str`
         the user-facing name of the option, max 25 characters
@@ -413,7 +411,11 @@ class SelectOption:
         an Emoji that will be shown on the left side of the option.
     default: Optional[:class:`bool`] = False
         will render this option as selected by default
-
+    
+    Raises
+    ------
+    :exc:`ValueError`
+        One of ``label``, ``value`` or ``description`` is too long.
     """
     def __init__(self, label: str,
                  value: str,
@@ -421,13 +423,13 @@ class SelectOption:
                  emoji: Union[PartialEmoji, Emoji, str] = None,
                  default: bool = False):
         if len(label) > 100:
-            raise AttributeError('The maximum length of the label is 100 characters.')
+            raise ValueError('The maximum length of the label is 100 characters.')
         self.label = label
         if len(value) > 100:
-            raise AttributeError('The maximum length of the value is 100 characters.')
+            raise ValueError('The maximum length of the value is 100 characters.')
         self.value = value
         if description and len(description) > 100:
-            raise AttributeError('The maximum length of the description is 100 characters.')
+            raise ValueError('The maximum length of the description is 100 characters.')
         self.description = description
         if isinstance(emoji, PartialEmoji):
             self.emoji = emoji
@@ -895,7 +897,13 @@ class TextInput(BaseComponent):
         self.required: bool = required
         self.value: Optional[str] = value
         self.placeholder: Optional[str] = placeholder
-
+    
+    def __str__(self) -> str:
+        return self.value
+    
+    def __repr__(self) -> str:
+        return f'<TextInput {", ".join(["%s=%s" % (k, str(v)) for k, v in self.__dict__.items()])}>'
+    
     @property
     def type(self) -> ComponentType:
         return ComponentType.TextInput

@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hamburgerToggle.addEventListener('click', (e) => {
       sidebar.element.classList.toggle('sidebar-toggle');
       let button = hamburgerToggle.firstElementChild;
-      if (button.textContent == 'menu') {
+      if (button.textContent === 'menu') {
         button.textContent = 'close';
       }
       else {
@@ -90,8 +90,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+isMobile = () => {
+    return window.matchMedia("only screen and (max-width: 760px)").matches;
+}
+
 document.addEventListener('keydown', (event) => {
-  if (event.code == "Escape" && activeModal) {
+  if (event.code === "Escape" && activeModal) {
     activeModal.close();
+  }
+  else if (event.code === "KeyF" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    if (isMobile()) {
+        mobileSearch.bar.scrollIntoView();
+        mobileSearch.bar.focus();
+        mobileSearch.open();
+    }
+    else {
+      let searchInput = document.getElementById('top-bar-search-input');
+      searchInput.scrollIntoView();
+      searchInput.focus();
+    }
   }
 });

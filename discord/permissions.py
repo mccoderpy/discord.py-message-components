@@ -548,7 +548,7 @@ class Permissions(BaseFlags):
     
     @flag_value
     def moderate_members(self):
-        """:class:`bool`: Returns ``True`` if a user can moderate other members (like timeout them)."""
+        """:class:`bool`: Returns ``True`` if a user can moderate other members (like timeout or verify them)."""
         return 1 << 40
 
     @make_permission_alias('moderate_members')

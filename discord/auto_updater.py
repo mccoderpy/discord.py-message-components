@@ -97,7 +97,7 @@ class AutoUpdateChecker:
         raise NotImplementedError
 
     def get_session(self) -> aiohttp.ClientSession:
-        if self.__session.closed:
+        if (not self.__session) or self.__session.closed:
             self.__session = aiohttp.ClientSession('https://api.discord4py.dev')
         return self.__session
 
@@ -220,3 +220,11 @@ class AutoUpdateChecker:
 
     def start(self):
         self.task = self.loop.create_task(self.check_task())
+    
+    async def close(self):
+        task = self.task
+        if not task.cancelled():
+            task.cancel()
+        if self.__session:
+            await self.__session.close()
+            await asyncio.sleep(0.025)  # wait for the connection to be released

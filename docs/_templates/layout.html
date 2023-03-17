@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#5865F2">
   <title>{{ title|striptags|e }}{{ titlesuffix }}</title>
   {%- block extrahead %} {% endblock %}
   <!-- end extra head -->
@@ -60,7 +61,7 @@
     <header class="grid-item">
       <nav>
         <a href="{{ pathto(master_doc)|e }}" class="main-heading">discord.py-message-components</a>
-        <a href="https://github.com/mccoderpy/discord.py-message-components" title="GitHub"><span class="fa-1x fa-brands fa-github" aria-hidden="true"></span></a>
+        <a href="{{ github_url }}" title="GitHub"><span class="fa-1x fa-brands fa-github" aria-hidden="true"></span></a>
         <a href="{{ discord_invite }}" title="{{ _('Discord') }}"><span class="fa-1x fa-brands fa-discord" aria-hidden="true"></span></a>
         <a href="{{ pathto('faq') }}" title="FAQ"><span class="material-icons" aria-hidden="true">help_center</span></a>
         {#- If we have more links we can put them here #}
@@ -70,9 +71,9 @@
       <nav class="mobile-only">
         <form role="search" class="search" action="{{ pathto('search') }}" method="get">
           <div class="search-wrapper">
-            <input type="search" name="q" placeholder="{{ _('Search documentation') }}" />
+            <input type="search" id="top-bar-search-input-mobile" name="q" placeholder="{{ _('Search documentation') }}" />
             <button type="submit">
-              <span class="material-icons" aria-hidden="true"></span>
+              <span class="material-icons" aria-hidden="true">search</span>
             </button>
           </div>
         </form>
@@ -82,7 +83,7 @@
     <div class="sub-header grid-item">
       <label for="documentation_select">{{ _('View Documentation For') }}</label>
       <select id="documentation_select" onchange="window.location = this.value;">
-        {%- if pagename is prefixedwith 'ext/' %}
+        {%- if pagename is prefixedwith(('ext/', 'oauth2')) %}
         <option value="{{ pathto(master_doc)|e }}">discord</option>
         {%- else %}
         <option value="{{ pathto(pagename) }}" selected>discord</option>
@@ -93,13 +94,13 @@
       </select>
       <form role="search" class="search" action="{{ pathto('search') }}" method="get">
         <div class="search-wrapper">
-          <input type="search" name="q" placeholder="{{ _('Search documentation') }}" />
+          <input type="search" id="top-bar-search-input" name="q" placeholder="{{ _('Search documentation') }}" />
           <button type="submit">
             <span class="material-icons">search</span>
           </button>
         </div>
       </form>
-      <a accesskey="S" class="settings"><span class="fa-1x fa-solid fa-gear"></span></a>
+      <a accesskey="s" class="settings"><span class="fa-1x fa-solid fa-gear"></span></a>
     </div>
     {#- The sidebar component #}
     <aside class="grid-item">
@@ -148,7 +149,7 @@
   </script>
   {%- endif %}
 
-  <div id="settings" class="modal" onclick="if (event.target == this){ openModal(event, true); }" hidden>
+  <div id="settings" class="modal" accesskey="s" onclick="if (event.target === this){ openModal(event, true); }" hidden>
     <div class="modal-content">
       <span class="close material-icons" onclick="openModal(event, true);" title="Close">close</span>
       <h1>{{ _('Settings') }}</h1>

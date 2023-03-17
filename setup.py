@@ -100,6 +100,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet',
         'Framework :: aiohttp',
         'Framework :: asyncio',
@@ -107,12 +108,13 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Utilities'
     ],
-    packages=['discord', 'discord.bin', 'discord.ext.commands', 'discord.ext.tasks'],
+    packages=['discord', 'discord.types', 'discord.bin', 'discord.oauth2', 'discord.ext.commands', 'discord.ext.tasks'],
     include_package_data=True,
     install_requires=[
         "aiohttp",
         "chardet",
         "yarl",
+        'aiosignal',
         "async-timeout",
         "typing-extensions",
         "attrs",

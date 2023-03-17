@@ -23,25 +23,40 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
-import logging
 import asyncio
 import json
-import time
+import logging
 import re
+import time
+from typing import (
+    List,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    Union
+)
 from urllib.parse import quote as _uriquote
 
 import aiohttp
 
 from . import utils
-from .errors import InvalidArgument, HTTPException, Forbidden, NotFound, DiscordServerError
-from .message import Message
-from .enums import try_enum, WebhookType
-from .user import BaseUser, User
 from .asset import Asset
-from .mixins import Hashable
+from .enums import try_enum, WebhookType
+from .flags import MessageFlags
+from .errors import DiscordServerError, Forbidden, HTTPException, InvalidArgument, NotFound
 from .http import handle_message_parameters, MultipartParameters
+from .message import Message, Attachment
+from .mixins import Hashable
+from .user import BaseUser, User
 
+if TYPE_CHECKING:
+    from .embeds import Embed
+    from .file import File
+    from .components import BaseSelect, Button, ActionRow
+    from .mentions import AllowedMentions
+    
 __all__ = (
     'WebhookAdapter',
     'AsyncWebhookAdapter',
@@ -419,27 +434,75 @@ class WebhookMessage(Message):
     .. versionadded:: 1.6
     """
 
-    def edit(self, **fields):
+    def edit(
+        self,
+        *,
+        content: Optional[str] = MISSING,
+        embed: Optional[Embed] = MISSING,
+        embeds: Optional[Sequence[Embed]] = MISSING,
+        components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = MISSING,
+        attachments: Optional[Sequence[Union[Attachment, File]]] = MISSING,
+        keep_existing_attachments: bool = False,
+        allowed_mentions: Optional[AllowedMentions] = MISSING,
+        suppress_embeds: Optional[bool] = MISSING
+    ):
         """|maybecoro|
 
-        Edits the message.
+        Edits a message owned by this webhook.
 
-        The content must be able to be transformed into a string via ``str(content)``.
+        This is a lower level interface to :meth:`WebhookMessage.edit` in case
+        you only have an ID.
+        
+        .. warning::
+            Since API v10, the ``attachments`` (when passed) **must contain all attachments** that should be present after edit,
+            **including retained** and new attachments.
+            
+            As this requires to know the current attachments consider either storing the attachments that were sent with a message or
+            using a fetched version of the message to edit it.
 
         .. versionadded:: 1.6
+        
+        .. versionchanged:: 2.0
+            The ``suppress`` keyword-only parameter was renamed to ``suppress_embeds``.
 
         Parameters
         ------------
         content: Optional[:class:`str`]
             The content to edit the message with or ``None`` to clear it.
-        embeds: List[:class:`Embed`]
-            A list of embeds to edit the message with.
         embed: Optional[:class:`Embed`]
-            The embed to edit the message with. ``None`` suppresses the embeds.
-            This should not be mixed with the ``embeds`` parameter.
+            The new embed to replace the original with.
+            Could be ``None`` to remove all embeds.
+        embeds: Optional[List[:class:`Embed`]]
+            A list containing up to 10 embeds. If ``None`` empty, all embeds will be removed.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+            
+            .. note::
+                Due to discord limitations this can only be used when the webhook is owned by an application.
+            
+            .. versionadded:: 2.0
+        attachments: List[Union[:class:`Attachment`, :class:`File`]]
+            A list containing previous attachments to keep as well as new files to upload.
+            
+            When empty, all attachment will be removed.
+
+            .. note::
+
+                New files will always appear under existing ones.
+            
+            .. versionadded:: 2.0
+        keep_existing_attachments: :class:`bool`
+            Whether to auto-add existing attachments to ``attachments``, defaults to :obj:`False`.
+
+            .. note::
+
+                Only needed when ``attachments`` are passed, otherwise will be ignored.
         allowed_mentions: :class:`AllowedMentions`
             Controls the mentions being processed in this message.
             See :meth:`.abc.Messageable.send` for more information.
+        suppress_embeds: :class:`bool`
+            Whether to suppress embeds send with the message.
 
         Raises
         -------
@@ -448,11 +511,22 @@ class WebhookMessage(Message):
         Forbidden
             Edited a message that is not yours.
         InvalidArgument
-            You specified both ``embed`` and ``embeds`` or the length of
-            ``embeds`` was invalid or there was no token associated with
+            The length of ``embeds`` was invalid or there was no token associated with
             this webhook.
         """
-        return self._state._webhook.edit_message(self.id, **fields)
+        if keep_existing_attachments and attachments is not MISSING:
+            attachments = [*self.attachments, *attachments]
+        
+        return self._state._webhook.edit_message(
+            self.id,
+            content=content,
+            embed=embed,
+            embeds=embeds,
+            components=components,
+            attachments=attachments,
+            allowed_mentions=allowed_mentions,
+            suppress_embeds=suppress_embeds
+        )
 
     def _delete_delay_sync(self, delay):
         time.sleep(delay)
@@ -557,6 +631,8 @@ class Webhook(Hashable):
 
     .. versionchanged:: 1.4
         Webhooks are now comparable and hashable.
+    .. versionchanged:: 2.0
+        Added support for forum channels, threads, components, the ability to edit attachments and to suppress notifications.
 
     Attributes
     ------------
@@ -612,7 +688,7 @@ class Webhook(Hashable):
     @property
     def url(self):
         """:class:`str` : Returns the webhook's url."""
-        return 'https://discord.com/api/webhooks/{}/{}'.format(self.id, self.token)
+        return WebhookAdapter.BASE + '/webhooks/{}/{}'.format(self.id, self.token)
 
     @classmethod
     def partial(cls, id, token, *, adapter):
@@ -703,6 +779,11 @@ class Webhook(Hashable):
     def from_state(cls, data, state):
         session = state.http._HTTPClient__session
         return cls(data, adapter=AsyncWebhookAdapter(session=session), state=state)
+    
+    @classmethod
+    def from_oauth2(cls, data, client):
+        session = client.http._OAuth2HTTPClient__session
+        return cls(data, adapter=AsyncWebhookAdapter(session=session))
 
     @property
     def guild(self):
@@ -810,7 +891,7 @@ class Webhook(Hashable):
             raise InvalidArgument('This webhook does not have a token associated with it')
 
         return self._adapter.delete_webhook(reason=reason)
-
+    
     def edit(self, *, reason=None, **kwargs):
         """|maybecoro|
 
@@ -870,17 +951,20 @@ class Webhook(Hashable):
             self,
             content=None,
             *,
-            wait=False,
-            thread_id: int = None,
-            username=None,
-            avatar_url=None,
-            tts=False,
-            file=None,
-            files=None,
-            embed=None,
-            embeds=None,
-            components=None,
-            allowed_mentions=None
+            wait: bool = False,
+            thread_id: int = MISSING,
+            thread_name: str = MISSING,
+            username: str = MISSING,
+            avatar_url: Union[str, Asset] = MISSING,
+            tts: bool = False,
+            file: Optional[File] = MISSING,
+            files: Optional[Sequence[File]] = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Optional[Sequence[Embed]] = MISSING,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = MISSING,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
+            suppress_embeds: bool = False,
+            suppress_notifications: bool = False
     ):
         """|maybecoro|
 
@@ -890,13 +974,18 @@ class Webhook(Hashable):
         not a coroutine.
 
         The content must be a type that can convert to a string through ``str(content)``.
-
+        
+        All parameters are optional
+        but at least one of ``content``, ``file``/``files``, ``embed``/``embeds`` or if possible ``components`` must be provided.
+        
+        If the webhook belongs to a :class:`ForumChannel` then either ``thread_id``(to send the message to an existing post)
+        or ``thread_name`` (to create a new post) must be provided.
+        
         To upload a single file, the ``file`` parameter should be used with a
         single :class:`File` object.
 
         If the ``embed`` parameter is provided, it must be of type :class:`Embed` and
-        it must be a rich embed type. You cannot mix the ``embed`` parameter with the
-        ``embeds`` parameter, which must be a :class:`list` of :class:`Embed` objects to send.
+        it must be a rich embed type..
 
         Parameters
         ------------
@@ -906,6 +995,15 @@ class Webhook(Hashable):
             Whether the server should wait before sending a response. This essentially
             means that the return type of this function changes from ``None`` to
             a :class:`WebhookMessage` if set to ``True``.
+        thread_id: :class:`int`
+            Send a message to the specified thread/forum-post within a webhook's channel.
+            The thread/forum-post will automatically be unarchived.
+            
+            ..versionadded:: 2.0
+        thread_name: :class:`str`
+            :class:`.ForumChannel` webhooks only: Will create a new post with the webhook message will be the starter message.
+            
+            ..versionadded:: 2.0
         username: :class:`str`
             The username to send with this message. If no username is provided
             then the default username for the webhook is used.
@@ -925,11 +1023,28 @@ class Webhook(Hashable):
         embeds: List[:class:`Embed`]
             A list of embeds to send with the content. Maximum of 10. This cannot
             be mixed with the ``embed`` parameter.
+        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
+            A list of components to include in the message.
+            
+            .. note::
+                Due to discord limitations this can only be used when the Webhook was created by a bot.
+            
+            .. versionadded:: 2.0
         allowed_mentions: :class:`AllowedMentions`
             Controls the mentions being processed in this message.
 
             .. versionadded:: 1.4
-
+        suppress_embeds: :class:`bool`
+            Whether to suppress embeds send with the message, defaults to ``False``.
+            
+            .. versionadded:: 2.0
+        suppress_notifications: :class:`bool`
+            Whether to suppress desktop- & push-notifications for the message.
+            
+            Users will still see a ping-symbol when they are mentioned in the message.
+            
+            .. versionadded:: 2.0
+        
         Raises
         --------
         HTTPException
@@ -939,9 +1054,7 @@ class Webhook(Hashable):
         Forbidden
             The authorization token for the webhook is incorrect.
         InvalidArgument
-            You specified both ``embed`` and ``embeds`` or the length of
-            ``embeds`` was invalid or there was no token associated with
-            this webhook.
+            The length of ``embeds`` was invalid or there was no token associated with this webhook.
 
         Returns
         ---------
@@ -951,19 +1064,30 @@ class Webhook(Hashable):
 
         if self.token is None:
             raise InvalidArgument('This webhook does not have a token associated with it')
+        
         previous_allowed_mentions = getattr(self._state, 'allowed_mentions', None)
+        
+        if suppress_embeds or suppress_notifications:
+            flags = MessageFlags._from_value(0)
+            flags.suppress_embeds = suppress_embeds
+            flags.suppress_notifications = suppress_notifications
+        else:
+            flags = MISSING
+        
         with handle_message_parameters(
             content=content,
             username=username,
             avatar_url=avatar_url,
             tts=tts,
-            file=file if file is not None else MISSING,
-            files=files if file is not None else MISSING,
-            embed=embed if embed else MISSING,
-            embeds=embeds if embeds is not None else MISSING,
+            flags=flags,
+            file=file,
+            files=files,
+            embed=embed,
+            embeds=embeds,
             components=components,
             allowed_mentions=allowed_mentions,
-            previous_allowed_mentions=previous_allowed_mentions
+            previous_allowed_mentions=previous_allowed_mentions,
+            thread_name=thread_name
         ) as params:
             return self._adapter.execute_webhook(
                 wait=wait,
@@ -975,15 +1099,36 @@ class Webhook(Hashable):
         """An alias for :meth:`~.Webhook.send`."""
         return self.send(*args, **kwargs)
 
-    def edit_message(self, message_id, **fields):
+    def edit_message(
+            self,
+            message_id: int,
+            *,
+            content: Optional[str] = MISSING,
+            embed: Optional[Embed] = MISSING,
+            embeds: Optional[Sequence[Embed]] = MISSING,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = MISSING,
+            attachments: Optional[Sequence[Union[Attachment, File]]] = MISSING,
+            allowed_mentions: Optional[AllowedMentions] = MISSING,
+            suppress_embeds: Optional[bool] = MISSING
+    ):
         """|maybecoro|
 
         Edits a message owned by this webhook.
 
         This is a lower level interface to :meth:`WebhookMessage.edit` in case
         you only have an ID.
+        
+        .. warning::
+            Since API v10, the ``attachments`` (when passed) **must contain all attachments** that should be present after edit,
+            **including retained** and new attachments.
+            
+            As this requires to know the current attachments consider either storing the attachments that were sent with a message or
+            using a fetched version of the message to edit it.
 
         .. versionadded:: 1.6
+        
+        .. versionchanged:: 2.0
+            The ``suppress`` keyword-only parameter was renamed to ``suppress_embeds``.
 
         Parameters
         ------------
@@ -991,14 +1136,34 @@ class Webhook(Hashable):
             The message ID to edit.
         content: Optional[:class:`str`]
             The content to edit the message with or ``None`` to clear it.
-        embeds: List[:class:`Embed`]
-            A list of embeds to edit the message with.
         embed: Optional[:class:`Embed`]
-            The embed to edit the message with. ``None`` suppresses the embeds.
-            This should not be mixed with the ``embeds`` parameter.
+            The new embed to replace the original with.
+            Could be ``None`` to remove all embeds.
+        embeds: Optional[List[:class:`Embed`]]
+            A list containing up to 10 embeds. If ``None`` empty, all embeds will be removed.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
+            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+            
+            .. note::
+                Due to discord limitations this can only be used when the webhook is owned by an application.
+            
+            .. versionadded:: 2.0
+        attachments: List[Union[:class:`Attachment`, :class:`File`]]
+            A list containing previous attachments to keep as well as new files to upload.
+            
+            When empty, all attachment will be removed.
+
+            .. note::
+
+                New files will always appear under existing ones.
+            
+            .. versionadded:: 2.0
         allowed_mentions: :class:`AllowedMentions`
             Controls the mentions being processed in this message.
             See :meth:`.abc.Messageable.send` for more information.
+        suppress_embeds: :class:`bool`
+            Whether to suppress embeds send with the message.
 
         Raises
         -------
@@ -1007,63 +1172,34 @@ class Webhook(Hashable):
         Forbidden
             Edited a message that is not yours.
         InvalidArgument
-            You specified both ``embed`` and ``embeds`` or the length of
-            ``embeds`` was invalid or there was no token associated with
+            The length of ``embeds`` was invalid or there was no token associated with
             this webhook.
         """
-
-        payload = {}
 
         if self.token is None:
             raise InvalidArgument('This webhook does not have a token associated with it')
 
-        try:
-            content = fields['content']
-        except KeyError:
-            pass
-        else:
-            if content is not None:
-                content = str(content)
-            payload['content'] = content
-
-        # Check if the embeds interface is being used
-        try:
-            embeds = fields['embeds']
-        except KeyError:
-            # Nope
-            pass
-        else:
-            if embeds is None or len(embeds) > 10:
-                raise InvalidArgument('embeds has a maximum of 10 elements')
-            payload['embeds'] = [e.to_dict() for e in embeds]
-
-        try:
-            embed = fields['embed']
-        except KeyError:
-            pass
-        else:
-            if 'embeds' in payload:
-                raise InvalidArgument('Cannot mix embed and embeds keyword arguments')
-
-            if embed is None:
-                payload['embeds'] = []
-            else:
-                payload['embeds'] = [embed.to_dict()]
-
-        allowed_mentions = fields.pop('allowed_mentions', None)
         previous_mentions = getattr(self._state, 'allowed_mentions', None)
+        
+        if suppress_embeds:
+            flags = MessageFlags._from_value(0)
+            flags.suppress_embeds = suppress_embeds
+        else:
+            flags = MISSING
+        
+        with handle_message_parameters(
+            content=content,
+            embed=embed,
+            embeds=embeds,
+            components=components,
+            attachments=attachments,
+            allowed_mentions=allowed_mentions,
+            previous_allowed_mentions=previous_mentions,
+            flags=flags
+        ) as params:
+            return self._adapter.edit_webhook_message(message_id, payload=params)
 
-        if allowed_mentions:
-            if previous_mentions is not None:
-                payload['allowed_mentions'] = previous_mentions.merge(allowed_mentions).to_dict()
-            else:
-                payload['allowed_mentions'] = allowed_mentions.to_dict()
-        elif previous_mentions is not None:
-            payload['allowed_mentions'] = previous_mentions.to_dict()
-
-        return self._adapter.edit_webhook_message(message_id, payload=payload)
-
-    def delete_message(self, message_id):
+    def delete_message(self, message_id: int):
         """|maybecoro|
 
         Deletes a message owned by this webhook.

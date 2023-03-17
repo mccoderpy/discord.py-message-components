@@ -429,7 +429,7 @@ class HTTPClient:
             loop: Optional[asyncio.AbstractEventLoop] = None,
             unsync_clock: bool = True,
             api_version: int = 10,
-            api_error_locale: Optional[Locale] = None
+            api_error_locale: Optional[Locale] = 'en-US'
     ):
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.connector = connector
@@ -442,7 +442,7 @@ class HTTPClient:
         self.proxy_auth = proxy_auth
         self.use_clock = not unsync_clock
         self.api_version = api_version
-        self.api_error_locale = api_error_locale or Locale.en_US
+        self.api_error_locale = str(api_error_locale)
         Route.BASE = f'https://discord.com/api/v{api_version}'
 
         user_agent = 'DiscordBot (https://github.com/mccoderpy/discord.py-message-components {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
@@ -464,7 +464,7 @@ class HTTPClient:
             'autoclose': False,
             'headers': {
                 'User-Agent': self.user_agent,
-                'X-Discord-Locale': self.api_error_locale.value
+                'X-Discord-Locale': self.api_error_locale
             },
             'compress': compress
         }
@@ -484,7 +484,7 @@ class HTTPClient:
         # header creation
         headers = {
             'User-Agent': self.user_agent,
-            'X-Discord-Locale': self.api_error_locale.value
+            'X-Discord-Locale': self.api_error_locale
         }
 
         if self.token is not None:
@@ -624,6 +624,7 @@ class HTTPClient:
     async def close(self):
         if self.__session:
             await self.__session.close()
+            await asyncio.sleep(0.025)  # wait for the connection to be released
 
     def _token(self, token):
         self.token = token
@@ -890,8 +891,24 @@ class HTTPClient:
         )
         return self.request(r)
 
-    def list_thread_members(self, channel_id):
-        return self.request(Route('GET', '/channels/{channel_id}/thread-members', channel_id=channel_id))
+    def list_thread_members(
+            self,
+            channel_id: int,
+            with_member: bool = False,
+            *,
+            limit: int = 100,
+            after: Optional[int] = None
+    ):
+        query_params = {
+            'with_member': with_member,
+            'limit': limit
+        }
+        if after:
+            query_params['after'] = after
+        return self.request(
+            Route('GET', '/channels/{channel_id}/thread-members', channel_id=channel_id),
+            params=query_params
+        )
 
     def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
         if type not in ('public', 'privat'):
@@ -973,7 +990,7 @@ class HTTPClient:
         r = Route('PATCH', '/guilds/{guild_id}/voice-states/{user_id}', guild_id=guild_id, user_id=user_id)
         return self.request(r, json=payload)
 
-    def edit_member(self, guild_id, user_id, *, reason=None, **fields):
+    def edit_member(self, guild_id, user_id, *, reason=None, fields):
         r = Route('PATCH', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)
         return self.request(r, json=fields, reason=reason)
 
@@ -1471,7 +1488,7 @@ class HTTPClient:
     def replace_roles(self, user_id, guild_id, role_ids, *, reason=None):
         return self.edit_member(guild_id=guild_id, user_id=user_id, roles=role_ids, reason=reason)
 
-    def create_role(self, guild_id, *, reason=None, **fields):
+    def create_role(self, guild_id, *, reason=None, fields):
         r = Route('POST', '/guilds/{guild_id}/roles', guild_id=guild_id)
         return self.request(r, json=fields, reason=reason)
 

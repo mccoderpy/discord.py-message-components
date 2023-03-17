@@ -36,10 +36,12 @@ __all__ = (
     'EventEntityType',
     'EventStatus',
     'ApplicationCommandType',
+    'AppCommandPermissionType',
     'ComponentType',
     'ButtonColor',
     'ButtonStyle',
     'PermissionType',
+    'IntegrationType',
     'InteractionType',
     'InteractionCallbackType',
     'OptionType',
@@ -217,7 +219,6 @@ class ChannelType(Enum):
     guild_directory = 14  # don't think bots can access them but yea... to have all listed here
     forum_channel   = 15
 
-
     def __str__(self):
         return getattr(self, 'name')
 
@@ -236,8 +237,7 @@ class ChannelType(Enum):
 class PermissionType(Enum):
     role   = 0
     member = 1
-
-    # i use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
+    
     def __str__(self):
         return self.name
 
@@ -271,6 +271,13 @@ class EventStatus(Enum):
     canceled  = 4
 
 
+class IntegrationType(Enum):
+    TWITCH = 'twitch'
+    YOUTUBE = 'youtube'
+    DISCORD = 'discord'
+    GUILD_SUBSCRIPTION = 'guild_subscription'
+
+
 class InteractionType(Enum):
     PingAck                        = 1
     ApplicationCommand             = 2
@@ -296,6 +303,12 @@ class ApplicationCommandType(Enum):
     @classmethod
     def from_value(cls, value):
         return try_enum(cls, value)
+
+
+class AppCommandPermissionType(Enum):
+    ROLE    = 1
+    USER    = 2
+    CHANNEL = 3
 
 
 class ComponentType(Enum):
@@ -439,9 +452,9 @@ class OptionType(Enum):
             else:
                 t = args[0]  # not the best solution, but we shall not get here
         if isinstance(t, int):
-            return cls.try_value(t)
+            return try_enum(cls, t), None
         elif isinstance(t, str):
-            return cls[t]
+            return cls[t], None
         if issubclass(t, str):
             return cls.string, None
         if issubclass(t, bool):
@@ -621,7 +634,14 @@ class MessageType(Enum):
     guild_invite_reminder                        = 22
     context_menu_command                         = 23
     automoderation_action                        = 24
-
+    role_subscription_purchase                   = 25
+    interaction_premium_upsell                   = 26
+    stage_start                                  = 27
+    stage_end                                    = 28
+    stage_speaker_change                         = 29
+    stage_raise_hand                             = 30
+    stage_topic_change                           = 31
+    guild_application_premium_subscription       = 32
 
 
 class VoiceRegion(Enum):
@@ -931,8 +951,10 @@ class HypeSquadHouse(Enum):
 
 
 class PremiumType(Enum):
+    none = 0
     nitro_classic = 1
     nitro = 2
+    nitro_basic = 3
 
 
 class TeamMembershipState(Enum):
@@ -956,6 +978,7 @@ class StickerType(Enum):
     png     = 1
     apng    = 2
     lottie  = 3
+    gif     = 4
 
     def __str__(self):
         return getattr(self, 'name', None)
@@ -995,7 +1018,7 @@ def try_enum(cls: Type[Enum], val: Any):
     If it fails it returns the value instead.
     """
 
-    # i use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
+    # I use :meth:`getattr` so `codacy` don't cry and *my own* code is as clean as possible.
     try:
         return getattr(cls, '_enum_value_map_')[val]
     except (KeyError, TypeError, AttributeError):

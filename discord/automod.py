@@ -43,7 +43,7 @@ from re import Pattern, compile as _re_compile
 from . import utils
 from .role import Role
 from .object import Object
-from .abc import GuildChannel, Snowflake
+from .abc import GuildChannel
 from .utils import SnowflakeList, MISSING
 from .errors import ClientException
 from .enums import AutoModEventType, AutoModKeywordPresetType, AutoModActionType, AutoModTriggerType, try_enum
@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .user import User
     from .member import Member
+    from .types.snowflake import SnowflakeObject
 
 
 __all__ = (
@@ -403,7 +404,7 @@ class AutoModRule:
         self.id: int = int(data['id'])
         self._update(data)
 
-    def _update(self, data) -> AutoModRule:
+    def _update(self: Self, data) -> Self:
         self.name: str = data['name']
         self.creator_id: int = int(data['creator_id'])
         self.event_type: AutoModEventType = try_enum(AutoModEventType, data['event_type'])
@@ -439,7 +440,7 @@ class AutoModRule:
         """
         for role_id in self._exempt_roles:
             role = self.guild.get_role(int(role_id))
-            yield role or Object(role_id, _type=Role, state=self._state)
+            yield role or Object(role_id, type=Role, state=self._state)
 
     @property
     def exempt_channels(self) -> Iterator[Union[GuildChannel, Object]]:
@@ -453,7 +454,7 @@ class AutoModRule:
 
                 for channel_id in self._exempt_channels:
                     channel = self.guild.get_role(int(channel_id))
-                    yield channel or Object(channel_id, _type=GuildChannel, state=self._state)
+                    yield channel or Object(channel_id, type=GuildChannel, state=self._state)
 
         Yields
         -------
@@ -462,7 +463,7 @@ class AutoModRule:
         """
         for channel_id in self._exempt_channels:
             channel = self.guild.get_role(int(channel_id))
-            yield channel or Object(channel_id, _type=GuildChannel, state=self._state)
+            yield channel or Object(channel_id, type=GuildChannel, state=self._state)
         
     @property
     def creator(self) -> Optional[Member]:
@@ -521,8 +522,8 @@ class AutoModRule:
             trigger_metadata: AutoModTriggerMetadata = MISSING,
             actions: List[AutoModAction] = MISSING,
             enabled: bool = MISSING,
-            exempt_roles: List[Snowflake] = MISSING,
-            exempt_channels: List[Snowflake] = MISSING,
+            exempt_roles: List[SnowflakeObject] = MISSING,
+            exempt_channels: List[SnowflakeObject] = MISSING,
             reason: Optional[str] = None,
     ) -> AutoModRule:
         """|coro|
@@ -549,7 +550,7 @@ class AutoModRule:
         exempt_roles: List[:class:`.Snowflake`]
             Up to 20 :class:`~discord.Role`'s, that should not be affected by the rule.
         exempt_channels: List[:class:`.Snowflake`]
-            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`'s, that should not be affected by the rule.
+            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`/:class:`~discord.StageChannel`'s, that should not be affected by the rule.
         reason: Optional[:class:`str`]
             The reason for editing the rule. Shows up in the audit log.
 
@@ -578,11 +579,17 @@ class AutoModRule:
         
         if trigger_metadata is not MISSING:
             payload['trigger_metadata'] = trigger_metadata.to_dict()
-        
+
         if actions is not MISSING:
             payload['actions'] = [action.to_dict() for action in actions]
         else:
             actions = self.actions if exempt_channels is not MISSING else MISSING
+            
+        if enabled is not MISSING:
+            payload['enabled'] = enabled
+        
+        if exempt_roles is not MISSING:
+            payload['exempt_roles'] = [str(r.id) for r in exempt_roles]
         
         if exempt_channels is not MISSING:
             payload['exempt_channels'] = _exempt_channels = [str(c.id) for c in exempt_channels]
@@ -595,12 +602,6 @@ class AutoModRule:
                     channel_id = str(action.channel_id)
                     if channel_id not in _exempt_channels:
                         _exempt_channels.append(channel_id)
-
-        if enabled is not MISSING:
-            payload['enabled'] = enabled
-
-        if exempt_roles is not MISSING:
-            payload['exempt_roles'] = [str(r.id) for r in exempt_roles]
         
         data = await self._state.http.edit_automod_rule(self.guild.id, self.id, fields=payload, reason=reason)
         return self._update(data)

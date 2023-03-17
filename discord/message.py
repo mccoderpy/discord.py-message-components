@@ -45,7 +45,7 @@ from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
-from .errors import InvalidArgument, HTTPException, NotFound
+from .errors import InvalidArgument, HTTPException
 from .components import ActionRow, Button, BaseSelect
 from .embeds import Embed
 from .member import Member
@@ -61,7 +61,8 @@ from .channel import PartialMessageable
 if TYPE_CHECKING:
     from .state import ConnectionState
     from .mentions import AllowedMentions
-    from .abc import Messageable
+    from .abc import Messageable, Snowflake
+    from .sticker import GuildSticker
 
 
 __all__ = (
@@ -1105,16 +1106,24 @@ class Message(Hashable):
             keep_existing_attachments: bool = False,
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
-            suppress: Optional[bool] = False
+            suppress_embeds: Optional[bool] = MISSING
     ) -> Message:
         """|coro|
 
         Edits the message.
 
         The content must be able to be transformed into a string via ``str(content)``.
-
+        
+        .. warning::
+            Since API v10, the ``attachments`` **must contain all attachments** that should be present after edit,
+            **including retained** and new attachments.
+        
         .. versionchanged:: 1.3
             The ``suppress`` keyword-only parameter was added.
+        .. versionchanged:: 2.0
+            The ``suppress`` keyword-only parameter was renamed to ``suppress_embeds``.
+        .. versionchanged:: 2.0
+            The ``components`, ``attachments`` and ``keep_existing_attachments`` keyword-only parameters were added.
 
         Parameters
         -----------
@@ -1123,33 +1132,34 @@ class Message(Hashable):
             Could be ``None`` to remove the content.
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
-            Could be ``None`` to remove the embed.
+            Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds
+            A list containing up to 10 embeds`to send.
+            If ``None`` or empty, all embeds will be removed.
+            
+            If passed, ``embed`` does also count towards the limit of 10 embeds.
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
             A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
             Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
-            If  an empty list (``[]``) is passed, all attachment will be removed.
+            If ``None`` or empty, all attachments will be removed.
             
             .. note::
                 
                 New files will always appear under existing ones.
-
         keep_existing_attachments: :class:`bool`
-            Whether to auto-add existing attachments to ``attachments``, default :obj:`False`.
+            Whether to auto-add existing attachments to ``attachments``, defaults to :obj:`False`.
 
             .. note::
 
                 Only needed when ``attachments`` are passed, otherwise will be ignored.
-
-        suppress: :class:`bool`
+        suppress_embeds: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
             this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~.Permissions.manage_messages` for messages that aren't from the bot.
+            Requires :attr:`~.Permissions.manage_messages` permissions for messages that aren't from the bot.
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
             before deleting the message we just edited. If the deletion fails,
@@ -1181,9 +1191,9 @@ class Message(Hashable):
         if keep_existing_attachments and attachments is not MISSING:
             attachments = [*self.attachments, *attachments]
 
-        if suppress:
+        if suppress_embeds is not MISSING:
             flags = MessageFlags._from_value(self.flags.value)
-            flags.suppress_embeds = True
+            flags.suppress_embeds = suppress_embeds
         else:
             flags = MISSING
 
@@ -1226,7 +1236,7 @@ class Message(Hashable):
 
         await self._state.http.publish_message(self.channel.id, self.id)
 
-    async def pin(self, *, reason=None):
+    async def pin(self, *, reason: Optional[str] = None):
         """|coro|
 
         Pins the message.
@@ -1255,7 +1265,7 @@ class Message(Hashable):
         await self._state.http.pin_message(self.channel.id, self.id, reason=reason)
         self.pinned = True
 
-    async def unpin(self, *, reason=None):
+    async def unpin(self, *, reason: Optional[str] = None):
         """|coro|
 
         Unpins the message.
@@ -1283,7 +1293,7 @@ class Message(Hashable):
         await self._state.http.unpin_message(self.channel.id, self.id, reason=reason)
         self.pinned = False
 
-    async def add_reaction(self, emoji):
+    async def add_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]):
         """|coro|
 
         Add a reaction to the message.
@@ -1314,7 +1324,7 @@ class Message(Hashable):
         emoji = convert_emoji_reaction(emoji)
         await self._state.http.add_reaction(self.channel.id, self.id, emoji)
 
-    async def remove_reaction(self, emoji, member):
+    async def remove_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str], member: Snowflake):
         """|coro|
 
         Remove a reaction by the member from the message.
@@ -1353,7 +1363,7 @@ class Message(Hashable):
         else:
             await self._state.http.remove_reaction(self.channel.id, self.id, emoji, member.id)
 
-    async def clear_reaction(self, emoji):
+    async def clear_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]):
         """|coro|
 
         Clears a specific reaction from the message.
@@ -1400,7 +1410,23 @@ class Message(Hashable):
         """
         await self._state.http.clear_reactions(self.channel.id, self.id)
 
-    async def reply(self, content=None, **kwargs):
+    async def reply(
+            self,
+            content=None,
+            tts: bool = False,
+            embed: Optional[Embed] = None,
+            embeds: Optional[List[Embed]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
+            file: Optional[File] = None,
+            files: Optional[List[File]] = None,
+            stickers: Optional[List[GuildSticker]] = None,
+            delete_after: Optional[float] = None,
+            nonce: Optional[int] = None,
+            allowed_mentions: Optional[AllowedMentions] = None,
+            mention_author: Optional[bool] = None,
+            suppress_embeds: bool = False,
+            suppress_notifications: bool = False
+    ):
         """|coro|
 
         A shortcut method to :meth:`.abc.Messageable.send` to reply to the
@@ -1424,7 +1450,23 @@ class Message(Hashable):
             The message that was sent.
         """
 
-        return await self.channel.send(content, reference=self, **kwargs)
+        return await self.channel.send(
+            content,
+            reference=self,
+            tts=tts,
+            embed=embed,
+            embeds=embeds,
+            components=components,
+            file=file,
+            files=files,
+            stickers=stickers,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+            mention_author=mention_author,
+            suppress_embeds=suppress_embeds,
+            suppress_notifications=suppress_notifications
+        )
 
     async def create_thread(
             self,
@@ -1435,7 +1477,7 @@ class Message(Hashable):
     ) -> ThreadChannel:
         """|coro|
 
-        Creates a new thread in the channel of the message with this message as the starter-message.
+        Creates a new thread in the channel of the message with this message as the :attr:`~ThreadChannel.starter_message`.
 
         Parameters
         ----------
@@ -1453,7 +1495,7 @@ class Message(Hashable):
         :exc:`TypeError`
             The channel of the message is not a text or news channel,
             or the message has already a thread,
-            or auto_archive_duration is not a valid member of :class:`AutoArchiveDuration`
+            or ``auto_archive_duration`` is not a valid member of :class:`AutoArchiveDuration`
         :exc:`ValueError`
             The ``name`` is of invalid length
         :exc:`Forbidden`
@@ -1497,7 +1539,7 @@ class Message(Hashable):
         self._thread = thread
         return thread
 
-    def to_reference(self, *, fail_if_not_exists=True):
+    def to_reference(self, *, fail_if_not_exists: bool = True):
         """Creates a :class:`~discord.MessageReference` from the current message.
 
         .. versionadded:: 1.6
@@ -1587,6 +1629,7 @@ class PartialMessage(Hashable):
         'clear_reaction',
         'clear_reactions',
         'reply',
+        'create_thread',
         'to_reference',
         'to_message_reference_dict',
     )
@@ -1621,7 +1664,7 @@ class PartialMessage(Hashable):
         """Optional[:class:`Guild`]: The guild that the partial message belongs to, if applicable."""
         return getattr(self.channel, 'guild', None)
 
-    async def fetch(self):
+    async def fetch(self) -> Message:
         """|coro|
 
         Fetches the partial message to a full :class:`Message`.
@@ -1644,29 +1687,6 @@ class PartialMessage(Hashable):
         data = await self._state.http.get_message(self.channel.id, self.id)
         return self._state.create_message(channel=self.channel, data=data)
 
-    @property
-    def all_components(self):
-        """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
-        for action_row in self.components:
-            for component in action_row:
-                yield component
-
-    @property
-    def all_buttons(self):
-        """Returns all :class:`Button`'s that are contained in the message"""
-        for action_row in self.components:
-            for component in action_row:
-                if isinstance(component, Button):
-                    yield component
-
-    @property
-    def all_select_menus(self):
-        """Returns all :class:`SelectMenu`'s that are contained in the message"""
-        for action_row in self.components:
-            for component in action_row:
-                if int(component.type) in {3, 5, 6, 7, 8}:
-                    yield component
-
     async def edit(
             self,
             *,
@@ -1677,7 +1697,7 @@ class PartialMessage(Hashable):
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
-            suppress: Optional[bool] = False
+            suppress_embeds: bool = MISSING
     ) -> Optional[Message]:
         """|coro|
 
@@ -1687,7 +1707,18 @@ class PartialMessage(Hashable):
 
         .. versionchanged:: 1.3
             The ``suppress`` keyword-only parameter was added.
-
+        .. versionchanged:: 2.0
+            The ``components`` and ``attachments`` parameters were added.
+        .. versionchanged:: 2.0
+            The ``suppress`` keyword-only parameter was renamed to ``suppress_embeds``.
+        
+        .. warning::
+            Since API v10, the ``attachments`` (when passed) **must contain all attachments** that should be present after edit,
+            **including retained** and new attachments.
+            
+            As this requires to know the current attachments consider either storing the attachments that were sent with a message or
+            using a fetched version of the message to edit it.
+        
         Parameters
         -----------
         content: Optional[:class:`str`]
@@ -1695,26 +1726,28 @@ class PartialMessage(Hashable):
             Could be ``None`` to remove the content.
         embed: Optional[:class:`Embed`]
             The new embed to replace the original with.
-            Could be ``None`` to remove the embed.
+            Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds
+            A list containing up to 10 embeds`to send.
+            If ``None`` or empty, all embeds will be removed.
+            
+            If passed, ``embed`` does also count towards the limit of 10 embeds.
         components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
             A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
             Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
-            You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
-            If  an empty list (``[]``) is passed, all attachment will be removed.
+            
+            When  ``None`` or empty, all attachment will be removed.
 
             .. note::
 
                 New files will always appear under existing ones.
-
-        suppress: :class:`bool`
+        suppress_embeds: :class:`bool`
             Whether to suppress embeds for the message. This removes
             all the embeds if set to ``True``. If set to ``False``
             this brings the embeds back if they were suppressed.
-            Using this parameter requires :attr:`~.Permissions.manage_messages` for messages that aren't from the bot.
+            Requires :attr:`~.Permissions.manage_messages` for messages that aren't from the bot.
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
             before deleting the message we just edited. If the deletion fails,
@@ -1734,7 +1767,7 @@ class PartialMessage(Hashable):
         HTTPException
             Editing the message failed.
         Forbidden
-            Tried to suppress a message without permissions or
+            Tried to suppress the embeds a message without permissions or
             edited a message's content or embed that isn't yours.
 
         Returns
@@ -1748,9 +1781,9 @@ class PartialMessage(Hashable):
         else:
             previous_allowed_mentions = None
 
-        if suppress:
+        if suppress_embeds is not MISSING:
             flags = MessageFlags._from_value(self.flags.value)
-            flags.suppress_embeds = True
+            flags.suppress_embeds = suppress_embeds
         else:
             flags = MISSING
 

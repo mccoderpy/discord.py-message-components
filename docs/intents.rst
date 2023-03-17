@@ -105,6 +105,41 @@ Member Intent
 - Whether you want to request the guild member list through :meth:`Guild.chunk` or :meth:`Guild.fetch_members`.
 - Whether you want high accuracy member cache under :attr:`Guild.members`.
 
+.. _need_message_content_intent:
+
+Message Content
++++++++++++++++++
+
+Whether you use anything that needs the content of a message.
+Including :ref:`ext.commands <discord_ext_commands>` (when using a prefix, that is not a bot mention)
+
+.. note::
+
+    The bot will still receive these fields when the message is in a privat chat with the bot,
+    or the bot is mentioned in the message.
+
+This corresponds to the following events:
+
+- :func:`on_message` (content, embeds, attachments, components)
+- :func:`on_message_edit` (content, embeds, attachments, components)
+- :func:`on_raw_message_edit` (cached_message)
+- :func:`on_message_delete` (content, embeds, attachments, components)
+- :func:`on_raw_message_delete` (cached_message)
+- :func:`on_bulk_message_delete` (content, embeds, attachments, components)
+- :func:`on_raw_bulk_message_delete` (cached_messages)
+
+This also corresponds to the following attributes and classes:
+
+- :attr:`Message.content`
+- :attr:`Message.embeds`
+- :attr:`Message.attachments`
+- :attr:`Message.components`
+
+.. warning::
+    Until August 31, 2022 you only need to enable the intent when using api v10 (What is the default).
+    Ofter this day you must enable the indent on any version in order to receive this fields.
+    See also the official `faq <https://support-dev.discord.com/hc/en-us/articles/4404772028055>`_
+
 .. _intents_member_cache:
 
 Member Cache
@@ -144,41 +179,6 @@ If the cache is disabled or you disable chunking guilds at startup, we might sti
     - used to fetch a large number of members through the HTTP API.
 
 It should be noted that the gateway has a strict rate limit of 120 requests per 60 seconds.
-
-.. _need_message_content_intent:
-
-Message Content
-++++++++++++++++
-
-Whether you use anything that needs the content of a message.
-Including :ref:`ext.commands` (when using a prefix, that is not a bot mention)
-
-.. note::
-
-    The bot will still receive these fields when the message is in a privat chat with the bot,
-    or the bot is mentioned in the message.
-
-This corresponds to the following events:
-
-- :func:`on_message` (content, embeds, attachments, components)
-- :func:`on_message_edit` (content, embeds, attachments, components)
-- :func:`on_raw_message_edit` (cached_message)
-- :func:`on_message_delete` (content, embeds, attachments, components)
-- :func:`on_raw_message_delete` (cached_message)
-- :func:`on_bulk_message_delete` (content, embeds, attachments, components)
-- :func:`on_raw_bulk_message_delete` (cached_messages)
-
-This also corresponds to the following attributes and classes:
-
-- :attr:`Message.content`
-- :attr:`Message.embeds`
-- :attr:`Message.attachments`
-- :attr:`Message.components`
-
-.. warning::
-    Until August 31, 2022 you only need to enable the intent when using api v10 (What is the default).
-    Ofter this day you must enable the indent on any version in order to receive this fields.
-    See also the official `faq <https://support-dev.discord.com/hc/en-us/articles/4404772028055>`_
 
 Troubleshooting
 ------------------

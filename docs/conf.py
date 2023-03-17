@@ -30,7 +30,7 @@ sys.path.append(os.path.abspath('extensions'))
 
 
 project = 'discord.py-message-components'
-copyright = '2022, Mathieu Corsham aka. mccoder.py'
+copyright = '2023, Mathieu Corsham aka. mccoder.py'
 author = 'Mathieu Corsham aka. mccoder.py'
 
 version = ''
@@ -75,28 +75,40 @@ language = 'en'
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members']
 autodoc_typehints = 'none'
+autoclass_content = 'both'  # document class docstring and __init__ docstring
 
 # Links used for cross-referencing stuff in other documentation
 intersphinx_mapping = {
-  'py': ('https://docs.python.org/3', None),
-  'aio': ('https://docs.aiohttp.org/en/stable/', None),
-  'req': ('http://docs.python-requests.org/en/latest/', 'requests.inv')
+    'py': ('https://docs.python.org/3', None),
+    'aio': ('https://docs.aiohttp.org/en/stable/', None),
+    'req': ('http://docs.python-requests.org/en/latest/', 'requests.inv')
 }
 
 html_context = {
-  'discord_invite': 'https://discord.gg/sb69muSqsg',
-  'discord_extensions': [
-    ('discord.ext.commands', 'ext/commands'),
-    ('discord.ext.tasks', 'ext/tasks'),
-  ],
+    'discord_invite': 'https://discord.gg/sb69muSqsg',
+    'discord_extensions': [
+        ('discord.ext.commands', 'ext/commands'),
+        ('discord.ext.tasks', 'ext/tasks'),
+        ('discord.oauth2', 'oauth2')
+    ],
+    'github_url': 'https://github.com/mccoderpy/discord.py-message-components'
 }
 
 resource_links = {
-  'discord': 'https://discord.gg/sb69muSqsg',
-  'issues': 'https://github.com/mccoderpy/discord.py-message-components/issues',
-  'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
-  'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
+    'discord': 'https://discord.gg/sb69muSqsg',
+    'issues': 'https://github.com/mccoderpy/discord.py-message-components/issues',
+    'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
+    'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
 }
+
+ogp_site_url = 'https://docs.discord4py.dev/'
+ogp_image = f'https://docs.discord4py.dev/en/{branch}/_images/discord4py-logo.png'
+ogp_site_name = 'docs.discord4py.dev'
+
+ogp_custom_meta_tags = [
+    '<meta name="theme-color" content="#5865F2">'
+]
+ogp_enable_meta_description = True
 
 show_authors = True
 html_last_updated_fmt = '%b %d %Y'
@@ -108,14 +120,14 @@ html_permalinks_icon = '<span class="fa fa-link" aria-hidden="true"></span>'
 # }
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+# html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+# html_short_title = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -124,18 +136,23 @@ html_logo = '../images/Banner_Konturen.png'
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = './images/discord_py_message_components_logo.ico'
+html_favicon = './images/discord4py-logo.ico'
 
 extlinks = {
-    'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-'),
-    'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-')
+    'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-%s'),
+    'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-%s')
 }
 
 rst_prolog = """
+:tocdepth: 3
+
 .. |coro| replace:: This function is a |coroutine_link|_.
 .. |maybecoro| replace:: This function *could be a* |coroutine_link|_.
 .. |coroutine_link| replace:: *coroutine*
 .. _coroutine_link: https://docs.python.org/3/library/asyncio-task.html#coroutine
+.. |bugreport| replace:: |bugreport_link|_
+.. |bugreport_link| replace:: *bug report*
+.. _bugreport_link: https://discord4py.dev/bugreport
 """
 
 # Add any paths that contain templates here, relative to this directory.
@@ -162,10 +179,10 @@ html_search_scorer = '_static/scorer.js'
 pygments_style = 'friendly'
 
 html_js_files = [
-  'custom.js',
-  'settings.js',
-  'copy.js',
-  'sidebar.js',
+    'custom.js',
+    'settings.js',
+    'copy.js',
+    'sidebar.js',
 ]
 
 # The master toctree document.

@@ -23,11 +23,44 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
+from typing import (
+    BinaryIO,
+    Optional,
+    TYPE_CHECKING,
+    Union
+)
+
+if TYPE_CHECKING:
+    from os import PathLike
+    from .state import ConnectionState
+    from .oauth2 import (
+        OAuth2Client,
+        PartialGuild,
+        GuildMember,
+        User as OAuth2User
+    )
+    from .user import User
+    from .member import Member
+    from .sticker import Sticker, GuildSticker, StickerPack
+    from .guild import Guild
+    from .emoji import Emoji
+    from .partial_emoji import PartialEmoji
+    from .scheduled_event import GuildScheduledEvent
+    from .types.snowflake import SnowflakeID
+    
+    HAS_HTTP_CONNECTION = Union[ConnectionState, OAuth2Client]
+
 
 import io
 
 from .errors import DiscordException, InvalidArgument
 from . import utils
+
+__all__ = (
+    'Asset',
+)
 
 VALID_STATIC_FORMATS = frozenset({"jpeg", "jpg", "webp", "png"})
 VALID_AVATAR_FORMATS = VALID_STATIC_FORMATS | {"gif"}
@@ -66,12 +99,24 @@ class Asset:
 
     BASE = 'https://cdn.discordapp.com'
 
-    def __init__(self, state, url=None):
-        self._state = state
-        self._url = url
+    def __init__(
+            self,
+            state: HAS_HTTP_CONNECTION,
+            url: Optional[str] = None
+    ):
+        self._state: HAS_HTTP_CONNECTION = state
+        self._url: Optional[str] = url
 
     @classmethod
-    def _from_avatar(cls, state, user, *, format=None, static_format='webp', size=1024):
+    def _from_avatar(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            user: Union[User, OAuth2User],
+            *,
+            format=None,
+            static_format='webp',
+            size=1024
+    ):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
         if format is not None and format not in VALID_AVATAR_FORMATS:
@@ -90,7 +135,15 @@ class Asset:
         return cls(state, '/avatars/{0.id}/{0.avatar}.{1}?size={2}'.format(user, format, size))
 
     @classmethod
-    def _from_guild_avatar(cls, state, member, *, format=None, static_format='webp', size=1024):
+    def _from_guild_avatar(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            member: Union[Member, GuildMember],
+            *,
+            format=None,
+            static_format='webp',
+            size=1024
+    ):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
         if format is not None and format not in VALID_AVATAR_FORMATS:
@@ -112,7 +165,15 @@ class Asset:
         )
 
     @classmethod
-    def _from_banner(cls, state, user, *, format=None, static_format='webp', size=1024):
+    def _from_banner(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            user,
+            *,
+            format=None,
+            static_format='webp',
+            size=1024
+    ):
         if not user.banner:
             return None
         if not utils.valid_icon_size(size):
@@ -130,7 +191,15 @@ class Asset:
         return cls(state, f'/banners/{user.id}/{user.banner}.{format}?size={size}')
 
     @classmethod
-    def _from_guild_banner(cls, state, member, *, format=None, static_format='webp', size=1024):
+    def _from_guild_banner(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            member: Member,
+            *,
+            format=None,
+            static_format='webp',
+            size=1024
+    ):
         if not member.guild_banner:
             return None
         if not utils.valid_icon_size(size):
@@ -151,7 +220,15 @@ class Asset:
         )
 
     @classmethod
-    def _from_icon(cls, state, object, path, *, format='webp', size=1024):
+    def _from_icon(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            object,
+            path,
+            *,
+            format='webp',
+            size=1024
+    ):
         if object.icon is None:
             return cls(state)
 
@@ -164,7 +241,14 @@ class Asset:
         return cls(state, url)
 
     @classmethod
-    def _from_cover_image(cls, state, obj, *, format='webp', size=1024):
+    def _from_cover_image(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            obj,
+            *,
+            format='webp',
+            size=1024
+    ):
         if obj.cover_image is None:
             return cls(state)
 
@@ -177,7 +261,16 @@ class Asset:
         return cls(state, url)
 
     @classmethod
-    def _from_guild_image(cls, state, id, hash, key, *, format='webp', size=1024):
+    def _from_guild_image(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            id: SnowflakeID,
+            hash: str,
+            key: str,
+            *,
+            format='webp',
+            size=1024
+    ):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
         if format not in VALID_STATIC_FORMATS:
@@ -190,7 +283,15 @@ class Asset:
         return cls(state, url.format(id, hash, format, size, key=key))
 
     @classmethod
-    def _from_guild_icon(cls, state, guild, *, format=None, static_format='webp', size=1024):
+    def _from_guild_icon(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            guild: Union[Guild, PartialGuild],
+            *,
+            format=None,
+            static_format='webp',
+            size=1024
+    ):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
         if format is not None and format not in VALID_AVATAR_FORMATS:
@@ -209,11 +310,23 @@ class Asset:
         return cls(state, '/icons/{0.id}/{0.icon}.{1}?size={2}'.format(guild, format, size))
 
     @classmethod
-    def _from_sticker(cls, state, sticker, *, format=None):
+    def _from_sticker(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            sticker: Union[Sticker, GuildSticker],
+            *,
+            format=None
+    ):
         return cls(state, f'/stickers/{sticker.id}.{format}')
 
     @classmethod
-    def _from_sticker_pack(cls, state, sticker_pack, format='png', size=1024):
+    def _from_sticker_pack(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            sticker_pack: StickerPack,
+            format='png',
+            size=1024
+    ):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
         if format is not None and format not in VALID_STATIC_FORMATS:
@@ -221,7 +334,14 @@ class Asset:
         return cls(state, f'/app-assets/710982414301790216/store/{sticker_pack.banner_asset_id}.{format}?size={size}')
 
     @classmethod
-    def _from_emoji(cls, state, emoji, *, format=None, static_format='png'):
+    def _from_emoji(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            emoji: Union[Emoji, PartialEmoji],
+            *,
+            format=None,
+            static_format='png'
+    ):
         if format is not None and format not in VALID_AVATAR_FORMATS:
             raise InvalidArgument("format must be None or one of {}".format(VALID_AVATAR_FORMATS))
         if format == "gif" and not emoji.animated:
@@ -233,7 +353,15 @@ class Asset:
         return cls(state, '/emojis/{0.id}.{1}'.format(emoji, format))
 
     @classmethod
-    def _from_guild_event(cls, state, event, *, format=None, static_format='png', size=1024):
+    def _from_guild_event(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            event: GuildScheduledEvent,
+            *,
+            format=None,
+            static_format='png',
+            size=1024
+    ):
         if not utils.valid_icon_size(size):
             raise InvalidArgument("size must be a power of 2 between 16 and 4096")
         if format is not None and format not in VALID_AVATAR_FORMATS:
@@ -265,7 +393,7 @@ class Asset:
     def __hash__(self):
         return hash(self._url)
 
-    async def read(self):
+    async def read(self) -> bytes:
         """|coro|
 
         Retrieves the content of this asset as a :class:`bytes` object.
@@ -300,7 +428,7 @@ class Asset:
 
         return await self._state.http.get_from_cdn(self.BASE + self._url)
 
-    async def save(self, fp, *, seek_begin=True):
+    async def save(self, fp: Union[BinaryIO, PathLike], *, seek_begin: bool = True) -> int:
         """|coro|
 
         Saves this asset into a file-like object.

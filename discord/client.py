@@ -63,7 +63,7 @@ from .channel import _channel_factory, PartialMessageable
 from .enums import ChannelType, ApplicationCommandType, Locale
 from .mentions import AllowedMentions
 from .errors import *
-from .enums import Status, VoiceRegion, OptionType
+from .enums import Status, VoiceRegion
 from .gateway import *
 from .activity import BaseActivity, create_activity
 from .voice_client import VoiceClient
@@ -888,12 +888,14 @@ class Client:
 
         for voice in self.voice_clients:
             try:
-                await voice.disconnect()
+                await voice.disconnect()  # type: ignore
             except Exception:
                 # if an error happens during disconnects, disregard it.
                 pass
 
         await self.http.close()
+        if self._auto_update_checker:
+            await self._auto_update_checker.close()
         self._closed = True
 
         if self.ws is not None and self.ws.open:
@@ -1241,7 +1243,7 @@ class Client:
             *,
             check: Optional[Callable[[Any, ...], bool]] = None,
             timeout: Optional[float] = None
-    ) -> Optional[Tuple[Any, ...]]:
+    ) -> Optional[Tuple[Coro, ...]]:
         """|coro|
 
         Waits for a WebSocket event to be dispatched.
@@ -2691,7 +2693,7 @@ class Client:
         data = await self.http.application_info()
         if 'rpc_origins' not in data:
             data['rpc_origins'] = None
-        self.app = app = AppInfo(self._connection, data)
+        self.app = app = AppInfo(state=self._connection, data=data)
         return app
 
     async def fetch_user(self, user_id):

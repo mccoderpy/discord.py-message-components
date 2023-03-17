@@ -27,17 +27,22 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
-    TYPE_CHECKING,
+    Type,
     Optional,
-    SupportsInt
+    TYPE_CHECKING
 )
 
 if TYPE_CHECKING:
     from datetime import datetime
     from .state import ConnectionState
 
+
+from .types.snowflake import SnowflakeID
+
 from . import utils
 from .mixins import Hashable
+MISSING = utils.MISSING
+
 
 class Object(Hashable):
     """Represents a generic Discord object.
@@ -75,20 +80,29 @@ class Object(Hashable):
         The object this should represent if any.
     """
 
-    def __init__(self, id: SupportsInt, _type: Optional[type] = None, state: Optional[ConnectionState] = None) -> None:
+    def __init__(
+            self,
+            id: SnowflakeID,
+            type: Type = utils.MISSING,
+            *,
+            state: Optional[ConnectionState] = MISSING
+    ):
         try:
-            id = int(id)
-        except ValueError:
-            raise TypeError('id parameter must be convertable to int not {0.__class__!r}'.format(id)) from None
-        else:
-            self.id = id
+            self.id: int = int(id)
+        except (ValueError, TypeError):
+            raise TypeError('id parameter must be convertible to int not {0.__class__!r}'.format(id)) from None
 
-        self.type: Optional[type] = _type
+        self.type: Type = type
         self._state: Optional[ConnectionState] = state
 
     def __repr__(self) -> str:
         return f'<Object id={self.id!r} type={self.type!r}>'
-
+    
+    def __instancecheck__(self, other) -> bool:
+        if self.type is not MISSING:
+            return self.type == type(other)
+        return self.__class__ == type(other)
+    
     @property
     def created_at(self) -> datetime:
         """:class:`datetime.datetime`: Returns the snowflake's creation time in UTC."""

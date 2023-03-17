@@ -26,10 +26,9 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 import abc
-import sys
-import copy
 import asyncio
-
+import copy
+import sys
 from typing import (
     Any,
     List,
@@ -40,21 +39,21 @@ from typing import (
     TYPE_CHECKING
 )
 
-from .iterators import HistoryIterator
+from . import utils
 from .context_managers import Typing
-from .enums import try_enum, ChannelType, PermissionType
-from .errors import InvalidArgument, ClientException
+from .enums import ChannelType, PermissionType, try_enum
+from .errors import ClientException, InvalidArgument
+from .file import File
+from .http import handle_message_parameters
+from .invite import Invite
+from .iterators import HistoryIterator
 from .mentions import AllowedMentions
 from .permissions import PermissionOverwrite, Permissions
 from .role import Role
-from .invite import Invite
-from .file import File
 from .voice_client import VoiceClient, VoiceProtocol
-from .http import handle_message_parameters
-from . import utils
 
 if TYPE_CHECKING:
-    import datetime
+    from datetime import datetime
     from .embeds import Embed
     from .sticker import GuildSticker
     from .components import ActionRow, Button, BaseSelect
@@ -161,6 +160,7 @@ class User(metaclass=abc.ABCMeta):
                     return NotImplemented
             return True
         return NotImplemented
+
 
 class PrivateChannel(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a private Discord channel.
@@ -400,7 +400,7 @@ class GuildChannel:
     @property
     def jump_url(self):
         """:class:`str`: Returns a URL that allows the client to jump to the referenced channel."""
-        return f'https://discord.com/channels/{self.guild_id}/{self.id}'  # type: ignore
+        return f'https://discord.com/channels/{self.guild.id}/{self.id}'  # type: ignore
 
     @property
     def created_at(self):
@@ -984,23 +984,25 @@ class Messageable(metaclass=abc.ABCMeta):
     async def _get_channel(self):
         raise NotImplementedError
 
-    async def send(self,
-                   content: Any = None,
-                   *,
-                   tts: bool = False,
-                   embed: Optional[Embed] = None,
-                   embeds: Optional[List[Embed]] = None,
-                   components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
-                   file: Optional[File] = None,
-                   files: Optional[List[File]] = None,
-                   stickers: Optional[List[GuildSticker]] = None,
-                   delete_after: Optional[float] = None,
-                   nonce: Optional[int] = None,
-                   allowed_mentions: Optional[AllowedMentions] = None,
-                   reference: Optional[Union[Message, MessageReference]] = None,
-                   mention_author: Optional[bool] = None,
-                   supress_embeds: Optional[bool] = False
-                   ) -> Message:
+    async def send(
+            self,
+            content: Any = None,
+            *,
+            tts: bool = False,
+            embed: Optional[Embed] = None,
+            embeds: Optional[List[Embed]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
+            file: Optional[File] = None,
+            files: Optional[List[File]] = None,
+            stickers: Optional[List[GuildSticker]] = None,
+            delete_after: Optional[float] = None,
+            nonce: Optional[int] = None,
+            allowed_mentions: Optional[AllowedMentions] = None,
+            reference: Optional[Union[Message, MessageReference]] = None,
+            mention_author: Optional[bool] = None,
+            suppress_embeds: bool = False,
+            suppress_notifications: bool = False
+    ) -> Message:
         """|coro|
 
         Sends a message to the destination with the content given.
@@ -1065,9 +1067,16 @@ class Messageable(metaclass=abc.ABCMeta):
 
             .. versionadded:: 1.6
 
-        supress_embeds: Optional[:class:`bool`
+        suppress_embeds: :class:`bool`
             Whether to supress embeds send with the message, default to :obj:`False`
-
+        
+        suppress_notifications: :class:`bool`
+            Whether to suppress desktop- & push-notifications for this message, default to :obj:`False`
+            
+            Users will still see a ping-symbol when they are mentioned in the message, or the message is in a dm channel.
+            
+            .. versionadded:: 2.0
+            
         Raises
         --------
         ~discord.HTTPException
@@ -1104,9 +1113,11 @@ class Messageable(metaclass=abc.ABCMeta):
         else:
             reference = MISSING
 
-        if supress_embeds:
+        if suppress_embeds or suppress_notifications:
             from .flags import MessageFlags
-            flags = MessageFlags._from_value(4)
+            flags = MessageFlags._from_value(0)
+            flags.suppress_embeds = suppress_embeds
+            flags.suppress_notifications = suppress_notifications
         else:
             flags = MISSING
 
@@ -1220,13 +1231,15 @@ class Messageable(metaclass=abc.ABCMeta):
         data = await state.http.pins_from(channel.id)
         return [state.create_message(channel=channel, data=m) for m in data]
 
-    def history(self,
-                *,
-                limit: Optional[int] = 100,
-                before: Optional[Union[Snowflake, 'datetime.datetime']] = None,
-                after: Optional[Union[Snowflake, 'datetime.datetime']] = None,
-                around: Optional[Union[Snowflake, 'datetime.datetime']] = None,
-                oldest_first: Optional[bool] = None):
+    def history(
+            self,
+            *,
+            limit: Optional[int] = 100,
+            before: Optional[Union[Snowflake, datetime]] = None,
+            after: Optional[Union[Snowflake, datetime]] = None,
+            around: Optional[Union[Snowflake, datetime]] = None,
+            oldest_first: Optional[bool] = None
+    ):
         """Returns an :class:`~discord.AsyncIterator` that enables receiving the destination's message history.
 
         You must have :attr:`~Permissions.read_message_history` permissions to use this.
@@ -1264,7 +1277,7 @@ class Messageable(metaclass=abc.ABCMeta):
             Retrieve messages around this date or message.
             If a date is provided it must be a timezone-naive datetime representing UTC time.
             When using this argument, the maximum limit is 101. Note that if the limit is an
-            even number then this will return at most limit + 1 messages.
+            even number, then this will return at most limit + 1 messages.
         oldest_first: Optional[:class:`bool`]
             If set to ``True``, return messages in oldest->newest order. Defaults to ``True`` if
             ``after`` is specified, otherwise ``False``.

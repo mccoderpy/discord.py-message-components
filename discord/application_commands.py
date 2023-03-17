@@ -46,10 +46,10 @@ import inspect
 import warnings
 from types import FunctionType
 
-from .utils import async_all, find, get, snowflake_time
+from .utils import async_all, find, get, snowflake_time, SupportsStr
 from .abc import GuildChannel
 from .channel import PartialMessageable
-from .enums import ApplicationCommandType, ChannelType, OptionType, Locale, try_enum
+from .enums import ApplicationCommandType, ChannelType, OptionType, Locale, AppCommandPermissionType, try_enum
 from .permissions import Permissions
 
 if TYPE_CHECKING:
@@ -57,11 +57,16 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .state import ConnectionState
     from .ext.commands import Cog, Greedy, Converter
-    from .interactions import ApplicationCommandInteraction
+    from .interactions import ApplicationCommandInteraction, BaseInteraction
+    from .types import (
+        app_command
+    )
 
 __all__ = (
     'Localizations',
     'ApplicationCommand',
+    'GuildAppCommandPermissions',
+    'AppCommandPermission',
     'SlashCommand',
     'GuildOnlySlashCommand',
     'SlashCommandOption',
@@ -85,43 +90,32 @@ class Localizations:
     """
     Represents a :class:`dict` with localized values.
     These are used for application-commands, options and choices ``name_localizations`` and ``description_localizations``
-
-    +--------+-------------------------+---------------------+
-    | Locale |      Language Name      |     Native Name     |
-    |        | (lowercase also usable) |                     |
-    +========+=========================+=====================+
-    | da     | Danish                  | Dansk               |
-    | de     | German                  | Deutsch             |
-    | en_GB  | English, UK             | English, UK         |
-    | en_US  | English, US             | English, US         |
-    | es_ES  | Spanish                 | Español             |
-    | fr     | French                  | Français            |
-    | hr     | Croatian                | Hrvatski            |
-    | it     | Italian                 | Italiano            |
-    | lt     | Lithuanian              | Lietuviškai         |
-    | hu     | Hungarian               | Magyar              |
-    | nl     | Dutch                   | Nederlands          |
-    | no     | Norwegian               | Norsk               |
-    | pl     | Polish                  | Polski              |
-    | pt_BR  | Portuguese/Brazilian    | Português do Brasil |
-    | ro     | Romanian, Romania       | Română              |
-    | fi     | Finnish                 | Suomi               |
-    | sv_SE  | Swedish                 | Svenska             |
-    | vi     | Vietnamese              | Tiếng Việt          |
-    | tr     | Turkish                 | Türkçe              |
-    | cs     | Czech                   | Čeština             |
-    | el     | Greek                   | Ελληνικά            |
-    | bg     | Bulgarian               | български           |
-    | ru     | Russian                 | Pусский             |
-    | uk     | Ukrainian               | Українська          |
-    | hi     | Hindi                   | हिन्दी              |
-    | th     | Thai                    | ไทย                 |
-    | zh_CN  | Chinese, China          | 中文                  |
-    | ja     | Japanese                | 日本語                 |
-    | zh_TW  | Chinese, Taiwan         | 繁體中文                |
-    | ko     | Korean                  | 한국어                 |
-    +--------+-------------------------+---------------------+
-
+    
+    See :class:`~discord.Locale` for a list of available locals.
+    
+    Example
+    -------
+    
+    .. code-block:: python3
+        
+        Localizations(
+            en_US='Hello World!',
+            de='Hallo Welt!',
+            fr='Bonjour le monde!'
+            uk='Привіт світ!'
+        )
+    
+    Using the full language name is also possible.
+    
+    .. code-block:: python3
+    
+        Localizations(
+            english_us='Hello World!',
+            german='Hallo Welt!',
+            french='Bonjour le monde!'
+            ukrainian='Привіт світ!'
+        )
+    
     Parameters
     ----------
     kwargs: Any
@@ -645,7 +639,7 @@ class SlashCommandOption:
     ) -> None:
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
-            if issubclass(option_type, Converter) or converter is Greedy:
+            if issubclass(type(option_type), Converter) or converter is Greedy:
                 converter = copy.copy(option_type)
                 option_type = str
             option_type, channel_type = OptionType.from_type(option_type)
@@ -2086,3 +2080,109 @@ def generate_options(
                                )
         )
     return options
+
+
+class GuildAppCommandPermissions:
+    """
+    Represents a list of permissions for an application command in a guild.
+    
+    Attributes
+    ----------
+    command_id: :class:`int`
+        The ID of the application command.
+    application_id: :class:`int`
+        The ID of the application.
+    guild_id: :class:`int`
+        The ID of the guild.
+    permissions: List[:class:`AppCommandPermission`]
+        The permissions for the guild's application commands.
+    """
+    def __init__(self, *, data: app_command.GuildApplicationCommandPermissions):
+        self.command_id: int = int(data['id'])
+        self.application_id: int = int(data['application_id'])
+        self.guild_id: int = int(data['guild_id'])
+        self.permissions: List[AppCommandPermission] = [AppCommandPermission(**p) for p in data['permissions']]
+        
+    def to_dict(self) -> dict:
+        return {
+            'id': self.guild_id,
+            'permissions': [p.to_dict() for p in self.permissions]
+        }
+
+
+class AppCommandPermission:
+    """
+    Represents a permission for an application command.
+
+    Attributes
+    ----------
+    id: Union[:class:`str`, :class:`int`]
+        The ID of the role, user, or channel.
+        
+        .. note::
+             
+             This can be the guild ID for the default role (``@everyone``) or guild ID - 1 for all channels.
+             
+    type: :class:`AppCommandPermissionType`
+        The target this permission applies to.
+    permission: :class:`bool`
+        ``True`` to allow, ``False`` to disallow.
+    """
+    def __init__(
+            self,
+            id: Union[int, str],
+            type: AppCommandPermissionType,
+            permission: bool
+    ):
+        """
+        Represents a permission for an application command.
+        
+        Parameters
+        ----------
+        id: Union[:class:`str`, :class:`int`]
+            The ID of the role, user, or channel.
+            
+            .. note::
+                 
+                 This can be the guild ID for the default role (``@everyone``) or guild ID - 1 for all channels.
+        
+        type: :class:`AppCommandPermissionType`
+            The target this permission applies to.
+        permission: :class:`bool`
+            ``True`` to allow, ``False`` to disallow.
+        """
+        self.id: int = int(id)
+        self.type: AppCommandPermissionType = type
+        self.permission: bool = permission
+        
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'type': self.type.value,
+            'permission': self.permission
+        }
+    
+    @classmethod
+    async def all_channels(cls, guild_id: SupportsStr, permission: bool) -> AppCommandPermission:
+        """
+        Creates a new AppCommandPermission for all channels in a guild.
+        
+        This is equivalent to:
+        
+        .. code-block:: python3
+        
+            AppCommandPermission(guild_id - 1, AppCommandPermissionType.ROLE, permission)
+        
+        Parameters
+        ----------
+        guild_id: Union[:class:`str`, :class:`int`]
+            The guild ID.
+        permission: :class:`bool`
+            The permission.
+        
+        Returns
+        -------
+        :class:`AppCommandPermission`
+            The new AppCommandPermission.
+        """
+        return cls(int(guild_id) - 1, AppCommandPermissionType.ROLE, permission)

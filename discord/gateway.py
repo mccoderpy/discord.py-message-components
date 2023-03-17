@@ -23,6 +23,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from typing import (
+    Union
+)
 
 import asyncio
 from collections import namedtuple, deque
@@ -43,6 +46,8 @@ from . import utils
 from .activity import BaseActivity
 from .enums import SpeakingState
 from .errors import ConnectionClosed, InvalidArgument
+
+from .types.gateway import GatewayPayload, VoiceGatewayPayload
 
 log = logging.getLogger(__name__)
 
@@ -217,9 +222,11 @@ class VoiceKeepAliveHandler(KeepAliveHandler):
         self.latency = ack_time - self._last_send
         self.recent_ack_latencies.append(self.latency)
 
+
 class DiscordClientWebSocketResponse(aiohttp.ClientWebSocketResponse):
     async def close(self, *, code: int = 4000, message: bytes = b'') -> bool:
         return await super().close(code=code, message=message)
+
 
 class DiscordWebSocket:
     """Implements a WebSocket for Discord's gateway v10.
@@ -426,7 +433,7 @@ class DiscordWebSocket:
         await self.send_as_json(payload)
         log.info('Shard ID %s has sent the RESUME payload.', self.shard_id)
 
-    async def received_message(self, msg):
+    async def received_message(self, msg: Union[bytes, str]):
         self._dispatch('socket_raw_receive', msg)
 
         if type(msg) is bytes:
@@ -437,7 +444,7 @@ class DiscordWebSocket:
             msg = self._zlib.decompress(self._buffer)
             msg = msg.decode('utf-8')
             self._buffer = bytearray()
-        msg = json.loads(msg)
+        msg: GatewayPayload = json.loads(msg)
 
         log.debug('For Shard ID %s: WebSocket Event: %s', self.shard_id, msg)
         self._dispatch('socket_response', msg)
@@ -503,41 +510,41 @@ class DiscordWebSocket:
             self.resume_gateway_url = f'{data["resume_gateway_url"]}?{self.gateway.split("?")[-1]}'  # Weird way doing this but should prevent any future issues with that
             # pass back shard ID to ready handler
             data['__shard_id__'] = self.shard_id
+            
             handler = logging.getLogger('discord').handlers[-1]
-            if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
-                log.info(
-                    'Shard ID %s has connected to Gateway (Session ID: %s): %s',
-                    self.shard_id,
-                    self.session_id,
-                    ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)])
-                )
-            else:
-                log.info(
-                    'Shard ID %s has connected to Gateway (Session ID: %s): %s',
-                    self.shard_id,
-                    self.session_id,
-                    ', '.join(trace)
-                )
+            handler_level = handler.level
+            is_debug_logging = handler_level == logging.DEBUG
+            
+            log.info(
+                f'Shard ID %s has connected to Gateway (Session ID: %s){" - Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
+                self.shard_id,
+                self.session_id
+            )
+            if is_debug_logging:
+                if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
+                    log.debug('Trace: %s', ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)]))
+                else:
+                    log.debug('Trace: %s', ', '.join(trace))
 
         elif event == 'RESUMED':
             self._trace = trace = data.get('_trace', [])
             # pass back the shard ID to the resumed handler
             data['__shard_id__'] = self.shard_id
+            
             handler = logging.getLogger('discord').handlers[-1]
-            if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
-                log.info(
-                    'Shard ID %s has successfully RESUMED _session %s under trace %s.',
-                     self.shard_id,
-                    self.session_id,
-                    ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)])
-                )
-            else:
-                log.info(
-                    'Shard ID %s has successfully RESUMED _session %s under trace %s.',
-                    self.shard_id,
-                    self.session_id,
-                    ', '.join(trace)
-                )
+            handler_level = handler.level
+            is_debug_logging = handler_level == logging.DEBUG
+
+            log.info(
+                f'Shard ID %s has resumed session %s{" - Set loglevel to DEBUG to show trace" if not is_debug_logging else ""}',
+                self.shard_id,
+                self.session_id
+            )
+            if is_debug_logging:
+                if hasattr(handler, 'stream') and utils.stream_supports_colour(handler.stream):
+                    log.debug('Trace: %s', ', '.join([color_dumps(tp, indent=None) for tp in map(json.loads, trace)]))
+                else:
+                    log.debug('Trace: %s', ', '.join(trace))
 
         try:
             func = self._discord_parsers[event]
@@ -624,7 +631,7 @@ class DiscordWebSocket:
         self._dispatch('socket_raw_send', data)
         await self.socket.send_str(data)
 
-    async def send_as_json(self, data):
+    async def send_as_json(self, data: GatewayPayload):
         try:
             await self.send(utils.to_json(data))
         except RuntimeError as exc:
@@ -688,7 +695,6 @@ class DiscordWebSocket:
         if query is not None:
             payload['d']['query'] = query
 
-
         await self.send_as_json(payload)
 
     async def voice_state(self, guild_id, channel_id, self_mute=False, self_deaf=False):
@@ -712,6 +718,7 @@ class DiscordWebSocket:
 
         self._close_code = code
         await self.socket.close(code=code)
+
 
 class DiscordVoiceWebSocket:
     """Implements the websocket protocol for handling voice connections.
@@ -856,7 +863,7 @@ class DiscordVoiceWebSocket:
 
         await self.send_as_json(payload)
 
-    async def received_message(self, msg):
+    async def received_message(self, msg: VoiceGatewayPayload):
         log.debug('Voice websocket frame received: %s', msg)
         op = msg['op']
         data = msg.get('d')
