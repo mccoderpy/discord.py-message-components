@@ -1206,7 +1206,7 @@ class OAuth2Client:
                     type=AppCommandPermissionType.CHANNEL,
                     id=COMMAND_CHANNEL_ID,
                     permission=True
-                )
+                )  # Allow permission for the "commands" channel
             ]
             
             await client.edit_application_command_permissions(
