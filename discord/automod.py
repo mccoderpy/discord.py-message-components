@@ -83,21 +83,38 @@ class AutoModAction:
     timeout_duration: Optional[Union[:class:`int`, :class:`datetime.timedelta`]]
         Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the user should be timeouted.
 
-        **The maximum value is ``2419200`` seconds (4 weeks)**
+        **The maximum value is** ``2419200`` **seconds (4 weeks)**
 
         .. note::
            This field is only required if :attr:`type` is :attr:`AutoModActionType.timeout_user`
-
+    
+    custom_message: Optional[:class:`str`]
+        Additional explanation that will be shown to members whenever their message is blocked. **Max 150 characters**
+        
+        .. note::
+            This field is only allowed if :attr:`type` is :attr:`AutoModActionType.block_message`
     """
     def __init__(self, type: AutoModActionType, **metadata):
         self.type: AutoModActionType = try_enum(AutoModActionType, type)
         self.metadata = metadata  # maybe we need this later... idk
+        
         action_type = self.type  # speedup attribute access
-        if action_type.send_alert_message:
+        
+        if action_type.block_message:
+            try:
+                self.custom_message: Optional[str] = metadata['custom_message']
+            except KeyError:
+                pass
+            else:
+                if len(self.custom_message) > 150:
+                    raise ValueError('The maximum length of the custom message is 150 characters.')
+            
+        elif action_type.send_alert_message:
             try:
                 self.channel_id: Optional[int] = metadata['channel_id']
             except KeyError:
                 raise TypeError('If the type is send_alert_message you must specify a channel_id')
+        
         elif action_type.timeout_user:
             try:
                 timeout_duration: Optional[Union[int, datetime.timedelta]] = metadata['timeout_duration']
@@ -115,6 +132,10 @@ class AutoModAction:
             'type': int(self.type)
         }
         metadata = {}
+        if self.type.block_message:
+            custom_message = getattr(self, 'custom_message', None)
+            if custom_message:
+                metadata['custom_message'] = self.custom_message
         if self.type.send_alert_message:
             metadata['channel_id'] = self.channel_id
         elif self.type.timeout_user:
@@ -126,7 +147,9 @@ class AutoModAction:
     def from_dict(cls, data: Dict[str, Any]) -> Self:
         action_type = try_enum(AutoModActionType, data['type'])
         metadata = data['metadata']
-        if action_type.timeout_user:
+        if action_type.block_message:
+            metadata['custom_message'] = metadata.pop('custom_message', None)
+        elif action_type.timeout_user:
             metadata['timeout_duration'] = metadata.pop('duration_seconds')
         elif action_type.send_alert_message:
             metadata['channel_id'] = int(metadata['channel_id'])
