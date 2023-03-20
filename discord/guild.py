@@ -202,8 +202,18 @@ class GuildFeatures(Iterable[str], dict):
     def __str__(self) -> str:
         return str(self.__dict__)
     
+    def keys(self) -> Iterator[str]:
+        return self.__dict__.keys().__iter__()
+    
+    def values(self) -> Iterator[bool]:
+        return self.__dict__.values().__iter__()
+    
+    def items(self) -> Iterator[Tuple[str, bool]]:
+        return self.__dict__.items().__iter__()
+    
     def merge(self, other: GuildFeatures) -> GuildFeatures:
         base = copy.copy(self.__dict__)
+        
         for key, value in other.items():
             base[key] = value
             
