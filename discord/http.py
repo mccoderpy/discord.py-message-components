@@ -1124,18 +1124,7 @@ class HTTPClient:
         return self.request(Route('POST', '/guilds'), json=payload)
 
     def edit_guild(self, guild_id, *, reason=None, **fields):
-        valid_keys = ('name', 'region', 'icon', 'afk_timeout', 'owner_id',
-                      'afk_channel_id', 'splash', 'verification_level',
-                      'system_channel_id', 'default_message_notifications',
-                      'description', 'explicit_content_filter', 'banner',
-                      'system_channel_flags', 'rules_channel_id',
-                      'public_updates_channel_id', 'preferred_locale',)
-
-        payload = {
-            k: v for k, v in fields.items() if k in valid_keys
-        }
-
-        return self.request(Route('PATCH', '/guilds/{guild_id}', guild_id=guild_id), json=payload, reason=reason)
+        return self.request(Route('PATCH', '/guilds/{guild_id}', guild_id=guild_id), json=fields, reason=reason)
 
     def get_welcome_screen(self, guild_id):
         return self.request(Route('GET', '/guilds/{guild_id}/welcome-screen', guild_id=guild_id))
