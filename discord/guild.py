@@ -36,12 +36,12 @@ from typing import (
     Dict,
     Any,
     Awaitable,
+    Iterable,
+    Iterator,
     NamedTuple,
     TYPE_CHECKING
 )
 from typing_extensions import Literal
-
-from discord.utils import _bytes_to_base64_data
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -93,6 +93,13 @@ from .sticker import GuildSticker
 from .automod import AutoModRule, AutoModTriggerMetadata, AutoModAction
 from .application_commands import SlashCommand, MessageCommand, UserCommand, Localizations
 
+MISSING = utils.MISSING
+
+__all__ = (
+    'GuildFeatures',
+    'Guild',
+)
+
 
 class _GuildLimit(NamedTuple):
     emoji: int
@@ -101,15 +108,135 @@ class _GuildLimit(NamedTuple):
     filesize: int
 
 
-MISSING = utils.MISSING
-
-
 async def default_callback(interaction, *args, **kwargs):
     await interaction.respond(
         'This command has no callback set.'
         'Probably something is being tested with him and he is not yet fully developed.',
         hidden=True
     )
+
+
+class GuildFeatures(Iterable[str], dict):
+    """
+    Represents a guild's features.
+    
+    This class mainly exists to make it easier to edit a guild's features.
+    
+    .. versionadded:: 2.0
+    
+    .. container:: operations
+    
+        .. describe:: 'FEATURE_NAME' in features
+        
+            Checks if the guild has the feature.
+        
+        .. describe:: features.FEATURE_NAME
+        
+            Checks if the guild has the feature. Returns ``False`` if it doesn't.
+        
+        .. describe:: features.FEATURE_NAME = True
+        
+            Enables the feature in the features object, but does not enable it in the guild itself except if you pass it to :meth:`Guild.edit`.
+        
+        .. describe:: features.FEATURE_NAME = False
+        
+            Disables the feature in the features object, but does not disable it in the guild itself except if you pass it to :meth:`Guild.edit`.
+        
+        .. describe:: del features.FEATURE_NAME
+        
+            The same as ``features.FEATURE_NAME = False``
+        
+        .. describe:: features.parsed()
+        
+            Returns a list of all features that are/should be enabled.
+        
+        .. describe:: features.merge(other)
+        
+            Returns a new object with the features of both objects merged.
+            If a feature is missing in the other object, it will be ignored.
+        
+        .. describe:: features == other
+        
+            Checks if two feature objects are equal.
+        
+        .. describe:: features != other
+        
+            Checks if two feature objects are not equal.
+        
+        .. describe:: iter(features)
+        
+            Returns an iterator over the enabled features.
+    """
+    def __init__(self, /, initial: List[str], **features: bool):
+        """
+        Parameters
+        -----------
+        initial: :class:`list`
+            The initial features to set.
+        **features: :class:`bool`
+            The features to set. If the value is ``True`` then the feature is/will be enabled.
+            If the value is ``False`` then the feature will be disabled.
+        """
+        for feature in initial:
+            features[feature] = True
+        self.__dict__.update(features)
+    
+    def __iter__(self) -> Iterator[str]:
+        return [feature for feature, value in self.__dict__.items() if value is True].__iter__()
+    
+    def __contains__(self, item: str) -> bool:
+        return item in self.__dict__ and self.__dict__[item] is True
+    
+    def __getattr__(self, item: str) -> bool:
+        return self.__dict__.get(item, False)
+    
+    def __setattr__(self, key: str, value: bool) -> None:
+        self.__dict__[key] = value
+    
+    def __delattr__(self, item: str) -> None:
+        self.__dict__[item] = False
+        
+    def __repr__(self) -> str:
+        return f'<GuildFeatures {self.__dict__!r}>'
+    
+    def __str__(self) -> str:
+        return str(self.__dict__)
+    
+    def merge(self, other: GuildFeatures) -> GuildFeatures:
+        base = copy.copy(self.__dict__)
+        for key, value in other.items():
+            base[key] = value
+            
+        return GuildFeatures(**base)
+    
+    def parsed(self) -> List[str]:
+        return [name for name, value in self.__dict__.items() if value is True]
+    
+    def __eq__(self, other: GuildFeatures) -> bool:
+        current = self.__dict__
+        other = other.__dict__
+        
+        all_keys = set(current.keys()) | set(other.keys())
+        
+        for key in all_keys:
+            try:
+                current_value = current[key]
+            except KeyError:
+                if other[key] is True:
+                    return False
+            else:
+                try:
+                    other_value = other[key]
+                except KeyError:
+                    pass
+                else:
+                    if current_value != other_value:
+                        return False
+        
+        return True
+    
+    def __ne__(self, other: GuildFeatures) -> bool:
+        return not self.__eq__(other)
 
 
 class Guild(Hashable):
@@ -1486,6 +1613,7 @@ class Guild(Hashable):
             self,
             name: str = MISSING,
             description: str = MISSING,
+            features: GuildFeatures = MISSING,
             icon: Optional[bytes] = MISSING,
             banner: Optional[bytes] = MISSING,
             splash: Optional[bytes] = MISSING,
@@ -1523,6 +1651,10 @@ class Guild(Hashable):
         description: :class:`str`
             The new description of the guild. This is only available to guilds that
             contain ``PUBLIC`` in :attr:`Guild.features`.
+        features: :class:`GuildFeatures`
+            Features to enable/disable will be merged in to the current features.
+            See the `discord api documentation <https://discord.com/developers/docs/resources/guild#guild-object-mutable-guild-features>`_
+            for a list of currently mutable features and the required permissions.
         icon: :class:`bytes`
             A :term:`py:bytes-like object` representing the icon. Only PNG/JPEG is supported.
             GIF is only available to guilds that contain ``ANIMATED_ICON`` in :attr:`Guild.features`.
@@ -1604,6 +1736,10 @@ class Guild(Hashable):
         
         if splash is not MISSING:
             fields['splash'] = utils._bytes_to_base64_data(splash)
+        
+        if features is not MISSING:
+            current_features = GuildFeatures(self.features)
+            fields['features'] = current_features.merge(features)
         
         if discovery_splash is not MISSING:
             fields['discovery_splash'] = utils._bytes_to_base64_data(discovery_splash)
@@ -3154,7 +3290,7 @@ class Guild(Hashable):
         if cover_image:
             if not isinstance(cover_image, bytes):
                 raise ValueError(f'cover_image must be of type bytes, not {cover_image.__class__.__name__}')
-            as_base64 = _bytes_to_base64_data(cover_image)
+            as_base64 = utils._bytes_to_base64_data(cover_image)
             fields['image'] = as_base64
 
         data = await self._state.http.create_guild_event(guild_id=self.id, fields=fields, reason=reason)

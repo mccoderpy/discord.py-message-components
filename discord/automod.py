@@ -70,31 +70,66 @@ class AutoModAction:
     """
     Represents an action which will execute whenever a rule is triggered.
 
-    Parameters
+    Attributes
     -----------
     type: :class:`AutoModActionType`
         The type of action
-    channel_id: Optional[:class:`int`]
-        The channel to which user content should be logged.
+    channel_id: :class:`int`
+        The channel to which target user content should be logged.
 
         .. note::
-            This field is only required :attr:`~AutoModAction.type` is :attr:~`AutoModActionType.send_alert_message`
-
-    timeout_duration: Optional[Union[:class:`int`, :class:`datetime.timedelta`]]
-        Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the user should be timeouted.
+            This field is only present if :attr:`~AutoModAction.type` is :attr:`~AutoModActionType.send_alert_message`
+        
+    timeout_duration: Union[:class:`int`, :class:`~datetime.timedelta`]
+        Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the target user should be timeouted.
 
         **The maximum value is** ``2419200`` **seconds (4 weeks)**
 
         .. note::
-           This field is only required if :attr:`type` is :attr:`AutoModActionType.timeout_user`
+           This field is only present if :attr:`~AutoModAction.type` is :attr:`~AutoModActionType.timeout_user`
     
     custom_message: Optional[:class:`str`]
-        Additional explanation that will be shown to members whenever their message is blocked. **Max 150 characters**
+        Additional explanation that will be shown to target users whenever their message is blocked. **Max 150 characters**
         
         .. note::
-            This field is only allowed if :attr:`type` is :attr:`AutoModActionType.block_message`
+            This field might only be present if :attr:`~AutoModAction.type` is :attr:`~AutoModActionType.block_message`
     """
     def __init__(self, type: AutoModActionType, **metadata):
+        """
+        
+        Parameters
+        -----------
+        type: :class:`AutoModActionType`
+            The type of action
+        
+        channel_id: :class:`int`
+            The channel to which target user content should be logged.
+    
+            .. note::
+                This field is only required if :attr:`~AutoModAction.type` is :attr:`~AutoModActionType.send_alert_message`
+            
+        timeout_duration: Union[:class:`int`, :class:`datetime.timedelta`]
+            Duration in seconds (:class:`int`) or a timerange (:class:`~datetime.timedelta`) for wich the user should be timeouted.
+    
+            **The maximum value is** ``2419200`` **seconds (4 weeks)**
+    
+            .. note::
+               This field is only required if :attr:`~AutoModAction.type` is :attr:`~AutoModActionType.timeout_user`
+        
+        custom_message: Optional[:class:`str`]
+            Additional explanation that will be shown to target users whenever their message is blocked. **Max 150 characters**
+            
+            .. note::
+                This field is only allowed if :attr:`~AutoModAction.type` is :attr:`~AutoModActionType.block_message`
+        
+        Raises
+        -------
+        TypeError
+            If the type is :attr:`~AutoModActionType.send_alert_message` and no ``channel_id`` is provided,
+            or if the type is :attr:`~AutoModActionType.timeout_user` and no ``timeout_duration`` is provided.
+        ValueError
+            If the ``custom_message`` is longer than 150 characters, or if the ``timeout_duration`` is longer than 4 weeks.
+        """
         self.type: AutoModActionType = try_enum(AutoModActionType, type)
         self.metadata = metadata  # maybe we need this later... idk
         

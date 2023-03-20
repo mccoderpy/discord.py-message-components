@@ -990,7 +990,7 @@ class HTTPClient:
         r = Route('PATCH', '/guilds/{guild_id}/voice-states/{user_id}', guild_id=guild_id, user_id=user_id)
         return self.request(r, json=payload)
 
-    def edit_member(self, guild_id, user_id, *, reason=None, fields):
+    def edit_member(self, guild_id, user_id, *, reason=None, **fields):
         r = Route('PATCH', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)
         return self.request(r, json=fields, reason=reason)
 

@@ -3295,6 +3295,9 @@ Guild
     .. automethod:: audit_logs
         :async-for:
 
+.. autoclass:: GuildFeatures()
+    :members:
+
 .. class:: BanEntry
 
     A namedtuple which represents a ban returned from :meth:`~Guild.bans`.

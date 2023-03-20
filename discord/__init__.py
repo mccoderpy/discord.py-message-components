@@ -31,7 +31,7 @@ from .partial_emoji import PartialEmoji
 from .activity import *
 from .channel import *
 from .components import *
-from .guild import Guild
+from .guild import *
 from .flags import *
 from .member import Member, VoiceState
 from .message import *
