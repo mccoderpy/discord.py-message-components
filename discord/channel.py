@@ -957,7 +957,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         """:class:`ThreadMember`: Returns the thread member with the given ID, or :obj:`None` if he is not a member of the thread."""
         return self._members.get(id, None)
 
-    def permissions_for(self, member) -> Permissions:
+    def permissions_for(self, member: Member) -> Permissions:
         """Handles permission resolution for the current :class:`~discord.Member`.
 
         .. note::
@@ -1236,12 +1236,12 @@ class ThreadChannel(abc.Messageable, Hashable):
         ----------
         name: Optional[:class:`str`]
             The channel name. Must be 1-100 characters long
-        archived: Optional[:class:`bool`]
-            Whether the thread is archived
         auto_archive_duration: Optional[:class:`AutoArchiveDuration`]
             Duration in minutes to automatically archive the thread after recent activity
+        archived: Optional[:class:`bool`]
+            Whether the thread is archived
         locked: Optional[:class:`bool`]
-            Whether the thread is locked; when a thread is locked, only users with :attr:`Permissions.manage_threads` can unarchive it
+            Whether the thread is locked; when a thread is locked, only users with :attr:`Permissions.manage_threads` can unlock it
         invitable: Optional[:class:`bool`]
             Whether non-moderators can add other non-moderators to a thread; only available on private threads
         slowmode_delay: :Optional[:class:`int`]
@@ -2319,6 +2319,7 @@ class ForumPost(ThreadChannel):
             tags: Sequence[ForumTag] = MISSING,
             pinned: bool = MISSING,
             auto_archive_duration: AutoArchiveDuration = MISSING,
+            archived: bool = MISSING,
             locked: bool = MISSING,
             slowmode_delay: int = MISSING,
             reason: Optional[str] = None
@@ -2345,7 +2346,9 @@ class ForumPost(ThreadChannel):
             after ``auto_archive_duration`` minutes of inactivity.
         locked: :class:`bool`
             Whether the post is locked;
-            when a post is locked, only users with :func:~Permissions.manage_threads` permissions can unarchive it
+            when a post is locked, only users with :func:~Permissions.manage_threads` permissions can unlock it
+        archived: :class:`bool`
+            Whether the post is archived.
         slowmode_delay: Optional[:class:`str`]
             Amount of seconds a user has to wait before sending another message (0-21600);
             bots, as well as users with the permission manage_messages, manage_thread, or manage_channel, are unaffected
@@ -2371,7 +2374,10 @@ class ForumPost(ThreadChannel):
                 raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
             else:
                 payload['auto_archive_duration'] = auto_archive_duration.value
-
+        
+        if archived is not MISSING:
+            payload['archived'] = archived
+        
         if locked is not MISSING:
             payload['locked'] = locked
 
