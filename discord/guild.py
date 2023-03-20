@@ -167,7 +167,7 @@ class GuildFeatures(Iterable[str], dict):
         
             Returns an iterator over the enabled features.
     """
-    def __init__(self, /, initial: List[str], **features: bool):
+    def __init__(self, /, initial: List[str] = [], **features: bool):
         """
         Parameters
         -----------
