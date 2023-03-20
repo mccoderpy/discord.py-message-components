@@ -1749,7 +1749,7 @@ class Guild(Hashable):
         
         if features is not MISSING:
             current_features = GuildFeatures(self.features)
-            fields['features'] = current_features.merge(features)
+            fields['features'] = current_features.merge(features).parsed()
         
         if discovery_splash is not MISSING:
             fields['discovery_splash'] = utils._bytes_to_base64_data(discovery_splash)
