@@ -188,6 +188,7 @@ class AuditLogChanges:
 
         setattr(second, 'roles', data)
 
+
 class AuditLogEntry(Hashable):
     r"""Represents an Audit Log entry.
 

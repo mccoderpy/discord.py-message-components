@@ -41,6 +41,7 @@ from typing import Union, Callable, TYPE_CHECKING
 
 from .guild import Guild
 from .activity import BaseActivity
+from .audit_logs import AuditLogEntry
 from .scheduled_event import GuildScheduledEvent
 from .user import User, ClientUser
 from .emoji import Emoji
@@ -1330,7 +1331,15 @@ class ConnectionState:
             self.dispatch('automod_action', payload)
         else:
             log.debug('AUTO_MODERATION_ACTION_EXECUTION referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
-
+    
+    def parse_guild_audit_log_entry_create(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            entry = AuditLogEntry(guild=guild, data=data, users=self._users)
+            self.dispatch('audit_log_entry_create', guild, entry)
+        else:
+            log.debug('GUILD_AUDIT_LOG_ENTRY_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+    
     def _get_reaction_user(self, channel, user_id):
         if isinstance(channel, TextChannel):
             return channel.guild.get_member(user_id)

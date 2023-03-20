@@ -303,6 +303,20 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param exception: The exception that was raised
     :type exception: :class:`Exception`
 
+.. function:: on_audit_log_entry_create(guild, entry)
+
+    Called whenever a guild audit log entry is created.
+
+    .. note::
+        This event is only sent to bots with the :attr:`~Permissions.view_audit_log` permission.
+
+    .. versionadded:: 2.0
+
+    :param guild: The guild that the audit log entry was created in.
+    :type guild: :class:`Guild`
+    :param entry: The audit log entry that was created.
+    :type entry: :class:`AuditLogEntry`
+
 .. function:: on_socket_raw_receive(msg)
 
     Called whenever a message is received from the WebSocket, before

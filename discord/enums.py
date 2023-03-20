@@ -23,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import types
 from typing import Union, Any, Type
@@ -79,12 +80,14 @@ __all__ = (
 )
 
 
-def _create_value_cls(name):
+def _create_value_cls(name) -> Type[tuple]:
     cls = namedtuple(f'_EnumValue_' + name, 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
     cls.__str__ = lambda self: '%s.%s' % (name, self.name)
 
     def __getattribute__(self, n) -> Union[bool, Any]:
+        # With this you can use something like some_channel.type.text to check if it is of this type
+        # It is similar to "some_channel.type == ChannelType.text"
         if n in dir(cls):
             return super(cls, self).__getattribute__(n)
         else:
@@ -92,9 +95,7 @@ def _create_value_cls(name):
                 return self.name == n
             else:
                 raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
-
-    # With this you can use something like some_channel.type.text to check if it is of this type
-    # It is similar to "some_channel.type == ChannelType.text"
+            
     cls.__getattribute__ = __getattribute__
     return cls
 
@@ -104,7 +105,7 @@ def _is_descriptor(obj):
 
 
 class EnumMeta(type):
-    def __new__(cls, name, bases, attrs):
+    def __new__(mcs, name, bases, attrs):
         value_mapping = {}
         member_mapping = {}
         member_names = []
@@ -127,45 +128,44 @@ class EnumMeta(type):
             try:
                 new_value = value_mapping[value]
             except KeyError:
-                new_value = value_cls(name=key, value=value)
+                new_value = value_cls(name=key, value=value)  # type: ignore
                 value_mapping[value] = new_value
                 member_names.append(key)
 
             member_mapping[key] = new_value
             attrs[key] = new_value
 
-
         attrs['_enum_value_map_'] = value_mapping
         attrs['_enum_member_map_'] = member_mapping
         attrs['_enum_member_names_'] = member_names
-        actual_cls = super().__new__(cls, name, bases, attrs)
+        actual_cls = super().__new__(mcs, name, bases, attrs)
         value_cls._actual_enum_cls_ = actual_cls
         return actual_cls
 
     def __iter__(cls):
-        return (cls._enum_member_map_[name] for name in cls._enum_member_names_)
+        return (cls._enum_member_map_[name] for name in cls._enum_member_names_)  # type: ignore
 
     def __reversed__(cls):
-        return (cls._enum_member_map_[name] for name in reversed(cls._enum_member_names_))
+        return (cls._enum_member_map_[name] for name in reversed(cls._enum_member_names_))  # type: ignore
 
     def __len__(cls):
-        return len(cls._enum_member_names_)
+        return len(cls._enum_member_names_)  # type: ignore
 
     def __repr__(cls):
         return '<enum %r>' % cls.__name__
 
     @property
     def __members__(cls):
-        return types.MappingProxyType(cls._enum_member_map_)
+        return types.MappingProxyType(cls._enum_member_map_)  # type: ignore
 
     def __call__(cls, value):
         try:
-            return cls._enum_value_map_[value]
+            return cls._enum_value_map_[value]  # type: ignore
         except (KeyError, TypeError):
             raise ValueError("%r is not a valid %s" % (value, cls.__name__))
 
     def __getitem__(cls, key):
-        return cls._enum_member_map_[key]
+        return cls._enum_member_map_[key]  # type: ignore
 
     def __setattr__(cls, name, value):
         raise TypeError('Enums are immutable.')
@@ -177,7 +177,7 @@ class EnumMeta(type):
         # isinstance(x, Y)
         # -> __instancecheck__(Y, x)
         try:
-            return instance._actual_enum_cls_ is self
+            return instance._actual_enum_cls_ is self  # type: ignore
         except AttributeError:
             return False
 
@@ -186,7 +186,7 @@ class Enum(metaclass=EnumMeta):
     @classmethod
     def try_value(cls, value):
         try:
-            return cls._enum_value_map_[value]
+            return cls._enum_value_map_[value]  # type: ignore
         except (KeyError, TypeError):
             return value
 
