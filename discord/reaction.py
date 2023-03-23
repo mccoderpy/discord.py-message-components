@@ -23,13 +23,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
+
+if TYPE_CHECKING:
+    from .types.message import Reaction as ReactionPayload
+    from .message import Message
+    from .emoji import Emoji
+    from .partial_emoji import PartialEmoji
+    from .abc import Snowflake
 
 from .iterators import ReactionIterator
+
 
 class Reaction:
     """Represents a reaction to a message.
 
-    Depending on the way this object was created, some of the attributes can
+    Depending on the way this object was created, some attributes can
     have a value of ``None``.
 
     .. container:: operations
@@ -55,7 +70,7 @@ class Reaction:
     Attributes
     -----------
     emoji: Union[:class:`Emoji`, :class:`PartialEmoji`, :class:`str`]
-        The reaction emoji. May be a custom emoji, or a unicode emoji.
+        The reaction emoji. Might be a custom emoji, or a unicode emoji.
     count: :class:`int`
         Number of times this reaction was made
     me: :class:`bool`
@@ -65,35 +80,35 @@ class Reaction:
     """
     __slots__ = ('message', 'count', 'emoji', 'me')
 
-    def __init__(self, *, message, data, emoji=None):
-        self.message = message
-        self.emoji = emoji or message._state.get_reaction_emoji(data['emoji'])
-        self.count = data.get('count', 1)
-        self.me = data.get('me')
+    def __init__(self, *, message: Message, data: ReactionPayload, emoji: Optional[Union[Emoji, PartialEmoji, str]] = None):
+        self.message: Message = message
+        self.emoji: Union[Emoji, PartialEmoji, str] = emoji or message._state.get_reaction_emoji(data['emoji'])
+        self.count: int = data.get('count', 1)
+        self.me: bool = data.get('me')
 
     @property
-    def custom_emoji(self):
+    def custom_emoji(self) -> bool:
         """:class:`bool`: If this is a custom emoji."""
         return not isinstance(self.emoji, str)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, self.__class__) and other.emoji == self.emoji
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         if isinstance(other, self.__class__):
             return other.emoji != self.emoji
         return True
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.emoji)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.emoji)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<Reaction emoji={0.emoji!r} me={0.me} count={0.count}>'.format(self)
 
-    async def remove(self, user):
+    async def remove(self, user: Snowflake) -> None:
         """|coro|
 
         Remove the reaction by the provided :class:`User` from the message.
@@ -121,7 +136,7 @@ class Reaction:
 
         await self.message.remove_reaction(self.emoji, user)
 
-    async def clear(self):
+    async def clear(self) -> None:
         """|coro|
 
         Clears this reaction from the message.
@@ -143,7 +158,7 @@ class Reaction:
         """
         await self.message.clear_reaction(self.emoji)
 
-    def users(self, limit=None, after=None):
+    def users(self, limit: Optional[int] = None, after: Optional[Snowflake] = None) -> ReactionIterator:
         """Returns an :class:`AsyncIterator` representing the users that have reacted to the message.
 
         The ``after`` parameter must represent a member
