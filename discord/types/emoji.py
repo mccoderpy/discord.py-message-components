@@ -38,8 +38,15 @@ from .snowflake import SnowflakeID, SnowflakeList
 from .user import BaseUser
 
 __all__ = (
+    'PartialEmoji',
     'BaseEmoji',
 )
+
+
+class PartialEmoji(TypedDict):
+    id: Optional[SnowflakeID]  # The ID of the emoji
+    name: Optional[str]        # The emoji name
+    animated: NotRequired[bool]  # Whether this emoji is animated
 
 
 class BaseEmoji(TypedDict):
