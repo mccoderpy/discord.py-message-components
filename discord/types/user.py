@@ -41,6 +41,7 @@ __all__ = (
     'BaseUser',
     'User',
     'ClientUser',
+    'WebhookUser',
     'PartialMember',
     'Member',
     'MemberWithUser',
@@ -71,6 +72,12 @@ class ClientUser(User, total=False):
     flags: NotRequired[int]
     # There are some other fields, but they are not usable by bots so empty
 
+
+class WebhookUser(TypedDict):
+    id: SnowflakeID
+    username: str
+    avatar: Optional[str]
+    
 
 class PartialMember(TypedDict):
     roles: SnowflakeList
