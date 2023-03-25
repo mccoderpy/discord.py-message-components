@@ -137,12 +137,13 @@ class AutoModAction:
         
         if action_type.block_message:
             try:
-                self.custom_message: Optional[str] = metadata['custom_message']
+                custom_message: Optional[str] = metadata['custom_message']
             except KeyError:
                 pass
             else:
-                if len(self.custom_message) > 150:
+                if len(custom_message) > 150:
                     raise ValueError('The maximum length of the custom message is 150 characters.')
+                self.custom_message: Optional[str] = custom_message
             
         elif action_type.send_alert_message:
             try:
