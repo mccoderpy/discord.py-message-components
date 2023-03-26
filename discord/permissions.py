@@ -150,7 +150,7 @@ class Permissions(BaseFlags):
         """A factory method that creates a :class:`Permissions` with all
         permissions set to ``True``.
         """
-        return cls(0b10011110111111111111111111111111111111111)
+        return cls(0b1111111111111111111111111111111111111111111)
 
     @classmethod
     def all_channel(cls):
@@ -197,7 +197,7 @@ class Permissions(BaseFlags):
 
         .. versionadded:: 1.7
         """
-        return cls(0b00001100000000000000000000000111)
+        return cls(0b10000000000001100000000000000000000000111)
 
     @classmethod
     def text(cls):
@@ -208,13 +208,13 @@ class Permissions(BaseFlags):
            Permission :attr:`read_messages` is no longer part of the text permissions.
            Added :attr:`use_slash_commands` permission.
         """
-        return cls(0b10000000000001111111100001000000)
+        return cls(0b11110010000000000001111111100001000000)
 
     @classmethod
     def voice(cls):
         """A factory method that creates a :class:`Permissions` with all
         "Voice" permissions from the official Discord UI set to ``True``."""
-        return cls(0b00000011111100000000001100000000)
+        return cls(0b1000000000000000011111100000000001100000000)
 
     @classmethod
     def stage(cls):
@@ -463,22 +463,52 @@ class Permissions(BaseFlags):
     def manage_webhooks(self):
         """:class:`bool`: Returns ``True`` if a user can create, edit, or delete webhooks."""
         return 1 << 29
-
+    
     @flag_value
+    def manage_expressions(self):
+        """:class:`bool`: Returns ``True`` if a user can create, edit, or delete emojis, stickers and sounds."""
+        return 1 << 30
+    
+    @make_permission_alias('manage_expressions')
     def manage_emojis(self):
-        """:class:`bool`: Returns ``True`` if a user can create, edit, or delete emojis and stickers."""
+        """:class:`bool`: An aliase for :attr:`manage_expressions`"""
         return 1 << 30
-
-    @make_permission_alias('manage_emojis')
-    def manage_emojis_and_stickers(self):
-        """:class:`bool`: An aliase for :attr:`manage_emojis`"""
-        return 1 << 30
-
-    @make_permission_alias('manage_emojis')
+    
+    @make_permission_alias('manage_expressions')
     def manage_stickers(self):
-        """:class:`bool`: An aliase for :attr:`manage_emojis`"""
+        """:class:`bool`: An aliase for :attr:`manage_expressions`"""
         return 1 << 30
-
+    
+    @make_permission_alias('manage_expressions')
+    def manage_emojis_and_stickers(self):
+        """:class:`bool`: An aliase for :attr:`manage_expressions`"""
+        return 1 << 30
+    
+    @make_permission_alias('manage_expressions')
+    def manage_sounds(self):
+        """:class:`bool`: An aliase for :attr:`manage_expressions`"""
+        return 1 << 30
+    
+    @flag_value
+    def create_expressions(self):
+        """:class:`bool`: Returns ``True`` if a user can create emojis, stickers or `sounds <https://support.discord.com/hc/de/articles/12612888127767-Soundboard-FAQ>`_ in a server."""
+        return 1 << 43
+    
+    @make_permission_alias('create_expressions')
+    def create_emojis(self):
+        """:class:`bool`: An aliase for :attr:`create_expressions`"""
+        return 1 << 43
+    
+    @make_permission_alias('create_expressions')
+    def create_stickers(self):
+        """:class:`bool`: An aliase for :attr:`create_expressions`"""
+        return 1 << 43
+    
+    @make_permission_alias('create_expressions')
+    def create_sounds(self):
+        """:class:`bool`: An aliase for :attr:`create_expressions`"""
+        return 1 << 43
+    
     @flag_value
     def use_slash_commands(self):
         """:class:`bool`: Returns ``True`` if a user can use slash commands and context-menu commands.
@@ -502,8 +532,13 @@ class Permissions(BaseFlags):
 
     @flag_value
     def manage_events(self):
-        """:class:`bool`: Returns ``True`` if a user can manage Guild_Scheduled-Events."""
+        """:class:`bool`: Returns ``True`` if a user can create and manage Guild-Scheduled-Events."""
         return 1 << 33
+    
+    @flag_value
+    def create_events(self):
+        """:class:`bool`: Returns ``True`` if a user can create Guild-Scheduled-Events."""
+        return 1 << 44
 
     @flag_value
     def manage_threads(self):
@@ -555,6 +590,16 @@ class Permissions(BaseFlags):
     def timeout_members(self):
         """:class:`bool`: An alias for :attr:`moderate_members`."""
         return 1 << 40
+    
+    @flag_value
+    def view_creator_monetization_analytics(self):
+        """:class:`bool`: Returns ``True`` if a user can view analytics for monetization of their content."""
+        return 1 << 41
+    
+    @flag_value
+    def use_soundboard(self):
+        """:class:`bool`: Returns ``True`` if a user can use the soundboard in a voice channel."""
+        return 1 << 42
 
 
 def augment_from_permissions(cls):
