@@ -31,6 +31,7 @@ from typing import (
     Dict,
     List,
     Union,
+    Type,
     Tuple,
     Iterable,
     Awaitable,
@@ -85,6 +86,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar('T')
+R = TypeVar('R')
 _Iterable = TypeVar('_Iterable', bound=Iterable)
 MaybeAwaitable = Union[Awaitable[T], T]
 
@@ -173,11 +175,11 @@ SupportsStr = Union[str, _SupportsStr]
 
 
 class cached_property:
-    def __init__(self, function: Callable):
-        self.function: Callable = function
+    def __init__(self, function: Callable[..., T]) -> None:
+        self.function: Callable[..., T] = function
         self.__doc__ = getattr(function, '__doc__')
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: Any, owner: Type[Any]) -> T:
         if instance is None:
             return self
 
@@ -185,15 +187,18 @@ class cached_property:
         setattr(instance, self.function.__name__, value)
 
         return value
+    
+    def __class_getitem__(cls, key: T) -> T:
+        return cls
 
 
 class CachedSlotProperty:
-    def __init__(self, name: str, function: Callable):
+    def __init__(self, name: str, function: Callable[..., T]) -> None:
         self.name: str = name
-        self.function: Callable = function
+        self.function = function
         self.__doc__ = getattr(function, '__doc__')
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: Any, owner: Type[Any]) -> T:
         if instance is None:
             return self
 
@@ -205,10 +210,10 @@ class CachedSlotProperty:
             return value
 
 
-def cached_slot_property(name: str) -> Callable[[T], CachedSlotProperty]:
-    def decorator(func: Callable) -> CachedSlotProperty:
+def cached_slot_property(name: str) -> Callable[[Callable[..., T]], T]:
+    def decorator(func: Callable[..., T]) -> T:
         return CachedSlotProperty(name, func)
-
+    
     return decorator
 
 

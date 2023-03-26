@@ -32,7 +32,7 @@ from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Union)
 from typing_extensions import Literal
 
 from . import abc, utils
-from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel
+from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel, ForumPost
 from .components import *
 from .embeds import Embed
 from .enums import (
@@ -59,6 +59,12 @@ from .user import User
 
 if TYPE_CHECKING:
     import datetime
+    from .types.interaction import (
+        Interaction as InteractionPayload,
+        InteractionData as InteractionDataPayload,
+        ApplicationCommandInteractionDataOption as ApplicationCommandInteractionDataOptionPayload,
+        ResolvedData as ResolvedDataPayload
+    )
     from .state import ConnectionState
     from .components import BaseSelect
     from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
@@ -436,16 +442,15 @@ class BaseInteraction:
     `Discord-API <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object>`_
     """
 
-    def __init__(self, state, data):
-        self._data = data
+    def __init__(self, state: ConnectionState, data: InteractionPayload) -> None:
         self._state: ConnectionState = state
         self._http: HTTPClient = state.http
         self.type: InteractionType = InteractionType.try_value(data['type'])
         self._application_id = int(data.get('application_id'))
-        self.id = int(data['id'])
+        self.id: int = int(data['id'])
         self._token = data['token']
-        self.guild_id = int(data.get('guild_id', 0))
-        self.channel_id = int(data.get('channel_id', 0))
+        self.guild_id: int = utils._get_as_snowflake(data, 'guild_id')
+        self.channel_id: int = int(data.get('channel_id', 0))
         message_data = data.get('message', {})
         if message_data:
             if MessageFlags._from_value(message_data['flags']).ephemeral:
@@ -454,18 +459,18 @@ class BaseInteraction:
                 self.message = Message(state=state, channel=self.channel, data=message_data)
             self.cached_message = self.message and self._state._get_message(self.message.id)
             self.message_id = self.message.id
-        self.data = InteractionData(
+        self.data: InteractionData = InteractionData(
             data=data.get('data', None),
             state=state,
             guild=self.guild,
             channel_id=self.channel_id
         )
-        self._member = data.get('member', None)
-        self._user = data.get('user', self._member.get('user', None) if self._member else None)
-        self.user_id = int(self._user['id'])
+        self._member = data.get('member')
+        self._user = data.get('user', self._member.get('user') if self._member else None)
+        self.user_id: int = int(self._user['id'])
         self.author_locale: Locale = try_enum(Locale, data['locale'])
-        self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale', None))
-        app_permissions = data.get('app_permissions', None)
+        self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale'))
+        app_permissions = data.get('app_permissions')
         if app_permissions:
             self.app_permissions: Optional[Permissions] = Permissions(int(app_permissions))
         else:
@@ -473,15 +478,15 @@ class BaseInteraction:
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
-        self.deferred = False
-        self.deferred_hidden = False
-        self.deferred_modal = False
+        self.deferred: bool = False
+        self.deferred_hidden: bool = False
+        self.deferred_modal: bool = False
         self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
         self.messages: Optional[Dict[int, Union[Message, EphemeralMessage]]] = {}
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represents a :class:`~discord.BaseInteraction` object."""
         return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
 
@@ -943,7 +948,7 @@ class BaseInteraction:
         return self.messages.get(id, None)
 
     @property
-    def created_at(self) -> 'datetime.datetime':
+    def created_at(self) -> datetime.datetime:
         """
         Returns the Interaction’s creation time in UTC.
 
@@ -961,7 +966,7 @@ class BaseInteraction:
         return self.member if self.member is not None else self.user
 
     @property
-    def channel(self) -> Union[DMChannel, TextChannel, ThreadChannel, VoiceChannel]:
+    def channel(self) -> Union[DMChannel, TextChannel, ThreadChannel, ForumPost, VoiceChannel]:
         """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`]:
         The channel where the interaction was invoked in.
         """
@@ -992,7 +997,7 @@ class BaseInteraction:
         return self._state._get_client()
 
     @classmethod
-    def from_type(cls, state, data):
+    def from_type(cls, state: ConnectionState, data: InteractionPayload) -> Union[ApplicationCommandInteraction, ComponentInteraction, AutocompleteInteraction, ModalSubmitInteraction]:
         type = try_enum(InteractionType, data['type'])
         if type == InteractionType.ApplicationCommand:
             return ApplicationCommandInteraction(state=state, data=data)
@@ -1232,12 +1237,12 @@ class ModalSubmitInteraction(BaseInteraction):
 
 
 class InteractionData:
-    def __init__(self, *, state, data, guild=None, **kwargs):
+    def __init__(self, *, state: ConnectionState, data: InteractionDataPayload, guild: Optional[Guild] = None, **kwargs) -> None:
         self._data = data
         self._state: ConnectionState = state
-        self._guild = guild
+        self._guild: Optional[Guild] = guild
         self._channel_id = kwargs.pop('channel_id', None)
-        resolved = data.get('resolved', None)
+        resolved = data.get('resolved')
         if resolved:
             self.resolved = ResolvedData(state=state, data=resolved, guild=guild, channel_id=self._channel_id)
         options = self._data.get('options', [])
@@ -1247,11 +1252,11 @@ class InteractionData:
         return getattr(self, item, NotImplemented)
 
     @property
-    def name(self):
+    def name(self) -> Optional[str]:
         return self._data.get('name', None)
 
     @property
-    def id(self):
+    def id(self) -> int:
         return int(self._data.get('id', 0))
 
     @property
@@ -1259,23 +1264,23 @@ class InteractionData:
         return try_enum(ApplicationCommandType, self._data.get('type', None))
 
     @property
-    def component_type(self):
+    def component_type(self) -> Optional[ComponentType]:
         return ComponentType.try_value(self._data.get('component_type', None))
 
     @property
-    def custom_id(self):
+    def custom_id(self) -> Optional[str]:
         return self._data.get('custom_id', None)
 
     @property
-    def target_id(self):
-        return int(self._data.get('target_id', 0))
+    def target_id(self) -> Optional[int]:
+        return utils._get_as_snowflake(self._data, 'target_id')
 
     @property
-    def values(self):
+    def values(self) -> List[Union[str, int, float]]:
         return self._data.get('values', [])
 
     @property
-    def components(self):
+    def components(self) -> Optional[List[ActionRow]]:
         c = self._data.get('components', None)
         if c:
             return [ActionRow.from_dict(a) for a in c]
@@ -1319,10 +1324,17 @@ class InteractionDataOption:
 
     """
 
-    def __init__(self, *, state, data, guild=None, **kwargs):
+    def __init__(
+            self,
+            *,
+            state: ConnectionState,
+            data: ApplicationCommandInteractionDataOptionPayload,
+            guild: Optional[Guild] = None,
+            **kwargs
+    ) -> None:
         self._state: ConnectionState = state
         self._data = data
-        self._guild = guild
+        self._guild: Optional[Guild] = guild
         self._channel_id = kwargs.pop('channel_id', None)
         self.name: str = data['name']
         self.type: OptionType = OptionType.try_value(data['type'])
@@ -1355,7 +1367,7 @@ class InteractionDataOption:
 
 
 class ResolvedData:
-    def __init__(self, *, state, data, guild=None, **kwargs):
+    def __init__(self, *, state: ConnectionState, data: ResolvedDataPayload, guild: Optional[Guild] = None, **kwargs) -> None:
         self._state: ConnectionState = state
         self._data = data
         self._guild: Guild = guild

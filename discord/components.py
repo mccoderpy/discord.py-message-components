@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from . import utils, abc
-from .enums import ComponentType, ButtonStyle, TextInputStyle, ChannelType
+from .enums import try_enum, ComponentType, ButtonStyle, TextInputStyle, ChannelType
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, URLAndCustomIDNotAlowed
@@ -36,22 +36,37 @@ from typing import (
     Any,
     Iterator,
     Union,
+    Type,
     Tuple,
     List,
     Dict,
     Optional,
     Callable,
+    TypeVar,
     TYPE_CHECKING,
 )
 
-from typing_extensions import Literal
+from typing_extensions import Literal, Self
 
 if TYPE_CHECKING:
+    from typing_extensions import ParamSpec
+    from .types.message import (
+        MessageComponent as Component,
+        ActionRow as ActionRowPayload,
+        Button as ButtonPayload,
+        SelectMenu as SelectMenuPayload,
+        SelectOption as SelectOptionPayload,
+        TextInput as TextInputPayload,
+        Modal as ModalPayload
+    )
     from .role import Role
     from .user import User
     from .member import Member
     from .abc import GuildChannel, Messageable
     from .interactions import ComponentInteraction
+    
+    P = ParamSpec('P')
+
 
 __all__ = (
     'ActionRow',
@@ -66,6 +81,7 @@ __all__ = (
     'Modal'
 )
 
+T = TypeVar('T')
 
 class BaseComponent:
     """
@@ -141,7 +157,7 @@ class Button(BaseComponent):
 
     def __init__(
             self,
-            label: str = None,
+            label: Optional[str] = None,
             custom_id: Optional[Union[str, int]] = None,
             style: Union[ButtonStyle, int] = ButtonStyle.grey,
             emoji: Union[PartialEmoji, Emoji, str] = None,
@@ -165,7 +181,7 @@ class Button(BaseComponent):
             An URL for the button if it is of type :attr:`ButtonStyle.url`
         """
         super().__init__(custom_id=custom_id, disabled=disabled)
-        self.style = style
+        self.style: ButtonStyle = try_enum(ButtonStyle, style)
         if not emoji and not label:
             raise InvalidArgument('A button must have at least one of label or emoji set')
         elif self.style.url and not url:
@@ -177,7 +193,7 @@ class Button(BaseComponent):
         elif not url and custom_id is None:
             raise InvalidArgument('A custom_id must be specified for non-url buttons')
         self.url: Optional[str] = url
-        self.label = label
+        self.label: str = label
         self.emoji = emoji
 
     def __repr__(self) -> str:
@@ -281,7 +297,7 @@ class Button(BaseComponent):
         return self
 
     @utils.deprecated('custom_id setter')
-    def set_custom_id(self, custom_id: Union[str, int]):
+    def set_custom_id(self: Self, custom_id: Union[str, int]) -> Self:
         """
         Sets the custom_id of the :class:`Button`
 
@@ -304,7 +320,7 @@ class Button(BaseComponent):
             self.custom_id = custom_id
         return self
 
-    def disable_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any):
+    def disable_if(self: Self, check: Union[bool, Callable[[P, ...], bool]], *args: P.args, **kwargs: P.kwargs) -> Self:
         """
         Disables the :class:`~discord.Button` if the passed ``check`` returns :obj:`True` and return itself.
 
@@ -334,7 +350,7 @@ class Button(BaseComponent):
             self.disabled = True
         return self
 
-    def set_style_if(self, check: Union[bool, Callable[[Any, ...], bool]], style: ButtonStyle, *args, **kwargs):
+    def set_style_if(self: Self, check: Union[bool, Callable[P, bool]], style: ButtonStyle, *args: P.args, **kwargs: P.kwargs) -> Self:
         """
         Sets the style of the :class:`~discord.Button` to the specified one if the specified ``check`` returns :obj:`True`.
 
@@ -366,7 +382,7 @@ class Button(BaseComponent):
             self.style = style
         return self
 
-    def to_dict(self):
+    def to_dict(self) -> ButtonPayload:
         base = {
             'type': 2,
             'label': self.label,
@@ -382,17 +398,12 @@ class Button(BaseComponent):
         return base
 
     @classmethod
-    def from_dict(cls, data: dict):
-        style = data.get('style', None)
-        label = data.get('label', None)
-        emoji = data.get('emoji')
-        custom_id = data.get('custom_id', None)
-        url = data.get('url', None)
-        disabled = data.get('disabled', None)
+    def from_dict(cls, data: ButtonPayload) -> Button:
+        emoji = data.pop('emoji')
 
         if emoji and isinstance(emoji, dict):
             emoji = PartialEmoji.from_dict(emoji)
-        return cls(style=style, label=label, emoji=emoji, custom_id=custom_id, url=url, disabled=disabled)
+        return cls(emoji=emoji, **data)
 
 
 class SelectOption:
@@ -417,32 +428,35 @@ class SelectOption:
     :exc:`ValueError`
         One of ``label``, ``value`` or ``description`` is too long.
     """
-    def __init__(self, label: str,
-                 value: str,
-                 description: str = None,
-                 emoji: Union[PartialEmoji, Emoji, str] = None,
-                 default: bool = False):
+    def __init__(
+            self,
+            label: str,
+            value: str,
+            description: Optional[str] = None,
+            emoji: Union[PartialEmoji, Emoji, str] = None,
+            default: bool = False
+    ) -> None:
         if len(label) > 100:
             raise ValueError('The maximum length of the label is 100 characters.')
-        self.label = label
+        self.label: str = label
         if len(value) > 100:
             raise ValueError('The maximum length of the value is 100 characters.')
-        self.value = value
+        self.value: str = value
         if description and len(description) > 100:
             raise ValueError('The maximum length of the description is 100 characters.')
-        self.description = description
+        self.description: Optional[str] = description
         if isinstance(emoji, PartialEmoji):
             self.emoji = emoji
         elif isinstance(emoji, Emoji):
-            self.emoji = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
+            self.emoji: Optional[PartialEmoji] = PartialEmoji(name=emoji.name, animated=emoji.animated, id=emoji.id)
         elif isinstance(emoji, str):
             if emoji[0] == '<':
-                self.emoji = PartialEmoji.from_string(emoji)
+                self.emoji: Optional[PartialEmoji] = PartialEmoji.from_string(emoji)
             else:
-                self.emoji = PartialEmoji(name=emoji)
+                self.emoji: Optional[PartialEmoji] = PartialEmoji(name=emoji)
         else:
             self.emoji = None
-        self.default = default
+        self.default: bool = default
 
     def __repr__(self):
         return f'<SelectOption {", ".join(["%s=%s" % (k, v) for (k, v) in self.__dict__.items()])}>'
@@ -451,7 +465,7 @@ class SelectOption:
         self.default = value
         return self
 
-    def to_dict(self):
+    def to_dict(self) -> SelectOptionPayload:
         base = {
             'label': str(self.label),
             'value': str(self.value),
@@ -464,15 +478,17 @@ class SelectOption:
         return base
 
     @classmethod
-    def from_dict(cls, data):
-        emoji = data.pop('emoji', None)
+    def from_dict(cls, data: SelectOptionPayload) -> SelectOption:
+        emoji = data.pop('emoji')
         if emoji:
             emoji = PartialEmoji.from_dict(emoji)
-        return cls(label=data.pop('label'),
-                   value=data.pop('value'),
-                   description=data.pop('description', None),
-                   emoji=emoji,
-                   default=data.pop('default', False))
+        return cls(
+            label=data['label'],
+            value=data['value'],
+            description=data.pop('description'),
+            emoji=emoji,
+            default=data.pop('default', False)
+        )
 
 
 class BaseSelect(BaseComponent):
@@ -488,9 +504,9 @@ class BaseSelect(BaseComponent):
             disabled: bool = False,
     ) -> None:
         super().__init__(custom_id=custom_id, disabled=disabled)
-        self.placeholder = placeholder
-        self.min_values = min_values
-        self.max_values = max_values
+        self.placeholder: Optional[str] = placeholder
+        self.min_values: int = min_values
+        self.max_values: int = max_values
 
     @property
     def placeholder(self) -> Optional[str]:
@@ -559,12 +575,12 @@ class BaseSelect(BaseComponent):
             values.append(getter(int(_id)))
         return values
 
-    def update(self, **kwargs) -> BaseSelect:
+    def update(self: Self, **kwargs) -> Self:
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
         return self
 
     @utils.deprecated('custom_id setter')
-    def set_custom_id(self, custom_id: Union[str, int]) -> BaseSelect:
+    def set_custom_id(self: Self, custom_id: Union[str, int]) -> Self:
         """
         Set the custom_id of the Select
 
@@ -581,7 +597,7 @@ class BaseSelect(BaseComponent):
         self.custom_id = custom_id
         return self
 
-    def disable_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any):
+    def disable_if(self: Self, check: Union[bool, Callable[[P, ...], bool]], *args: P.args, **kwargs: P.kwargs) -> Self:
         """
         Disables the Select if the passed ``check`` returns :obj:`True` and returns itself.
 
@@ -612,7 +628,7 @@ class BaseSelect(BaseComponent):
             self.disabled = True
         return self
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> SelectMenuPayload:
         return {
             'type': self.type.value,
             'custom_id': str(self.custom_id),
@@ -623,9 +639,9 @@ class BaseSelect(BaseComponent):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls: Type[T], data: SelectMenuPayload) -> T:
         return cls(
-            custom_id=data.pop('custom_id'),
+            custom_id=data['custom_id'],
             placeholder=data.pop('placeholder', None),
             min_values=data.pop('min_values', 1),
             max_values=data.pop('max_values', 1),
@@ -725,7 +741,7 @@ class SelectMenu(BaseSelect):
                 yield option.value
 
     @utils.cached_property
-    def values(self):
+    def values(self) -> List[Union[int, str]]:
         """
         The values of the :attr:`options` that were selected
 
@@ -758,7 +774,7 @@ class SelectMenu(BaseSelect):
         return values
 
     @utils.cached_property
-    def not_selected(self):
+    def not_selected(self) -> List[Union[int, str]]:
         """
         The options that were **not** selected
 
@@ -791,14 +807,13 @@ class SelectMenu(BaseSelect):
         return base
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data:SelectMenuPayload) -> SelectMenu:
         return cls(
-            custom_id=data.pop('custom_id'),
             options=[SelectOption.from_dict(o) for o in data.pop('options')],
-            placeholder=data.pop('placeholder', None),
             min_values=data.pop('min_values', 1),
             max_values=data.pop('max_values', 1),
-            disabled=data.pop('disabled', False)
+            disabled=data.pop('disabled', False),
+            **data
         )
 
 
@@ -822,8 +837,8 @@ class Modal:
             components: List[Union[ActionRow, List[TextInput]]]
     ) -> None:
         # TODO: Add Error handling
-        self.title = title
-        self.custom_id = custom_id
+        self.title: str = title
+        self.custom_id: str = custom_id
         _components = []
         for c in components:
             if isinstance(c, list):
@@ -833,7 +848,7 @@ class Modal:
             _components.append(c)
         self.components: List[ActionRow] = _components
 
-    def to_dict(self):
+    def to_dict(self) -> ModalPayload:
         components = []
         for a in self.components:
             components.extend(a.to_dict())
@@ -844,7 +859,7 @@ class Modal:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: ModalPayload) -> Modal:
         return cls(
             custom_id=data['custom_id'],
             title=data['title'],
@@ -855,29 +870,6 @@ class Modal:
 
 
 class TextInput(BaseComponent):
-    """
-    Represents a `TextInput <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
-
-
-    Parameters
-    ----------
-    custom_id: Optional[Union[:class:`str`, :class:`int`]]
-        A developer-defined identifier for the input, max 100 characters
-    style: Optional[Union[:class:`TextInputStyle`, :class:`int`]] = TextInputStyle.short
-        The Style of the TextInput; so single- or multi-line
-    label: :class:`str`
-        The label for this component, max 45 characters
-    min_length: Optional[:class:`int`]
-        The minimum input length for a text input, min 0, max 4000
-    max_length: Optional[:class:`int`]
-        The maximum input length for a text input, min 1, max 4000
-    required: Optional[:class:`bool`] = True
-        Whether this component is required to be filled, default True
-    value: Optional[:class:`str`]
-        A pre-filled value for this component, max 4000 characters
-    placeholder: Optional[:class:`str`]
-        Custom placeholder text if the input is empty, max 100 characters
-    """
     def __init__(
             self,
             label: str,
@@ -889,9 +881,32 @@ class TextInput(BaseComponent):
             value: Optional[str] = None,
             placeholder: Optional[str] = None
     ) -> None:
+        """
+        Represents a `TextInput <https://discord.com/developers/docs/interactions/message-components#text-inputs>`_
+
+
+        Parameters
+        ----------
+        custom_id: Optional[Union[:class:`str`, :class:`int`]]
+            A developer-defined identifier for the input, max 100 characters
+        style: Optional[Union[:class:`TextInputStyle`, :class:`int`]] = TextInputStyle.short
+            The Style of the TextInput; so single- or multi-line
+        label: :class:`str`
+            The label for this component, max 45 characters
+        min_length: Optional[:class:`int`]
+            The minimum input length for a text input, min 0, max 4000
+        max_length: Optional[:class:`int`]
+            The maximum input length for a text input, min 1, max 4000
+        required: Optional[:class:`bool`] = True
+            Whether this component is required to be filled, default True
+        value: Optional[:class:`str`]
+            A pre-filled value for this component, max 4000 characters
+        placeholder: Optional[:class:`str`]
+            Custom placeholder text if the input is empty, max 100 characters
+        """
         super().__init__(custom_id=custom_id)
         self.label: Optional[str] = label
-        self.style: Union[TextInputStyle, Literal[1, 2]] = style
+        self.style: Union[TextInputStyle, Literal[1, 2]] = try_enum(TextInputStyle, style)
         self.min_length: Optional[int] = min_length
         self.max_length: Optional[int] = max_length
         self.required: bool = required
@@ -908,7 +923,7 @@ class TextInput(BaseComponent):
     def type(self) -> ComponentType:
         return ComponentType.TextInput
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> TextInputPayload:
         return {
             'type': 4,
             'label': self.label,
@@ -922,11 +937,11 @@ class TextInput(BaseComponent):
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: TextInputPayload) -> TextInput:
         new = cls.__new__(cls)
         for attr in ('label', 'custom_id', 'style', 'min_length', 'max_length', 'required', 'value', 'placeholder'):
             try:
-                new.__setattr__(attr, data[attr])
+                setattr(new, attr, data[attr])
             except KeyError:
                 continue
         return new
@@ -1080,7 +1095,7 @@ class ChannelSelect(BaseSelect):
         """
         return super().values
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> SelectMenuPayload:
         base = super().to_dict()
         if self.channel_types:
             base['channel_types'] = [int(t) for t in self.channel_types]
@@ -1105,10 +1120,9 @@ class ActionRow:
     def __init__(self, components: BaseSelect) -> None: ...
 
     @overload
-    def __init__(self, components: TextInput) -> None:
-        ...
+    def __init__(self, components: TextInput) -> None: ...
 
-    def __init__(self, *components: Union[Button, BaseSelect, TextInput]) -> None:
+    def __init__(self, *components: T[Union[Button, BaseSelect, TextInput]]) -> None:
         """
         Represents an ActionRow-Part for the components of a :class:`~discord.Message`.
 
@@ -1123,7 +1137,7 @@ class ActionRow:
             The components the :class:`~discord.ActionRow` should hold.
             This could be up to 5 :class:`Button` or one :ref:`Select <select-like-objects>` like object/:class:`TextInput`.
         """
-        self.components = [c for c in components]
+        self.components: List[T] = [c for c in components]
 
     @overload
     def __class_getitem__(cls, item: Button) -> ActionRow: ...
@@ -1138,13 +1152,13 @@ class ActionRow:
     def __class_getitem__(cls, item: TextInput) -> ActionRow:
         ...
 
-    def __class_getitem__(cls, item) -> ActionRow:
+    def __class_getitem__(cls, item: T) -> ActionRow(T):
         if isinstance(item, tuple):
             return ActionRow(*item)
         else:
             return ActionRow(item)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<ActionRow components={self.components}>'
 
     def __iter__(self) -> Iterator[Union[Button, BaseSelect, TextInput]]:
@@ -1155,7 +1169,7 @@ class ActionRow:
     def type(self) -> ComponentType:
         return ComponentType.ActionRow
 
-    def to_dict(self) -> List[Dict[str, Union[int, List[Dict[str, Any]]]]]:
+    def to_dict(self) -> ActionRowPayload:
         # I know this looks complex but it just auto-wraps components in to a new ActionRow when users are too stupid to place them in different
         rows = []
         actual_row = []
@@ -1214,10 +1228,10 @@ class ActionRow:
     def __getitem__(self, item: int) -> Union[Button, BaseSelect, TextInput]:
         return self.components[item]
 
-    def __setitem__(self, index, component: Union[Button, BaseSelect, TextInput]):
-        return self.set_component_at(index, component)
+    def __setitem__(self, index: int, component: Union[Button, BaseSelect, TextInput]) -> None:
+        self.set_component_at(index, component)
 
-    def add_component(self, component: Union[Button, BaseSelect, TextInput]) -> ActionRow:
+    def add_component(self: Self, component: Union[Button, BaseSelect, TextInput]) -> Self:
         """
         Adds a component to the :class:`~discord.ActionRow` and returns itself.
 
@@ -1234,7 +1248,7 @@ class ActionRow:
         self.components.append(component)
         return self
 
-    def insert_component_at(self, index, component: Union[Button, BaseSelect, TextInput]) -> ActionRow:
+    def insert_component_at(self: Self, index, component: Union[Button, BaseSelect, TextInput]) -> Self:
         """
         Inserts a component before a specified index to the :class:`~discord.ActionRow` and returns itself.
 
@@ -1253,7 +1267,7 @@ class ActionRow:
         self.components.insert(index, component)
         return self
 
-    def set_component_at(self, index: int, component: Union[Button, SelectMenu]) -> ActionRow:
+    def set_component_at(self: Self, index: int, component: Union[Button, SelectMenu]) -> Self:
         """
         Modifies a component to the :class:`~discord.ActionRow` and returns itself.
 
@@ -1284,7 +1298,7 @@ class ActionRow:
         self.components[index] = component
         return self
 
-    def disable_component_at(self, index: int) -> ActionRow:
+    def disable_component_at(self: Self, index: int) -> Self:
         """
         Disables the component at the specified position of the :class:`~discord.ActionRow` and returns itself.
 
@@ -1311,15 +1325,15 @@ class ActionRow:
         return self
 
     @overload
-    def add_components(self, *components: Button) -> ActionRow: ...
+    def add_components(self: Self, *components: Button) -> Self: ...
 
     @overload
-    def add_components(self, components: BaseSelect) -> ActionRow: ...
+    def add_components(self: Self, components: BaseSelect) -> Self: ...
 
     @overload
-    def add_components(self, components: TextInput) -> ActionRow: ...
+    def add_components(self: Self, components: TextInput) -> Self: ...
 
-    def add_components(self, *components: Union[Button, BaseSelect, TextInput]) -> ActionRow:
+    def add_components(self: Self, *components: Union[Button, BaseSelect, TextInput]) -> Self:
         """
         Adds multiple components to the :class:`~discord.ActionRow` and returns itself.
 
@@ -1336,7 +1350,7 @@ class ActionRow:
         self.components.extend(*components)
         return self
 
-    def disable_all_components(self) -> ActionRow:
+    def disable_all_components(self: Self) -> Self:
         """
         Disables all components in this :class:`~discord.ActionRow` and returns itself.
 
@@ -1348,7 +1362,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_components_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any) -> ActionRow:
+    def disable_all_components_if(self: Self, check: Union[bool, Callable[P, bool]], *args: P.args, **kwargs: P.kwargs) -> Self:
         """
         Disables all :attr:`components` in this :class:`~discord.ActionRow` if the passed ``check`` returns :obj:`True` and returns itself.
 
@@ -1378,7 +1392,7 @@ class ActionRow:
             [obj.__setattr__('disabled', True) for obj in self.components]
         return self
 
-    def disable_all_buttons(self) -> ActionRow:
+    def disable_all_buttons(self: Self) -> Self:
         """
         Disables any :class:`~discord.Button` in this :class:`~discord.ActionRow` and returns itself.
 
@@ -1390,7 +1404,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_buttons_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any) -> ActionRow:
+    def disable_all_buttons_if(self: Self, check: Union[bool, Callable[P, bool]], *args: P.args, **kwargs: P.kwargs) -> Self:
         """
         Disables any :class:`~discord.Button` in this :class:`~discord.ActionRow` if the passed ``check`` returns :obj:`True` and returns itself.
 
@@ -1420,7 +1434,7 @@ class ActionRow:
             [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, Button)]
         return self
 
-    def disable_all_select_menus(self) -> ActionRow:
+    def disable_all_select_menus(self: Self) -> Self:
         """
         Disables all :ref:`Select <select-like-objects>` like objects in this :class:`~discord.ActionRow` and returns itself.
 
@@ -1432,7 +1446,7 @@ class ActionRow:
         [obj.__setattr__('disabled', True) for obj in self.components if isinstance(obj, BaseSelect)]
         return self
 
-    def disable_all_select_menus_if(self, check: Union[bool, Callable[[Any, ...], bool]], *args: Any, **kwargs: Any) -> ActionRow:
+    def disable_all_select_menus_if(self: Self, check: Union[bool, Callable[P, bool]], *args: P.args, **kwargs: P.kwargs) -> Self:
         """
         Disables all :ref:`Select <select-like-objects>` like objects in this :class:`~discord.ActionRow`
         if the passed ``check`` returns :obj:`True` and returns itself.
@@ -1464,13 +1478,13 @@ class ActionRow:
         return self
 
     @classmethod
-    def from_dict(cls, data: dict) -> ActionRow:
+    def from_dict(cls, data: ActionRowPayload) -> ActionRow:
         """
         Internal method to create a :class:`~discord.ActionRow` from the data given by discord.
 
         Parameters
         ----------
-        data: dict
+        data: :class:`dict`
             The raw data from the api.
 
         Returns
@@ -1478,15 +1492,12 @@ class ActionRow:
         :class:`~discord.ActionRow`
             The ActionRow created.
         """
-        if data.get('type', None) != 1:
-            raise InvalidArgument("%s could not be interpreted as an ActionRow" % data)
-        else:
-            components = [_component_factory(component) for component in data.get('components', [])]
-            return cls(*components)
+        components = [_component_factory(component) for component in data.get('components', [])]
+        return cls(*components)
 
 
-def _component_factory(data) -> Union[ActionRow, BaseComponent]:
-    component_type = data.get('type', None)
+def _component_factory(data: Union[ActionRowPayload, Component]) -> Union[ActionRow, BaseComponent]:
+    component_type = data.get('type')
     if component_type == 1:
         return ActionRow.from_dict(data)
     elif component_type == 2:

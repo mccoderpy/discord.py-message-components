@@ -39,8 +39,11 @@ from typing_extensions import (
 from .snowflake import SnowflakeID
 
 __all__ = (
+    'ChannelType',
     'Overwrite',
     'GuildChannel',
+    'ThreadMetadata',
+    'PartialChannel'
 )
 
 ChannelType = Literal[0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15]
@@ -60,3 +63,19 @@ class GuildChannel(TypedDict):
     position: NotRequired[int]
     parent_id: NotRequired[Optional[SnowflakeID]]
     permission_overwrites: NotRequired[List[Overwrite]]
+
+
+class ThreadMetadata(TypedDict):
+    archived: bool
+    auto_archive_duration: int
+    archive_timestamp: str
+    locked: bool
+    invitable: NotRequired[bool]
+    create_timestamp: NotRequired[Optional[str]]
+
+
+class PartialChannel(TypedDict):
+    id: SnowflakeID
+    type: ChannelType
+    name: NotRequired[Optional[str]]
+    # TODO: What fields are missing here?
