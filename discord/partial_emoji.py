@@ -25,17 +25,20 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
-import re
-from .asset import Asset
-from . import utils
-
 from typing import (
     Optional,
     TYPE_CHECKING
 )
+from typing_extensions import Literal
+
+import re
+from .asset import Asset
+from . import utils
 
 if TYPE_CHECKING:
+    from .state import ConnectionState
     from datetime import datetime
+    from .types.emoji import PartialEmoji as PartialEmojiPayload
 
 
 class _EmojiTag:
@@ -82,14 +85,14 @@ class PartialEmoji(_EmojiTag):
 
     __slots__ = ('animated', 'name', 'id', '_state')
 
-    def __init__(self, *, name, animated=False, id=None):
-        self.animated = animated
-        self.name = name
-        self.id = id
-        self._state = None
+    def __init__(self, *, name: str, animated: bool = False, id: Optional[int] = None) -> None :
+        self.animated: bool = animated
+        self.name: str = name
+        self.id: Optional[int] = id
+        self._state: Optional[ConnectionState] = None
 
     @classmethod
-    def from_string(cls, string: str):
+    def from_string(cls, string: str) -> PartialEmoji:
         """Converts a (custom) emoji as they are in a message into a partial emoji object.
 
         .. note::
@@ -98,6 +101,11 @@ class PartialEmoji(_EmojiTag):
 
         .. warning::
             This does **not** support the :emoji: format for (standard) emojis
+        
+        Returns
+        --------
+        :class:`PartialEmoji`
+            The emoji object if the string was valid.
         """
 
         match = re.match('^<(a?):([\-\w]+):(\d+)>$', string)
@@ -106,14 +114,14 @@ class PartialEmoji(_EmojiTag):
         return cls(name=string)
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: PartialEmojiPayload) -> PartialEmoji:
         return cls(
             animated=data.get('animated', False),
             id=utils._get_as_snowflake(data, 'id'),
             name=data.get('name'),
         )
 
-    def to_dict(self):
+    def to_dict(self) -> PartialEmojiPayload:
         o = {'name': self.name}
         if self.id:
             o['id'] = self.id
@@ -122,22 +130,29 @@ class PartialEmoji(_EmojiTag):
         return o
 
     @classmethod
-    def with_state(cls, state, *, name, animated=False, id=None):
+    def with_state(
+            cls,
+            state: ConnectionState,
+            *,
+            name: str,
+            animated: bool = False,
+            id: Optional[int] = None
+    ) -> PartialEmoji:
         self = cls(name=name, animated=animated, id=id)
         self._state = state
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.id is None:
             return self.name
         if self.animated:
             return '<a:%s:%s>' % (self.name, self.id)
         return '<:%s:%s>' % (self.name, self.id)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(str(self))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<{0.__class__.__name__} animated={0.animated} name={0.name!r} id={0.id}>'.format(self)
 
     def __eq__(self, other) -> bool:
@@ -145,13 +160,13 @@ class PartialEmoji(_EmojiTag):
             return isinstance(other, PartialEmoji) and self.name == other.name
 
         if isinstance(other, _EmojiTag):
-            return self.id == other.id
+            return self.id == other.id  # type: ignore
         return False
-
+    
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.id, self.name))
 
     def is_custom_emoji(self) -> bool:
@@ -187,7 +202,12 @@ class PartialEmoji(_EmojiTag):
         """
         return self.url_as(format=None)
 
-    def url_as(self, *, format: Optional[str] = None, static_format="png") -> Asset:
+    def url_as(
+            self,
+            *,
+            format: Optional[Literal['jpeg', 'jpg', 'webp', 'png', 'gif']] = None,
+            static_format: Literal['jpeg', 'jpg', 'webp', 'png', ] = 'png'
+    ) -> Asset:
         """Returns an :class:`Asset` for the emoji's url, if it is custom.
 
         The format must be one of 'webp', 'jpeg', 'jpg', 'png' or 'gif'.
