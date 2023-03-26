@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 import asyncio
-import datetime
+from datetime import datetime
 import re
 import io
 
@@ -34,17 +34,21 @@ from typing import (
     TYPE_CHECKING,
     Union,
     Optional,
+    Callable,
     Sequence,
+    Iterator,
     List,
     Any
 )
+
+from typing_extensions import Self
 
 from . import utils
 from .channel import ThreadChannel
 from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
-from .enums import MessageType, ChannelType, try_enum, AutoArchiveDuration
+from .enums import try_enum, MessageType, ChannelType, AutoArchiveDuration, InteractionType
 from .errors import InvalidArgument, HTTPException
 from .components import ActionRow, Button, BaseSelect
 from .embeds import Embed
@@ -59,11 +63,21 @@ from .http import handle_message_parameters
 from .channel import PartialMessageable
 
 if TYPE_CHECKING:
+    from os import PathLike
+    from .types.user import PartialMember as PartialMemberPayload
+    from .types.message import (
+        Attachment as AttachmentPayload,
+        Message as MessagePayload,
+        MessageReference as MessageReferencePayload,
+        MessageInteraction as MessageInteractionPayload
+    )
+    from .user import User
     from .state import ConnectionState
+    from .http import HTTPClient
     from .mentions import AllowedMentions
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
-
+    from .channel import TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost
 
 __all__ = (
     'Attachment',
@@ -75,9 +89,9 @@ __all__ = (
 
 
 MISSING = utils.MISSING
+MentionableChannel = Union[TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost]
 
-
-def convert_emoji_reaction(emoji):
+def convert_emoji_reaction(emoji: Union[Reaction, Emoji, PartialEmoji, str]) -> str:
     if isinstance(emoji, Reaction):
         emoji = emoji.emoji
 
@@ -116,7 +130,9 @@ class Attachment(Hashable):
             Returns the hash of the attachment.
 
     .. versionchanged:: 1.7
-        Attachment can now be casted to :class:`str` and is hashable.
+        Attachment can now be cast to :class:`str` and is hashable.
+    .. versionchanged:: 2.0
+        The :attr:`ephemeral` and :attr:`description` attributes were added.
 
     Attributes
     ------------
@@ -140,7 +156,7 @@ class Attachment(Hashable):
     content_type: Optional[:class:`str`]
         The attachment's `media type <https://en.wikipedia.org/wiki/Media_type>`_
     ephemeral: :class:`bool`
-        Whether the attachment is part of a ephemeral message.
+        Whether the attachment is ephemeral (part of an ephemeral message or was provided in a slash-command option).
     description: Optional[:class:`str`]
         The description for the file.
     """
@@ -148,27 +164,27 @@ class Attachment(Hashable):
     __slots__ = ('id', 'size', 'height', 'width', 'ephemeral', 'description',
                  'filename', 'url', 'proxy_url', '_http', 'content_type')
 
-    def __init__(self, *, data, state):
-        self.id = int(data['id'])
-        self.size = data['size']
-        self.height = data.get('height')
-        self.width = data.get('width')
-        self.ephemeral = data.get('ephemeral', False)
-        self.description = data.get('description', None)
-        self.filename = data['filename']
-        self.url = data.get('url')
+    def __init__(self, *, data: AttachmentPayload, state: ConnectionState):
+        self.id: int = int(data['id'])
+        self.size: int = data['size']
+        self.height: Optional[int] = data.get('height')
+        self.width: Optional[int] = data.get('width')
+        self.ephemeral: bool = data.get('ephemeral', False)
+        self.description: Optional[str] = data.get('description')
+        self.filename: str = data['filename']
+        self.url: str = data.get('url')
         self.proxy_url = data.get('proxy_url')
-        self._http = state.http
-        self.content_type = data.get('content_type')
+        self._http: HTTPClient = state.http
+        self.content_type: str = data.get('content_type')
 
-    def is_spoiler(self):
+    def is_spoiler(self) -> bool:
         """:class:`bool`: Whether this attachment contains a spoiler."""
         return self.filename.startswith('SPOILER_')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<Attachment id={0.id} filename={0.filename!r} url={0.url!r}>'.format(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.url or ''
 
     def _to_minimal_dict(self):
@@ -177,7 +193,13 @@ class Attachment(Hashable):
 
     to_dict = _to_minimal_dict
 
-    async def save(self, fp, *, seek_begin=True, use_cached=False):
+    async def save(
+            self,
+            fp: Union[io.BufferedIOBase, PathLike[str], PathLike[bytes]],
+            *,
+            seek_begin: bool = True,
+            use_cached: bool = False
+    ) -> int:
         """|coro|
 
         Saves this attachment into a file-like object.
@@ -221,7 +243,7 @@ class Attachment(Hashable):
             with open(fp, 'wb') as f:
                 return f.write(data)
 
-    async def read(self, *, use_cached=False):
+    async def read(self, *, use_cached: bool = False) -> bytes:
         """|coro|
 
         Retrieves the content of this attachment as a :class:`bytes` object.
@@ -262,7 +284,7 @@ class Attachment(Hashable):
             use_cached: bool = False,
             spoiler: bool = False,
             description: Optional[str] = MISSING
-    ):
+    ) -> File:
         """|coro|
 
         Converts the attachment into a :class:`File` suitable for sending via
@@ -308,7 +330,45 @@ class Attachment(Hashable):
         """
 
         data = await self.read(use_cached=use_cached)
-        return File(io.BytesIO(data), filename=self.filename, spoiler=spoiler, description=self.description if description is MISSING else description)
+        return File(
+            io.BytesIO(data),
+            filename=self.filename,
+            spoiler=spoiler,
+            description=self.description if description is MISSING else description
+        )
+
+
+class MessageInteraction:
+    """
+    Represents the :attr:`~Message.interaction` object of a message that is a response to an interaction without an existing message.
+
+    .. note::
+        This means responses to :class:`ComponentInteraction` does not include this,
+        instead including a :attr:`~Message.reference` as components *always* exist on preexisting messages.
+
+    .. versionadded:: 2.0
+
+    Attributes
+    ----------
+    id: :class:`int`
+        The interaction's ID.
+    type: :class:`InteractionType`
+        The type of the interaction.
+    name: :class:`str`
+        The name of the :class:`ApplicationCommand`, **including subcommands and subcommand groups**.
+    user: :class:`User`
+        The user who invoked the interaction.
+    """
+    def __init__(self, state: ConnectionState, data: MessageInteractionPayload):
+        self._state: ConnectionState = state
+        self.id: int = int(data['id'])
+        self.type: InteractionType = try_enum(InteractionType, data['type'])
+        self.name: str = data['name']
+        self.user: User = state.store_user(data['user'])
+        self.partial_member: Optional[PartialMemberPayload] = data.get('member', None)  # TODO: Use a model for this
+    
+    def __repr__(self) -> str:
+        return f'<MessageInteraction command={self.name} user={self.user} interaction_id={self.id}>'
 
 
 class DeletedReferencedMessage:
@@ -323,21 +383,21 @@ class DeletedReferencedMessage:
 
     __slots__ = ('_parent')
 
-    def __init__(self, parent):
+    def __init__(self, parent: Message) -> None:
         self._parent = parent
 
     @property
-    def id(self):
+    def id(self) -> int:
         """:class:`int`: The message ID of the deleted referenced message."""
         return self._parent.message_id
 
     @property
-    def channel_id(self):
+    def channel_id(self) -> int:
         """:class:`int`: The channel ID of the deleted referenced message."""
         return self._parent.channel_id
 
     @property
-    def guild_id(self):
+    def guild_id(self) -> int:
         """Optional[:class:`int`]: The guild ID of the deleted referenced message."""
         return self._parent.guild_id
 
@@ -379,16 +439,16 @@ class MessageReference:
 
     __slots__ = ('message_id', 'channel_id', 'guild_id', 'fail_if_not_exists', 'resolved', '_state')
 
-    def __init__(self, *, message_id, channel_id, guild_id=None, fail_if_not_exists=True):
-        self._state: ConnectionState = None
-        self.resolved = None
+    def __init__(self, *, message_id: int, channel_id: int, guild_id: Optional[int] = None, fail_if_not_exists: bool = True) -> None:
+        self._state: Optional[ConnectionState] = None
+        self.resolved: Optional[Union[Message, DeletedReferencedMessage]] = None
         self.message_id = message_id
         self.channel_id = channel_id
         self.guild_id = guild_id
         self.fail_if_not_exists = fail_if_not_exists
 
     @classmethod
-    def with_state(cls, state, data):
+    def with_state(cls, state: ConnectionState, data: MessageReferencePayload) -> MessageReference:
         self = cls.__new__(cls)
         self.message_id = utils._get_as_snowflake(data, 'message_id')
         self.channel_id = int(data.pop('channel_id'))
@@ -399,7 +459,7 @@ class MessageReference:
         return self
 
     @classmethod
-    def from_message(cls, message, *, fail_if_not_exists=True):
+    def from_message(cls, message: Message, *, fail_if_not_exists: bool = True) -> MessageReference:
         """Creates a :class:`MessageReference` from an existing :class:`~discord.Message`.
 
         .. versionadded:: 1.6
@@ -424,12 +484,12 @@ class MessageReference:
         return self
 
     @property
-    def cached_message(self):
+    def cached_message(self) -> Optional[Message]:
         """Optional[:class:`~discord.Message`]: The cached message, if found in the internal message cache."""
         return self._state._get_message(self.message_id)
 
     @property
-    def jump_url(self):
+    def jump_url(self) -> str:
         """:class:`str`: Returns a URL that allows the client to jump to the referenced message.
 
         .. versionadded:: 1.7
@@ -437,10 +497,10 @@ class MessageReference:
         guild_id = self.guild_id if self.guild_id is not None else '@me'
         return 'https://discord.com/channels/{0}/{1.channel_id}/{1.message_id}'.format(guild_id, self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<MessageReference message_id={0.message_id!r} channel_id={0.channel_id!r} guild_id={0.guild_id!r}>'.format(self)
 
-    def to_dict(self):
+    def to_dict(self) -> MessageReferencePayload:
         result = {'message_id': self.message_id} if self.message_id is not None else {}
         result['channel_id'] = self.channel_id
         if self.guild_id is not None:
@@ -589,30 +649,30 @@ class Message(Hashable):
                  '_cs_system_content', '_cs_guild', '_state', 'reactions', 'reference',
                  'application', 'activity', 'stickers', '_thread', 'interaction')
 
-    def __init__(self, *, state, channel, data):
+    def __init__(self, *, state: ConnectionState, channel, data: MessagePayload):
         self._state: ConnectionState = state
-        self.id = utils._get_as_snowflake(data, 'id')
-        self.webhook_id = utils._get_as_snowflake(data, 'webhook_id')
-        self.reactions = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
-        self.attachments = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
-        self.embeds = [Embed.from_dict(a) for a in data.get('embeds', [])]
-        self.components = [ActionRow.from_dict(d) for d in data.get('components', [])]
-        self.application = data.get('application')
-        self.activity = data.get('activity')
+        self.id: int = utils._get_as_snowflake(data, 'id')
+        self.webhook_id: Optional[int] = utils._get_as_snowflake(data, 'webhook_id')
+        self.reactions: List[Reaction] = [Reaction(message=self, data=d) for d in data.get('reactions', [])]
+        self.attachments: List[Attachment] = [Attachment(data=a, state=self._state) for a in data.get('attachments', [])]
+        self.embeds: List[Embed] = [Embed.from_dict(a) for a in data.get('embeds', [])]
+        self.components: List[ActionRow] = [ActionRow.from_dict(d) for d in data.get('components', [])]
+        self.application = data.get('application')  # TODO: make this a class
+        self.activity = data.get('activity')  # TODO: make this a class
         self.channel: Messageable = channel
-        self._edited_timestamp = utils.parse_time(data['edited_timestamp'])
+        self._edited_timestamp: datetime = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
-        self.pinned = data['pinned']
+        self.pinned: bool = data['pinned']
         self.mention_everyone: bool = data['mention_everyone']
         self.tts: bool = data['tts']
         self.content: Optional[str] = data['content']
-        self.nonce = data.get('nonce')
-        self.stickers = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
+        self.nonce: Optional[str] = data.get('nonce')
+        self.stickers: List[Union[Sticker, GuildSticker]] = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
 
         try:
             ref = data['message_reference']
         except KeyError:
-            self.reference = None
+            self.reference: Optional[Union[MessageReference, DeletedReferencedMessage]] = None
         else:
             self.reference = ref = MessageReference.with_state(state, ref)
             try:
@@ -637,13 +697,13 @@ class Message(Hashable):
             except KeyError:
                 continue
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<Message id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(self)
 
     def __remove_from_cache__(self, _):
         self._state._messages.remove(self)
 
-    def _try_patch(self, data, key, transform=None):
+    def _try_patch(self, data: MessagePayload, key: str, transform: Optional[Callable[..., Any]] = None) -> None:
         try:
             value = data[key]
         except KeyError:
@@ -687,7 +747,7 @@ class Message(Hashable):
 
         return reaction
 
-    def _clear_emoji(self, emoji):
+    def _clear_emoji(self, emoji: Union[Emoji, PartialEmoji, str]):
         to_check = str(emoji)
         for index, reaction in enumerate(self.reactions):
             if str(reaction.emoji) == to_check:
@@ -699,7 +759,7 @@ class Message(Hashable):
         del self.reactions[index]
         return reaction
 
-    def _update(self, data):
+    def _update(self: Self, data: MessagePayload) -> Self:
         # In an update scheme, 'author' key has to be handled before 'member'
         # otherwise they overwrite each other which is undesirable.
         # Since there's no good way to do this we have to iterate over every
@@ -826,12 +886,12 @@ class Message(Hashable):
             pass
 
     @utils.cached_slot_property('_cs_guild')
-    def guild(self):
+    def guild(self) -> Guild:
         """Optional[:class:`Guild`]: The guild that the message belongs to, if applicable."""
         return getattr(self.channel, 'guild', None)
 
     @utils.cached_slot_property('_cs_raw_mentions')
-    def raw_mentions(self):
+    def raw_mentions(self) -> List[int]:
         """List[:class:`int`]: A property that returns an array of user IDs matched with
         the syntax of ``<@user_id>`` in the message content.
 
@@ -841,28 +901,28 @@ class Message(Hashable):
         return [int(x) for x in re.findall(r'<@!?([0-9]+)>', self.content)]
 
     @utils.cached_slot_property('_cs_raw_channel_mentions')
-    def raw_channel_mentions(self):
+    def raw_channel_mentions(self) -> List[int]:
         """List[:class:`int`]: A property that returns an array of channel IDs matched with
         the syntax of ``<#channel_id>`` in the message content.
         """
         return [int(x) for x in re.findall(r'<#([0-9]+)>', self.content)]
 
     @utils.cached_slot_property('_cs_raw_role_mentions')
-    def raw_role_mentions(self):
+    def raw_role_mentions(self) -> List[int]:
         """List[:class:`int`]: A property that returns an array of role IDs matched with
         the syntax of ``<@&role_id>`` in the message content.
         """
         return [int(x) for x in re.findall(r'<@&([0-9]+)>', self.content)]
 
     @utils.cached_slot_property('_cs_channel_mentions')
-    def channel_mentions(self):
+    def channel_mentions(self) -> List[MentionableChannel]:
         if self.guild is None:
             return []
         it = filter(None, map(self.guild.get_channel, self.raw_channel_mentions))
         return utils._unique(it)
 
     @utils.cached_slot_property('_cs_clean_content')
-    def clean_content(self):
+    def clean_content(self) -> str:
         """:class:`str`: A property that returns the content in a "cleaned up"
         manner. This basically means that mentions are transformed
         into the way the client shows it. e.g. ``<#id>`` will transform
@@ -912,22 +972,22 @@ class Message(Hashable):
         return escape_mentions(result)
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime:
         """:class:`datetime.datetime`: The message's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
     @property
-    def edited_at(self):
+    def edited_at(self) -> Optional[datetime]:
         """Optional[:class:`datetime.datetime`]: A naive UTC datetime object containing the edited time of the message."""
         return self._edited_timestamp
 
     @property
-    def jump_url(self):
+    def jump_url(self) -> str:
         """:class:`str`: Returns a URL that allows the client to jump to this message."""
         guild_id = getattr(self.guild, 'id', '@me')
         return 'https://discord.com/channels/{0}/{1.channel.id}/{1.id}'.format(guild_id, self)
 
-    def is_system(self):
+    def is_system(self) -> bool:
         """:class:`bool`: Whether the message is a system message.
 
         .. versionadded:: 1.3
@@ -935,7 +995,7 @@ class Message(Hashable):
         return self.type is not MessageType.default
 
     @utils.cached_slot_property('_cs_system_content')
-    def system_content(self):
+    def system_content(self) -> str:
         r""":class:`str`: A property that returns the content that is rendered
         regardless of the :attr:`Message.type`.
 
@@ -982,7 +1042,7 @@ class Message(Hashable):
             # manually reconstruct the epoch with millisecond precision, because
             # datetime.datetime.timestamp() doesn't return the exact posix
             # timestamp with the precision that we need
-            created_at_ms = int((self.created_at - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
+            created_at_ms = int((self.created_at - datetime(1970, 1, 1)).total_seconds() * 1000)
             return formats[created_at_ms % len(formats)].format(self.author.name)
 
         if self.type is MessageType.call:
@@ -1029,14 +1089,14 @@ class Message(Hashable):
             return 'This server has failed Discovery activity requirements for 3 weeks in a row. If this server fails for 1 more week, it will be removed from Discovery.'
 
     @property
-    def all_components(self):
+    def all_components(self) -> Iterator[Union[Button, BaseSelect]]:
         """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
                 yield component
 
     @property
-    def all_buttons(self):
+    def all_buttons(self) -> Iterator[Button]:
         """Returns all :class:`Button`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
@@ -1044,7 +1104,7 @@ class Message(Hashable):
                     yield component
 
     @property
-    def all_select_menus(self):
+    def all_select_menus(self) -> Iterator[BaseSelect]:
         """Returns all :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
@@ -1218,7 +1278,7 @@ class Message(Hashable):
     def dict(self):
         return {s: self.__getattribute__(s) for s in self.__slots__ if not s.startswith('_')}
 
-    async def publish(self):
+    async def publish(self) -> None:
         """|coro|
 
         Publishes this message to your announcement channel.
@@ -1236,7 +1296,7 @@ class Message(Hashable):
 
         await self._state.http.publish_message(self.channel.id, self.id)
 
-    async def pin(self, *, reason: Optional[str] = None):
+    async def pin(self, *, reason: Optional[str] = None) -> None:
         """|coro|
 
         Pins the message.
@@ -1265,7 +1325,7 @@ class Message(Hashable):
         await self._state.http.pin_message(self.channel.id, self.id, reason=reason)
         self.pinned = True
 
-    async def unpin(self, *, reason: Optional[str] = None):
+    async def unpin(self, *, reason: Optional[str] = None) -> None:
         """|coro|
 
         Unpins the message.
@@ -1293,7 +1353,7 @@ class Message(Hashable):
         await self._state.http.unpin_message(self.channel.id, self.id, reason=reason)
         self.pinned = False
 
-    async def add_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]):
+    async def add_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]) -> None:
         """|coro|
 
         Add a reaction to the message.
@@ -1324,7 +1384,7 @@ class Message(Hashable):
         emoji = convert_emoji_reaction(emoji)
         await self._state.http.add_reaction(self.channel.id, self.id, emoji)
 
-    async def remove_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str], member: Snowflake):
+    async def remove_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str], member: Snowflake) -> None:
         """|coro|
 
         Remove a reaction by the member from the message.
@@ -1363,7 +1423,7 @@ class Message(Hashable):
         else:
             await self._state.http.remove_reaction(self.channel.id, self.id, emoji, member.id)
 
-    async def clear_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]):
+    async def clear_reaction(self, emoji: Union[Emoji, Reaction, PartialEmoji, str]) -> None:
         """|coro|
 
         Clears a specific reaction from the message.
@@ -1394,7 +1454,7 @@ class Message(Hashable):
         emoji = convert_emoji_reaction(emoji)
         await self._state.http.clear_single_reaction(self.channel.id, self.id, emoji)
 
-    async def clear_reactions(self):
+    async def clear_reactions(self) -> None:
         """|coro|
 
         Removes all the reactions from the message.
@@ -1426,7 +1486,7 @@ class Message(Hashable):
             mention_author: Optional[bool] = None,
             suppress_embeds: bool = False,
             suppress_notifications: bool = False
-    ):
+    ) -> Message:
         """|coro|
 
         A shortcut method to :meth:`.abc.Messageable.send` to reply to the
@@ -1560,7 +1620,7 @@ class Message(Hashable):
 
         return MessageReference.from_message(self, fail_if_not_exists=fail_if_not_exists)
 
-    def to_message_reference_dict(self):
+    def to_message_reference_dict(self) -> MessageReference:
         data = {
             'message_id': self.id,
             'channel_id': self.channel.id,
@@ -1634,7 +1694,7 @@ class PartialMessage(Hashable):
         'to_message_reference_dict',
     )
 
-    def __init__(self, *, channel, id):
+    def __init__(self, *, channel: Union[PartialMessageable, Messageable], id: int) -> None:
         if not isinstance(channel, PartialMessageable) and int(channel.type) not in {0, 1, 2, 3, 5, 10, 11, 12, 15}:
             raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
@@ -1651,7 +1711,7 @@ class PartialMessage(Hashable):
     # n.b. not exposed
     pinned = property(None, lambda x, y: ...)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<PartialMessage id={0.id} channel={0.channel!r}>'.format(self)
 
     @property
