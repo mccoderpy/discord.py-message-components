@@ -79,6 +79,8 @@ if TYPE_CHECKING:
     from .sticker import GuildSticker
     from .channel import TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost
 
+    MentionableChannel = Union[TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost]
+
 __all__ = (
     'Attachment',
     'Message',
@@ -89,7 +91,7 @@ __all__ = (
 
 
 MISSING = utils.MISSING
-MentionableChannel = Union[TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost]
+
 
 def convert_emoji_reaction(emoji: Union[Reaction, Emoji, PartialEmoji, str]) -> str:
     if isinstance(emoji, Reaction):
