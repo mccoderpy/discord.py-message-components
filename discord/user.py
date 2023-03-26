@@ -35,7 +35,7 @@ from typing import (
 
 from typing_extensions import Literal
 
-import discord.abc
+from . import abc, utils
 from .flags import PublicUserFlags
 from .utils import snowflake_time, _bytes_to_base64_data
 from .enums import DefaultAvatar, try_enum
@@ -52,7 +52,8 @@ if TYPE_CHECKING:
     from .state import ConnectionState
 
 
-_BaseUser = discord.abc.User
+_BaseUser = abc.User
+MISSING = utils.MISSING
 
 
 class BaseUser(_BaseUser):
@@ -380,7 +381,11 @@ class ClientUser(BaseUser):
         self._flags = data.get('flags', 0)
         self.mfa_enabled = data.get('mfa_enabled', False)
 
-    async def edit(self, **fields) -> None:
+    async def edit(
+            self,
+            username: str = MISSING,
+            avatar: bytes = MISSING
+    ) -> None:
         """|coro|
 
         Edits the current profile of the client.
@@ -410,28 +415,24 @@ class ClientUser(BaseUser):
             Wrong image format passed for ``avatar``.
         """
 
-        try:
-            avatar_bytes = fields['avatar']
-        except KeyError:
-            avatar = self.avatar
-        else:
-            if avatar_bytes is not None:
-                avatar = _bytes_to_base64_data(avatar_bytes)
+        payload = {}
+        
+        if username is not MISSING:
+            payload['username'] = username
+        
+        if avatar is not MISSING:
+            if avatar is None:
+                payload['avatar'] = None
             else:
-                avatar = None
-
-        args = {
-            'username': fields.get('username', self.name),
-            'avatar': avatar
-        }
+                payload['avatar'] = _bytes_to_base64_data(avatar)
 
         http = self._state.http
 
-        data = await http.edit_profile(**args)
+        data = await http.edit_profile(payload)
         self._update(data)
 
 
-class User(BaseUser, discord.abc.Messageable):
+class User(BaseUser, abc.Messageable):
     """Represents a Discord user.
 
     .. container:: operations

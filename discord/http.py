@@ -961,11 +961,7 @@ class HTTPClient:
 
         return self.request(r, json=payload, reason=reason)
 
-    def edit_profile(self, avatar, **fields):
-        payload = {
-            'avatar': avatar
-        }
-
+    def edit_profile(self, payload):
         return self.request(Route('PATCH', '/users/@me'), json=payload)
 
     def change_my_nickname(self, guild_id, nickname, *, reason=None):
