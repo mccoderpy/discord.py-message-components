@@ -396,14 +396,20 @@ class Button(BaseComponent):
         if self.emoji:
             base['emoji'] = self.emoji.to_dict()
         return base
-
+    
     @classmethod
     def from_dict(cls, data: ButtonPayload) -> Button:
         emoji = data.pop('emoji', None)
-
         if emoji and isinstance(emoji, dict):
             emoji = PartialEmoji.from_dict(emoji)
-        return cls(emoji=emoji, **data)
+        return cls(
+            emoji=emoji,
+            label=data.get('label'),
+            custom_id=data.get('custom_id'),
+            style=data['style'],
+            url=data.get('url'),
+            disabled=data.get('disabled', False)
+        )
 
 
 class SelectOption:
@@ -485,9 +491,9 @@ class SelectOption:
         return cls(
             label=data['label'],
             value=data['value'],
-            description=data.pop('description'),
+            description=data.get('description'),
             emoji=emoji,
-            default=data.pop('default', False)
+            default=data.get('default', False)
         )
 
 
@@ -642,10 +648,10 @@ class BaseSelect(BaseComponent):
     def from_dict(cls: Type[T], data: SelectMenuPayload) -> T:
         return cls(
             custom_id=data['custom_id'],
-            placeholder=data.pop('placeholder', None),
-            min_values=data.pop('min_values', 1),
-            max_values=data.pop('max_values', 1),
-            disabled=data.pop('disabled', False)
+            placeholder=data.get('placeholder'),
+            min_values=data.get('min_values', 1),
+            max_values=data.get('max_values', 1),
+            disabled=data.get('disabled', False)
         )
 
 
@@ -809,11 +815,12 @@ class SelectMenu(BaseSelect):
     @classmethod
     def from_dict(cls, data:SelectMenuPayload) -> SelectMenu:
         return cls(
+            custom_id=data['custom_id'],
             options=[SelectOption.from_dict(o) for o in data.pop('options')],
             min_values=data.pop('min_values', 1),
             max_values=data.pop('max_values', 1),
             disabled=data.pop('disabled', False),
-            **data
+            placeholder=data.get('placeholder),
         )
 
 
