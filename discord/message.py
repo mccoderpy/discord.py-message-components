@@ -372,6 +372,7 @@ class MessageInteraction:
         except KeyError:
             self.member: Optional[Member] = None
         else:
+            member['user'] = data['user']
             self.member: Optional[Member] = guild.get_member(self.user.id) or Member(data=member, state=state, guild=guild)
     
     def __repr__(self) -> str:
