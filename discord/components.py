@@ -479,7 +479,7 @@ class SelectOption:
 
     @classmethod
     def from_dict(cls, data: SelectOptionPayload) -> SelectOption:
-        emoji = data.pop('emoji')
+        emoji = data.pop('emoji', None)
         if emoji:
             emoji = PartialEmoji.from_dict(emoji)
         return cls(
