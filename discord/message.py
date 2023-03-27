@@ -668,13 +668,13 @@ class Message(Hashable):
         self.components: List[ActionRow] = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
+        self.channel: Messageable = channel
         interaction = data.get('interaction')
         self.interaction: Optional[MessageInteraction] = MessageInteraction(
             state=state,
             data=interaction,
             guild=self.guild
         ) if interaction else None
-        self.channel: Messageable = channel
         self._edited_timestamp: datetime = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
         self.pinned: bool = data['pinned']
