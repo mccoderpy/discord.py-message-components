@@ -820,7 +820,7 @@ class SelectMenu(BaseSelect):
             min_values=data.pop('min_values', 1),
             max_values=data.pop('max_values', 1),
             disabled=data.pop('disabled', False),
-            placeholder=data.get('placeholder),
+            placeholder=data.get('placeholder'),
         )
 
 
