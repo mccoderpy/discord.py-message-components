@@ -399,7 +399,7 @@ class Button(BaseComponent):
 
     @classmethod
     def from_dict(cls, data: ButtonPayload) -> Button:
-        emoji = data.pop('emoji')
+        emoji = data.pop('emoji', None)
 
         if emoji and isinstance(emoji, dict):
             emoji = PartialEmoji.from_dict(emoji)
