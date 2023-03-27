@@ -3259,6 +3259,11 @@ Message
 .. autoclass:: EphemeralMessage()
     :members:
 
+.. attributetable:: MessageInteraction
+
+.. autoclass:: MessageInteraction()
+    :members:
+
 DeletedReferencedMessage
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

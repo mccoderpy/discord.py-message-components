@@ -44,7 +44,6 @@ from typing import (
 from typing_extensions import Self
 
 from . import utils
-from .channel import ThreadChannel
 from .reaction import Reaction
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
@@ -83,6 +82,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     'Attachment',
+    'MessageInteraction',
     'Message',
     'PartialMessage',
     'MessageReference',
@@ -641,6 +641,8 @@ class Message(Hashable):
         A list of stickers given to the message.
 
         .. versionadded:: 1.6
+    interaction: Optional[:class:`MessageInteraction`]
+        The interaction associated with this message if any.
     """
 
     __slots__ = ('_edited_timestamp', 'tts', 'content', 'channel', 'webhook_id',
@@ -661,6 +663,8 @@ class Message(Hashable):
         self.components: List[ActionRow] = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
+        interaction = data.get('interaction')
+        self.interaction: Optional[MessageInteraction] = MessageInteraction(state=state, data=data) if interaction else None
         self.channel: Messageable = channel
         self._edited_timestamp: datetime = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
@@ -693,7 +697,7 @@ class Message(Hashable):
 
                     ref.resolved = self.__class__(channel=chan, data=resolved, state=state)
 
-        for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'interaction', 'thread'):
+        for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'thread'):
             try:
                 getattr(self, '_handle_%s' % handler)(data[handler])
             except KeyError:
@@ -816,7 +820,7 @@ class Message(Hashable):
         self.embeds: List[Embed] = [Embed.from_dict(data) for data in value]
 
     def _handle_interaction(self, value):
-        self.interaction = value  # TODO: implement interaction-model for message
+        self.interaction = MessageInteraction(state=self._state, data=value)
 
     def _handle_thread(self, value):
         thread = self.guild.get_channel(self.id)
