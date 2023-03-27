@@ -361,13 +361,18 @@ class MessageInteraction:
     user: :class:`User`
         The user who invoked the interaction.
     """
-    def __init__(self, state: ConnectionState, data: MessageInteractionPayload):
+    def __init__(self, state: ConnectionState, data: MessageInteractionPayload, guild: Optional[Guild] = None) -> None:
         self._state: ConnectionState = state
         self.id: int = int(data['id'])
         self.type: InteractionType = try_enum(InteractionType, data['type'])
-        self.name: str = data['name']
+        self.name: Optional[str] = data['name']
         self.user: User = state.store_user(data['user'])
-        self.partial_member: Optional[PartialMemberPayload] = data.get('member', None)  # TODO: Use a model for this
+        try:
+            member = data['member']
+        except KeyError:
+            self.member: Optional[Member] = None
+        else:
+            self.member: Optional[Member] = guild.get_member(self.user.id) or Member(data=member, state=state, guild=guild)
     
     def __repr__(self) -> str:
         return f'<MessageInteraction command={self.name} user={self.user} interaction_id={self.id}>'
@@ -664,7 +669,11 @@ class Message(Hashable):
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
         interaction = data.get('interaction')
-        self.interaction: Optional[MessageInteraction] = MessageInteraction(state=state, data=data) if interaction else None
+        self.interaction: Optional[MessageInteraction] = MessageInteraction(
+            state=state,
+            data=interaction,
+            guild=self.guild
+        ) if interaction else None
         self.channel: Messageable = channel
         self._edited_timestamp: datetime = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
