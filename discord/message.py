@@ -373,7 +373,10 @@ class MessageInteraction:
             self.member: Optional[Member] = None
         else:
             member['user'] = data['user']
-            self.member: Optional[Member] = guild.get_member(self.user.id) or Member(data=member, state=state, guild=guild)
+            if guild:  # can be None when cache is not filled yet 
+                self.member: Optional[Member] = guild.get_member(self.user.id) or Member(data=member, state=state, guild=guild)
+            else:
+                self.member: Optional[Member] = None
     
     def __repr__(self) -> str:
         return f'<MessageInteraction command={self.name} user={self.user} interaction_id={self.id}>'
