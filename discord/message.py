@@ -372,7 +372,11 @@ class MessageInteraction:
         except KeyError:
             self.member: Optional[Member] = None
         else:
-            self.member: Optional[Member] = guild.get_member(self.user.id) or Member(data=member, state=state, guild=guild)
+            member['user'] = data['user']
+            if guild:  # can be None when cache is not filled yet 
+                self.member: Optional[Member] = guild.get_member(self.user.id) or Member(data=member, state=state, guild=guild)
+            else:
+                self.member: Optional[Member] = None
     
     def __repr__(self) -> str:
         return f'<MessageInteraction command={self.name} user={self.user} interaction_id={self.id}>'
@@ -668,13 +672,13 @@ class Message(Hashable):
         self.components: List[ActionRow] = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
+        self.channel: Messageable = channel
         interaction = data.get('interaction')
         self.interaction: Optional[MessageInteraction] = MessageInteraction(
             state=state,
             data=interaction,
             guild=self.guild
         ) if interaction else None
-        self.channel: Messageable = channel
         self._edited_timestamp: datetime = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
         self.pinned: bool = data['pinned']

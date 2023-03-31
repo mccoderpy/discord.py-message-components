@@ -141,7 +141,7 @@ class AutoModAction:
             except KeyError:
                 pass
             else:
-                if len(custom_message) > 150:
+                if custom_message and len(custom_message) > 150:
                     raise ValueError('The maximum length of the custom message is 150 characters.')
                 self.custom_message: Optional[str] = custom_message
             
