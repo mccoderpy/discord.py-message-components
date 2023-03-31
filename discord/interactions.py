@@ -481,15 +481,26 @@ class BaseInteraction:
         self.deferred: bool = False
         self.deferred_hidden: bool = False
         self.deferred_modal: bool = False
-        self.callback_message: Optional[Message] = None
         self._command = None
         self._component = None
-        self.messages: Optional[Dict[int, Union[Message, EphemeralMessage]]] = {}
+        self._callback_message: Optional[Union[Message, EphemeralMessage]] = None
+        self.messages: Optional[Dict[Union[str, int], Union[Message, EphemeralMessage]]] = {}
 
     def __repr__(self) -> str:
         """Represents a :class:`~discord.BaseInteraction` object."""
         return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
-
+    
+    @property
+    def callback_message(self) -> Optional[Union[Message, EphemeralMessage]]:
+        """Optional[Union[:class:`Message`, :class:`EphemeralMessage`]: The initial interaction response message,if any. (``@original``)"""
+        return self._callback_message
+    
+    @callback_message.setter
+    def callback_message(self, value: Optional[Union[Message, EphemeralMessage]]) -> None:
+        self._callback_message = value
+        if value:
+            self.messages['@original'] = value
+    
     async def _defer(
             self,
             response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
@@ -863,14 +874,15 @@ class BaseInteraction:
         else:
             msg = Message(state=self._state, channel=self.channel, data=data)
 
+        
+        if not self.callback_message or is_initial:
+            self.callback_message = msg
+        else:
+            self.messages[msg.id] = msg
         if response_type is not MISSING or is_initial:
             self.deferred = True
             if is_hidden:
                 self.deferred_hidden = True
-        if not self.callback_message and not self.deferred:
-            self.callback_message = msg
-        else:
-            self.messages[msg.id] = msg
         if delete_after is not None:
             await msg.delete(delay=delete_after)
         return msg
