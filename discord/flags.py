@@ -327,6 +327,17 @@ class MessageFlags(BaseFlags):
         return 256
     
     @flag_value
+    def show_link_not_discord_warning(self):
+        """:class:`bool`: Returns ``True`` if the message should show a warning that the link may not be safe.
+        
+        .. note::
+            Although this gets set by Discord for some embeds, and we receive a :func:`~discord.on_message_edit` event, it is not officially documented by Discord.
+            It's in the client but not used anywhere.
+        """
+        
+        return 1024
+    
+    @flag_value
     def suppress_notifications(self):
         """:class:`bool`: Returns ``True`` if the message is "silent".
         

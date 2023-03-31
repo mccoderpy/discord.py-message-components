@@ -33,7 +33,6 @@ from typing import (
     Union,
     Type,
     Tuple,
-    Iterable,
     Awaitable,
     Coroutine,
     Sequence,
@@ -629,7 +628,7 @@ def valid_icon_size(size: int) -> bool:
     return not size & (size - 1) and size in range(16, 4097)
 
 
-class SnowflakeList(array.array):
+class SnowflakeList(array.array, Iterable[int]):
     """Internal data storage class to efficiently store a list of snowflakes.
 
     This should have the following characteristics:
