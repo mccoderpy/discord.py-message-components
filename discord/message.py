@@ -59,7 +59,7 @@ from .guild import Guild
 from .mixins import Hashable
 from .sticker import Sticker
 from .http import handle_message_parameters
-from .channel import PartialMessageable
+from .channel import PartialMessageable, ThreadChannel
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -76,7 +76,7 @@ if TYPE_CHECKING:
     from .mentions import AllowedMentions
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
-    from .channel import TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost
+    from .channel import TextChannel, VoiceChannel, StageChannel, TextChannel, ForumChannel, ForumPost
 
     MentionableChannel = Union[TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost]
 
