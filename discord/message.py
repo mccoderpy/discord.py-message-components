@@ -1861,7 +1861,7 @@ class PartialMessage(Hashable):
             previous_allowed_mentions = None
 
         if suppress_embeds is not MISSING:
-            flags = MessageFlags._from_value(self.flags.value)
+            flags = MessageFlags._from_value(0)
             flags.suppress_embeds = suppress_embeds
         else:
             flags = MISSING
