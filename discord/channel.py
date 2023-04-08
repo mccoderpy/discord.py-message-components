@@ -2411,7 +2411,7 @@ class ForumTag(Hashable):
     moderated: :class:`bool`
         Whether only moderators can apply this tag to a post.
     """
-    __slots__ = ('name', 'moderated', 'emoji_id', 'emoji_name', 'guild', '_state')
+    __slots__ = ('id', 'name', 'moderated', 'emoji_id', 'emoji_name', 'guild', '_state')
 
     def __init__(
             self,
@@ -2422,6 +2422,7 @@ class ForumTag(Hashable):
     ):
         self.guild: Guild
         self._state: ConnectionState
+        self.id: int
         self.name: str = name
         self.moderated: bool = moderated
         self.emoji_id = emoji_id
@@ -2452,6 +2453,7 @@ class ForumTag(Hashable):
         self = cls.__new__(cls)
         self._state = state
         self.guild = guild
+        self.id = int(data['id'])
         self.name = data['name']
         self.moderated = data.get('moderated', False)
         self.emoji_id = utils._get_as_snowflake(data, 'emoji_id')
