@@ -71,7 +71,12 @@ __all__ = (
 
 class VoiceState:
     """Represents a Discord user's voice state.
+    
+    .. container:: operations
 
+        .. describe:: await voice(...)
+            Acts as a shortcut to :meth:`VoiceProtocol.connect`.
+    
     Attributes
     ------------
     deaf: :class:`bool`
