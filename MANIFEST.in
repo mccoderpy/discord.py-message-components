@@ -1,6 +1,7 @@
 include README.rst
 include LICENSE.txt
 include discord/*
+include discord/types/*
 include discord/oauth2/*
 include discord/bin/*.dll
 include discord/ext/commands/*
