@@ -600,6 +600,11 @@ class Permissions(BaseFlags):
     def use_soundboard(self):
         """:class:`bool`: Returns ``True`` if a user can use the soundboard in a voice channel."""
         return 1 << 42
+    
+    @flag_value
+    def send_voice_messages(self):
+        """:class:`bool`: Returns ``True`` if a user can send voice messages."""
+        return 1 << 46
 
 
 def augment_from_permissions(cls):
