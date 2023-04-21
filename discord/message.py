@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from base64 import b64decode
 import re
 import io
 
@@ -134,7 +135,7 @@ class Attachment(Hashable):
     .. versionchanged:: 1.7
         Attachment can now be cast to :class:`str` and is hashable.
     .. versionchanged:: 2.0
-        The :attr:`ephemeral` and :attr:`description` attributes were added.
+        The :attr:`ephemeral`, :attr:`description`, :attr:`duration` and :attr:`waveform` attributes were added.
 
     Attributes
     ------------
@@ -161,10 +162,12 @@ class Attachment(Hashable):
         Whether the attachment is ephemeral (part of an ephemeral message or was provided in a slash-command option).
     description: Optional[:class:`str`]
         The description for the file.
+    duration: Optional[:class:`float`]
+        The duration of the audio file (currently only for voice messages).
     """
 
     __slots__ = ('id', 'size', 'height', 'width', 'ephemeral', 'description',
-                 'filename', 'url', 'proxy_url', '_http', 'content_type')
+                 'filename', 'url', 'proxy_url', '_http', 'content_type', 'duration', '_waveform')
 
     def __init__(self, *, data: AttachmentPayload, state: ConnectionState):
         self.id: int = int(data['id'])
@@ -178,10 +181,17 @@ class Attachment(Hashable):
         self.proxy_url = data.get('proxy_url')
         self._http: HTTPClient = state.http
         self.content_type: str = data.get('content_type')
+        self.duration: Optional[float] = data.get('duration_secs')
+        self._waveform: Optional[List[int]] = data.get('waveform')
 
     def is_spoiler(self) -> bool:
         """:class:`bool`: Whether this attachment contains a spoiler."""
         return self.filename.startswith('SPOILER_')
+    
+    @property
+    def waveform(self) -> Optional[bytearray]:
+        """:class:`Optional[List[:class:`int`]]`: The waveform of the audio file (currently only for voice messages)."""
+        return b64decode(self._waveform) if self._waveform else None
 
     def __repr__(self) -> str:
         return '<Attachment id={0.id} filename={0.filename!r} url={0.url!r}>'.format(self)

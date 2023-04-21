@@ -42,6 +42,7 @@ from .snowflake import SnowflakeID
 from .sticker import GuildSticker
 
 __all__ = (
+    'PermissionFlags',
     'UnavailableGuild',
     'PartialGuild',
     'Guild',
@@ -104,6 +105,56 @@ GuildFeature = Literal[
     'ROLE_SUBSCRIPTIONS_ENABLED',
     'ROLE_SUBSCRIPTIONS_ENABLED_FOR_PURCHASE'
 ]
+PermissionFlags = Literal[
+    'create_instant_invite',
+    'kick_members',
+    'ban_members',
+    'administrator',
+    'manage_channels',
+    'manage_guild',
+    'add_reactions',
+    'view_audit_log',
+    'priority_speaker',
+    'stream',
+    'read_messages',
+    'send_messages',
+    'send_tts_messages',
+    'manage_messages',
+    'embed_links',
+    'attach_files',
+    'read_message_history',
+    'mention_everyone',
+    'external_emojis',
+    'view_guild_insights',
+    'connect',
+    'speak',
+    'mute_members',
+    'deafen_members',
+    'move_members',
+    'use_voice_activation',
+    'change_nickname',
+    'manage_nicknames',
+    'manage_roles',
+    'manage_webhooks',
+    'manage_expressions',
+    'create_expressions',
+    'use_slash_commands',
+    'request_to_speak',
+    'manage_events',
+    'create_events',
+    'manage_threads',
+    'create_public_threads',
+    'create_private_threads',
+    'use_external_stickers',
+    'send_messages_in_threads',
+    'start_embedded_activities',
+    'moderate_members',
+    'view_creator_monetization_analytics',
+    'use_soundboard',
+    'use_external_sounds',
+    'send_voice_messages'
+]
+
 
 
 class UnavailableGuild(TypedDict):

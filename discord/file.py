@@ -23,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import os.path
 
@@ -71,14 +72,18 @@ class File:
         The file description can be set to attached images to show a alternative text.
     """
 
-    __slots__ = ('fp', 'filename', 'description', 'spoiler', '_original_pos', '_owner', '_closer')
+    __slots__ = ('fp', 'filename', 'description', 'spoiler', 'duration', 'waveform', '_original_pos', '_owner', '_closer')
 
-    def __init__(self,
-                 fp: Union[io.IOBase, str, bytes, 'PathLike[str]', 'PathLike[bytes]', int],
-                 filename: Optional[str] = None,
-                 description: Optional[str] = None,
-                 *,
-                 spoiler: bool = False):
+    def __init__(
+            self,
+            fp: Union[io.IOBase, str, bytes, PathLike[str], PathLike[bytes], int],
+            filename: Optional[str] = None,
+            description: Optional[str] = None,
+            *,
+            spoiler: bool = False,
+            duration: Optional[float] = None,
+            waveform: Optional[str] = None
+    ):
         self.fp = fp
 
         if isinstance(fp, io.IOBase):
@@ -113,6 +118,8 @@ class File:
             self.filename = 'SPOILER_' + self.filename
 
         self.spoiler = spoiler or (self.filename is not None and self.filename.startswith('SPOILER_'))
+        self.duration: Optional[float] = duration
+        self.waveform: Optional[str] = waveform
 
     def reset(self, *, seek=True):
         # The `seek` parameter is needed because
@@ -132,11 +139,17 @@ class File:
             self._closer()
 
     def to_dict(self, file_index: int) -> dict:
-        return {
+        base = {
             'id': file_index,
             'description': self.description,
             'filename': self.filename
         }
+        if self.duration is not None:
+            base['duration_secs'] = self.duration
+        if self.waveform is not None:
+            base['waveform'] = self.waveform
+        return base
+            
 
 
 class UploadFile(File):

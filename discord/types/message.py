@@ -165,6 +165,8 @@ class Attachment(TypedDict):
     height: NotRequired[Optional[int]]
     width: NotRequired[Optional[int]]
     ephemeral: NotRequired[Literal[True]]
+    duration_secs: NotRequired[float]
+    waveform: NotRequired[str]
 
 
 class PartialMessage(TypedDict):
