@@ -1230,55 +1230,89 @@ class ApplicationFlags(BaseFlags):
             representing the currently available flags. You should query
             flags via the properties rather than using this raw value.
     """
+    @flag_value
+    def managed_emoji(self):
+        """:class:`bool`: Returns ``True`` if the application is a managed emoji.
+        
+        .. versionadded:: 2.0
+        """
+        return 1 << 2
 
+    @flag_value
+    def group_dm_create(self):
+        """:class:`bool`: Returns ``True`` if the application can create group DMs.
+        
+        .. versionadded:: 2.0
+        """
+        return 1 << 5
+
+    @flag_value
+    def application_auto_moderation_rule_create_badge(self):
+        """:class:`bool`: Returns ``True`` if the application uses the Auto Moderation API.
+
+        .. versionadded:: 2.0
+        """
+        return 1 << 6
+
+    @flag_value
+    def rpc_has_connected(self):
+        """:class:`bool`: Returns ``True`` if the application has connected to RPC.
+        
+        .. versionadded:: 2.0
+        """
+        return 1 << 11
+    
     @flag_value
     def gateway_presence(self):
         """:class:`bool`: Returns ``True`` if the application is approved for the privileged gateway presence-intent."""
-
         return 1 << 12
 
     @flag_value
     def gateway_presence_limited(self):
         """:class:`bool`: Returns ``True`` if the privileged gateway presence-intent
-        is enabled in the application in the developer-portal."""
-
+        is enabled in the application in the developer-portal.
+        """
         return 1 << 13
 
     @flag_value
     def gateway_guild_members(self):
         """:class:`bool`: Returns ``True`` if the application is approved
-        for the privileged gateway guild-members-intent."""
-
+        for the privileged gateway guild-members-intent.
+        """
         return 1 << 14
 
     @flag_value
     def gateway_guild_members_limited(self):
         """:class:`bool`: Returns ``True`` if the privileged gateway guild-members-intent
-        is enabled in the application in the developer-portal."""
-
+        is enabled in the application in the developer-portal.
+        """
         return 1 << 15
 
     @flag_value
     def verification_pending_guild_limit(self):
         """:class:`bool: Returns ``True`` if this application has reached the required number of guilds
-        to apply for verification. (76+ Guilds)"""
+        to apply for verification. (76+ Guilds)
+        """
         return 1 << 16
 
     @flag_value
     def embedded(self):
-        """:class:`bool`: Returns ``True`` if this application could have embedded invites.(usually  voice-activity's)"""
+        """:class:`bool`: Returns ``True`` if this application could have embedded invites.(usually  voice-activity's)
+        """
         return 1 << 17
 
     @flag_value
     def gateway_message_content(self):
         """:class:`bool`: Returns ``True`` if the application is approved
-        for the privileged gateway message-content-intent."""
+        for the privileged gateway message-content-intent.
+        """
         return 1 << 18
 
     @flag_value
     def gateway_message_content_limited(self):
         """:class:`bool`: Returns ``True`` if the privileged gateway message-content-intent
-        is enabled in the application in the developer-portal."""
+        is enabled in the application in the developer-portal.
+        """
         return 1 << 19
 
     @flag_value
