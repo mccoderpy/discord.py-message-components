@@ -32,7 +32,7 @@ from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Union)
 from typing_extensions import Literal
 
 from . import abc, utils
-from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel, ForumPost
+from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel, ForumPost, PartialMessageable
 from .components import *
 from .embeds import Embed
 from .enums import (
@@ -669,7 +669,8 @@ class BaseInteraction:
 
         state = self._state
         if not self.channel:
-            self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
+            ch = await self._http.get_channel(self.channel_id)
+            self.channel = _channel_factory(ch['type'])[0](state=state, data=ch)
 
         if response_type is MISSING:
             params = handle_message_parameters(
@@ -978,8 +979,8 @@ class BaseInteraction:
         return self.member if self.member is not None else self.user
 
     @property
-    def channel(self) -> Union[DMChannel, TextChannel, ThreadChannel, ForumPost, VoiceChannel]:
-        """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`]:
+    def channel(self) -> Union[DMChannel, TextChannel, ThreadChannel, ForumPost, VoiceChannel, PartialMessageable]:
+        """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`, :class:`~discord.ForumPost`, :class:`~discord.PartialMessageable`
         The channel where the interaction was invoked in.
         """
         return getattr(self, '_channel', self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id))

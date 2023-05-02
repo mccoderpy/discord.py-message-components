@@ -592,7 +592,7 @@ class ConnectionState:
         interaction = BaseInteraction.from_type(state=self, data=data)
         interaction.user = self.store_user(interaction._user)
         if interaction.guild_id:
-            interaction.channel = interaction.guild.get_channel(interaction.channel_id)
+            interaction.channel = interaction.guild.get_channel(interaction.channel_id) or PartialMessageable(id=interaction.channel_id, state=self)
             interaction.member = interaction.guild.get_member(interaction.user_id)
             if interaction.member is None:
                 # This can only be the case if ``GUILD_MEMBERS`` Intents are not enabled or the member is not in the cache right now.
