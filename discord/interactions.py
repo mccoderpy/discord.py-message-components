@@ -450,7 +450,7 @@ class BaseInteraction:
         self.id: int = int(data['id'])
         self._token = data['token']
         self.guild_id: int = utils._get_as_snowflake(data, 'guild_id')
-        self.channel_id: int = int(data.get('channel_id', 0))
+        self.channel_id: int = int(data.get('channel_id', data.get('channel', {}).get('id', 0)))
         message_data = data.get('message', {})
         if message_data:
             if MessageFlags._from_value(message_data['flags']).ephemeral:
