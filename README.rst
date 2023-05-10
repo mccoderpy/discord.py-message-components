@@ -96,7 +96,7 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
     # Windows
     py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
 
-Of curse you nead to have git installed on your device. If you need help with this take a look `here <https://github.com/git-guides/install-git>`_
+Of course you nead to have git installed on your device. If you need help with this take a look `here <https://github.com/git-guides/install-git>`_
 
 Examples
 --------
