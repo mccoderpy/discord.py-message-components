@@ -35,16 +35,16 @@
 |                                                              **❗ℹIMPORTANTℹ❗**                                                                    |
 +===================================================================================================================================================+
 | This branch represents only the `PyPI <https://pypi.org>`_ version of this library,                                                               |
-| which is currently **not up to date** due to some (privat) issues                                                                                 |
+| which is currently **not up to date** due to some (private) issues                                                                                |
 | (as soon as we have documented the new features and the developer branch is stable enough, this will be updated).                                 |
 |                                                                                                                                                   |
-| **To get the latest version with the newest features and bug(-fixes) please take a look at the** `developer <../../tree/developer>`_ **branch**   |
+| **To get the latest version with the newest features and bug(-fixes), please take a look at the** `developer <../../tree/developer>`_ **branch.** |
 +---------------------------------------------------------------------------------------------------------------------------------------------------+
 
 **NOTE:** 
      This library will be further developed independently of discord.py.
-     New features are also implemented. It's not an extension!
-     The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better one yet. 
+     New features are also implemented. It is not an extension!
+     The name only comes from the fact that the original purpose of the library was to add support for message components and we haven't found a better name yet. 
 
 .. figure:: https://github.com/mccoderpy/discord.py-message-components/raw/main/images/rtd-logo-wordmark-light.png
    :name: discord.py-message-components documentation
@@ -55,18 +55,18 @@
    
    **Read the Documentation** `here <https://discordpy-message-components.readthedocs.io/en/latest/>`_
 
-You need help? Or have ideas/feedback?
-______________________________________
+You are in need of help or want to leave feedback?
+__________________________________________________
 
-Open a `issue <../../issues>`_/`pull request <../../pulls>`_, join the `support-server <https://discord.gg/sb69muSqsg>`_ or send me a direct-message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
+Open a `issue <../../issues>`_/`pull request <../../pulls>`_, join the `support server <https://discord.gg/sb69muSqsg>`_ or send me a direct message on `Discord <https://discord.com/channels/@me>`_: ``mccuber04#2960``
 
 Installing
 __________
 
-**Python 3.5.3 or higher is required**
+**Python 3.5.3 or higher is required.**
 
-This library overwrite the original discord.py library (or any other that would be imported using `import discord`) so to be sure all will work fine
-first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ Library if it is installed:
+This library overwrites the original discord.py library (or any other that would be imported using `import discord`) so to be sure all will work fine
+first uninstall the original `discord.py <https://pypi.org/project/discord.py/1.7.3>`_ library if it is installed:
 
 .. code:: sh
 
@@ -86,7 +86,7 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
     # Windows
     py -3 -m pip install -U discord.py-message-components
 
-‼️To install it from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** use:
+‼️To install it from the `developer branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ of this library which is the **most up to date** and has **fewer bugs** use:
 
 .. code:: sh
     
@@ -96,12 +96,12 @@ Then install `this library <https://pypi.org/project/discord.py-message-componen
     # Windows
     py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer 
 
-Of course you nead to have git installed on your device. If you need help with this take a look `here <https://github.com/git-guides/install-git>`_
+Of course you nead to have git installed on your device. If you need help with this, take a look `here <https://github.com/git-guides/install-git>`_
 
 Examples
 --------
 
-A Command that sends you a Message and edit it when you click a Button:
+A command that sends you a message and edit it when you click a Button:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
@@ -158,7 +158,7 @@ A Command that sends you a Message and edit it when you click a Button:
     client.run('You Bot-Token here')
 
 
-Another (complex) Example where a small Embed will be send; you can move a small white ⬜ with the Buttons:
+Another more complex example where a small embed will be send; you can move a small white ⬜ with the buttons:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
@@ -294,4 +294,4 @@ Another (complex) Example where a small Embed will be send; you can move a small
                                                              arrow_button().set_label('→').set_custom_id('right'))]
                                )
 
-Take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/latest/>`_ to see more examples.
+Please take a look at `the documentation <https://discordpy-message-components.readthedocs.io/en/latest/>`_ if you want to see more examples.
