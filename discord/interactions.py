@@ -272,7 +272,7 @@ class EphemeralMessage:
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
-            suppress: bool = False,
+            suppress_embeds: bool = False,
             delete_after: Optional[float] = None
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
@@ -311,7 +311,7 @@ class EphemeralMessage:
 
                 Only needed when ``attachments`` are passed, otherwise will be ignored.
 
-        suppress: :class:`bool`
+        suppress_embeds: :class:`bool`
             Whether to suppress embeds for the message. If ``True`` this will remove all embeds from the message.
             If `´False`` it adds them back.
         delete_after: :class:`float`
@@ -329,7 +329,7 @@ class EphemeralMessage:
 
         """
 
-        if suppress:
+        if suppress_embeds:
             flags = MessageFlags._from_value(self.flags.value)
             flags.suppress_embeds = True
         else:
