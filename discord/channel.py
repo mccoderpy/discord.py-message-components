@@ -2980,7 +2980,7 @@ class PartialMessageable(abc.Messageable, Hashable):
         The channel type associated with this partial messageable, if given.
     """
 
-    def __init__(self, state: 'ConnectionState', id: int, type: Optional[ChannelType] = None, *, guild_id: int = None):
+    def __init__(self, state: ConnectionState, id: int, type: Optional[ChannelType] = None, *, guild_id: int = None):
         self._state: ConnectionState = state
         self.id: int = id
         self.guild_id: Optional[int] = guild_id

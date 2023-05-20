@@ -983,7 +983,11 @@ class BaseInteraction:
         """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`, :class:`~discord.ForumPost`, :class:`~discord.PartialMessageable`
         The channel where the interaction was invoked in.
         """
-        return getattr(self, '_channel', self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id))
+        return getattr(
+            self,
+            '_channel',
+            self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id)
+        ) or PartialMessageable(state=self._state, id=self.channel_id)
 
     @channel.setter
     def channel(self, channel):
