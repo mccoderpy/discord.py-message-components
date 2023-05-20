@@ -470,12 +470,12 @@ class PublicUserFlags(BaseFlags):
     @flag_value
     def spammer(self):
         """:class:`bool`: Returns ``True`` if the user is flagged as a spammer by discord."""
-        return UserFlags.spammer
+        return UserFlags.spammer.value
 
     @flag_value
     def active_developer(self):
         """:class:`bool`: Returns ``True`` if the user is a developer of an active discord application."""
-        return UserFlags.active_developer
+        return UserFlags.active_developer.value
 
     def all(self):
         """List[:class:`UserFlags`]: Returns all public flags the user has."""
