@@ -444,35 +444,63 @@ class OptionType(Enum):
     def from_type(cls, t):
         from .abc import User, GuildChannel, Role
         from .message import Attachment
-        if getattr(t, '__origin__', None) is Union:
-            # print(t.__origin__, dir(t.__origin__))
-            args = getattr(t, '__args__', [])
-            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
-                return cls.mentionable, None
+
+        if isinstance(t, tuple):  # typing.Union has been used
+            datatypes = [cls.from_type(op) for op in t if op is not None]
+            if all(x == cls.channel for x, _ in datatypes):
+                return cls.channel, [c for _, c in datatypes]
+            elif {t for t, _ in datatypes} <= {cls.role, cls.user}:
+                return cls.mentionable
             else:
-                t = args[0]  # not the best solution, but we shall not get here
+                raise TypeError("Invalid usage of typing.Union")
+
+        py_3_10_union_type = hasattr(types, "UnionType") and isinstance(t, types.UnionType)
+
+        if py_3_10_union_type or getattr(t, '__origin__', None) is Union:
+            return cls.from_type(t.__args__)
+
         if isinstance(t, int):
             return try_enum(cls, t), None
         elif isinstance(t, str):
             return cls[t], None
+
         if issubclass(t, str):
             return cls.string, None
-        if issubclass(t, bool):
+        elif issubclass(t, bool):
             return cls.boolean, None
-        if issubclass(t, int):
+        elif issubclass(t, int):
             return cls.integer, None
-        if issubclass(t, User):
+        elif issubclass(t, float):
+            return cls.number, None
+
+        t_name = t.__name__
+
+        if t_name in {"User", "Member"}:
             return cls.user, None
-        if issubclass(t, GuildChannel):
+        elif t_name == "Role":
+            return cls.role, None
+
+        elif t_name in {
+            "GuildChannel",
+            "TextChannel",
+            "VoiceChannel",
+            "StageChannel",
+            "CategoryChannel",
+            "ForumChannel",
+            "ForumPost",
+            "DMChannel",
+        }:
             if hasattr(t, 'channel_type'):
                 return cls.channel, [t.channel_type()]
             else:
                 return cls.channel, None
-        if issubclass(t, Role):
-            return cls.role, None
-        if issubclass(t, Attachment):
+        elif t_name == "ThreadChannel":
+            return cls.channel, [ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread]
+
+        elif t_name == "Attachment":
             return cls.attachment, None
-        return t, None
+
+        raise TypeError(f"Invalid class {t!r} used as an option type. ")
 
 
 class TimestampStyle(Enum):
