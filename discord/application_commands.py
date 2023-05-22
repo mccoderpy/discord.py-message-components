@@ -44,12 +44,20 @@ import copy
 import asyncio
 import inspect
 import warnings
+from enum import Enum
 from types import FunctionType
 
 from .utils import async_all, find, get, snowflake_time, SupportsStr
-from .abc import GuildChannel
 from .channel import PartialMessageable
-from .enums import ApplicationCommandType, ChannelType, OptionType, Locale, AppCommandPermissionType, try_enum
+from .enums import (
+    Enum as DiscordEnum,
+    ApplicationCommandType,
+    ChannelType,
+    OptionType,
+    Locale,
+    AppCommandPermissionType,
+    try_enum
+)
 from .permissions import Permissions
 
 if TYPE_CHECKING:
@@ -61,6 +69,32 @@ if TYPE_CHECKING:
     from .types import (
         app_command
     )
+
+    from .channel import ThreadChannel
+    from .abc import GuildChannel, Mentionable
+    from .member import Member
+    from .user import User
+    from .message import Attachment
+    from .role import Role
+
+    ValidOptionType = Union[
+        Type[str],
+        Type[bool],
+        Type[int],
+        Type[float],
+        Type[GuildChannel],
+        Type[ThreadChannel],
+        Type[Member],
+        Type[User],
+        Type[Attachment],
+        Type[Role],
+        Type[Mentionable],
+        OptionType,
+        Converter,
+        Type[Converter],
+        Type[Enum],
+        Type[DiscordEnum],
+    ]
 
 __all__ = (
     'Localizations',
@@ -527,7 +561,7 @@ class SlashCommandOptionChoice:
     ):
 
         if 100 < len(str(name)) < 1:
-            raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
+            raise ValueError(f'The name of a choice must bee between 1 and 100 characters long, got {len(name)}.')
         self.name: str = str(name)
         self.value: Union[str, int, float] = value if value is not None else name
         self.name_localizations: Optional[Localizations] = name_localizations
@@ -536,12 +570,11 @@ class SlashCommandOptionChoice:
         return '<SlashCommandOptionChoice name=%s, value=%s>' % (self.name, self.value)
 
     def to_dict(self) -> Dict[str, Any]:
-        base = {
+        return {
             'name': str(self.name),
             'value': self.value,
-            'name_localizations': self.name_localizations.to_dict()
+            'name_localizations': self.name_localizations.to_dict(),
         }
-        return base
 
     @classmethod
     def from_dict(cls, data) -> SlashCommandOptionChoice:
@@ -619,7 +652,7 @@ class SlashCommandOption:
 
     def __init__(
             self,
-            option_type: Union[OptionType, int, type],
+            option_type: ValidOptionType,
             name: str,
             description: str,
             name_localizations: Optional[Localizations] = Localizations(),
@@ -639,14 +672,30 @@ class SlashCommandOption:
     ) -> None:
         from .ext.commands import Converter, Greedy
         if not isinstance(option_type, OptionType):
-            if issubclass(type(option_type), Converter) or converter is Greedy:
+            channel_type = None
+
+            option_type_is_class = isinstance(option_type, type)
+            if option_type_is_class and issubclass(option_type, (Enum, DiscordEnum)):
+                if description is None:
+                    description = inspect.getdoc(option_type)
+                choices = [SlashCommandOptionChoice(e.name.translate({95: 0x20}), e.value) for e in option_type]
+                value_class = choices[0].value.__class__
+
+                if all(isinstance(elem.value, value_class) for elem in choices):
+                    option_type, _ = OptionType.from_type(choices[0].value.__class__)
+                else:
+                    choices = [SlashCommandOptionChoice(e.name.translate({95: 0x20}), str(e.value)) for e in option_type]
+                    option_type = OptionType.string
+            elif issubclass(type(option_type), Converter) or converter is Greedy:
                 converter = copy.copy(option_type)
-                option_type = str
-            option_type, channel_type = OptionType.from_type(option_type)
+                option_type = OptionType.string
+            else:
+                option_type, channel_type = OptionType.from_type(option_type)
             if not isinstance(option_type, OptionType):
-                raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__}.')
+                raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__!r}.')
             if channel_type and not channel_types:
                 channel_types = channel_type
+
         self.type = option_type
 
         if not CHAT_COMMAND_NAME_REGEX.match(name):
@@ -658,7 +707,9 @@ class SlashCommandOption:
         self.name: str = name
         self.name_localizations: Localizations = name_localizations
         if 100 < len(description) < 1:
-            raise ValueError('The description must be between 1 and 100 characters long, got %s.' % len(description))
+            raise ValueError(
+                f'The description must be between 1 and 100 characters long, got {len(description)}.'
+            )
         self.description: str = description
         self.description_localizations: Localizations = description_localizations
         self.required: bool = required
@@ -671,7 +722,7 @@ class SlashCommandOption:
         self.max_value: Optional[Union[int, float]] = max_value
         self.min_length: int = min_length
         self.max_length: int = max_length
-        for index, choice in enumerate(choices):  # TODO: find a more efficient way to do this
+        for index, choice in enumerate(copy.copy(choices)):  # TODO: find a more efficient way to do this
             if not isinstance(choice, SlashCommandOptionChoice):
                 choices[index] = SlashCommandOptionChoice(choice)
         self.choices: List[SlashCommandOptionChoice] = choices
@@ -705,12 +756,12 @@ class SlashCommandOption:
 
     @autocomplete.setter
     def autocomplete(self, value: bool) -> None:
-        if bool(value) is True:
+        if value:
             if self.type not in (OptionType.string, OptionType.integer, OptionType.number):
                 raise TypeError('Only Options of type string, integer or number could have autocomplete.')
             elif self.choices:
                 raise TypeError('Options with choices could not have autocomplete.')
-        self._autocomplete = bool(value)
+        self._autocomplete = value
 
     @property
     def choices(self) -> Optional[List[SlashCommandOptionChoice]]:
@@ -1931,11 +1982,39 @@ def generate_options(
         module = annotation.__module__
         if type(annotation) is _Greedy:
             converter = annotation
+
+        option_type_is_class = isinstance(annotation, type)
+        if option_type_is_class and issubclass(annotation, (Enum, DiscordEnum)):
+            if description is None:
+                description = inspect.getdoc(annotation)
+            choices = [SlashCommandOptionChoice(e.name.translate({95: 0x20}), e.value) for e in annotation]
+            value_class = choices[0].value.__class__
+
+            if all(isinstance(elem.value, value_class) for elem in choices):
+                option_type, _ = OptionType.from_type(
+                    choices[0].value.__class__
+                )
+            else:
+                choices = [SlashCommandOptionChoice(e.name.translate({95: 0x20}), str(e.value)) for e in annotation]
+                option_type = OptionType.string
+            options.append(
+                SlashCommandOption(
+                    option_type=option_type,
+                    name=name,
+                    description=description,
+                    description_localizations=description_localizations,
+                    required=required,
+                    choices=choices,
+                    default=default,
+                    converter=converter
+                )
+            )
+            continue
         elif module.startswith('discord.') and not any([m in module for m in {'application_commands', 'enums'}]):
             converter = annotation
         elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
-            args: List = getattr(annotation, '__args__', [])
+            args = getattr(annotation, '__args__', [])
             union: List[Any] = []
             if isinstance(args, tuple):
                 args = list(args)

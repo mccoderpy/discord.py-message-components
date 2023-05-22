@@ -83,3 +83,12 @@ AppCommandPermissions
 
 .. autoclass:: AppCommandPermission()
     :members:
+
+
+Miscellaneous
+~~~~~~~~~~~~~
+
+.. attributetable:: Mentionable
+
+.. autoclass:: Mentionable()
+    :members:

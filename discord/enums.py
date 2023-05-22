@@ -26,9 +26,8 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 import types
-from typing import Union, Any, Type
 from collections import namedtuple
-
+from typing import Union, List, Tuple, Any, Type
 
 __all__ = (
     'Enum',
@@ -81,9 +80,9 @@ __all__ = (
 
 
 def _create_value_cls(name) -> Type[tuple]:
-    cls = namedtuple(f'_EnumValue_' + name, 'name value')
+    cls = namedtuple(f'_EnumValue_{name}', 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
-    cls.__str__ = lambda self: '%s.%s' % (name, self.name)
+    cls.__str__ = lambda self: f'{name}.{self.name}'
 
     def __getattribute__(self, n) -> Union[bool, Any]:
         # With this you can use something like some_channel.type.text to check if it is of this type
@@ -93,9 +92,8 @@ def _create_value_cls(name) -> Type[tuple]:
         else:
             if n in self._actual_enum_cls_.__members__:
                 return self.name == n
-            else:
-                raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
-            
+            raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
+
     cls.__getattribute__ = __getattribute__
     return cls
 
@@ -229,15 +227,13 @@ class ChannelType(Enum):
     def from_type(cls, obj):
         if isinstance(obj, int):
             return cls.try_value(obj)
-        if hasattr(obj, 'channel_type'):
-            return obj.channel_type()
-        return obj
+        return obj.channel_type() if hasattr(obj, 'channel_type') else obj
 
 
 class PermissionType(Enum):
     role   = 0
     member = 1
-    
+
     def __str__(self):
         return self.name
 
@@ -441,9 +437,7 @@ class OptionType(Enum):
         return getattr(self, 'name')
 
     @classmethod
-    def from_type(cls, t):
-        from .abc import User, GuildChannel, Role
-        from .message import Attachment
+    def from_type(cls, t) -> Tuple[OptionType, List[ChannelType]]:
 
         if isinstance(t, tuple):  # typing.Union has been used
             datatypes = [cls.from_type(op) for op in t if op is not None]
