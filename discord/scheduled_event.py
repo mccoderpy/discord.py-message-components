@@ -84,15 +84,14 @@ class GuildScheduledEvent(Hashable):
         self.description: Optional[str] = data.get('description', None)
         self.start_time: datetime = datetime.fromisoformat(data['scheduled_start_time'])
         self.end_time: Optional[datetime] = datetime.fromisoformat(data['scheduled_end_time']) \
-            if data['scheduled_end_time'] is not None else None
+                if data['scheduled_end_time'] is not None else None
         self.privacy_level: PrivacyLevel = try_enum(PrivacyLevel, data['privacy_level'])
         self.status: EventStatus = try_enum(EventStatus, data['status'])
         self.entity_type: EventEntityType = try_enum(EventEntityType, data['entity_type'])
         self.entity_id: Optional[int] = _get_as_snowflake(data, 'entity_id')
         self._entity_meta: Optional[dict] = data.get('entity_metadata', None)
         self.image: Optional[str] = data.get('image', None)
-        creator = data.pop('creator', None)
-        if creator:
+        if creator := data.pop('creator', None):
             self.creator: Optional['User'] = state.store_user(data=creator)
         else:
             self.creator: Optional['User'] = state.get_user(self.creator_id) or None
@@ -187,10 +186,14 @@ class GuildScheduledEvent(Hashable):
         else:
             if not isinstance(entity_type, EventEntityType):
                 entity_type = try_enum(EventEntityType, entity_type)
-                if not isinstance(entity_type, EventEntityType):
-                    raise ValueError('entity_type must be a valid EventEntityType.')
+            if not isinstance(entity_type, EventEntityType):
+                raise ValueError('entity_type must be a valid EventEntityType.')
 
-            if entity_type.external and not (self.location or fields.get('location', None)):
+            if (
+                entity_type.external
+                and not self.location
+                and not fields.get('location', None)
+            ):
                 raise InvalidArgument('location must be provided if type is EventEntityType.external')
             fields['entity_type'] = int(entity_type)
 
@@ -249,7 +252,7 @@ class GuildScheduledEvent(Hashable):
                 if not isinstance(end_time, datetime):
                     raise TypeError(f'The end_time must be a datetime.datetime object, not {end_time.__class__.__name__}.')
                 elif end_time < datetime.utcnow():
-                    raise ValueError(f'The end_time could not be in the past.')
+                    raise ValueError('The end_time could not be in the past.')
                 fields['scheduled_end_time'] = end_time.isoformat()
 
         if entity_type == 3 and not end_time:
@@ -264,11 +267,11 @@ class GuildScheduledEvent(Hashable):
                 if not isinstance(start_time, datetime):
                     raise TypeError(f'The start_time must be a datetime.datetime object, not {start_time.__class__.__name__}.')
                 elif start_time < datetime.utcnow():
-                    raise ValueError(f'The start_time could not be in the past.')
+                    raise ValueError('The start_time could not be in the past.')
                 fields['scheduled_start_time'] = start_time.isoformat()
 
         if end_time and start_time > end_time:
-            raise ValueError(f'The start_time could not be before the end_time.')
+            raise ValueError('The start_time could not be before the end_time.')
 
         try:
             status: EventStatus = fields['status']
@@ -279,7 +282,9 @@ class GuildScheduledEvent(Hashable):
                 raise TypeError(f'The status must be of type discord.EventStatus, not {status.__class__.__name__}.')
             current_status = self.status
             if current_status.canceled or current_status.completed:
-                raise ValueError(f'The status of an completed or canceled event could not be changed.')
+                raise ValueError(
+                    'The status of an completed or canceled event could not be changed.'
+                )
             elif current_status.active and not status.completed:
                 raise ValueError('The status of an active event could only be changed to completed.')
             elif current_status.scheduled and not status.active or status.canceled:

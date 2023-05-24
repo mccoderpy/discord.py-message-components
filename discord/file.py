@@ -115,7 +115,7 @@ class File:
         self.description = description or None
 
         if spoiler and self.filename is not None and not self.filename.startswith('SPOILER_'):
-            self.filename = 'SPOILER_' + self.filename
+            self.filename = f'SPOILER_{self.filename}'
 
         self.spoiler = spoiler or (self.filename is not None and self.filename.startswith('SPOILER_'))
         self.duration: Optional[float] = duration

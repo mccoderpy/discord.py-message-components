@@ -147,19 +147,19 @@ class User(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is User:
-            if Snowflake.__subclasshook__(C) is NotImplemented:
-                return NotImplemented
+        if cls is not User:
+            return NotImplemented
+        if Snowflake.__subclasshook__(C) is NotImplemented:
+            return NotImplemented
 
-            mro = C.__mro__
-            for attr in ('display_name', 'mention', 'name', 'avatar', 'discriminator', 'bot'):
-                for base in mro:
-                    if attr in base.__dict__:
-                        break
-                else:
-                    return NotImplemented
-            return True
-        return NotImplemented
+        mro = C.__mro__
+        for attr in ('display_name', 'mention', 'name', 'avatar', 'discriminator', 'bot'):
+            for base in mro:
+                if attr in base.__dict__:
+                    break
+            else:
+                return NotImplemented
+        return True
 
 
 class PrivateChannel(metaclass=abc.ABCMeta):
@@ -186,10 +186,7 @@ class PrivateChannel(metaclass=abc.ABCMeta):
                 return NotImplemented
 
             mro = C.__mro__
-            for base in mro:
-                if 'me' in base.__dict__:
-                    return True
-            return NotImplemented
+            return next((True for base in mro if 'me' in base.__dict__), NotImplemented)
         return NotImplemented
 
 
@@ -324,13 +321,9 @@ class GuildChannel:
                 payload = {
                     'allow': allow.value,
                     'deny': deny.value,
-                    'id': target.id
+                    'id': target.id,
+                    'type': 'role' if isinstance(target, Role) else 'member',
                 }
-
-                if isinstance(target, Role):
-                    payload['type'] = 'role'
-                else:
-                    payload['type'] = 'member'
 
                 perms.append(payload)
             options['permission_overwrites'] = perms
@@ -356,7 +349,9 @@ class GuildChannel:
         for index, overridden in enumerate(data.get('permission_overwrites', [])):
             overridden_type = try_enum(PermissionType, overridden.pop('type'))
             if not isinstance(overridden_type, PermissionType):
-                raise AttributeError('Type type should be 0 - member, or 1 - role not %s' % overridden_type)
+                raise AttributeError(
+                    f'Type type should be 0 - member, or 1 - role not {overridden_type}'
+                )
             overridden_id = int(overridden.pop('id'))
             self._overwrites.append(_Overwrites(id=overridden_id, type=overridden_type.name, **overridden))
 
@@ -371,9 +366,7 @@ class GuildChannel:
                 # swap it to be the first one.
                 everyone_index = index
 
-        # do the swap
-        tmp = self._overwrites
-        if tmp:
+        if tmp := self._overwrites:
             tmp[everyone_index], tmp[0] = tmp[0], tmp[everyone_index]
 
     @property
@@ -395,7 +388,7 @@ class GuildChannel:
     @property
     def mention(self):
         """:class:`str`: The string that allows you to mention the channel."""
-        return '<#%s>' % self.id
+        return f'<#{self.id}>'
 
     @property
     def jump_url(self):
@@ -694,15 +687,14 @@ class GuildChannel:
             raise InvalidArgument(f'target parameter must be either Member or Role, not {target.__class__.__name__}')
 
         if isinstance(overwrite, _Undefined):
-            if len(permissions) == 0:
+            if not permissions:
                 raise InvalidArgument('No overwrite provided.')
             try:
                 overwrite = PermissionOverwrite(**permissions)
             except (ValueError, TypeError):
                 raise InvalidArgument('Invalid permissions given to keyword arguments.')
-        else:
-            if len(permissions) > 0:
-                raise InvalidArgument('Cannot mix overwrite and keyword arguments.')
+        elif permissions:
+            raise InvalidArgument('Cannot mix overwrite and keyword arguments.')
 
         # TODO: wait for event
 

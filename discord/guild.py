@@ -447,7 +447,7 @@ class Guild(Hashable):
         )
         resolved = ['%s=%r' % (attr, getattr(self, attr)) for attr in attrs]
         resolved.append('member_count=%r' % getattr(self, '_member_count', None))
-        return '<Guild %s>' % ' '.join(resolved)
+        return f"<Guild {' '.join(resolved)}>"
 
     def _update_voice_state(self, data, channel_id):
         user_id = int(data['user_id'])
@@ -553,8 +553,7 @@ class Guild(Hashable):
 
         self.owner_id = utils._get_as_snowflake(guild, 'owner_id')
         self.afk_channel = self.get_channel(utils._get_as_snowflake(guild, 'afk_channel_id'))
-        welcome_screen = guild.get('welcome_screen', None)
-        if welcome_screen:
+        if welcome_screen := guild.get('welcome_screen', None):
             self._welcome_screen = WelcomeScreen(guild=self, state=self._state, data=welcome_screen)
         else:
             self._welcome_screen = None
@@ -715,7 +714,7 @@ class Guild(Hashable):
 
         This is sorted by the position of the threads :attr:`~discord.ThreadChannel.parent` and are in UI order from top to bottom.
         """
-        r = list()
+        r = []
         [r.extend(ch.threads) for ch in self._channels.values() if isinstance(ch, TextChannel)]
         r.sort(key=lambda t: (t.parent_channel.position, t.id))
         return r
@@ -930,10 +929,14 @@ class Guild(Hashable):
 
         .. versionadded:: 1.6
         """
-        for role in self._roles.values():
-            if role.is_premium_subscriber():
-                return role
-        return None
+        return next(
+            (
+                role
+                for role in self._roles.values()
+                if role.is_premium_subscriber()
+            ),
+            None,
+        )
 
     @property
     def self_role(self) -> Optional[Role]:
@@ -1139,17 +1142,13 @@ class Guild(Hashable):
         offline members.
         """
         count = getattr(self, '_member_count', None)
-        if count is None:
-            return False
-        return count == len(self._members)
+        return False if count is None else count == len(self._members)
 
     @property
     def shard_id(self) -> Optional[int]:
         """Optional[:class:`int`]: Returns the shard ID for this guild if applicable."""
         count = self._state.shard_count
-        if count is None:
-            return None
-        return (self.id >> 22) % count
+        return None if count is None else (self.id >> 22) % count
 
     @property
     def created_at(self) -> datetime:
@@ -1227,13 +1226,9 @@ class Guild(Hashable):
             payload = {
                 'allow': allow.value,
                 'deny': deny.value,
-                'id': target.id
+                'id': target.id,
+                'type': 'role' if isinstance(target, Role) else 'member',
             }
-
-            if isinstance(target, Role):
-                payload['type'] = 'role'
-            else:
-                payload['type'] = 'member'
 
             perms.append(payload)
 
@@ -1257,7 +1252,9 @@ class Guild(Hashable):
             else:
                 default_auto_archive_duration = try_enum(AutoArchiveDuration, default_auto_archive_duration)
                 if not isinstance(default_auto_archive_duration, AutoArchiveDuration):
-                    raise InvalidArgument('%s is not a valid default_auto_archive_duration' % default_auto_archive_duration)
+                    raise InvalidArgument(
+                        f'{default_auto_archive_duration} is not a valid default_auto_archive_duration'
+                    )
                 else:
                     options['default_auto_archive_duration'] = default_auto_archive_duration.value
 
@@ -3234,12 +3231,12 @@ class Guild(Hashable):
 
         if not isinstance(entity_type, EventEntityType):
             entity_type = try_enum(EventEntityType, entity_type)
-            if not isinstance(entity_type, EventEntityType):
-                raise ValueError('entity_type must be a valid EventEntityType.')
+        if not isinstance(entity_type, EventEntityType):
+            raise ValueError('entity_type must be a valid EventEntityType.')
 
         if 1 > len(name) > 100:
             raise ValueError(f'The length of the name must be between 1 and 100 characters long; got {len(name)}.')
-        fields['name'] = str(name)
+        fields['name'] = name
 
         if int(entity_type) == 3 and not location:
             raise InvalidArgument('location must be provided if type is EventEntityType.external')
@@ -3283,7 +3280,7 @@ class Guild(Hashable):
         if not isinstance(start_time, datetime):
             raise TypeError(f'The start_time must be a datetime.datetime object, not {start_time.__class__.__name__}.')
         elif start_time < datetime.utcnow():
-            raise ValueError(f'The start_time could not be in the past.')
+            raise ValueError('The start_time could not be in the past.')
 
         fields['scheduled_start_time'] = start_time.isoformat()
 
@@ -3291,7 +3288,7 @@ class Guild(Hashable):
             if not isinstance(end_time, datetime):
                 raise TypeError(f'The end_time must be a datetime.datetime object, not {end_time.__class__.__name__}.')
             elif end_time < datetime.utcnow():
-                raise ValueError(f'The end_time could not be in the past.')
+                raise ValueError('The end_time could not be in the past.')
 
             fields['scheduled_end_time'] = end_time.isoformat()
 

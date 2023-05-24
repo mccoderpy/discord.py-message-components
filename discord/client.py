@@ -167,7 +167,7 @@ class _ClientEventTask(asyncio.Task):
         ]
         if self._exception is not None:
             info.append(('exception', repr(self._exception)))
-        return '<ClientEventTask {}>'.format(' '.join('%s=%s' % t for t in info))
+        return f"<ClientEventTask {' '.join('%s=%s' % t for t in info)}>"
 
 
 class Client:
@@ -391,9 +391,7 @@ class Client:
 
         .. versionadded:: 1.6
         """
-        if self.ws:
-            return self.ws.is_ratelimited()
-        return False
+        return self.ws.is_ratelimited() if self.ws else False
 
     @property
     def user(self) -> ClientUser:
@@ -464,10 +462,9 @@ class Client:
 
     def dispatch(self, event: str, *args, **kwargs) -> None:
         log.debug('Dispatching event %s', event)
-        method = 'on_' + event
+        method = f'on_{event}'
 
-        listeners = self._listeners.get(event)
-        if listeners:
+        if listeners := self._listeners.get(event):
             removed = []
             for i, (future, condition) in enumerate(listeners):
                 if isinstance(future, asyncio.Future):
@@ -482,7 +479,7 @@ class Client:
                         removed.append(i)
                     else:
                         if result:
-                            if len(args) == 0:
+                            if not args:
                                 future.set_result(None)
                             elif len(args) == 1:
                                 future.set_result(args[0])
@@ -495,10 +492,8 @@ class Client:
                     else:
                         for idx in reversed(removed):
                             del listeners[idx]
-                else:
-                    result = condition(*args)
-                    if result:
-                        self._schedule_event(future, method, *args, **kwargs)
+                elif result := condition(*args):
+                    self._schedule_event(future, method, *args, **kwargs)
 
         try:
             coro = getattr(self, method)
@@ -516,7 +511,7 @@ class Client:
         overridden to have a different implementation.
         Check :func:`~discord.on_error` for more details.
         """
-        print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
+        print(f'Ignoring exception in {event_method}', file=sys.stderr)
         traceback.print_exc()
 
     async def on_application_command_error(
@@ -557,17 +552,20 @@ class Client:
         """
         if not hasattr(self, 'app'):
             await self.application_info()
-        if (is_cog_reload and not reload_failed and getattr(self, 'sync_commands_on_cog_reload', False) is True) or (
-                not is_cog_reload and self.sync_commands is True
+        if (
+            is_cog_reload
+            and not reload_failed
+            and getattr(self, 'sync_commands_on_cog_reload', False)
+            or (not is_cog_reload and self.sync_commands is True)
         ):
             return await self._sync_commands()
         state = self._connection  # Speedup attribute access
-        app_id = self.app.id
-        get_commands = self.http.get_application_commands
         if not is_cog_reload:
+            app_id = self.app.id
             log.info('Collecting global application-commands for application %s (%s)', self.app.name, self.app.id)
 
             self._minimal_registered_global_commands_raw = minimal_registered_global_commands_raw = []
+            get_commands = self.http.get_application_commands
             global_registered_raw = await get_commands(app_id)
 
             for raw_command in global_registered_raw:
@@ -584,7 +582,13 @@ class Client:
                     command._state = state
                     self._application_commands[command.id] = command
 
-            log.info('Done! Cached %s global application-commands', sum([len(cmds) for cmds in self._application_commands_by_type.values()]))
+            log.info(
+                'Done! Cached %s global application-commands',
+                sum(
+                    len(cmds)
+                    for cmds in self._application_commands_by_type.values()
+                ),
+            )
             log.info('Collecting guild-specific application-commands for application %s (%s)', self.app.name, app_id)
 
             self._minimal_registered_guild_commands_raw = minimal_registered_guild_commands_raw = {}
@@ -619,7 +623,16 @@ class Client:
                             command._state = state
                             self._application_commands[command.id] = guild._application_commands[command.id] = command
 
-            log.info('Done! Cached %s commands for %s guilds', sum([len(commands) for commands in list(minimal_registered_guild_commands_raw.values())]), len(minimal_registered_guild_commands_raw.keys()))
+            log.info(
+                'Done! Cached %s commands for %s guilds',
+                sum(
+                    len(commands)
+                    for commands in list(
+                        minimal_registered_guild_commands_raw.values()
+                    )
+                ),
+                len(minimal_registered_guild_commands_raw.keys()),
+            )
 
         else:
             # re-assign metadata to the commands (for commands added from cogs)
@@ -662,7 +675,6 @@ class Client:
                                 no_longer_in_code_guilds.add(guild_id)
                             no_longer_in_code_guild_specific += 1
                             self._application_commands[raw_command['id']].func = None
-                            pass  # Should already be cached in self._application_commands so skip that part here another once again
                         else:
                             if command.disabled:
                                 no_longer_in_code_guild_specific += 1
@@ -867,7 +879,7 @@ class Client:
                             sys.stderr.write(str(PrivilegedIntentsRequired(exc.shard_id)))
                     if exc.code != 1000:
                         await self.close()
-                        if not exc.code == 4014:
+                        if exc.code != 4014:
                             raise
 
                 retry = backoff.delay()
@@ -1207,8 +1219,7 @@ class Client:
         """
 
         for guild in self.guilds:
-            for channel in guild.channels:
-                yield channel
+            yield from guild.channels
 
     def get_all_members(self) -> Iterator[Member]:
         """Returns a generator with every :class:`.Member` the client can see.
@@ -1225,8 +1236,7 @@ class Client:
             A member the client can see.
         """
         for guild in self.guilds:
-            for member in guild.members:
-                yield member
+            yield from guild.members
 
     # listeners/waiters
 

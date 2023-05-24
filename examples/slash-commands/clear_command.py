@@ -93,26 +93,27 @@ class ClearCommand(commands.Cog):
             member = members[0]
         question = await ctx.respond(
             embed=discord.Embed(
-                title=f"deleting messages",
+                title="deleting messages",
                 description=f'[{ctx.author.mention}]\n are you sure to delete the'
-                            f' last {count} messages {f"from {member.mention}" if member else (f"{len(members)} members" if members else "in this Channel")}?',
-                color=discord.Color.red()),
+                f' last {count} messages {f"from {member.mention}" if member else (f"{len(members)} members" if members else "in this Channel")}?',
+                color=discord.Color.red(),
+            ),
             components=[
                 [
                     discord.Button(
                         label="Yes",
                         emoji="✅",
                         style=discord.ButtonColor.green,
-                        custom_id="Yes"
+                        custom_id="Yes",
                     ),
                     discord.Button(
                         label="No",
                         emoji="❌",
                         style=discord.ButtonColor.red,
-                        custom_id="No"
-                    )
+                        custom_id="No",
+                    ),
                 ]
-            ]
+            ],
         )
 
         def check(i: discord.ComponentInteraction, b: discord.Button):

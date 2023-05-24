@@ -88,7 +88,7 @@ class PartialInviteChannel:
     @property
     def mention(self):
         """:class:`str`: The string that allows you to mention the channel."""
-        return '<#%s>' % self.id
+        return f'<#{self.id}>'
 
     @property
     def created_at(self):
@@ -152,8 +152,7 @@ class PartialInviteGuild:
         self.splash = data.get('splash')
         self.verification_level = try_enum(VerificationLevel, data.get('verification_level'))
         self.description = data.get('description')
-        welcome_screen = data.get('welcome_screen', None)
-        if welcome_screen:
+        if welcome_screen := data.get('welcome_screen', None):
             self.welcome_screen = WelcomeScreen(state=state, guild=self._state._get_guild(self.id) or self, data=welcome_screen)
         else:
             self.welcome_screen = None
@@ -391,7 +390,7 @@ class Invite(Hashable):
     @property
     def url(self):
         """:class:`str`: A property that retrieves the invite URL."""
-        return self.BASE + '/' + self.code
+        return f'{self.BASE}/{self.code}'
 
     async def delete(self, *, reason=None):
         """|coro|

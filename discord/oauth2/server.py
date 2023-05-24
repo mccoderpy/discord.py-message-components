@@ -281,7 +281,7 @@ class BasicOAuth2Server(web.Application):
         """
         if self.state_required:
             state = await self.create_state(request)
-            return web.HTTPFound(self.auth_url + f'&state={state}')
+            return web.HTTPFound(f'{self.auth_url}&state={state}')
         else:
             return web.HTTPFound(self.auth_url)
         

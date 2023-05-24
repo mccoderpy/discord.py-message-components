@@ -134,14 +134,11 @@ def handle_message_parameters(
             _embeds.extend([e.to_dict() for e in embeds])
         if len(_embeds) > 10:
             raise TypeError(f"Only can send up to 10 embeds per message; got {len(embeds)}")
-        payload['embeds'] = _embeds
+        else:
+            payload['embeds'] = _embeds
 
     if content is not MISSING:
-        if content is None:
-            payload['content'] = None
-        else:
-            payload['content'] = str(content)
-
+        payload['content'] = None if content is None else str(content)
     if components is not MISSING:
         if components is None:
             payload['components'] = []
@@ -153,9 +150,7 @@ def handle_message_parameters(
                 elif isinstance(component, ActionRow):
                     _components.extend(component.to_dict())
                 elif isinstance(component, list):
-                    _components.extend(
-                        ActionRow(*[obj for obj in component]).to_dict()
-                    )
+                    _components.extend(ActionRow(*list(component)).to_dict())
             if len(_components) > 5:
                 raise TypeError(f"Only can send up to 5 ActionRows per message; got {len(_components)}")
             payload['components'] = _components
@@ -167,11 +162,7 @@ def handle_message_parameters(
         payload['message_reference'] = message_reference
 
     if stickers is not MISSING:
-        if stickers is None:
-            payload['sticker_ids'] = []
-        else:
-            payload['sticker_ids'] = stickers
-
+        payload['sticker_ids'] = [] if stickers is None else stickers
     payload['tts'] = tts
     if avatar_url:
         payload['avatar_url'] = str(avatar_url)
@@ -198,11 +189,7 @@ def handle_message_parameters(
         payload['allowed_mentions']['replied_user'] = mention_author
 
     if file is not MISSING:
-        if files is not MISSING and files is not None:
-            files = [file, *files]
-        else:
-            files = [file]
-
+        files = [file] if files is MISSING or files is None else [file, *files]
     if attachments is MISSING:
         attachments = files
     else:
@@ -222,23 +209,20 @@ def handle_message_parameters(
     if channel_payload is not MISSING:
         payload = {
             'message': payload,
-        }
-        payload.update(channel_payload)
-
+        } | channel_payload
     multipart = []
     if files:
         multipart.append({'name': 'payload_json', 'value': utils.to_json(payload)})
         payload = None
-        for index, file in enumerate(files):
-            multipart.append(
-                {
-                    'name': f'files[{index}]',
-                    'value': file.fp,
-                    'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                }
-            )
-
+        multipart.extend(
+            {
+                'name': f'files[{index}]',
+                'value': file.fp,
+                'filename': file.filename,
+                'content_type': 'application/octet-stream',
+            }
+            for index, file in enumerate(files)
+        )
     return MultipartParameters(payload=payload, multipart=multipart, files=files)
 
 

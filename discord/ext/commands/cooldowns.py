@@ -88,20 +88,13 @@ class Cooldown:
         if not current:
             current = time.time()
 
-        tokens = self._tokens
-
-        if current > self._window + self.per:
-            tokens = self.rate
-        return tokens
+        return self.rate if current > self._window + self.per else self._tokens
 
     def get_retry_after(self, current=None):
         current = current or time.time()
         tokens = self.get_tokens(current)
 
-        if tokens == 0:
-            return self.per - (current - self._window)
-
-        return 0.0
+        return self.per - (current - self._window) if tokens == 0 else 0.0
 
     def update_rate_limit(self, current=None):
         current = current or time.time()

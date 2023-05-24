@@ -75,9 +75,7 @@ class CalculatorUnit:
             self._a = ''
         if amount == '.':
             self._a = self._a.replace('.', '')
-            self._a += str(amount)
-        elif amount != '.':
-            self._a += str(amount)
+        self._a += str(amount)
 
     @property
     def b(self) -> str:
@@ -89,9 +87,7 @@ class CalculatorUnit:
             self._b = ''
         if amount == '.':
             self._b = self._b.replace('.', '')
-            self._b += str(amount)
-        elif amount != '.':
-            self._b += str(amount)
+        self._b += str(amount)
 
     @property
     def method(self) -> str:
@@ -103,7 +99,7 @@ class CalculatorUnit:
 
     async def calculate(self, interaction: discord.BaseInteraction, new_method: typing.Optional[str] = None) -> None:
         self._result = str(eval(f'{float(self._a)} {self.method} {float(self._b)}'))
-        if self._result[-2:] == '.0':
+        if self._result.endswith('.0'):
             self._result = self._a = self._result[:-2]
         else:
             self._a = self._result
@@ -269,16 +265,9 @@ class Calculator(commands.Cog):
     @is_author
     async def toggle_negative(self, interaction, button, calc):
         if calc.a and not calc.method:
-            if calc.a[0].isdigit():
-                calc._a = '-' + calc.a
-            else:
-                calc._a = calc.a.strip('-')
-
+            calc._a = f'-{calc.a}' if calc.a[0].isdigit() else calc.a.strip('-')
         elif calc.method and calc.b:
-            if calc.b[0].isdigit():
-                calc._b = '-' + calc.b
-            else:
-                calc._b = calc.b.strip('-')
+            calc._b = f'-{calc.b}' if calc.b[0].isdigit() else calc.b.strip('-')
         await calc.update_display(interaction)
 
 

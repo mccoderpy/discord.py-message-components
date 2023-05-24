@@ -99,7 +99,7 @@ def convert_emoji_reaction(emoji: Union[Reaction, Emoji, PartialEmoji, str]) -> 
         emoji = emoji.emoji
 
     if isinstance(emoji, Emoji):
-        return '%s:%s' % (emoji.name, emoji.id)
+        return f'{emoji.name}:{emoji.id}'
     if isinstance(emoji, PartialEmoji):
         return emoji._as_reaction()
     if isinstance(emoji, str):
@@ -287,8 +287,7 @@ class Attachment(Hashable):
             The contents of the attachment.
         """
         url = self.proxy_url if use_cached else self.url
-        data = await self._http.get_from_cdn(url)
-        return data
+        return await self._http.get_from_cdn(url)
 
     async def to_file(
             self,
@@ -722,7 +721,7 @@ class Message(Hashable):
 
         for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'thread'):
             try:
-                getattr(self, '_handle_%s' % handler)(data[handler])
+                getattr(self, f'_handle_{handler}')(data[handler])
             except KeyError:
                 continue
 
@@ -846,8 +845,7 @@ class Message(Hashable):
         self.interaction = MessageInteraction(state=self._state, data=value)
 
     def _handle_thread(self, value):
-        thread = self.guild.get_channel(self.id)
-        if thread:
+        if thread := self.guild.get_channel(self.id):
             self._thread = thread._update(self.guild, value)
         else:
             self._thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
@@ -968,18 +966,18 @@ class Message(Hashable):
         """
 
         transformations = {
-            re.escape('<#%s>' % channel.id): '#' + channel.name
+            re.escape(f'<#{channel.id}>'): f'#{channel.name}'
             for channel in self.channel_mentions
         }
 
         mention_transforms = {
-            re.escape('<@%s>' % member.id): '@' + member.display_name
+            re.escape(f'<@{member.id}>'): f'@{member.display_name}'
             for member in self.mentions
         }
 
         # add the <@!user_id> cases as well..
         second_mention_transforms = {
-            re.escape('<@!%s>' % member.id): '@' + member.display_name
+            re.escape(f'<@!{member.id}>'): f'@{member.display_name}'
             for member in self.mentions
         }
 
@@ -988,7 +986,7 @@ class Message(Hashable):
 
         if self.guild is not None:
             role_transforms = {
-                re.escape('<@&%s>' % role.id): '@' + role.name
+                re.escape(f'<@&{role.id}>'): f'@{role.name}'
                 for role in self.role_mentions
             }
             transformations.update(role_transforms)
@@ -1121,8 +1119,7 @@ class Message(Hashable):
     def all_components(self) -> Iterator[Union[Button, BaseSelect]]:
         """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
-            for component in action_row:
-                yield component
+            yield from action_row
 
     @property
     def all_buttons(self) -> Iterator[Button]:
@@ -1598,12 +1595,16 @@ class Message(Hashable):
             The created thread on success
         """
         if self.channel.type not in (ChannelType.text, ChannelType.news):
-            raise TypeError('You could not create a thread inside a %s.' % self.channel.__class__.__name__)
+            raise TypeError(
+                f'You could not create a thread inside a {self.channel.__class__.__name__}.'
+            )
         if self.thread:
             raise TypeError('There is already a thread associated with this message')
 
-        if len(name) > 100 or len(name) < 1:
-            raise ValueError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
+        if len(name) > 100 or not name:
+            raise ValueError(
+                f'The name of the thread must bee between 1-100 characters; got {len(name)}'
+            )
 
         payload = {
             'name': name

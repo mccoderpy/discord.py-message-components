@@ -238,14 +238,14 @@ class Localizations:
             except KeyError:
                 if default is None:
                     return self.__languages_dict__.get('en-US', self.__languages_dict__.get('en-GB', None))
-                else:
-                    if (default.value if default is Locale else default) not in self.__slots__:
-                        return default
-                    else:
-                        try:
-                            self[default.value if default is Locale else default]
-                        except KeyError:  # not a locale so return it
-                            return default
+                if (
+                    default.value if default is Locale else default
+                ) not in self.__slots__:
+                    return default
+                try:
+                    self[default.value if default is Locale else default]
+                except KeyError:  # not a locale so return it
+                    return default
 
 
 class ApplicationCommand:
@@ -311,7 +311,7 @@ class ApplicationCommand:
         return super().__init__(self, *args, **kwargs)
 
     def __repr__(self) -> str:
-        return '<%s name=%s, id=%s, disabled=%s>' % (self.__class__.__name__, self.name, self.id, self.disabled)
+        return f'<{self.__class__.__name__} name={self.name}, id={self.id}, disabled={self.disabled}>'
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
@@ -380,10 +380,14 @@ class ApplicationCommand:
         # if self.cog:
         #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
-        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', []))
-        if not checks:
+        if checks := getattr(
+            check_func,
+            '__commands_checks__',
+            getattr(self.func, '__commands_checks__', []),
+        ):
+            return await async_all(check(args[0]) for check in checks)
+        else:
             return True
-        return await async_all(check(args[0]) for check in checks)
 
     async def invoke(self, interaction, *args, **kwargs):
         if not self.func:
@@ -491,10 +495,7 @@ class ApplicationCommand:
 
         Deletes the application command
         """
-        if self.guild_id != 0:
-            guild_id = self.guild_id
-        else:
-            guild_id = None
+        guild_id = self.guild_id if self.guild_id != 0 else None
         await self._state.http.delete_application_command(self.application_id, self.id, guild_id)
         if guild_id:
             self._state._get_client()._remove_application_command(self, from_cache=True)
@@ -527,21 +528,22 @@ class SlashCommandOptionChoice:
     ):
 
         if 100 < len(str(name)) < 1:
-            raise ValueError('The name of a choice must bee between 1 and 100 characters long, got %s.' % len(name))
+            raise ValueError(
+                f'The name of a choice must bee between 1 and 100 characters long, got {len(name)}.'
+            )
         self.name: str = str(name)
         self.value: Union[str, int, float] = value if value is not None else name
         self.name_localizations: Optional[Localizations] = name_localizations
 
     def __repr__(self):
-        return '<SlashCommandOptionChoice name=%s, value=%s>' % (self.name, self.value)
+        return f'<SlashCommandOptionChoice name={self.name}, value={self.value}>'
 
     def to_dict(self) -> Dict[str, Any]:
-        base = {
+        return {
             'name': str(self.name),
             'value': self.value,
-            'name_localizations': self.name_localizations.to_dict()
+            'name_localizations': self.name_localizations.to_dict(),
         }
-        return base
 
     @classmethod
     def from_dict(cls, data) -> SlashCommandOptionChoice:
@@ -658,7 +660,9 @@ class SlashCommandOption:
         self.name: str = name
         self.name_localizations: Localizations = name_localizations
         if 100 < len(description) < 1:
-            raise ValueError('The description must be between 1 and 100 characters long, got %s.' % len(description))
+            raise ValueError(
+                f'The description must be between 1 and 100 characters long, got {len(description)}.'
+            )
         self.description: str = description
         self.description_localizations: Localizations = description_localizations
         self.required: bool = required
@@ -681,12 +685,7 @@ class SlashCommandOption:
         self.ignore_conversion_failures: bool = ignore_conversion_failures
 
     def __repr__(self) -> str:
-        return '<SlashCommandOption type=%s, name=%s, description=%s, required=%s, choices=%s>' \
-               % (self.type,
-                  self.name,
-                  self.description,
-                  self.required,
-                  self.choices)
+        return f'<SlashCommandOption type={self.type}, name={self.name}, description={self.description}, required={self.required}, choices={self.choices}>'
 
     @property
     def autocomplete(self) -> bool:
@@ -705,12 +704,12 @@ class SlashCommandOption:
 
     @autocomplete.setter
     def autocomplete(self, value: bool) -> None:
-        if bool(value) is True:
+        if value:
             if self.type not in (OptionType.string, OptionType.integer, OptionType.number):
                 raise TypeError('Only Options of type string, integer or number could have autocomplete.')
             elif self.choices:
                 raise TypeError('Options with choices could not have autocomplete.')
-        self._autocomplete = bool(value)
+        self._autocomplete = value
 
     @property
     def choices(self) -> Optional[List[SlashCommandOptionChoice]]:
@@ -791,7 +790,7 @@ class SlashCommandOption:
             for index, c in enumerate(value):
                 if not isinstance(c, ChannelType):
                     value[index] = ChannelType.from_type(c)
-            if not any([isinstance(c, ChannelType) for c in value]):
+            if not any(isinstance(c, ChannelType) for c in value):
                 raise ValueError('Only ChannelType Enums, integers or Channel classes allowed.')
         self._channel_types = value
 
@@ -803,7 +802,7 @@ class SlashCommandOption:
             'description': str(self.description),
             'description_localizations': self.description_localizations.to_dict()
         }
-        if bool(self.required) is True:
+        if bool(self.required):
             base['required'] = bool(self.required)
         if self.choices:
             base['choices'] = [c.to_dict() for c in self.choices]
@@ -816,9 +815,8 @@ class SlashCommandOption:
         if self.max_value is not None:
             base['max_value'] = self.max_value
         if self.type.string:
-            min_length = self.min_length
             max_length = self.max_length
-            if min_length:
+            if min_length := self.min_length:
                 base['min_length'] = min_length
             if max_length:
                 base['max_length'] = max_length
@@ -870,10 +868,12 @@ class SubCommand(SlashCommandOption):
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError(
-                'The description of the Sub-Command must be 1-100 characters long, got %s.' % len(description)
-                )
+                f'The description of the Sub-Command must be 1-100 characters long, got {len(description)}.'
+            )
         if len(options) > 25:
-            raise ValueError('The maximum of options per Sub-Command is 25, got %s.' % len(options))
+            raise ValueError(
+                f'The maximum of options per Sub-Command is 25, got {len(options)}.'
+            )
         self.options = options
         self.func = kwargs.get('func', None)
         self.cog = kwargs.get('cog', None)
@@ -899,11 +899,7 @@ class SubCommand(SlashCommandOption):
         self._disabled = value
 
     def __repr__(self):
-        return '<SubCommand parent=%s, name=%s, description=%s, options=%s>' \
-               % (self.parent.name,
-                  self.name,
-                  self.description,
-                  self.options)
+        return f'<SubCommand parent={self.parent.name}, name={self.name}, description={self.description}, options={self.options}>'
 
     @property
     def base_command(self) -> SlashCommand:
@@ -983,24 +979,27 @@ class SubCommand(SlashCommandOption):
         return full_name
 
     def to_dict(self):
-        base = {
+        return {
             'type': 1,
             'name': str(self.name),
             'name_localizations': self.name_localizations.to_dict(),
             'description': str(self.description),
             'description_localizations': self.description_localizations.to_dict(),
-            'options': [c.to_dict() for c in self.options]
+            'options': [c.to_dict() for c in self.options],
         }
-        return base
 
     async def can_run(self, *args, **kwargs):
         # if self.cog is not None:
         #    args = (self.cog, *args)
         check_func = kwargs.pop('__func', self)
-        checks = getattr(check_func, '__commands_checks__', getattr(self.func, '__commands_checks__', []))
-        if not checks:
+        if checks := getattr(
+            check_func,
+            '__commands_checks__',
+            getattr(self.func, '__commands_checks__', []),
+        ):
+            return await async_all(check(args[0]) for check in checks)
+        else:
             return True
-        return await async_all(check(args[0]) for check in checks)
 
     async def invoke(self, interaction, *args, **kwargs):
         if not self.func:
@@ -1099,13 +1098,7 @@ class GuildOnlySubCommand(SubCommand):
             cmd.disabled = value
 
     def __repr__(self):
-        return '<GuildOnlySubCommand parent=%s, name=%s, description=%s, options=%s, guild_ids=%s>' \
-               % (self.parent.name,
-                  self.name,
-                  self.description,
-                  self.options,
-                  ', '.join([str(g) for g in self.guild_ids])
-                  )
+        return f"<GuildOnlySubCommand parent={self.parent.name}, name={self.name}, description={self.description}, options={self.options}, guild_ids={', '.join([str(g) for g in self.guild_ids])}>"
 
     def autocomplete_callback(self, coro: Coroutine[Any, Any, Awaitable]):
         """
@@ -1204,10 +1197,14 @@ class SlashCommand(ApplicationCommand):
             )
         self.name = name
         if 100 < len(description) < 1:
-            raise ValueError('The description must be between 1 and 100 characters long, got %s.' % len(description))
+            raise ValueError(
+                f'The description must be between 1 and 100 characters long, got {len(description)}.'
+            )
         self.description = description
         if len(options) > 25:
-            raise ValueError('The maximum of options per command is 25, got %s' % len(options))
+            raise ValueError(
+                f'The maximum of options per command is 25, got {len(options)}'
+            )
         self.connector: Dict[str, str] = connector
         self._sub_commands = {command.name: command for command in options if OptionType.try_value(command.type) in (
         OptionType.sub_command, OptionType.sub_command_group)}
@@ -1217,14 +1214,7 @@ class SlashCommand(ApplicationCommand):
             sc.parent = self
 
     def __repr__(self):
-        return '<SlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_id=%s disabled=%s, id=%s>' \
-               % (self.name,
-                  self.description,
-                  self.default_member_permissions,
-                  self.options or self.sub_commands,
-                  self.guild_id or 'None',
-                  self.disabled,
-                  self.id)
+        return f"<SlashCommand name={self.name}, description={self.description}, default_member_permissions={self.default_member_permissions}, options={self.options or self.sub_commands}, guild_id={self.guild_id or 'None'} disabled={self.disabled}, id={self.id}>"
 
     @property
     def _state(self):
@@ -1408,8 +1398,7 @@ class SlashCommand(ApplicationCommand):
                 name = connector.get(option.name) or option.name.replace('-', '_')
                 if option.type in (OptionType.string, OptionType.integer, OptionType.boolean, OptionType.number):
                     origin_option = get(to_invoke.options, name=option.name)
-                    converter = origin_option.converter
-                    if converter:
+                    if converter := origin_option.converter:
                         try:
                             params[name] = await transform(interaction, origin_option, converter, str(option.value))
                         except Exception as exc:
@@ -1427,7 +1416,7 @@ class SlashCommand(ApplicationCommand):
                         params[name] = resolved.roles[_id] or _id
                     elif option.type == OptionType.channel:
                         params[name] = interaction.guild.get_channel(_id) or resolved.channels[_id] or interaction._state.get_channel(_id)\
-                                       or PartialMessageable(interaction._state, _id, guild_id=interaction.guild)
+                                           or PartialMessageable(interaction._state, _id, guild_id=interaction.guild)
                     elif option.type == OptionType.mentionable:
                         try:
                             params[name] = resolved.roles[_id]
@@ -1465,25 +1454,22 @@ async def _actual_conversion(ctx, converter, argument, param):
         pass
     else:
         if module is not None:
-            if module.startswith('discord.') and module.endswith('converter'):
-                pass
-            else:
-                converter = getattr(converters, converter.__name__ + 'Converter', converter)
+            if not module.startswith('discord.') or not module.endswith(
+                'converter'
+            ):
+                converter = getattr(converters, f'{converter.__name__}Converter', converter)
 
     try:
         if inspect.isclass(converter):
             if issubclass(converter, converters.Converter):
                 instance = converter()
-                ret = await instance.convert(ctx, argument)
-                return ret
+                return await instance.convert(ctx, argument)
             else:
                 method = getattr(converter, 'convert', None)
                 if method is not None and inspect.ismethod(method):
-                    ret = await method(ctx, argument)
-                    return ret
+                    return await method(ctx, argument)
         elif isinstance(converter, converters.Converter):
-            ret = await converter.convert(ctx, argument)
-            return ret
+            return await converter.convert(ctx, argument)
     except CommandError:
         raise
     except Exception as exc:
@@ -1499,7 +1485,9 @@ async def _actual_conversion(ctx, converter, argument, param):
         except AttributeError:
             name = converter.__class__.__name__
 
-        raise BadArgument('Converting to "{}" failed for parameter "{}".'.format(name, param.name)) from exc
+        raise BadArgument(
+            f'Converting to "{name}" failed for parameter "{param.name}".'
+        ) from exc
 
 
 async def do_conversion(interaction, converter, argument, param):
@@ -1551,9 +1539,7 @@ async def _transform_greedy_pos(ctx, param, required, converter, value):
         else:
             result.append(value)
 
-    if not result and not required:
-        return param.default
-    return result
+    return param.default if not result and not required else result
 
 
 async def transform(interaction: ApplicationCommandInteraction, param: SlashCommandOption, converter, value: Any) -> Any:
@@ -1579,13 +1565,7 @@ class GuildOnlySlashCommand(SlashCommand):
             cmd.disabled = value
 
     def __repr__(self):
-        return '<GuildOnlySlashCommand name=%s, description=%s, default_member_permissions=%s, options=%s, guild_ids=%s>' \
-               % (self.name,
-                  self.description,
-                  self.default_member_permissions,
-                  self.options,
-                  ', '.join([str(g) for g in self.guild_ids])
-                  )
+        return f"<GuildOnlySlashCommand name={self.name}, description={self.description}, default_member_permissions={self.default_member_permissions}, options={self.options}, guild_ids={', '.join([str(g) for g in self.guild_ids])}>"
 
     def autocomplete_callback(self, coro: 'Coroutine[Any, Any, Awaitable]'):
         """
@@ -1642,7 +1622,9 @@ class UserCommand(ApplicationCommand):
             **kwargs
             ):
         if 32 < len(name) < 1:
-            raise ValueError('The name of the User-Command has to be 1-32 characters long, got %s.' % len(name))
+            raise ValueError(
+                f'The name of the User-Command has to be 1-32 characters long, got {len(name)}.'
+            )
         super().__init__(2, name=name, name_localizations=name_localizations,
                          default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs
                          )
@@ -1693,7 +1675,9 @@ class MessageCommand(ApplicationCommand):
             **kwargs
             ):
         if 32 < len(name) < 1:
-            raise ValueError('The name of the Message-Command has to be 1-32 characters long, got %s.' % len(name))
+            raise ValueError(
+                f'The name of the Message-Command has to be 1-32 characters long, got {len(name)}.'
+            )
         super().__init__(3, name=name, name_localizations=name_localizations,
                          default_member_permissions=default_member_permissions, allow_dm=allow_dm, **kwargs
                          )
@@ -1736,10 +1720,12 @@ class SubCommandGroup(SlashCommandOption):
         self.name = name
         if 100 < len(description) < 1:
             raise ValueError(
-                'The description of the Sub-Command-Group must be 1-100 characters long, got %s.' % len(description)
-                )
+                f'The description of the Sub-Command-Group must be 1-100 characters long, got {len(description)}.'
+            )
         if 25 < len(commands) < 1:
-            raise ValueError('A Sub-Command-Group needs 1-25 sub-sub_commands, got %s.' % len(commands))
+            raise ValueError(
+                f'A Sub-Command-Group needs 1-25 sub-sub_commands, got {len(commands)}.'
+            )
         self.guild_ids = kwargs.get('guild_ids', parent.guild_ids)
         self.guild_id = kwargs.get('guild_id', parent.guild_id)
         self.func = kwargs.get('func', None)
@@ -1755,12 +1741,7 @@ class SubCommandGroup(SlashCommandOption):
         self.parent = parent
 
     def __repr__(self):
-        return '<SubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s>' % \
-               (self.parent.name,
-                self.name,
-                self.description,
-                ', '.join([sub_cmd.name for sub_cmd in self.sub_commands])
-                )
+        return f"<SubCommandGroup parent={self.parent.name}, name={self.name}, description={self.description}, sub_commands={', '.join([sub_cmd.name for sub_cmd in self.sub_commands])}>"
 
     @property
     def parent(self) -> SlashCommand:
@@ -1792,15 +1773,14 @@ class SubCommandGroup(SlashCommandOption):
         return list(self._sub_commands.values())
 
     def to_dict(self):
-        base = {
+        return {
             'type': 2,
             'name': str(self.name),
             'name_localizations': self.name_localizations.to_dict(),
             'description': str(self.description),
             'description_localizations': self.description_localizations.to_dict(),
-            'options': [c.to_dict() for c in self.sub_commands]
+            'options': [c.to_dict() for c in self.sub_commands],
         }
-        return base
 
     @classmethod
     def from_dict(cls, data):
@@ -1820,13 +1800,7 @@ class GuildOnlySubCommandGroup(SubCommandGroup):
         super().__init__(*args, **kwargs, guild_ids=guild_ids)
 
     def __repr__(self):
-        return '<GuildOnlySubCommandGroup parent=%s, name=%s, description=%s, sub_commands=%s, guild_ids=%s>' % \
-               (self.parent.name,
-                self.name,
-                self.description,
-                ', '.join([sub_cmd.name for sub_cmd in self.sub_commands]),
-                ', '.join([str(g) for g in self.guild_ids])
-                )
+        return f"<GuildOnlySubCommandGroup parent={self.parent.name}, name={self.name}, description={self.description}, sub_commands={', '.join([sub_cmd.name for sub_cmd in self.sub_commands])}, guild_ids={', '.join([str(g) for g in self.guild_ids])}>"
 
 
 def generate_options(

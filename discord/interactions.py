@@ -125,7 +125,7 @@ class EphemeralMessage:
                 'reactions'
         ):
             try:
-                getattr(self, '_handle_%s' % handler)(data[handler])
+                getattr(self, f'_handle_{handler}')(data[handler])
             except KeyError:
                 if not hasattr(self, handler):
                     setattr(
@@ -244,15 +244,13 @@ class EphemeralMessage:
     def all_components(self):
         """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
-            for component in action_row:
-                yield component
+            yield from action_row
 
     @property
     def all_buttons(self):
         """Returns all :class:`Button`'s that are contained in the message"""
         for action_row in self.components:
-            for component in action_row:
-                yield component
+            yield from action_row
 
     @property
     def all_select_menus(self):
@@ -451,8 +449,7 @@ class BaseInteraction:
         self._token = data['token']
         self.guild_id: int = utils._get_as_snowflake(data, 'guild_id')
         self.channel_id: int = int(data.get('channel_id', data.get('channel', {}).get('id', 0)))
-        message_data = data.get('message', {})
-        if message_data:
+        if message_data := data.get('message', {}):
             if MessageFlags._from_value(message_data['flags']).ephemeral:
                 self.message = EphemeralMessage(state=state, channel=self.channel, data=message_data, interaction=self)
             else:
@@ -470,8 +467,7 @@ class BaseInteraction:
         self.user_id: int = int(self._user['id'])
         self.author_locale: Locale = try_enum(Locale, data['locale'])
         self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale'))
-        app_permissions = data.get('app_permissions')
-        if app_permissions:
+        if app_permissions := data.get('app_permissions'):
             self.app_permissions: Optional[Permissions] = Permissions(int(app_permissions))
         else:
             self.app_permissions = None
@@ -488,7 +484,7 @@ class BaseInteraction:
 
     def __repr__(self) -> str:
         """Represents a :class:`~discord.BaseInteraction` object."""
-        return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
+        return f'<{self.__class__.__name__} {", ".join([f"{k}={v}" for k, v in self.__dict__.items() if k[0] != "_"])}>'
     
     @property
     def callback_message(self) -> Optional[Union[Message, EphemeralMessage]]:
@@ -710,24 +706,29 @@ class BaseInteraction:
 
         if not isinstance(data, dict):
             msg = await self.get_original_callback()
+        elif hasattr(self, 'message'):
+            msg = self.message._update(data)
         else:
-            if hasattr(self, 'message'):
-                msg = self.message._update(data)
-            else:
-                if MessageFlags._from_value(data['flags']).ephemeral:
-                    msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
-                else:
-                    msg = Message(state=self._state, channel=self.channel, data=data)
+            msg = (
+                EphemeralMessage(
+                    state=self._state,
+                    data=data,
+                    channel=self.channel,
+                    interaction=self,
+                )
+                if MessageFlags._from_value(data['flags']).ephemeral
+                else Message(state=self._state, channel=self.channel, data=data)
+            )
         self.callback_message = msg
         is_hidden = msg.flags.ephemeral
 
         if is_hidden:
             self.deferred_hidden = True
         self.deferred = True
-        
+
         if delete_after is not None:
             await msg.delete(delay=delete_after)
-        
+
         return msg
 
     async def respond(
@@ -812,9 +813,8 @@ class BaseInteraction:
 
         if not self.deferred:
             response_type = InteractionCallbackType.msg_with_source
-        else:
-            if self.callback_message and (self.callback_message.flags.loading if self.type.ApplicationCommand else False):
-                is_initial = True
+        elif self.callback_message and (self.callback_message.flags.loading if self.type.ApplicationCommand else False):
+            is_initial = True
 
         if response_type is MISSING:
             params = handle_message_parameters(
@@ -875,7 +875,7 @@ class BaseInteraction:
         else:
             msg = Message(state=self._state, channel=self.channel, data=data)
 
-        
+
         if not self.callback_message or is_initial:
             self.callback_message = msg
         else:
@@ -1066,8 +1066,9 @@ class ApplicationCommandInteraction(BaseInteraction):
         Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]:
             The Message containing the loading state
         """
-        data = await super()._defer(InteractionCallbackType.deferred_msg_with_source, hidden)
-        return data
+        return await super()._defer(
+            InteractionCallbackType.deferred_msg_with_source, hidden
+        )
 
 
 class ComponentInteraction(BaseInteraction):
@@ -1079,8 +1080,7 @@ class ComponentInteraction(BaseInteraction):
     def component(self) -> Union[Button, SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]:
         """Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]: The component that was used"""
         if self._component is None:
-            custom_id = self.data.custom_id
-            if custom_id:
+            if custom_id := self.data.custom_id:
                 if custom_id.isdigit():
                     custom_id = int(custom_id)
                 if self.data.component_type == ComponentType.Button:
@@ -1123,8 +1123,7 @@ class ComponentInteraction(BaseInteraction):
         Optional[Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]]:
             The message containing the loading-state if :class:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``) is used, else :obj:`None`.
         """
-        data = await super()._defer(type, hidden)
-        return data
+        return await super()._defer(type, hidden)
 
 
 class AutocompleteInteraction(BaseInteraction):
@@ -1206,8 +1205,7 @@ class ModalSubmitInteraction(BaseInteraction):
         """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the :class:`~discord.Modal`."""
         field_list = []
         for ar in self.data.components:
-            for c in ar:
-                field_list.append(c)
+            field_list.extend(iter(ar))
         return field_list
 
     @property
@@ -1255,8 +1253,7 @@ class InteractionData:
         self._state: ConnectionState = state
         self._guild: Optional[Guild] = guild
         self._channel_id = kwargs.pop('channel_id', None)
-        resolved = data.get('resolved')
-        if resolved:
+        if resolved := data.get('resolved'):
             self.resolved = ResolvedData(state=state, data=resolved, guild=guild, channel_id=self._channel_id)
         options = self._data.get('options', [])
         self.options = [InteractionDataOption(state=state, data=option, guild=guild) for option in options]
@@ -1294,8 +1291,7 @@ class InteractionData:
 
     @property
     def components(self) -> Optional[List[ActionRow]]:
-        c = self._data.get('components', None)
-        if c:
+        if c := self._data.get('components', None):
             return [ActionRow.from_dict(a) for a in c]
 
 

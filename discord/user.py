@@ -84,8 +84,7 @@ class BaseUser(_BaseUser):
         self.discriminator = data['discriminator']
         self.avatar = data['avatar']
         self.banner = data.get('banner', None)
-        banner_color = data.get('accent_color', None)
-        if banner_color:
+        if banner_color := data.get('accent_color', None):
             self.banner_color = Colour(banner_color)
         else:
             self.banner_color = None
@@ -191,7 +190,7 @@ class BaseUser(_BaseUser):
     @property
     def default_avatar_url(self) -> Asset:
         """:class:`Asset`: Returns a URL for a user's default avatar."""
-        return Asset(self._state, '/embed/avatars/{}.png'.format(self.default_avatar.value))
+        return Asset(self._state, f'/embed/avatars/{self.default_avatar.value}.png')
 
     @property
     def banner_url(self) -> Optional[Asset]:
@@ -416,16 +415,12 @@ class ClientUser(BaseUser):
         """
 
         payload = {}
-        
+
         if username is not MISSING:
             payload['username'] = username
-        
-        if avatar is not MISSING:
-            if avatar is None:
-                payload['avatar'] = None
-            else:
-                payload['avatar'] = _bytes_to_base64_data(avatar)
 
+        if avatar is not MISSING:
+            payload['avatar'] = None if avatar is None else _bytes_to_base64_data(avatar)
         http = self._state.http
 
         data = await http.edit_profile(payload)
@@ -475,8 +470,7 @@ class User(BaseUser, abc.Messageable):
         return '<User id={0.id} name={0.name!r} discriminator={0.discriminator!r} bot={0.bot}>'.format(self)
 
     async def _get_channel(self):
-        ch = await self.create_dm()
-        return ch
+        return await self.create_dm()
 
     @property
     def dm_channel(self) -> Optional[DMChannel]:

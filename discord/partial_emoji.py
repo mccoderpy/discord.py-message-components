@@ -108,9 +108,8 @@ class PartialEmoji(_EmojiTag):
             The emoji object if the string was valid.
         """
 
-        match = re.match('^<(a?):([\-\w]+):(\d+)>$', string)
-        if match:
-            return cls(animated=bool(match.group(1)), name=match.group(2), id=int(match.group(3)))
+        if match := re.match('^<(a?):([\-\w]+):(\d+)>$', string):
+            return cls(animated=bool(match[1]), name=match[2], id=int(match[3]))
         return cls(name=string)
 
     @classmethod
@@ -146,8 +145,8 @@ class PartialEmoji(_EmojiTag):
         if self.id is None:
             return self.name
         if self.animated:
-            return '<a:%s:%s>' % (self.name, self.id)
-        return '<:%s:%s>' % (self.name, self.id)
+            return f'<a:{self.name}:{self.id}>'
+        return f'<:{self.name}:{self.id}>'
 
     def __len__(self) -> int:
         return len(str(self))
@@ -159,9 +158,7 @@ class PartialEmoji(_EmojiTag):
         if self.is_unicode_emoji():
             return isinstance(other, PartialEmoji) and self.name == other.name
 
-        if isinstance(other, _EmojiTag):
-            return self.id == other.id  # type: ignore
-        return False
+        return self.id == other.id if isinstance(other, _EmojiTag) else False
     
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
@@ -178,9 +175,7 @@ class PartialEmoji(_EmojiTag):
         return self.id is None
 
     def _as_reaction(self) -> str:
-        if self.id is None:
-            return self.name
-        return '%s:%s' % (self.name, self.id)
+        return self.name if self.id is None else f'{self.name}:{self.id}'
 
     @property
     def created_at(self) -> Optional[datetime]:
@@ -188,10 +183,7 @@ class PartialEmoji(_EmojiTag):
 
         .. versionadded:: 1.6
         """
-        if self.is_unicode_emoji():
-            return None
-
-        return utils.snowflake_time(self.id)
+        return None if self.is_unicode_emoji() else utils.snowflake_time(self.id)
 
     @property
     def url(self) -> Asset:

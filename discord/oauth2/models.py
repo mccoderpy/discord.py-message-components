@@ -364,13 +364,12 @@ class AccessToken:
             'expires_at': self.expires_at.isoformat(),
             'scopes': list(self._scopes)
         }
-        refresh_token = self.refresh_token
         webhook = self.webhook
-        if refresh_token:
+        if refresh_token := self.refresh_token:
             base['refresh_token'] = refresh_token
         if webhook:
             base['webhook_url'] = webhook.url
-        
+
         return base
         
     async def refresh(self, *, force: bool = False) -> Self:
@@ -452,8 +451,7 @@ class AccessToken:
         :class:`~discord.oauth2.OAuth2AuthInfo`:
             The authorization information
         """
-        data = await self._client.fetch_access_token_info(self)
-        return data
+        return await self._client.fetch_access_token_info(self)
     
     @overload
     async def fetch_user(self) -> User: ...
@@ -940,7 +938,7 @@ class PartialUser(Hashable):
     @property
     def default_avatar_url(self) -> Asset:
         """:class:`~discord.Asset`: Returns a URL for a user's default avatar."""
-        return Asset(self._client, '/embed/avatars/{}.png'.format(self.default_avatar.value))
+        return Asset(self._client, f'/embed/avatars/{self.default_avatar.value}.png')
 
 
 class User(PartialUser):
@@ -1257,7 +1255,7 @@ class GuildMember(Hashable, _BaseUser):
     @property
     def mention(self):
         """:class:`str`: Returns a string that allows you to mention the member in discord."""
-        return '<@%s>' % self.id
+        return f'<@{self.id}>'
     
     @property
     def display_name(self):

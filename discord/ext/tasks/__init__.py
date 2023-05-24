@@ -76,7 +76,7 @@ class Loop:
             raise TypeError('Expected coroutine function, not {0.__name__!r}.'.format(type(self.coro)))
 
     async def _call_loop_function(self, name, *args, **kwargs):
-        coro = getattr(self, '_' + name)
+        coro = getattr(self, f'_{name}')
         if coro is None:
             return
 

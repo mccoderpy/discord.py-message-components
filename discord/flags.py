@@ -57,9 +57,7 @@ class flag_value:
         self.__doc__: str = func.__doc__
 
     def __get__(self, instance: BaseFlags, owner) -> Union[Self, bool]:
-        if instance is None:
-            return self
-        return instance._has_flag(self.flag)
+        return self if instance is None else instance._has_flag(self.flag)
 
     def __set__(self, instance: BaseFlags, value: bool) -> None:
         instance._set_flag(self.flag, value)
@@ -122,7 +120,7 @@ class BaseFlags:
         return hash(self.value)
 
     def __repr__(self) -> str:
-        return '<%s value=%s>' % (self.__class__.__name__, self.value)
+        return f'<{self.__class__.__name__} value={self.value}>'
 
     def __iter__(self) -> Iterator[Tuple[str, bool]]:
         for name, value in self.__class__.__dict__.items():
@@ -136,12 +134,10 @@ class BaseFlags:
         return (self.value & o) == o
 
     def _set_flag(self, o: int, toggle: bool) -> None:
-        if toggle is True:
+        if toggle:
             self.value |= o
-        elif toggle is False:
-            self.value &= ~o
         else:
-            raise TypeError('Value to set for %s must be a bool.' % self.__class__.__name__)
+            self.value &= ~o
 
 
 @fill_with_flags(inverted=True)
@@ -189,12 +185,10 @@ class SystemChannelFlags(BaseFlags):
         return (self.value & o) != o
 
     def _set_flag(self, o: int, toggle: bool) -> None:
-        if toggle is True:
+        if toggle:
             self.value &= ~o
-        elif toggle is False:
-            self.value |= o
         else:
-            raise TypeError('Value to set for SystemChannelFlags must be a bool.')
+            self.value |= o
 
     @flag_value
     def join_notifications(self):
