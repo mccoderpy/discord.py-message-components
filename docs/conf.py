@@ -35,13 +35,15 @@ author = 'Mathieu Corsham aka. mccoder.py'
 
 version = ''
 with open('../discord/__init__.py') as f:
-    version += re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
+    version += re.search(
+        r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
+    )[1]
 
 # The full version, including alpha/beta/rc tags.
 release = version
 
 # This assumes a tag is available for final releases
-branch = 'developer' if version.endswith('a') else 'v' + version
+branch = 'developer' if version.endswith('a') else f'v{version}'
 
 
 # -- General configuration ---------------------------------------------------
@@ -98,7 +100,7 @@ resource_links = {
     'discord': 'https://discord.gg/sb69muSqsg',
     'issues': 'https://github.com/mccoderpy/discord.py-message-components/issues',
     'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
-    'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
+    'examples': f'https://github.com/mccoderpy/discord.py-message-components/tree/{branch}/examples',
 }
 
 ogp_site_url = 'https://docs.discord4py.dev/'

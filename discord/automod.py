@@ -164,9 +164,6 @@ class AutoModAction:
                 self.timeout_duration: Optional[datetime.timedelta] = timeout_duration
 
     def to_dict(self) -> Dict[str, Any]:
-        base = {
-            'type': int(self.type)
-        }
         metadata = {}
         if self.type.block_message:
             custom_message = getattr(self, 'custom_message', None)
@@ -176,8 +173,7 @@ class AutoModAction:
             metadata['channel_id'] = self.channel_id
         elif self.type.timeout_user:
             metadata['duration_seconds'] = self.timeout_duration
-        base['metadata'] = metadata
-        return base
+        return {'type': int(self.type), 'metadata': metadata}
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Self:
@@ -287,7 +283,7 @@ class AutoModTriggerMetadata:
             raise TypeError('regex_patterns can only be used with AutoModRule\'s of type keyword')
         self.regex_patterns: List[Pattern] = [_re_compile(pattern) for pattern in regex_patterns if not isinstance(pattern, Pattern)]
         self.presets: List[AutoModKeywordPresetType] = presets or []
-        if exempt_words and not (presets or keyword_filter):
+        if exempt_words and not presets and not keyword_filter:
             raise TypeError('exempt_words can only be used with keyword_filter or preset')
         self.exempt_words: Optional[List[str]] = exempt_words
         self.total_mentions_limit: Optional[int] = total_mentions_limit
@@ -411,8 +407,7 @@ class AutoModTriggerMetadata:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Self:
         self = cls.__new__(cls)
-        presets = data.get('presets', None)
-        if presets:
+        if presets := data.get('presets', None):
             self.presets = data['presets']
             self.exempt_words = data.get('allow_list', [])
         else:
@@ -542,11 +537,12 @@ class AutoModRule:
         Optional[Member]
             The member, that created the rule.
         """
-        creator = self.guild.get_member(self.creator_id)
-        # If the member is not found and the members intent is disabled, then raise
-        if not creator and not self._state.intents.members:
+        if creator := self.guild.get_member(self.creator_id):
+            return creator
+        elif self._state.intents.members:
+            return creator
+        else:
             raise ClientException('Intents.members must be enabled to use this')
-        return creator
 
     @property
     def created_at(self) -> datetime.datetime:
@@ -786,8 +782,9 @@ class AutoModActionPayload:
         Optional[Member]:
             The guild member
         """
-        member = self.guild.get_member(self.user_id)
-        # If the member is not found and the members intent is disabled, then raise
-        if not member and not self._state.intents.members:
+        if member := self.guild.get_member(self.user_id):
+            return member
+        elif self._state.intents.members:
+            return member
+        else:
             raise ClientException('Intents.members must be enabled to use this')
-        return member

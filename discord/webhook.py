@@ -119,13 +119,13 @@ class WebhookAdapter:
         return self.request('PATCH', self._request_url, payload=payload, reason=reason)
 
     def edit_webhook_message(self, message_id, payload, thread_id: int = None):
-        url = '{}/messages/{}'.format(self._request_url, message_id)
+        url = f'{self._request_url}/messages/{message_id}'
         if thread_id:
             url += f'?thread_id={thread_id}'
         return self.request('PATCH', url, payload=payload)
 
     def delete_webhook_message(self, message_id, thread_id: int = None):
-        url = '{}/messages/{}'.format(self._request_url, message_id)
+        url = f'{self._request_url}/messages/{message_id}'
         if thread_id:
             url += f'?thread_id={thread_id}'
         return self.request('DELETE', url)
@@ -334,18 +334,17 @@ class RequestsWebhookAdapter(WebhookAdapter):
 
             # we are being rate limited
             if r.status == 429:
-                if self.sleep:
-                    if not r.headers.get('Via'):
-                        # Banned by Cloudflare more than likely.
-                        raise HTTPException(r, data)
-
-                    retry_after = response['retry_after']
-                    log.warning('Webhook ID %s is rate limited. Retrying in %.2f seconds', _id, retry_after)
-                    time.sleep(retry_after)
-                    continue
-                else:
+                if not self.sleep:
                     raise HTTPException(r, response)
 
+                if not r.headers.get('Via'):
+                    # Banned by Cloudflare more than likely.
+                    raise HTTPException(r, data)
+
+                retry_after = response['retry_after']
+                log.warning('Webhook ID %s is rate limited. Retrying in %.2f seconds', _id, retry_after)
+                time.sleep(retry_after)
+                continue
             if self.sleep and r.status in (500, 502):
                 time.sleep(1 + tries * 2)
                 continue
@@ -385,11 +384,7 @@ class _PartialWebhookState:
     def __init__(self, adapter, webhook, parent):
         self._webhook = webhook
 
-        if isinstance(parent, self.__class__):
-            self.parent = None
-        else:
-            self.parent = parent
-
+        self.parent = None if isinstance(parent, self.__class__) else parent
         # Fetch the loop from the adapter if it's there
         try:
             self.loop = adapter.loop
@@ -688,7 +683,7 @@ class Webhook(Hashable):
     @property
     def url(self):
         """:class:`str` : Returns the webhook's url."""
-        return WebhookAdapter.BASE + '/webhooks/{}/{}'.format(self.id, self.token)
+        return f'{WebhookAdapter.BASE}/webhooks/{self.id}/{self.token}'
 
     @classmethod
     def partial(cls, id, token, *, adapter):
@@ -757,7 +752,7 @@ class Webhook(Hashable):
 
     @classmethod
     def _as_follower(cls, data, *, channel, user):
-        name = "{} #{}".format(channel.guild, channel)
+        name = f"{channel.guild} #{channel}"
         feed = {
             'id': data['webhook_id'],
             'type': 2,
@@ -930,11 +925,7 @@ class Webhook(Hashable):
         except KeyError:
             pass
         else:
-            if name is not None:
-                payload['name'] = str(name)
-            else:
-                payload['name'] = None
-
+            payload['name'] = str(name) if name is not None else None
         try:
             avatar = kwargs['avatar']
         except KeyError:

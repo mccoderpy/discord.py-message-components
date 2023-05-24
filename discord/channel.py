@@ -154,7 +154,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             ('news', self.is_news()),
             ('category_id', self.category_id)
         ]
-        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+        return f"<{self.__class__.__name__} {' '.join('%s=%r' % t for t in attrs)}>"
 
     def __del__(self):
         if getattr(self, '_TextChannel__deleted', None) is True:
@@ -665,8 +665,10 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         :class:`ThreadChannel`
             The created thread on success
         """
-        if len(name) > 100 or len(name) < 1:
-            raise ValueError('The name of the thread must bee between 1-100 characters; got %s' % len(name))
+        if len(name) > 100 or not name:
+            raise ValueError(
+                f'The name of the thread must bee between 1-100 characters; got {len(name)}'
+            )
 
         payload = {
             'name': name
@@ -754,15 +756,15 @@ class ThreadMember:
         TypeError
             The associated guild member is not cached
         """
-        member = self.as_guild_member
-        if not member:
+        if member := self.as_guild_member:
+            return member.permissions_in(channel)
+        else:
             raise TypeError('The guild member of this thread member is not cached')
-        return member.permissions_in(channel)
 
     @property
     def mention(self) -> str:
         """Returns a string the client renders as a mention of the user"""
-        return '<@%s>' % self.id
+        return f'<@{self.id}>'
 
 
 class ThreadChannel(abc.Messageable, Hashable):
@@ -805,8 +807,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         self.last_message_id: int = utils._get_as_snowflake(data, 'last_message_id')
         self.slowmode_delay: int = int(data.get('rate_limit_per_user', 0))
         self._thread_meta = data.get('thread_metadata', {})
-        me = data.get('member', None)
-        if me:
+        if me := data.get('member', None):
             self._members[self._state.self_id] = ThreadMember._from_thread(thread=self, data=me)
         return self
 
@@ -833,8 +834,7 @@ class ThreadChannel(abc.Messageable, Hashable):
                     self.guild._add_member(Member(data=new_member, guild=self.guild, state=self._state))
             self._add_member(ThreadMember(state=self._state, guild=self.guild, data=new_member))
         for removed_id in data.get('removed_member_ids', []):
-            member = self.get_member(int(removed_id))
-            if member:
+            if member := self.get_member(int(removed_id)):
                 self._remove_member(member)
 
     def _add_self(self, data: Dict[str, Any]) -> None:
@@ -912,8 +912,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         """
         Optional[:class:`datetime.datetime`]: When the thread's archive status was last changed, used for calculating recent activity
         """
-        archive_timestamp = self._thread_meta.get('archive_timestamp', None)
-        if archive_timestamp:
+        if archive_timestamp := self._thread_meta.get('archive_timestamp', None):
             return datetime.datetime.fromisoformat(archive_timestamp)
 
     @property
@@ -939,8 +938,7 @@ class ThreadChannel(abc.Messageable, Hashable):
 
             This timestamp only exists for threads created after 9 January 2022, otherwise returns ``None``.
         """
-        create_timestamp = self._thread_meta.get('create_timestamp', None)
-        if create_timestamp:
+        if create_timestamp := self._thread_meta.get('create_timestamp', None):
             return datetime.datetime.fromisoformat(create_timestamp)
 
     @property
@@ -1042,7 +1040,7 @@ class ThreadChannel(abc.Messageable, Hashable):
             raise ThreadIsArchived(self.add_member)
         member_id = member if isinstance(member, int) else member.id
         if self.get_member(member_id):
-            raise ClientException('The user %s is already a Member of this thread.' % member)
+            raise ClientException(f'The user {member} is already a Member of this thread.')
 
         return await self._state.http.add_thread_member(channel_id=self.id, member_id=member_id)
 
@@ -1067,7 +1065,9 @@ class ThreadChannel(abc.Messageable, Hashable):
             raise ThreadIsArchived(self.remove_member)
         member_id = member if isinstance(member, int) else member.id
         if not self.get_member(member_id):
-            raise ClientException('The user %s is not a member of this thread yet, so you could not remove him.' % member)
+            raise ClientException(
+                f'The user {member} is not a member of this thread yet, so you could not remove him.'
+            )
 
         return await self._state.http.remove_thread_member(channel_id=self.id, member_id=member_id)
 
@@ -1276,7 +1276,9 @@ class ThreadChannel(abc.Messageable, Hashable):
         if auto_archive_duration is not MISSING:
             auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
             if not isinstance(auto_archive_duration, AutoArchiveDuration):
-                raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
+                raise InvalidArgument(
+                    f'{auto_archive_duration} is not a valid auto_archive_duration'
+                )
             else:
                 payload['auto_archive_duration'] = auto_archive_duration.value
 
@@ -1429,7 +1431,7 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
             ('user_limit', self.user_limit),
             ('category_id', self.category_id)
         ]
-        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+        return f"<{self.__class__.__name__} {' '.join('%s=%r' % t for t in attrs)}>"
 
     @staticmethod
     def channel_type():
@@ -1560,7 +1562,7 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
             ('user_limit', self.user_limit),
             ('category_id', self.category_id)
         ]
-        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+        return f"<{self.__class__.__name__} {' '.join('%s=%r' % t for t in attrs)}>"
     
     def _update(self, guild, data):
         super()._update(guild, data)
@@ -1925,7 +1927,7 @@ class DMChannel(abc.Messageable, Hashable):
         return self
 
     def __str__(self):
-        return 'Direct Message with %s' % self.recipient
+        return f'Direct Message with {self.recipient}'
 
     def __repr__(self):
         return '<DMChannel id={0.id} recipient={0.recipient!r}>'.format(self)
@@ -2290,10 +2292,7 @@ class ForumPost(ThreadChannel):
     @property
     def applied_tags(self) -> List[ForumTag]:
         """List[:class:`ForumTag`]: Returns a list of tags applied to this post."""
-        tags = []
-        for tag_id in self._applied_tags:
-            tags.append(self.parent_channel.get_tag(tag_id))
-        return tags
+        return [self.parent_channel.get_tag(tag_id) for tag_id in self._applied_tags]
 
     async def edit_tags(self, *tags: ForumTag) -> ForumPost:
         """|coro|
@@ -2371,13 +2370,15 @@ class ForumPost(ThreadChannel):
         if auto_archive_duration is not MISSING:
             auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
             if not isinstance(auto_archive_duration, AutoArchiveDuration):
-                raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
+                raise InvalidArgument(
+                    f'{auto_archive_duration} is not a valid auto_archive_duration'
+                )
             else:
                 payload['auto_archive_duration'] = auto_archive_duration.value
-        
+
         if archived is not MISSING:
             payload['archived'] = archived
-        
+
         if locked is not MISSING:
             payload['locked'] = locked
 
@@ -2436,7 +2437,7 @@ class ForumTag(Hashable):
             ('emoji_name', self.emoji_name),
             ('moderated', self.moderated)
         ]
-        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+        return f"<{self.__class__.__name__} {' '.join('%s=%r' % t for t in attrs)}>"
 
     def __str__(self) -> str:
         return self.name
@@ -2444,9 +2445,10 @@ class ForumTag(Hashable):
     @property
     def emoji(self) -> Optional[PartialEmoji]:
         """Optional[:class:`PartialEmoji`]: The emoji that is set for this post, if any"""
-        if not (self.emoji_name or self.emoji_id):
+        if self.emoji_name or self.emoji_id:
+            return PartialEmoji(name=self.emoji_name, id=self.emoji_id)
+        else:
             return None
-        return PartialEmoji(name=self.emoji_name, id=self.emoji_id)
     
     @classmethod
     def _with_state(cls, state: ConnectionState, guild: Guild, data: Dict[str, Any]) -> ForumTag:
@@ -2545,7 +2547,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             ('nsfw', self.nsfw),
             ('category_id', self.category_id)
         ]
-        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+        return f"<{self.__class__.__name__} {' '.join('%s=%r' % t for t in attrs)}>"
 
     def __del__(self):
         if getattr(self, '_ForumChannel__deleted', None) is True:
@@ -2559,15 +2561,13 @@ class ForumChannel(abc.GuildChannel, Hashable):
         self.category_id: int = utils._get_as_snowflake(data, 'parent_id')
         self.topic: str = data.get('topic')
         self.flags: ChannelFlags = ChannelFlags._from_value(data['flags'])
-        emoji = data.get('default_reaction_emoji', None)
-        if not emoji:
-            if not hasattr(self, 'default_reaction_emoji'):
-                self.default_reaction_emoji = None
-        else:
+        if emoji := data.get('default_reaction_emoji', None):
             self.default_reaction_emoji: Optional[PartialEmoji] = PartialEmoji(
                 name=emoji['emoji_name'],
                 id=utils._get_as_snowflake(emoji, 'id') or None
             )
+        elif not hasattr(self, 'default_reaction_emoji'):
+            self.default_reaction_emoji = None
         self.position: int = data['position']
         self.nsfw: bool = data.get('nsfw', False)
         # Does this need coercion into `int`? No idea yet.
@@ -2613,7 +2613,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     def get_post(self, id: int) -> Optional[ForumPost]:
         """Optional[:class:`ForumPost`]: Returns a post in the forum with the given ID. or None when not found."""
-        return self._posts.get(int(id), None)
+        return self._posts.get(id, None)
 
     @property
     def posts(self) -> List[ForumPost]:
@@ -2921,12 +2921,16 @@ class ForumChannel(abc.GuildChannel, Hashable):
         else:
             flags = MISSING
 
-        if len(name) > 100 or len(name) < 1:
-            raise InvalidArgument('The name of the post must bee between 1-100 characters; got %s' % len(name))
+        if len(name) > 100 or not name:
+            raise InvalidArgument(
+                f'The name of the post must bee between 1-100 characters; got {len(name)}'
+            )
         if auto_archive_duration:
             auto_archive_duration = try_enum(AutoArchiveDuration, auto_archive_duration)
             if not isinstance(auto_archive_duration, AutoArchiveDuration):
-                raise InvalidArgument('%s is not a valid auto_archive_duration' % auto_archive_duration)
+                raise InvalidArgument(
+                    f'{auto_archive_duration} is not a valid auto_archive_duration'
+                )
             else:
                 auto_archive_duration = auto_archive_duration.value
 
@@ -3078,5 +3082,5 @@ def _channel_factory(channel_type):
 
 def _check_channel_type(obj, types) -> bool:
     """Just something to check channel instances without circular imports."""
-    types = tuple([_channel_factory(t)[0] for t in types])
+    types = tuple(_channel_factory(t)[0] for t in types)
     return isinstance(obj, types)

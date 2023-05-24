@@ -81,21 +81,18 @@ __all__ = (
 
 
 def _create_value_cls(name) -> Type[tuple]:
-    cls = namedtuple(f'_EnumValue_' + name, 'name value')
+    cls = namedtuple(f'_EnumValue_{name}', 'name value')
     cls.__repr__ = lambda self: '<%s.%s: %r>' % (name, self.name, self.value)
-    cls.__str__ = lambda self: '%s.%s' % (name, self.name)
+    cls.__str__ = lambda self: f'{name}.{self.name}'
 
     def __getattribute__(self, n) -> Union[bool, Any]:
-        # With this you can use something like some_channel.type.text to check if it is of this type
-        # It is similar to "some_channel.type == ChannelType.text"
         if n in dir(cls):
             return super(cls, self).__getattribute__(n)
+        if n in self._actual_enum_cls_.__members__:
+            return self.name == n
         else:
-            if n in self._actual_enum_cls_.__members__:
-                return self.name == n
-            else:
-                raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
-            
+            raise AttributeError(f'{self.__class__.__name__} has no attribute {n}.')
+
     cls.__getattribute__ = __getattribute__
     return cls
 
@@ -105,7 +102,7 @@ def _is_descriptor(obj):
 
 
 class EnumMeta(type):
-    def __new__(mcs, name, bases, attrs):
+    def __new__(cls, name, bases, attrs):
         value_mapping = {}
         member_mapping = {}
         member_names = []
@@ -138,39 +135,39 @@ class EnumMeta(type):
         attrs['_enum_value_map_'] = value_mapping
         attrs['_enum_member_map_'] = member_mapping
         attrs['_enum_member_names_'] = member_names
-        actual_cls = super().__new__(mcs, name, bases, attrs)
+        actual_cls = super().__new__(cls, name, bases, attrs)
         value_cls._actual_enum_cls_ = actual_cls
         return actual_cls
 
-    def __iter__(cls):
+    def __iter__(self):
         return (cls._enum_member_map_[name] for name in cls._enum_member_names_)  # type: ignore
 
-    def __reversed__(cls):
+    def __reversed__(self):
         return (cls._enum_member_map_[name] for name in reversed(cls._enum_member_names_))  # type: ignore
 
-    def __len__(cls):
-        return len(cls._enum_member_names_)  # type: ignore
+    def __len__(self):
+        return len(self._enum_member_names_)
 
-    def __repr__(cls):
-        return '<enum %r>' % cls.__name__
+    def __repr__(self):
+        return '<enum %r>' % self.__name__
 
     @property
     def __members__(cls):
         return types.MappingProxyType(cls._enum_member_map_)  # type: ignore
 
-    def __call__(cls, value):
+    def __call__(self, value):
         try:
-            return cls._enum_value_map_[value]  # type: ignore
+            return self._enum_value_map_[value]
         except (KeyError, TypeError):
-            raise ValueError("%r is not a valid %s" % (value, cls.__name__))
+            raise ValueError("%r is not a valid %s" % (value, self.__name__))
 
-    def __getitem__(cls, key):
-        return cls._enum_member_map_[key]  # type: ignore
+    def __getitem__(self, key):
+        return self._enum_member_map_[key]
 
-    def __setattr__(cls, name, value):
+    def __setattr__(self, name, value):
         raise TypeError('Enums are immutable.')
 
-    def __delattr__(cls, attr):
+    def __delattr__(self, attr):
         raise TypeError('Enums are immutable')
 
     def __instancecheck__(self, instance):
@@ -229,9 +226,7 @@ class ChannelType(Enum):
     def from_type(cls, obj):
         if isinstance(obj, int):
             return cls.try_value(obj)
-        if hasattr(obj, 'channel_type'):
-            return obj.channel_type()
-        return obj
+        return obj.channel_type() if hasattr(obj, 'channel_type') else obj
 
 
 class PermissionType(Enum):
@@ -447,7 +442,9 @@ class OptionType(Enum):
         if getattr(t, '__origin__', None) is Union:
             # print(t.__origin__, dir(t.__origin__))
             args = getattr(t, '__args__', [])
-            if any([issubclass(a, User) for a in args]) and any([issubclass(a, Role) for a in args]):
+            if any(issubclass(a, User) for a in args) and any(
+                issubclass(a, Role) for a in args
+            ):
                 return cls.mentionable, None
             else:
                 t = args[0]  # not the best solution, but we shall not get here
@@ -470,9 +467,7 @@ class OptionType(Enum):
                 return cls.channel, None
         if issubclass(t, Role):
             return cls.role, None
-        if issubclass(t, Attachment):
-            return cls.attachment, None
-        return t, None
+        return (cls.attachment, None) if issubclass(t, Attachment) else (t, None)
 
 
 class TimestampStyle(Enum):

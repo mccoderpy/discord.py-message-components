@@ -20,6 +20,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+
 from .errors import ClientException
 import wave
 import os
@@ -38,11 +39,7 @@ __all__ = (
 )
 
 
-if sys.platform != 'win32':
-    CREATE_NO_WINDOW = 0
-else:
-    CREATE_NO_WINDOW = 0x08000000
-
+CREATE_NO_WINDOW = 0 if sys.platform != 'win32' else 0x08000000
 default_filters = {
     'time': 0,
     'users': [],
@@ -89,7 +86,9 @@ class RawData:
 
         unpacker = struct.Struct('>xxHII')
         self.sequence, self.timestamp, self.ssrc = unpacker.unpack_from(self.header)
-        self.decrypted_data = getattr(self.client, '_decrypt_' + self.client.mode)(self.header, self.data)
+        self.decrypted_data = getattr(self.client, f'_decrypt_{self.client.mode}')(
+            self.header, self.data
+        )
         self.decoded_data = None
 
         self.user_id = None

@@ -442,25 +442,22 @@ class Command(_BaseCommand):
             pass
         else:
             if module is not None:
-                if module.startswith('discord.') and module.endswith('converter'):
-                    pass
-                else:
-                    converter = getattr(converters, converter.__name__ + 'Converter', converter)
+                if not module.startswith('discord.') or not module.endswith(
+                    'converter'
+                ):
+                    converter = getattr(converters, f'{converter.__name__}Converter', converter)
 
         try:
             if inspect.isclass(converter):
                 if issubclass(converter, converters.Converter):
                     instance = converter()
-                    ret = await instance.convert(ctx, argument)
-                    return ret
+                    return await instance.convert(ctx, argument)
                 else:
                     method = getattr(converter, 'convert', None)
                     if method is not None and inspect.ismethod(method):
-                        ret = await method(ctx, argument)
-                        return ret
+                        return await method(ctx, argument)
             elif isinstance(converter, converters.Converter):
-                ret = await converter.convert(ctx, argument)
-                return ret
+                return await converter.convert(ctx, argument)
         except CommandError:
             raise
         except Exception as exc:
@@ -476,7 +473,9 @@ class Command(_BaseCommand):
             except AttributeError:
                 name = converter.__class__.__name__
 
-            raise BadArgument('Converting to "{}" failed for parameter "{}".'.format(name, param.name)) from exc
+            raise BadArgument(
+                f'Converting to "{name}" failed for parameter "{param.name}".'
+            ) from exc
 
     async def do_conversion(self, ctx, converter, argument, param):
         try:
@@ -526,7 +525,7 @@ class Command(_BaseCommand):
         # The greedy converter is simple -- it keeps going until it fails in which case,
         # it undos the view ready for the next parameter to use instead
         if type(converter) is converters._Greedy:
-            if param.kind == param.POSITIONAL_OR_KEYWORD or param.kind == param.POSITIONAL_ONLY:
+            if param.kind in [param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY]:
                 return await self._transform_greedy_pos(ctx, param, required, converter.converter)
             elif param.kind == param.VAR_POSITIONAL:
                 return await self._transform_greedy_var_pos(ctx, param, converter.converter)
@@ -571,9 +570,7 @@ class Command(_BaseCommand):
             else:
                 result.append(value)
 
-        if not result and not required:
-            return param.default
-        return result
+        return param.default if not result and not required else result
 
     async def _transform_greedy_var_pos(self, ctx, param, converter):
         view = ctx.view
@@ -648,9 +645,7 @@ class Command(_BaseCommand):
 
         For example in commands ``?a b c test``, the root parent is ``a``.
         """
-        if not self.parent:
-            return None
-        return self.parents[-1]
+        return None if not self.parent else self.parents[-1]
 
     @property
     def qualified_name(self):
@@ -661,9 +656,8 @@ class Command(_BaseCommand):
         ``one two three``.
         """
 
-        parent = self.full_parent_name
-        if parent:
-            return parent + ' ' + self.name
+        if parent := self.full_parent_name:
+            return f'{parent} {self.name}'
         else:
             return self.name
 
@@ -696,7 +690,7 @@ class Command(_BaseCommand):
             raise discord.ClientException(fmt.format(self))
 
         for name, param in iterator:
-            if param.kind == param.POSITIONAL_OR_KEYWORD or param.kind == param.POSITIONAL_ONLY:
+            if param.kind in [param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY]:
                 transformed = await self.transform(ctx, param)
                 args.append(transformed)
             elif param.kind == param.KEYWORD_ONLY:
@@ -719,18 +713,14 @@ class Command(_BaseCommand):
                         break
 
         if not self.ignore_extra and not view.eof:
-            raise TooManyArguments('Too many arguments passed to ' + self.qualified_name)
+            raise TooManyArguments(f'Too many arguments passed to {self.qualified_name}')
 
     async def call_before_hooks(self, ctx):
         # now that we're done preparing we can call the pre-command hooks
         # first, call the command local hook:
         cog = self.cog
         if self._before_invoke is not None:
-            # should be cog if @commands.before_invoke is used
-            instance = getattr(self._before_invoke, '__self__', cog)
-            # __self__ only exists for methods, not functions
-            # however, if @command.before_invoke is used, it will be a function
-            if instance:
+            if instance := getattr(self._before_invoke, '__self__', cog):
                 await self._before_invoke(instance, ctx)
             else:
                 await self._before_invoke(ctx)
@@ -749,9 +739,8 @@ class Command(_BaseCommand):
     async def call_after_hooks(self, ctx):
         cog = self.cog
         if self._after_invoke is not None:
-            instance = getattr(self._after_invoke, '__self__', cog)
-            if instance:
-                    await self._after_invoke(instance, ctx)
+            if instance := getattr(self._after_invoke, '__self__', cog):
+                await self._after_invoke(instance, ctx)
             else:
                 await self._after_invoke(ctx)
 
@@ -770,8 +759,7 @@ class Command(_BaseCommand):
             dt = ctx.message.edited_at or ctx.message.created_at
             current = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
             bucket = self._buckets.get_bucket(ctx.message, current)
-            retry_after = bucket.update_rate_limit(current)
-            if retry_after:
+            if retry_after := bucket.update_rate_limit(current):
                 raise CommandOnCooldown(bucket, retry_after)
 
     async def prepare(self, ctx):
@@ -982,9 +970,7 @@ class Command(_BaseCommand):
         """
         if self.brief is not None:
             return self.brief
-        if self.help is not None:
-            return self.help.split('\n', 1)[0]
-        return ''
+        return self.help.split('\n', 1)[0] if self.help is not None else ''
 
     def _is_typing_optional(self, annotation):
         try:
@@ -992,10 +978,7 @@ class Command(_BaseCommand):
         except AttributeError:
             return False
 
-        if origin is not Union:
-            return False
-
-        return annotation.__args__[-1] is type(None)
+        return False if origin is not Union else annotation.__args__[-1] is type(None)
 
     @property
     def signature(self):
@@ -1017,23 +1000,26 @@ class Command(_BaseCommand):
                 # do [name] since [name=None] or [name=] are not exactly useful for the user.
                 should_print = param.default if isinstance(param.default, str) else param.default is not None
                 if should_print:
-                    result.append('[%s=%s]' % (name, param.default) if not greedy else
-                                  '[%s=%s]...' % (name, param.default))
+                    result.append(
+                        f'[{name}={param.default}]'
+                        if not greedy
+                        else f'[{name}={param.default}]...'
+                    )
                     continue
                 else:
-                    result.append('[%s]' % name)
+                    result.append(f'[{name}]')
 
             elif param.kind == param.VAR_POSITIONAL:
                 if self.require_var_positional:
-                    result.append('<%s...>' % name)
+                    result.append(f'<{name}...>')
                 else:
-                    result.append('[%s...]' % name)
+                    result.append(f'[{name}...]')
             elif greedy:
-                result.append('[%s]...' % name)
+                result.append(f'[{name}]...')
             elif self._is_typing_optional(param.annotation):
-                result.append('[%s]' % name)
+                result.append(f'[{name}]')
             else:
-                result.append('<%s>' % name)
+                result.append(f'<{name}>')
 
         return ' '.join(result)
 
@@ -1082,12 +1068,12 @@ class Command(_BaseCommand):
                     if not ret:
                         return False
 
-            predicates = self.checks
-            if not predicates:
+            if predicates := self.checks:
+                return await discord.utils.async_all(predicate(ctx) for predicate in predicates)
+            else:
                 # since we have no checks, then we just return True.
                 return True
 
-            return await discord.utils.async_all(predicate(ctx) for predicate in predicates)
         finally:
             ctx.command = original
 
@@ -1803,7 +1789,7 @@ def has_permissions(**perms):
 
     invalid = set(perms) - set(discord.Permissions.VALID_FLAGS)
     if invalid:
-        raise TypeError('Invalid permission(s): %s' % (', '.join(invalid)))
+        raise TypeError(f"Invalid permission(s): {', '.join(invalid)}")
 
     def predicate(ctx):
         ch = ctx.channel
@@ -1828,7 +1814,7 @@ def bot_has_permissions(**perms):
 
     invalid = set(perms) - set(discord.Permissions.VALID_FLAGS)
     if invalid:
-        raise TypeError('Invalid permission(s): %s' % (', '.join(invalid)))
+        raise TypeError(f"Invalid permission(s): {', '.join(invalid)}")
 
     def predicate(ctx):
         guild = ctx.guild
@@ -1856,7 +1842,7 @@ def has_guild_permissions(**perms):
 
     invalid = set(perms) - set(discord.Permissions.VALID_FLAGS)
     if invalid:
-        raise TypeError('Invalid permission(s): %s' % (', '.join(invalid)))
+        raise TypeError(f"Invalid permission(s): {', '.join(invalid)}")
 
     def predicate(ctx):
         if not ctx.guild:
@@ -1881,7 +1867,7 @@ def bot_has_guild_permissions(**perms):
 
     invalid = set(perms) - set(discord.Permissions.VALID_FLAGS)
     if invalid:
-        raise TypeError('Invalid permission(s): %s' % (', '.join(invalid)))
+        raise TypeError(f"Invalid permission(s): {', '.join(invalid)}")
 
     def predicate(ctx):
         if not ctx.guild:

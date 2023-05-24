@@ -95,9 +95,7 @@ class Reaction:
         return isinstance(other, self.__class__) and other.emoji == self.emoji
 
     def __ne__(self, other) -> bool:
-        if isinstance(other, self.__class__):
-            return other.emoji != self.emoji
-        return True
+        return other.emoji != self.emoji if isinstance(other, self.__class__) else True
 
     def __hash__(self) -> int:
         return hash(self.emoji)

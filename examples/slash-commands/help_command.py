@@ -24,8 +24,7 @@ class HelpCommand(commands.Cog):
                 if cmd.has_subcommands:
                     for sub_cmd_or_group in cmd.sub_commands:
                         if isinstance(sub_cmd_or_group, discord.SubCommandGroup):
-                            for sub_cmd in sub_cmd_or_group.sub_commands:
-                                command_list.append(sub_cmd)
+                            command_list.extend(iter(sub_cmd_or_group.sub_commands))
                         else:
                             command_list.append(sub_cmd_or_group)
                 else:
@@ -48,26 +47,25 @@ class HelpCommand(commands.Cog):
         if not self.latest_command_list:
             self.fill_command_list()
         if command is None:
-            description = ''
-            for cmd in self.latest_command_list:
-                description += f'{cmd.mention} - {cmd.description}\n'
+            description = ''.join(
+                f'{cmd.mention} - {cmd.description}\n'
+                for cmd in self.latest_command_list
+            )
             embed = discord.Embed(
                 title=f'Help menu for {self.bot.user.name}',
                 description=description,
                 color=discord.Color.blurple()
             )
         else:
-            _command: Union[discord.SlashCommand, discord.SubCommand] = discord.utils.get(
-                self.latest_command_list,
-                qualified_name=command
-            )
-            if not _command:
+            if _command := discord.utils.get(
+                self.latest_command_list, qualified_name=command
+            ):
+                command = _command
+            else:
                 return await ctx.respond(
                     f'The command `{command}` is not a valid command. Please select one from the suggested ones',
                     hidden=True
                 )
-            else:
-                command = _command
             embed = discord.Embed(
                 title=f'Info for command {command.qualified_name}',
                 description=f'**Usage of {command.mention}:**\n{command.description}',
@@ -75,9 +73,9 @@ class HelpCommand(commands.Cog):
             )
             if command.options:
                 embed.description += f'\n\n' \
-                                     f'**Usage:**\n' \
-                                     f'`<>` means the option is required, `[]` that it is optional\n\n' \
-                                     f'`/{command.qualified_name} '
+                                         f'**Usage:**\n' \
+                                         f'`<>` means the option is required, `[]` that it is optional\n\n' \
+                                         f'`/{command.qualified_name} '
                 for option in command.options:
                     if option.required:
                         embed.description += f'<{option.name}> '

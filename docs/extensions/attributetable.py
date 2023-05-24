@@ -28,7 +28,9 @@ class attributetable_item(nodes.Part, nodes.Element):
     pass
 
 def visit_attributetable_node(self, node):
-    self.body.append('<div class="py-attribute-table" data-move-to-id="%s">' % node['python-class'])
+    self.body.append(
+        f"""<div class="py-attribute-table" data-move-to-id="{node['python-class']}">"""
+    )
 
 def visit_attributetablecolumn_node(self, node):
     self.body.append(self.starttag(node, 'div', CLASS='py-attribute-table-column'))
@@ -79,7 +81,9 @@ class PyAttributeTable(SphinxDirective):
             if not modulename:
                 modulename = self.env.ref_context.get('py:module')
         if modulename is None:
-            raise RuntimeError('modulename somehow None for %s in %s.' % (content, self.env.docname))
+            raise RuntimeError(
+                f'modulename somehow None for {content} in {self.env.docname}.'
+            )
 
         return modulename, name
 
@@ -115,7 +119,7 @@ class PyAttributeTable(SphinxDirective):
         modulename, name = self.parse_name(content)
         node['python-module'] = modulename
         node['python-class'] = name
-        node['python-full-name'] = '%s.%s' % (modulename, name)
+        node['python-full-name'] = f'{modulename}.{name}'
         return [node]
 
 def build_lookup_table(env):
@@ -178,7 +182,7 @@ def get_class_results(lookup, modulename, name, fullname):
         return groups
 
     for attr in members:
-        attrlookup = '%s.%s' % (fullname, attr)
+        attrlookup = f'{fullname}.{attr}'
         key = _('Attributes')
         badge = None
         label = attr
@@ -196,7 +200,7 @@ def get_class_results(lookup, modulename, name, fullname):
                 badge['badge-type'] = _('coroutine')
             elif isinstance(value, classmethod):
                 key = _('Methods')
-                label = '%s.%s' % (name, attr)
+                label = f'{name}.{attr}'
                 badge = attributetablebadge('cls', 'cls')
                 badge['badge-type'] = _('classmethod')
             elif inspect.isfunction(value):
@@ -218,10 +222,14 @@ def class_results_to_node(key, elements):
     title = attributetabletitle(key, key)
     ul = nodes.bullet_list('')
     for element in elements:
-        ref = nodes.reference('', '', internal=True,
-                                      refuri='#' + element.fullname,
-                                      anchorname='',
-                                      *[nodes.Text(element.label)])
+        ref = nodes.reference(
+            '',
+            '',
+            internal=True,
+            refuri=f'#{element.fullname}',
+            anchorname='',
+            *[nodes.Text(element.label)],
+        )
         para = addnodes.compact_paragraph('', '', ref)
         if element.badge is not None:
             ul.append(attributetable_item('', element.badge, para))

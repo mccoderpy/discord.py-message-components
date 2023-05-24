@@ -134,24 +134,22 @@ class AutoUpdateChecker:
     async def get_current_release(self) -> Union[MinimalReleaseInfo, GitReleaseInfo]:
         dist = importlib_metadata.distribution('discord.py-message-components')
         version, release = VERSION_REGEX.match(dist.version).groups()
-        if release:
-            direct_url_file = dist.read_text('direct_url.json')
-            if direct_url_file:
-                direct_url = json.loads(direct_url_file)
-                self._vcs_url = vcs_url = direct_url['url']
-                url_is_valid = await self.validate_vcs_url(vcs_url)
-                vcs_info = direct_url['vcs_info']
-                branch = vcs_info.get('requested_revision', None)
-                commit_id = vcs_info.get('commit_id', None)
-                return GitReleaseInfo(branch, version, release, commit_id, url_is_valid, MISSING)
-            else:
-                info = await self.find_release(version, release)
-                if info is not None:
-                    return GitReleaseInfo(info['branch'], version, release, info['commit'], True, MISSING)
-                else:
-                    log.warning('Unknown release used. Version checks will not be performed')
-        else:
+        if not release:
             return MinimalReleaseInfo(version, release, True, MISSING)
+        if direct_url_file := dist.read_text('direct_url.json'):
+            direct_url = json.loads(direct_url_file)
+            self._vcs_url = vcs_url = direct_url['url']
+            url_is_valid = await self.validate_vcs_url(vcs_url)
+            vcs_info = direct_url['vcs_info']
+            branch = vcs_info.get('requested_revision', None)
+            commit_id = vcs_info.get('commit_id', None)
+            return GitReleaseInfo(branch, version, release, commit_id, url_is_valid, MISSING)
+        else:
+            info = await self.find_release(version, release)
+            if info is not None:
+                return GitReleaseInfo(info['branch'], version, release, info['commit'], True, MISSING)
+            else:
+                log.warning('Unknown release used. Version checks will not be performed')
 
     async def validate_vcs_url(self, url: str) -> bool:
         d = await self.request('POST', '/is-valid-vcs-url', data={'url': url})
@@ -192,8 +190,7 @@ class AutoUpdateChecker:
             self.current_release.use_instead = use_instead = data.get("use_instead", None)
 
             log.warning(
-                f'You are using a branch of the library that has been deleted and will no longer receive updates!'
-                f'Consider updating to {use_instead + "branch instead" if use_instead else "an other branch"}.'
+                f'You are using a branch of the library that has been deleted and will no longer receive updates!Consider updating to {f"{use_instead}branch instead" if use_instead else "an other branch"}.'
             )
             self.dispatch('used_branch_deleted', use_instead)
             log.info('Stopped update checker task')

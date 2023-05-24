@@ -131,7 +131,9 @@ class BaseComponent:
     def custom_id(self, value: Union[str, int]):
         length = len(str(value))
         if 1 > length > 100:
-            raise ValueError('The custom_id must be between 1 and 100 in length; got %s' % length)
+            raise ValueError(
+                f'The custom_id must be between 1 and 100 in length; got {length}'
+            )
         self._custom_id = value
 
     @property
@@ -141,7 +143,7 @@ class BaseComponent:
 
     @disabled.setter
     def disabled(self, value: bool):
-        self._disabled = bool(value)
+        self._disabled = value
 
     def to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError()
@@ -197,12 +199,10 @@ class Button(BaseComponent):
         self.emoji = emoji
 
     def __repr__(self) -> str:
-        return f'<Button {", ".join(["%s=%s" % (k, str(v)) for k, v in self.__dict__.items()])}>'
+        return f'<Button {", ".join([f"{k}={str(v)}" for k, v in self.__dict__.items()])}>'
 
     def __len__(self):
-        if self.label:
-            return len(self.label)
-        return len(self.emoji)
+        return len(self.label) if self.label else len(self.emoji)
 
     @property
     def type(self) -> ComponentType:
@@ -227,7 +227,7 @@ class Button(BaseComponent):
     @label.setter
     def label(self, value: Optional[str]):
         if value and len(value) > 80:
-            raise InvalidArgument('The max. length of Button labels is 80, got %s' % value)
+            raise InvalidArgument(f'The max. length of Button labels is 80, got {value}')
         self._label = value
 
     @property
@@ -465,7 +465,7 @@ class SelectOption:
         self.default: bool = default
 
     def __repr__(self):
-        return f'<SelectOption {", ".join(["%s=%s" % (k, v) for (k, v) in self.__dict__.items()])}>'
+        return f'<SelectOption {", ".join([f"{k}={v}" for k, v in self.__dict__.items()])}>'
 
     def set_default(self, value: bool):
         self.default = value
@@ -695,7 +695,7 @@ class SelectMenu(BaseSelect):
         self.options = options
 
     def __repr__(self):
-        return f'<SelectMenu {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items()])}>'
+        return f'<SelectMenu {", ".join([f"{k}={v}" for k, v in self.__dict__.items()])}>'
 
     @property
     def type(self) -> ComponentType:
@@ -800,12 +800,8 @@ class SelectMenu(BaseSelect):
         List[Union[:class:`int`, :class:`str`]]
             A list containing the values of all **not** selected options
         """
-        _not_selected = []
         values = self.values
-        for value in self.all_option_values:
-            if value not in values:
-                _not_selected.append(value)
-        return _not_selected
+        return [value for value in self.all_option_values if value not in values]
 
     def to_dict(self) -> Dict[str, Any]:
         base = super().to_dict()
@@ -924,7 +920,7 @@ class TextInput(BaseComponent):
         return self.value
     
     def __repr__(self) -> str:
-        return f'<TextInput {", ".join(["%s=%s" % (k, str(v)) for k, v in self.__dict__.items()])}>'
+        return f'<TextInput {", ".join([f"{k}={str(v)}" for k, v in self.__dict__.items()])}>'
     
     @property
     def type(self) -> ComponentType:
@@ -1144,7 +1140,7 @@ class ActionRow:
             The components the :class:`~discord.ActionRow` should hold.
             This could be up to 5 :class:`Button` or one :ref:`Select <select-like-objects>` like object/:class:`TextInput`.
         """
-        self.components: List[T] = [c for c in components]
+        self.components: List[T] = list(components)
 
     @overload
     def __class_getitem__(cls, item: Button) -> ActionRow: ...
@@ -1160,42 +1156,35 @@ class ActionRow:
         ...
 
     def __class_getitem__(cls, item: T) -> ActionRow(T):
-        if isinstance(item, tuple):
-            return ActionRow(*item)
-        else:
-            return ActionRow(item)
+        return ActionRow(*item) if isinstance(item, tuple) else ActionRow(item)
 
     def __repr__(self) -> str:
         return f'<ActionRow components={self.components}>'
 
     def __iter__(self) -> Iterator[Union[Button, BaseSelect, TextInput]]:
-        for component in self.components:
-            yield component
+        yield from self.components
 
     @property
     def type(self) -> ComponentType:
         return ComponentType.ActionRow
 
     def to_dict(self) -> ActionRowPayload:
-        # I know this looks complex but it just auto-wraps components in to a new ActionRow when users are too stupid to place them in different
-        rows = []
         actual_row = []
-        rows.append(actual_row)
+        rows = [actual_row]
         for c in self.components:
             max_rows_reached = len(rows) == 5
             if len(actual_row) >= 5:
-                if not max_rows_reached:
-                    if actual_row not in rows:
-                        rows.append(
-                            actual_row.copy()
-                        )
-                    else:
-                        rows[rows.index(actual_row)] = actual_row.copy()
-                    actual_row.clear()
-                    rows.append(actual_row)
-                else:
+                if max_rows_reached:
                     raise InvalidArgument('A message could only contain up to 5 ActionRows')
 
+                if actual_row in rows:
+                    rows[rows.index(actual_row)] = actual_row.copy()
+                else:
+                    rows.append(
+                        actual_row.copy()
+                    )
+                actual_row.clear()
+                rows.append(actual_row)
             t = c.type
             if t.ActionRow:
                 raise ValueError('An ActionRow can not contain another ActionRow')
@@ -1215,15 +1204,14 @@ class ActionRow:
                     rows.append([c.to_dict()])
 
         max_rows_reached = len(rows) == 5
-        if len(actual_row) > 0:
-            if not max_rows_reached:
-                if actual_row not in rows:
-                    rows.append(
-                        actual_row.copy()
-                    )
-                rows[rows.index(actual_row)] = actual_row.copy()
-            else:
+        if actual_row:
+            if max_rows_reached:
                 raise InvalidArgument('A message could only contain up to 5 ActionRows')
+            if actual_row not in rows:
+                rows.append(
+                    actual_row.copy()
+                )
+            rows[rows.index(actual_row)] = actual_row.copy()
         return [{'type': 1, 'components': components} for components in rows if len(components)]
 
     def __len__(self) -> int:
@@ -1327,7 +1315,7 @@ class ActionRow:
         try:
             component = self.components[index]
         except IndexError:
-            raise IndexError('component index %s out of range' % index)
+            raise IndexError(f'component index {index} out of range')
         component.disabled = True
         return self
 

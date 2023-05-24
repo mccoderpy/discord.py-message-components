@@ -50,15 +50,12 @@ class WelcomeScreenChannel:
     def _from_data(cls, state, guild, data):
         channel = guild.get_channel(int(data['channel_id']))
         description = data.get('description', None)
-        custom_emoji = data.get('emoji_id', None)
-        if custom_emoji:
+        if custom_emoji := data.get('emoji_id', None):
             emoji = state.get_emoji(int(custom_emoji))
+        elif emoji_name := data.get('emoji_name', None):
+            emoji = PartialEmoji(name=emoji_name)
         else:
-            emoji_name = data.get('emoji_name', None)
-            if emoji_name:
-                emoji = PartialEmoji(name=emoji_name)
-            else:
-                emoji = None
+            emoji = None
         return cls(channel=channel, description=description, emoji=emoji)
 
     def to_dict(self):
@@ -104,7 +101,7 @@ class WelcomeScreen:
             pass
         else:
             if enabled is not None:
-                fields['enabled'] = bool(enabled)
+                fields['enabled'] = enabled
 
         try:
             welcome_channels: Optional[List[WelcomeScreenChannel]] = fields['welcome_channels']

@@ -55,14 +55,10 @@ def _transform_channel(entry, data):
     return entry.guild.get_channel(int(data)) or Object(id=data)
 
 def _transform_owner_id(entry, data):
-    if data is None:
-        return None
-    return entry._get_member(int(data))
+    return None if data is None else entry._get_member(int(data))
 
 def _transform_inviter_id(entry, data):
-    if data is None:
-        return None
-    return entry._get_member(int(data))
+    return None if data is None else entry._get_member(int(data))
 
 def _transform_overwrites(entry, data):
     overwrites = []
@@ -93,7 +89,7 @@ class AuditLogDiff:
 
     def __repr__(self):
         values = ' '.join('%s=%r' % item for item in self.__dict__.items())
-        return '<AuditLogDiff %s>' % values
+        return f'<AuditLogDiff {values}>'
 
 class AuditLogChanges:
     # TODO: Add ad transformers for all the other keys
@@ -309,7 +305,7 @@ class AuditLogEntry(Hashable):
     @utils.cached_property
     def target(self):
         try:
-            converter = getattr(self, '_convert_target_' + self.action.target_type)
+            converter = getattr(self, f'_convert_target_{self.action.target_type}')
         except AttributeError:
             return Object(id=self._target_id)
         else:
@@ -342,18 +338,14 @@ class AuditLogEntry(Hashable):
 
     def _convert_target_channel(self, target_id):
         ch = self.guild.get_channel(target_id)
-        if ch is None:
-            return Object(id=target_id)
-        return ch
+        return Object(id=target_id) if ch is None else ch
 
     def _convert_target_user(self, target_id):
         return self._get_member(target_id)
 
     def _convert_target_role(self, target_id):
         role = self.guild.get_role(target_id)
-        if role is None:
-            return Object(id=target_id)
-        return role
+        return Object(id=target_id) if role is None else role
 
     def _convert_target_invite(self, target_id):
         # invites have target_id set to null
@@ -385,27 +377,19 @@ class AuditLogEntry(Hashable):
 
     def _convert_target_stage(self, target_id):
         stage = self.guild.get_channel(target_id)
-        if stage is None:
-            return Object(id=target_id)
-        return stage
+        return Object(id=target_id) if stage is None else stage
 
     def _convert_target_sticker(self, target_id):
         sticker = self.guild.get_sticker(target_id)
-        if sticker is None:
-            return Object(id=target_id)
-        return sticker
+        return Object(id=target_id) if sticker is None else sticker
 
     def _convert_target_scheduled_event(self, target_id):
         event = self.guild.get_event(target_id)
-        if event is None:
-            return Object(id=target_id)
-        return event
+        return Object(id=target_id) if event is None else event
 
     def _convert_target_thread(self, target_id):
         thread = self.guild.get_channel(target_id)
-        if thread is None:
-            return Object(id=target_id)
-        return thread
+        return Object(id=target_id) if thread is None else thread
 
     def _convert_target_application_command(self, target_id):
         cmd = self.guild.get_application_command(target_id)

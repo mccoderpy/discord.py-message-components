@@ -182,18 +182,14 @@ class Role(Hashable):
 
     def __le__(self, other):
         r = Role.__lt__(other, self)
-        if r is NotImplemented:
-            return NotImplemented
-        return not r
+        return NotImplemented if r is NotImplemented else not r
 
     def __gt__(self, other):
         return Role.__lt__(other, self)
 
     def __ge__(self, other):
         r = Role.__lt__(self, other)
-        if r is NotImplemented:
-            return NotImplemented
-        return not r
+        return NotImplemented if r is NotImplemented else not r
 
     def _update(self, data):
         self.name: str = data['name']
@@ -258,7 +254,7 @@ class Role(Hashable):
     @property
     def mention(self):
         """:class:`str`: Returns a string that allows you to mention a role."""
-        return '<@&%s>' % self.id
+        return f'<@&{self.id}>'
 
     @property
     def members(self):
@@ -390,21 +386,13 @@ class Role(Hashable):
         except KeyError:
             icon = self.icon
         else:
-            if icon_bytes is not None:
-                icon = _bytes_to_base64_data(icon_bytes)
-            else:
-                icon = None
-
+            icon = _bytes_to_base64_data(icon_bytes) if icon_bytes is not None else None
         try:
             unicode_emoji: Optional[str] = fields['unicode_emoji']
         except KeyError:
             unicode_emoji = self.unicode_emoji
         else:
-            if unicode_emoji is not None:
-                unicode_emoji = str(unicode_emoji)
-            else:
-                unicode_emoji = None
-
+            unicode_emoji = str(unicode_emoji) if unicode_emoji is not None else None
         payload = {
             'name': fields.get('name', self.name),
             'permissions': str(fields.get('permissions', self.permissions).value),

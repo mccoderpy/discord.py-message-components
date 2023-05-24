@@ -160,9 +160,7 @@ class MemberConverter(IDConverter):
 
         # If we're not being rate limited then we can use the websocket to actually query
         members = await guild.query_members(limit=1, user_ids=[user_id], cache=cache)
-        if not members:
-            return None
-        return members[0]
+        return None if not members else members[0]
 
     async def convert(self, ctx, argument):
         bot = ctx.bot
@@ -303,8 +301,7 @@ class MessageConverter(PartialMessageConverter):
     """
     async def convert(self, ctx, argument):
         message_id, channel_id = self._get_id_matches(argument)
-        message = ctx.bot._connection._get_message(message_id)
-        if message:
+        if message := ctx.bot._connection._get_message(message_id):
             return message
         channel = ctx.bot.get_channel(channel_id) if channel_id else ctx.channel
         if not channel:
@@ -615,7 +612,7 @@ class ColourConverter(Converter):
         if argument[0] == '#':
             return self.parse_hex_number(argument[1:])
 
-        if argument[0:2] == '0x':
+        if argument[:2] == '0x':
             rest = argument[2:]
             # Legacy backwards compatible syntax
             if rest.startswith('#'):
@@ -623,7 +620,7 @@ class ColourConverter(Converter):
             return self.parse_hex_number(rest)
 
         arg = argument.lower()
-        if arg[0:3] == 'rgb':
+        if arg[:3] == 'rgb':
             return self.parse_rgb(arg)
 
         arg = arg.replace(' ', '_')
@@ -654,8 +651,9 @@ class RoleConverter(IDConverter):
         if not guild:
             raise NoPrivateMessage()
 
-        match = self._get_id_match(argument) or re.match(r'<@&([0-9]+)>$', argument)
-        if match:
+        if match := self._get_id_match(argument) or re.match(
+            r'<@&([0-9]+)>$', argument
+        ):
             result = guild.get_role(int(match.group(1)))
         else:
             result = discord.utils.get(guild._roles.values(), name=argument)
@@ -679,8 +677,7 @@ class InviteConverter(Converter):
     """
     async def convert(self, ctx, argument):
         try:
-            invite = await ctx.bot.fetch_invite(argument)
-            return invite
+            return await ctx.bot.fetch_invite(argument)
         except Exception as exc:
             raise BadInviteArgument() from exc
 
@@ -706,8 +703,8 @@ class GuildConverter(IDConverter):
         if result is None:
             result = discord.utils.get(ctx.bot.guilds, name=argument)
 
-            if result is None:
-                raise GuildNotFound(argument)
+        if result is None:
+            raise GuildNotFound(argument)
         return result
 
 class EmojiConverter(IDConverter):
@@ -762,12 +759,10 @@ class PartialEmojiConverter(Converter):
          Raise :exc:`.PartialEmojiConversionFailure` instead of generic :exc:`.BadArgument`
     """
     async def convert(self, ctx, argument):
-        match = re.match(r'<(a?):([a-zA-Z0-9\_]+):([0-9]+)>$', argument)
-
-        if match:
-            emoji_animated = bool(match.group(1))
-            emoji_name = match.group(2)
-            emoji_id = int(match.group(3))
+        if match := re.match(r'<(a?):([a-zA-Z0-9\_]+):([0-9]+)>$', argument):
+            emoji_animated = bool(match[1])
+            emoji_name = match[2]
+            emoji_id = int(match[3])
 
             return discord.PartialEmoji.with_state(ctx.bot._connection, animated=emoji_animated, name=emoji_name,
                                                    id=emoji_id)
@@ -913,7 +908,7 @@ class datetimeConverter(Converter):
             year = date.group('year')
 
             if year and len(year) == 2: # it is in YY (20YY) format, convert it to a full year (yyyy)
-                year = '20' + year
+                year = f'20{year}'
 
             year = int(year or now.year)
             # to make something like ``10.2022`` also valid
@@ -928,7 +923,7 @@ class datetimeConverter(Converter):
 
         if time and any(time.groups()):
             invalid = False
-            pm = bool(time.group('am_or_pm') == 'pm')
+            pm = time.group('am_or_pm') == 'pm'
             hour = int(time.group('hour') or now.hour)
             # if it is in 12-hour format and pm, just increase it by 12 so that it is in 24-hour format
             if pm and hour <= 12:
@@ -983,37 +978,39 @@ class clean_content(Converter):
         if self.fix_channel_mentions and ctx.guild:
             def resolve_channel(id, *, _get=ctx.guild.get_channel):
                 ch = _get(id)
-                return ('<#%s>' % id), ('#' + ch.name if ch else '#deleted-channel')
+                return f'<#{id}>', f'#{ch.name}' if ch else '#deleted-channel'
 
             transformations.update(resolve_channel(channel) for channel in message.raw_channel_mentions)
 
         if self.use_nicknames and ctx.guild:
             def resolve_member(id, *, _get=ctx.guild.get_member):
                 m = _get(id)
-                return '@' + m.display_name if m else '@deleted-user'
+                return f'@{m.display_name}' if m else '@deleted-user'
+
         else:
             def resolve_member(id, *, _get=ctx.bot.get_user):
                 m = _get(id)
-                return '@' + m.name if m else '@deleted-user'
+                return f'@{m.name}' if m else '@deleted-user'
+
 
 
         transformations.update(
-            ('<@%s>' % member_id, resolve_member(member_id))
+            (f'<@{member_id}>', resolve_member(member_id))
             for member_id in message.raw_mentions
         )
 
         transformations.update(
-            ('<@!%s>' % member_id, resolve_member(member_id))
+            (f'<@!{member_id}>', resolve_member(member_id))
             for member_id in message.raw_mentions
         )
 
         if ctx.guild:
             def resolve_role(_id, *, _find=ctx.guild.get_role):
                 r = _find(_id)
-                return '@' + r.name if r else '@deleted-role'
+                return f'@{r.name}' if r else '@deleted-role'
 
             transformations.update(
-                ('<@&%s>' % role_id, resolve_role(role_id))
+                (f'<@&{role_id}>', resolve_role(role_id))
                 for role_id in message.raw_role_mentions
             )
 
@@ -1048,7 +1045,7 @@ class _Greedy:
             raise TypeError('Greedy[...] expects a type or a Converter instance.')
 
         if converter is str or converter is type(None) or converter is _Greedy:
-            raise TypeError('Greedy[%s] is invalid.' % converter.__name__)
+            raise TypeError(f'Greedy[{converter.__name__}] is invalid.')
 
         if getattr(converter, '__origin__', None) is typing.Union and type(None) in converter.__args__:
             raise TypeError('Greedy[%r] is invalid.' % converter)

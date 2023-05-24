@@ -259,7 +259,9 @@ class OAuth2Client:
         self.loop: asyncio.AbstractEventLoop = loop
         self.client_id: int = client_id
         if not issubclass(access_token_store.__class__, AccessTokenStore):
-            raise TypeError(f'access_token_store must be a subclass of discord.oauth2.AccessTokenStore')
+            raise TypeError(
+                'access_token_store must be a subclass of discord.oauth2.AccessTokenStore'
+            )
         self.access_token_store: AccessTokenStore = access_token_store
         access_token_store.oauth2_client = self
         self._closed: bool = False
@@ -500,11 +502,8 @@ class OAuth2Client:
             data = await self.http.get_current_auth_info(access_token.access_token)
         except Unauthorized:
             raise AccessTokenExpired(access_token.refreshable)
-        
-        if raw:
-            return data
-        
-        return AccessTokenInfo(data=data, client=self)
+
+        return data if raw else AccessTokenInfo(data=data, client=self)
     
     @overload
     async def fetch_user(self, access_token: AccessToken, /) -> User: ...
@@ -539,11 +538,8 @@ class OAuth2Client:
             data = await self.http.get_user(access_token.access_token)
         except Unauthorized:
             raise AccessTokenExpired(access_token.refreshable)
-        
-        if raw:
-            return data
-        
-        return User(client=self, data=data)
+
+        return data if raw else User(client=self, data=data)
     
     @overload
     async def fetch_guilds(self, access_token: AccessToken, /) -> List[PartialGuild]: ...
@@ -574,11 +570,8 @@ class OAuth2Client:
             data = await self.http.get_user_guilds(access_token.access_token)
         except Unauthorized:
             raise AccessTokenExpired(access_token.refreshable)
-        
-        if raw:
-            return data
-        
-        return [PartialGuild(client=self, data=d) for d in data]
+
+        return data if raw else [PartialGuild(client=self, data=d) for d in data]
     
     @overload
     async def fetch_guild_member(self, access_token: AccessToken, guild_id: SupportsStr, /) -> GuildMember: ...
@@ -617,11 +610,8 @@ class OAuth2Client:
             data = await self.http.get_user_guild_member(access_token.access_token, guild_id)
         except Unauthorized:
             raise AccessTokenExpired(access_token.refreshable)
-        
-        if raw:
-            return data
-        
-        return GuildMember(client=self, data=data)
+
+        return data if raw else GuildMember(client=self, data=data)
     
     @overload
     async def add_guild_member(
@@ -756,11 +746,8 @@ class OAuth2Client:
             if exc.status == 400 and exc.code == 30001:
                 raise UserIsAtGuildLimit()
             raise
-        
-        if raw:
-            return data
-        
-        return GuildMember(client=self, data=data)
+
+        return data if raw else GuildMember(client=self, data=data)
     
     @overload
     async def fetch_connections(self, access_token: AccessToken, /) -> List[Connection]: ...
@@ -797,11 +784,8 @@ class OAuth2Client:
             data = await self.http.get_user_connections(access_token.access_token)
         except Unauthorized:
             raise AccessTokenExpired(access_token.refreshable)
-        
-        if raw:
-            return data
-        
-        return [Connection(client=self, data=d) for d in data]
+
+        return data if raw else [Connection(client=self, data=d) for d in data]
     
     @overload
     async def fetch_user_app_role_connection(self, access_token: AccessToken, /) -> RoleConnection: ...
@@ -843,11 +827,8 @@ class OAuth2Client:
             data = await self.http.get_user_application_role_connection(access_token.access_token)
         except Unauthorized:
             raise AccessTokenExpired(access_token.refreshable)
-        
-        if raw:
-            return data
-        
-        return RoleConnection(data=data)
+
+        return data if raw else RoleConnection(data=data)
     
     @overload
     async def update_user_app_role_connection(
@@ -923,13 +904,10 @@ class OAuth2Client:
             payload['platform_username'] = platform_username
         if metadata is not MISSING:
             payload['metadata'] = metadata
-        
+
         data = await self.http.update_user_application_role_connection(access_token.access_token, data=payload, application_id=application_id)
-        
-        if raw:
-            return data
-        
-        return RoleConnection(data=data)
+
+        return data if raw else RoleConnection(data=data)
     
     @overload
     async def fetch_all_application_command_permissions(
@@ -1068,11 +1046,8 @@ class OAuth2Client:
         data = await self.http.get_application_command_permissions(
             access_token.access_token, guild_id=guild_id, command_id=command_id, application_id=application_id
         )
-        
-        if raw:
-            return data
-        
-        return GuildAppCommandPermissions(data=data)
+
+        return data if raw else GuildAppCommandPermissions(data=data)
     
     @overload
     async def edit_application_command_permissions(
@@ -1224,8 +1199,5 @@ class OAuth2Client:
             application_id=application_id,
             permissions=[permission.to_dict() for permission in permissions]
         )
-        
-        if raw:
-            return data
-        
-        return GuildAppCommandPermissions(data=data)
+
+        return data if raw else GuildAppCommandPermissions(data=data)
