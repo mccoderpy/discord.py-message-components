@@ -105,12 +105,10 @@ class Button:
         self.disabled = disabled
 
     def __repr__(self) -> str:
-        return f'<Button {", ".join(["%s=%s" % (k, str(v)) for k, v in self.__dict__.items()])}>'
+        return f'<Button {", ".join([f"{k}={str(v)}" for k, v in self.__dict__.items()])}>'
 
     def __len__(self):
-        if self.label:
-            return len(self.label)
-        return len(self.emoji)
+        return len(self.label) if self.label else len(self.emoji)
 
     def set_label(self, label: str):
         """
@@ -288,7 +286,7 @@ class SelectOption:
         self.default = default
 
     def __repr__(self):
-        return f'<SelectOption {", ".join(["%s=%s" % (k, v) for (k, v) in self.__dict__.items()])}>'
+        return f'<SelectOption {", ".join([f"{k}={v}" for k, v in self.__dict__.items()])}>'
 
     def set_default(self, value: bool):
         self.default = value
@@ -344,23 +342,23 @@ class SelectMenu:
                  min_values: int = 1,
                  max_values: int = 1,
                  disabled: bool = False):
-        if not any([isinstance(obj, SelectOption) for obj in options]):
+        if not any(isinstance(obj, SelectOption) for obj in options):
             raise InvalidArgument("SelectMenu.options must be a list of discord.SelectOption")
         if len(options) > 25:
             raise InvalidArgument('The maximum number of options in a SelectMenu is 25.')
         self.options = options
         if len(custom_id) > 100:
             raise ValueError(
-                'The maximum length of a custom_id is 100 characters; your one is %s long (%s to long).' % (
-                len(custom_id), len(custom_id) - 100))
+                f'The maximum length of a custom_id is 100 characters; your one is {len(custom_id)} long ({len(custom_id) - 100} to long).'
+            )
         if isinstance(custom_id, str) and custom_id.isdigit():
             self.custom_id = int(custom_id)
         else:
             self.custom_id = custom_id
         if placeholder and len(placeholder) > 100:
             raise AttributeError(
-                'The maximum length of a the placeholder is 100 characters; your one is %s long (%s to long).' % (
-                len(placeholder), len(placeholder) - 100))
+                f'The maximum length of a the placeholder is 100 characters; your one is {len(placeholder)} long ({len(placeholder) - 100} to long).'
+            )
         self.placeholder = placeholder
         if 25 < min_values < 0:
             raise ValueError('The minimum number of elements to be selected must be between 1 and 25.')
@@ -372,7 +370,7 @@ class SelectMenu:
         self._values = None
 
     def __repr__(self):
-        return f'<SelectMenu {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items()])}>'
+        return f'<SelectMenu {", ".join([f"{k}={v}" for k, v in self.__dict__.items()])}>'
 
     @property
     def all_option_values(self):
@@ -444,12 +442,8 @@ class SelectMenu:
 
         :return: List[Union[int, str]]
         """
-        _not_selected = []
         values = self.values
-        for value in self.all_option_values:
-            if value not in values:
-                _not_selected.append(value)
-        return _not_selected
+        return [value for value in self.all_option_values if value not in values]
 
     def update(self, **kwargs):
         self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.__dict__.keys())
@@ -525,7 +519,7 @@ class ActionRow:
             if isinstance(component, (Button, SelectMenu)):
                 self.components.append(component)
             elif isinstance(component, dict):
-                if not component.get('type', None) in [2, 3]:
+                if component.get('type', None) not in [2, 3]:
                     raise InvalidArgument(
                         'If you use an Dict instead of Button or SelectMenu you have to pass an type between 2 or 3')
                 self.components.append(
@@ -535,19 +529,24 @@ class ActionRow:
         return f'<ActionRow components={self.components}>'
 
     def __iter__(self):
-        for component in self.components:
-            yield component
+        yield from self.components
 
     def to_dict(self) -> Union[list, EmptyActionRow]:
-        base = []
-        base.extend([{'type': 1, 'components': [obj.to_dict() for obj in self.components[five:5:]]} for five in
-                     range(0, len(self.components), 5)])
+        base = [
+            {
+                'type': 1,
+                'components': [obj.to_dict() for obj in self.components[five:5:]],
+            }
+            for five in range(0, len(self.components), 5)
+        ]
         objects = len([i['components'] for i in base])
-        if any([any([part['type'] == 2]) and any([part['type'] == 3]) for part in base]):
+        if any(
+            any([part['type'] == 2]) and any([part['type'] == 3]) for part in base
+        ):
             raise InvalidArgument('An ActionRow containing a select menu cannot also contain buttons')
-        if any([any([part['type'] == 3]) and len(part) > 1 for part in base]):
+        if any(any([part['type'] == 3]) and len(part) > 1 for part in base):
             raise InvalidArgument('An ActionRow can contain only one SelectMenu')
-        if any([len(ar['components']) < 1 for ar in base]):
+        if any(len(ar['components']) < 1 for ar in base):
             raise EmptyActionRow from base
         elif len(base) > 5 or objects > 25:
             raise InvalidArgument(
@@ -622,7 +621,7 @@ class ActionRow:
         try:
             _component = self.components[index]
         except IndexError:
-            raise IndexError('component index %s out of range' % index)
+            raise IndexError(f'component index {index} out of range')
         _component = component
         return self
 
@@ -645,7 +644,7 @@ class ActionRow:
         try:
             component = self.components[index]
         except IndexError:
-            raise IndexError('component index %s out of range' % index)
+            raise IndexError(f'component index {index} out of range')
         component.disabled = True
         return self
 
@@ -765,10 +764,9 @@ class ActionRow:
     @classmethod
     def from_dict(cls, data):
         if data.get('type', None) != 1:
-            return InvalidArgument("%s could not be implemented as an ActionRow" % data)
-        else:
-            components = [_component_factory(component) for component in data.get('components', [])]
-            return cls(*components)
+            return InvalidArgument(f"{data} could not be implemented as an ActionRow")
+        components = [_component_factory(component) for component in data.get('components', [])]
+        return cls(*components)
 
 
 def _component_factory(data):

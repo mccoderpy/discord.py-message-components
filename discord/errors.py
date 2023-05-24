@@ -66,7 +66,7 @@ class GatewayNotFound(DiscordException):
 def flatten_error_dict(d, key=''):
     items = []
     for k, v in d.items():
-        new_key = key + '.' + k if key else k
+        new_key = f'{key}.{k}' if key else k
 
         if isinstance(v, dict):
             try:
@@ -105,8 +105,7 @@ class HTTPException(DiscordException):
         if isinstance(message, dict):
             self.code = message.get('code', 0)
             base = message.get('message', '')
-            errors = message.get('errors')
-            if errors:
+            if errors := message.get('errors'):
                 errors = flatten_error_dict(errors)
                 helpful = '\n'.join('In %s: %s' % t for t in errors.items())
                 self.text = base + '\n' + helpful
@@ -195,7 +194,7 @@ class ConnectionClosed(ClientException):
         # aiohttp doesn't seem to consistently provide close reason
         self.reason = ''
         self.shard_id = shard_id
-        super().__init__('Shard ID %s WebSocket closed with %s' % (self.shard_id, self.code))
+        super().__init__(f'Shard ID {self.shard_id} WebSocket closed with {self.code}')
 
 
 class PrivilegedIntentsRequired(ClientException):

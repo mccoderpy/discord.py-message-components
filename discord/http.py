@@ -157,7 +157,9 @@ class HTTPClient:
         }
 
         if self.token is not None:
-            headers['Authorization'] = 'Bot ' + self.token if self.bot_token else self.token
+            headers['Authorization'] = (
+                f'Bot {self.token}' if self.bot_token else self.token
+            )
         # some checking if it's a JSON request
         if 'json' in kwargs:
             headers['Content-Type'] = 'application/json'
@@ -389,8 +391,6 @@ class HTTPClient:
 
     def send_files(self, channel_id, *, files, content=None, tts=False, embeds=None, components=None, nonce=None, allowed_mentions=None, message_reference=None):
         r = Route('POST', '/channels/{channel_id}/messages', channel_id=channel_id)
-        form = []
-
         payload = {'tts': tts}
         if content:
             payload['content'] = content
@@ -405,7 +405,7 @@ class HTTPClient:
         if message_reference:
             payload['message_reference'] = message_reference
 
-        form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
+        form = [{'name': 'payload_json', 'value': utils.to_json(payload)}]
         if len(files) == 1:
             file = files[0]
             form.append({
@@ -415,14 +415,15 @@ class HTTPClient:
                 'content_type': 'application/octet-stream'
             })
         else:
-            for index, file in enumerate(files):
-                form.append({
-                    'name': 'file%s' % index,
+            form.extend(
+                {
+                    'name': f'file{index}',
                     'value': file.fp,
                     'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                })
-
+                    'content_type': 'application/octet-stream',
+                }
+                for index, file in enumerate(files)
+            )
         return self.request(r, form=form, files=files)
 
     async def ack_message(self, channel_id, message_id):
@@ -459,34 +460,32 @@ class HTTPClient:
             r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
             r = Route('PATCH', f'/webhooks/{application_id}/{token}/messages/@original')
-        form = []
-        if files is not None:
-            form.append({'name': 'payload_json', 'value': utils.to_json(fields)})
-            if len(files) == 1:
-                file = files[0]
-                form.append({
-                    'name': 'file',
+        if files is None:
+            return self.request(r, json=fields)
+        form = [{'name': 'payload_json', 'value': utils.to_json(fields)}]
+        if len(files) == 1:
+            file = files[0]
+            form.append({
+                'name': 'file',
+                'value': file.fp,
+                'filename': file.filename,
+                'content_type': 'application/octet-stream'
+            })
+        else:
+            form.extend(
+                {
+                    'name': f'file{index}',
                     'value': file.fp,
                     'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                })
-            else:
-                for index, file in enumerate(files):
-                    form.append({
-                        'name': 'file%s' % index,
-                        'value': file.fp,
-                        'filename': file.filename,
-                        'content_type': 'application/octet-stream'
-                    })
-
-            return self.request(r, form=form, files=files)
-        else:
-            return self.request(r, json=fields)
+                    'content_type': 'application/octet-stream',
+                }
+                for index, file in enumerate(files)
+            )
+        return self.request(r, form=form, files=files)
 
     def send_interaction_response(self, use_webhook, interaction_id, token, application_id, deferred, followup,
                                   *, content=None, tts=False, embeds=None, components=None, files=None, nonce=None,
                                   allowed_mentions=None, message_reference=None, flags=None):
-        form = []
         payload = {'tts': tts}
         if content:
             payload['content'] = content
@@ -507,28 +506,28 @@ class HTTPClient:
             r = Route('POST', f'/webhooks/{application_id}/{token}/callback' if use_webhook is True else f"/interactions/{interaction_id}/{token}/callback")
         else:
             r = Route('POST', f'/webhooks/{application_id}/{token}')
-        if files is not None:
-            form.append({'name': 'payload_json', 'value': utils.to_json(payload)})
-            if len(files) == 1:
-                file = files[0]
-                form.append({
-                    'name': 'file',
+        if files is None:
+            return self.request(r, json=payload)
+        form = [{'name': 'payload_json', 'value': utils.to_json(payload)}]
+        if len(files) == 1:
+            file = files[0]
+            form.append({
+                'name': 'file',
+                'value': file.fp,
+                'filename': file.filename,
+                'content_type': 'application/octet-stream'
+            })
+        else:
+            form.extend(
+                {
+                    'name': f'file{index}',
                     'value': file.fp,
                     'filename': file.filename,
-                    'content_type': 'application/octet-stream'
-                })
-            else:
-                for index, file in enumerate(files):
-                    form.append({
-                        'name': 'file%s' % index,
-                        'value': file.fp,
-                        'filename': file.filename,
-                        'content_type': 'application/octet-stream'
-                    })
-
-            return self.request(r, form=form, files=files)
-        else:
-            return self.request(r, json=payload)
+                    'content_type': 'application/octet-stream',
+                }
+                for index, file in enumerate(files)
+            )
+        return self.request(r, form=form, files=files)
 
     def get_original_interaction_response(self, interaction_token, application_id):
         r = Route('GET', f'/webhooks/{application_id}/{interaction_token}/messages/@original')
@@ -701,17 +700,12 @@ class HTTPClient:
         return self.request(r, json=data, reason=reason)
 
     def create_channel(self, guild_id, channel_type, *, reason=None, **options):
-        payload = {
-            'type': channel_type
-        }
-
         valid_keys = ('name', 'parent_id', 'topic', 'bitrate', 'nsfw',
                       'user_limit', 'position', 'permission_overwrites', 'rate_limit_per_user',
                       'rtc_region')
-        payload.update({
+        payload = {'type': channel_type} | {
             k: v for k, v in options.items() if k in valid_keys and v is not None
-        })
-
+        }
         return self.request(Route('POST', '/guilds/{guild_id}/channels', guild_id=guild_id), json=payload, reason=reason)
 
     def delete_channel(self, channel_id, *, reason=None):

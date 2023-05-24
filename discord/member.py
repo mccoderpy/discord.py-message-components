@@ -112,7 +112,7 @@ class VoiceState:
             ('requested_to_speak_at', self.requested_to_speak_at),
             ('channel', self.channel)
         ]
-        return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+        return f"<{self.__class__.__name__} {' '.join('%s=%r' % t for t in attrs)}>"
 
 def flatten_user(cls):
     for attr, value in itertools.chain(BaseUser.__dict__.items(), User.__dict__.items()):
@@ -127,8 +127,8 @@ def flatten_user(cls):
         # if it's a slotted attribute or a property, redirect it
         # slotted members are implemented as member_descriptors in Type.__dict__
         if not hasattr(value, '__annotations__'):
-            getter = attrgetter('_user.' + attr)
-            setattr(cls, attr, property(getter, doc='Equivalent to :attr:`User.%s`' % attr))
+            getter = attrgetter(f'_user.{attr}')
+            setattr(cls, attr, property(getter, doc=f'Equivalent to :attr:`User.{attr}`'))
         else:
             # Technically, this can also use attrgetter
             # However I'm not sure how I feel about "functions" returning properties
@@ -295,8 +295,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         return self
 
     async def _get_channel(self):
-        ch = await self.create_dm()
-        return ch
+        return await self.create_dm()
 
     def _update_roles(self, data):
         self._roles = utils.SnowflakeList(map(int, data['roles']))
@@ -325,9 +324,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         }
         self._client_status[None] = sys.intern(data['status'])
 
-        if len(user) > 1:
-            return self._update_inner_user(user)
-        return False
+        return self._update_inner_user(user) if len(user) > 1 else False
 
     def _update_inner_user(self, user):
         u = self._user
@@ -417,8 +414,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         result = []
         g = self.guild
         for role_id in self._roles:
-            role = g.get_role(role_id)
-            if role:
+            if role := g.get_role(role_id):
                 result.append(role)
         result.append(g.default_role)
         result.sort()
@@ -427,9 +423,7 @@ class Member(discord.abc.Messageable, _BaseUser):
     @property
     def mention(self):
         """:class:`str`: Returns a string that allows you to mention the member."""
-        if self.nick:
-            return '<@!%s>' % self.id
-        return '<@%s>' % self.id
+        return f'<@!{self.id}>' if self.nick else f'<@{self.id}>'
 
     @property
     def display_name(self):
@@ -535,10 +529,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         for r in self.roles:
             base.value |= r.permissions.value
 
-        if base.administrator:
-            return Permissions.all()
-
-        return base
+        return Permissions.all() if base.administrator else base
 
     @property
     def voice(self):

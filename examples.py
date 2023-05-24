@@ -91,8 +91,7 @@ def get_pointer(obj: typing.Union[discord.Guild, int]):
         for p in pointers:
             if p.guild.id == obj:
                 return p
-        guild = client.get_guild(obj)
-        if guild:
+        if guild := client.get_guild(obj):
             pointers.append(Pointer(guild))
             return get_pointer(guild)
         return None

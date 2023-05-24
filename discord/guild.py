@@ -213,7 +213,7 @@ class Guild(Hashable):
         )
         resolved = ['%s=%r' % (attr, getattr(self, attr)) for attr in attrs]
         resolved.append('member_count=%r' % getattr(self, '_member_count', None))
-        return '<Guild %s>' % ' '.join(resolved)
+        return f"<Guild {' '.join(resolved)}>"
 
     def _update_voice_state(self, data, channel_id):
         user_id = int(data['user_id'])
@@ -582,10 +582,14 @@ class Guild(Hashable):
 
         .. versionadded:: 1.6
         """
-        for role in self._roles.values():
-            if role.is_premium_subscriber():
-                return role
-        return None
+        return next(
+            (
+                role
+                for role in self._roles.values()
+                if role.is_premium_subscriber()
+            ),
+            None,
+        )
 
     @property
     def self_role(self):
@@ -763,17 +767,13 @@ class Guild(Hashable):
         offline members.
         """
         count = getattr(self, '_member_count', None)
-        if count is None:
-            return False
-        return count == len(self._members)
+        return False if count is None else count == len(self._members)
 
     @property
     def shard_id(self):
         """:class:`int`: Returns the shard ID for this guild if applicable."""
         count = self._state.shard_count
-        if count is None:
-            return None
-        return (self.id >> 22) % count
+        return None if count is None else (self.id >> 22) % count
 
     @property
     def created_at(self):
@@ -841,13 +841,9 @@ class Guild(Hashable):
             payload = {
                 'allow': allow.value,
                 'deny': deny.value,
-                'id': target.id
+                'id': target.id,
+                'type': 'role' if isinstance(target, Role) else 'member',
             }
-
-            if isinstance(target, Role):
-                payload['type'] = 'role'
-            else:
-                payload['type'] = 'member'
 
             perms.append(payload)
 
@@ -1172,11 +1168,7 @@ class Guild(Hashable):
         except KeyError:
             icon = self.icon
         else:
-            if icon_bytes is not None:
-                icon = utils._bytes_to_base64_data(icon_bytes)
-            else:
-                icon = None
-
+            icon = None if icon_bytes is None else utils._bytes_to_base64_data(icon_bytes)
         try:
             banner_bytes = fields['banner']
         except KeyError:
@@ -1900,10 +1892,7 @@ class Guild(Hashable):
                 raise InvalidArgument('%r is not a valid field.' % key)
 
         data = await self._state.http.create_role(self.id, reason=reason, **fields)
-        role = Role(guild=self, data=data, state=self._state)
-
-        # TODO: add to cache
-        return role
+        return Role(guild=self, data=data, state=self._state)
 
     async def edit_role_positions(self, positions, *, reason=None):
         """|coro|

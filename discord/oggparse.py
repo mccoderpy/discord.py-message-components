@@ -83,10 +83,8 @@ class OggStream:
             raise OggError('invalid header magic')
 
     def _iter_pages(self):
-        page = self._next_page()
-        while page:
+        while page := self._next_page():
             yield page
-            page = self._next_page()
 
     def iter_packets(self):
         partial = b''

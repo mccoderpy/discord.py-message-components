@@ -61,7 +61,9 @@ class Colour:
 
     def __init__(self, value):
         if not isinstance(value, int):
-            raise TypeError('Expected int parameter, received %s instead.' % value.__class__.__name__)
+            raise TypeError(
+                f'Expected int parameter, received {value.__class__.__name__} instead.'
+            )
 
         self.value = value
 
@@ -78,7 +80,7 @@ class Colour:
         return '#{:0>6x}'.format(self.value)
 
     def __repr__(self):
-        return '<Colour value=%s>' % self.value
+        return f'<Colour value={self.value}>'
 
     def __hash__(self):
         return hash(self.value)

@@ -124,19 +124,19 @@ class User(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, C):
-        if cls is User:
-            if Snowflake.__subclasshook__(C) is NotImplemented:
-                return NotImplemented
+        if cls is not User:
+            return NotImplemented
+        if Snowflake.__subclasshook__(C) is NotImplemented:
+            return NotImplemented
 
-            mro = C.__mro__
-            for attr in ('display_name', 'mention', 'name', 'avatar', 'discriminator', 'bot'):
-                for base in mro:
-                    if attr in base.__dict__:
-                        break
-                else:
-                    return NotImplemented
-            return True
-        return NotImplemented
+        mro = C.__mro__
+        for attr in ('display_name', 'mention', 'name', 'avatar', 'discriminator', 'bot'):
+            for base in mro:
+                if attr in base.__dict__:
+                    break
+            else:
+                return NotImplemented
+        return True
 
 class PrivateChannel(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a private Discord channel.
@@ -162,10 +162,7 @@ class PrivateChannel(metaclass=abc.ABCMeta):
                 return NotImplemented
 
             mro = C.__mro__
-            for base in mro:
-                if 'me' in base.__dict__:
-                    return True
-            return NotImplemented
+            return next((True for base in mro if 'me' in base.__dict__), NotImplemented)
         return NotImplemented
 
 class _Overwrites:
@@ -298,13 +295,9 @@ class GuildChannel:
                 payload = {
                     'allow': allow.value,
                     'deny': deny.value,
-                    'id': target.id
+                    'id': target.id,
+                    'type': 'role' if isinstance(target, Role) else 'member',
                 }
-
-                if isinstance(target, Role):
-                    payload['type'] = 'role'
-                else:
-                    payload['type'] = 'member'
 
                 perms.append(payload)
             options['permission_overwrites'] = perms
@@ -330,7 +323,9 @@ class GuildChannel:
         for index, overridden in enumerate(data.get('permission_overwrites', [])):
             overridden_type = try_enum(PermissionType, overridden.pop('type'))
             if not overridden_type:
-                raise AttributeError('Type type should be 0 - member, or 1 - role not %s' % overridden_type)
+                raise AttributeError(
+                    f'Type type should be 0 - member, or 1 - role not {overridden_type}'
+                )
             overridden_id = int(overridden.pop('id'))
             self._overwrites.append(_Overwrites(id=overridden_id, type=overridden_type.name, **overridden))
 
@@ -345,9 +340,7 @@ class GuildChannel:
                 # swap it to be the first one.
                 everyone_index = index
 
-        # do the swap
-        tmp = self._overwrites
-        if tmp:
+        if tmp := self._overwrites:
             tmp[everyone_index], tmp[0] = tmp[0], tmp[everyone_index]
 
     @property
@@ -369,7 +362,7 @@ class GuildChannel:
     @property
     def mention(self):
         """:class:`str`: The string that allows you to mention the channel."""
-        return '<#%s>' % self.id
+        return f'<#{self.id}>'
 
     @property
     def created_at(self):
@@ -654,15 +647,14 @@ class GuildChannel:
             raise InvalidArgument('target parameter must be either Member or Role')
 
         if isinstance(overwrite, _Undefined):
-            if len(permissions) == 0:
+            if not permissions:
                 raise InvalidArgument('No overwrite provided.')
             try:
                 overwrite = PermissionOverwrite(**permissions)
             except (ValueError, TypeError):
                 raise InvalidArgument('Invalid permissions given to keyword arguments.')
-        else:
-            if len(permissions) > 0:
-                raise InvalidArgument('Cannot mix overwrite and keyword arguments.')
+        elif permissions:
+            raise InvalidArgument('Cannot mix overwrite and keyword arguments.')
 
         # TODO: wait for event
 
@@ -1049,14 +1041,13 @@ class Messageable(metaclass=abc.ABCMeta):
                     _components.extend(ActionRow(*[obj for obj in component if isinstance(obj, (Button, SelectMenu))]).to_dict())
             components = _components
 
-        if allowed_mentions is not None:
-            if state.allowed_mentions is not None:
-                allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
-            else:
-                allowed_mentions = allowed_mentions.to_dict()
-        else:
+        if allowed_mentions is None:
             allowed_mentions = state.allowed_mentions and state.allowed_mentions.to_dict()
 
+        elif state.allowed_mentions is not None:
+            allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
+        else:
+            allowed_mentions = allowed_mentions.to_dict()
         if mention_author is not None:
             allowed_mentions = allowed_mentions or AllowedMentions().to_dict()
             allowed_mentions['replied_user'] = bool(mention_author)
@@ -1085,22 +1076,37 @@ class Messageable(metaclass=abc.ABCMeta):
                 raise InvalidArgument('file parameter must be File')
 
             try:
-                if hidden is not None:
-                    data = await state.http.send_interaction_response(use_webhook=use_webhook,
-                                                                      interaction_id=interaction_id,
-                                                                      token=interaction_token,
-                                                                      application_id=application_id,
-                                                                      deferred=deferred,
-                                                                      files=[file], allowed_mentions=allowed_mentions,
-                                                                      content=content, tts=tts, embeds=embeds,
-                                                                      components=components,
-                                                                      nonce=nonce, message_reference=reference,
-                                                                      flags=64 if hidden is True else None,
-                                                                      followup=followup)
-                else:
-                    data = await state.http.send_files(channel.id, files=[file], allowed_mentions=allowed_mentions,
-                                                       content=content, tts=tts, embeds=embeds, components=components,
-                                                       nonce=nonce, message_reference=reference)
+                data = (
+                    await state.http.send_interaction_response(
+                        use_webhook=use_webhook,
+                        interaction_id=interaction_id,
+                        token=interaction_token,
+                        application_id=application_id,
+                        deferred=deferred,
+                        files=[file],
+                        allowed_mentions=allowed_mentions,
+                        content=content,
+                        tts=tts,
+                        embeds=embeds,
+                        components=components,
+                        nonce=nonce,
+                        message_reference=reference,
+                        flags=64 if hidden is True else None,
+                        followup=followup,
+                    )
+                    if hidden is not None
+                    else await state.http.send_files(
+                        channel.id,
+                        files=[file],
+                        allowed_mentions=allowed_mentions,
+                        content=content,
+                        tts=tts,
+                        embeds=embeds,
+                        components=components,
+                        nonce=nonce,
+                        message_reference=reference,
+                    )
+                )
             finally:
                 file.close()
 
@@ -1130,28 +1136,27 @@ class Messageable(metaclass=abc.ABCMeta):
             finally:
                 for f in files:
                     f.close()
+        elif hidden is not None:
+            data = await state.http.send_interaction_response(use_webhook=use_webhook,
+                                                              interaction_id=interaction_id,
+                                                              token=interaction_token,
+                                                              application_id=application_id,
+                                                              deferred=deferred, allowed_mentions=allowed_mentions,
+                                                              content=content, tts=tts, embeds=embeds,
+                                                              components=components,
+                                                              nonce=nonce, message_reference=reference,
+                                                              flags=64 if hidden is True else None,
+                                                              followup=followup)
         else:
-            if hidden is not None:
-                data = await state.http.send_interaction_response(use_webhook=use_webhook,
-                                                                  interaction_id=interaction_id,
-                                                                  token=interaction_token,
-                                                                  application_id=application_id,
-                                                                  deferred=deferred, allowed_mentions=allowed_mentions,
-                                                                  content=content, tts=tts, embeds=embeds,
-                                                                  components=components,
-                                                                  nonce=nonce, message_reference=reference,
-                                                                  flags=64 if hidden is True else None,
-                                                                  followup=followup)
-            else:
-                data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
-                                                                          nonce=nonce, allowed_mentions=allowed_mentions,
-                                                                          message_reference=reference)
-        if not hidden is True:
-            if not isinstance(data, dict) and not hidden is None:
+            data = await state.http.send_message(channel.id, content, tts=tts, embeds=embeds, components=components,
+                                                                      nonce=nonce, allowed_mentions=allowed_mentions,
+                                                                      message_reference=reference)
+        if hidden is not True:
+            if not isinstance(data, dict) and hidden is not None:
                 """Thanks Discord that they dont return the message when we send the interaction callback"""
                 data = await state.http.get_original_interaction_response(application_id=application_id, interaction_token=interaction_token)
             ret = state.create_message(channel=channel, data=data)
-            if (delete_after is not None) and (not hidden is True):
+            if delete_after is not None and hidden is not True:
                 await ret.delete(delay=delete_after)
             return ret
 

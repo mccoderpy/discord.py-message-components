@@ -24,6 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+
 import threading
 import traceback
 import subprocess
@@ -51,10 +52,7 @@ __all__ = (
     'PCMVolumeTransformer',
 )
 
-if sys.platform != 'win32':
-    CREATE_NO_WINDOW = 0
-else:
-    CREATE_NO_WINDOW = 0x08000000
+CREATE_NO_WINDOW = 0 if sys.platform != 'win32' else 0x08000000
 
 class AudioSource:
     """Represents an audio stream.
@@ -115,9 +113,7 @@ class PCMAudio(AudioSource):
 
     def read(self):
         ret = self.stream.read(OpusEncoder.FRAME_SIZE)
-        if len(ret) != OpusEncoder.FRAME_SIZE:
-            return b''
-        return ret
+        return b'' if len(ret) != OpusEncoder.FRAME_SIZE else ret
 
 class FFmpegAudio(AudioSource):
     """Represents an FFmpeg (or AVConv) based AudioSource.
@@ -132,9 +128,7 @@ class FFmpegAudio(AudioSource):
         self._process = self._stdout = None
 
         args = [executable, *args]
-        kwargs = {'stdout': subprocess.PIPE}
-        kwargs.update(subprocess_kwargs)
-
+        kwargs = {'stdout': subprocess.PIPE} | subprocess_kwargs
         self._process = self._spawn_process(args, **kwargs)
         self._stdout = self._process.stdout
 
@@ -144,7 +138,7 @@ class FFmpegAudio(AudioSource):
             process = subprocess.Popen(args, creationflags=CREATE_NO_WINDOW, **subprocess_kwargs)
         except FileNotFoundError:
             executable = args.partition(' ')[0] if isinstance(args, str) else args[0]
-            raise ClientException(executable + ' was not found.') from None
+            raise ClientException(f'{executable} was not found.') from None
         except subprocess.SubprocessError as exc:
             raise ClientException('Popen failed: {0.__class__.__name__}: {0}'.format(exc)) from exc
         else:
@@ -213,10 +207,20 @@ class FFmpegPCMAudio(FFmpegAudio):
         if isinstance(before_options, str):
             args.extend(shlex.split(before_options))
 
-        args.append('-i')
-        args.append('-' if pipe else source)
-        args.extend(('-f', 's16le', '-ar', '48000', '-ac', '2', '-loglevel', 'warning'))
-
+        args.extend(
+            (
+                '-i',
+                '-' if pipe else source,
+                '-f',
+                's16le',
+                '-ar',
+                '48000',
+                '-ac',
+                '2',
+                '-loglevel',
+                'warning',
+            )
+        )
         if isinstance(options, str):
             args.extend(shlex.split(options))
 
@@ -226,9 +230,7 @@ class FFmpegPCMAudio(FFmpegAudio):
 
     def read(self):
         ret = self._stdout.read(OpusEncoder.FRAME_SIZE)
-        if len(ret) != OpusEncoder.FRAME_SIZE:
-            return b''
-        return ret
+        return b'' if len(ret) != OpusEncoder.FRAME_SIZE else ret
 
     def is_opus(self):
         return False
@@ -303,18 +305,27 @@ class FFmpegOpusAudio(FFmpegAudio):
         if isinstance(before_options, str):
             args.extend(shlex.split(before_options))
 
-        args.append('-i')
-        args.append('-' if pipe else source)
-
+        args.extend(('-i', '-' if pipe else source))
         codec = 'copy' if codec in ('opus', 'libopus') else 'libopus'
 
-        args.extend(('-map_metadata', '-1',
-                     '-f', 'opus',
-                     '-c:a', codec,
-                     '-ar', '48000',
-                     '-ac', '2',
-                     '-b:a', '%sk' % bitrate,
-                     '-loglevel', 'warning'))
+        args.extend(
+            (
+                '-map_metadata',
+                '-1',
+                '-f',
+                'opus',
+                '-c:a',
+                codec,
+                '-ar',
+                '48000',
+                '-ac',
+                '2',
+                '-b:a',
+                f'{bitrate}k',
+                '-loglevel',
+                'warning',
+            )
+        )
 
         if isinstance(options, str):
             args.extend(shlex.split(options))
@@ -419,9 +430,9 @@ class FFmpegOpusAudio(FFmpegAudio):
         probefunc = fallback = None
 
         if isinstance(method, str):
-            probefunc = getattr(cls, '_probe_codec_' + method, None)
+            probefunc = getattr(cls, f'_probe_codec_{method}', None)
             if probefunc is None:
-                raise AttributeError("Invalid probe method '%s'" % method)
+                raise AttributeError(f"Invalid probe method '{method}'")
 
             if probefunc is cls._probe_codec_native:
                 fallback = cls._probe_codec_fallback
@@ -431,7 +442,7 @@ class FFmpegOpusAudio(FFmpegAudio):
             fallback = cls._probe_codec_fallback
         else:
             raise TypeError("Expected str or callable for parameter 'probe', " \
-                            "not '{0.__class__.__name__}'" .format(method))
+                                "not '{0.__class__.__name__}'" .format(method))
 
         codec = bitrate = None
         loop = asyncio.get_event_loop()
@@ -456,7 +467,11 @@ class FFmpegOpusAudio(FFmpegAudio):
 
     @staticmethod
     def _probe_codec_native(source, executable='ffmpeg'):
-        exe = executable[:2] + 'probe' if executable in ('ffmpeg', 'avconv') else executable
+        exe = (
+            f'{executable[:2]}probe'
+            if executable in ('ffmpeg', 'avconv')
+            else executable
+        )
         args = [exe, '-v', 'quiet', '-print_format', 'json', '-show_streams', '-select_streams', 'a:0', source]
         output = subprocess.check_output(args, timeout=20)
         codec = bitrate = None
@@ -479,13 +494,11 @@ class FFmpegOpusAudio(FFmpegAudio):
         output = out.decode('utf8')
         codec = bitrate = None
 
-        codec_match = re.search(r"Stream #0.*?Audio: (\w+)", output)
-        if codec_match:
-            codec = codec_match.group(1)
+        if codec_match := re.search(r"Stream #0.*?Audio: (\w+)", output):
+            codec = codec_match[1]
 
-        br_match = re.search(r"(\d+) [kK]b/s", output)
-        if br_match:
-            bitrate = max(int(br_match.group(1)), 512)
+        if br_match := re.search(r"(\d+) [kK]b/s", output):
+            bitrate = max(int(br_match[1]), 512)
 
         return codec, bitrate
 
@@ -619,7 +632,7 @@ class AudioPlayer(threading.Thread):
                 exc.__context__ = error
                 traceback.print_exception(type(exc), exc, exc.__traceback__)
         elif error:
-            msg = 'Exception in voice thread {}'.format(self.name)
+            msg = f'Exception in voice thread {self.name}'
             log.exception(msg, exc_info=error)
             print(msg, file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__)

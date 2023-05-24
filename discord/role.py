@@ -173,18 +173,14 @@ class Role(Hashable):
 
     def __le__(self, other):
         r = Role.__lt__(other, self)
-        if r is NotImplemented:
-            return NotImplemented
-        return not r
+        return NotImplemented if r is NotImplemented else not r
 
     def __gt__(self, other):
         return Role.__lt__(other, self)
 
     def __ge__(self, other):
         r = Role.__lt__(self, other)
-        if r is NotImplemented:
-            return NotImplemented
-        return not r
+        return NotImplemented if r is NotImplemented else not r
 
     def _update(self, data):
         self.name = data['name']
@@ -248,7 +244,7 @@ class Role(Hashable):
     @property
     def mention(self):
         """:class:`str`: Returns a string that allows you to mention a role."""
-        return '<@&%s>' % self.id
+        return f'<@&{self.id}>'
 
     @property
     def members(self):

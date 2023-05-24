@@ -94,8 +94,7 @@ class Emoji(_EmojiTag):
         self.animated = emoji.get('animated', False)
         self.available = emoji.get('available', True)
         self._roles = utils.SnowflakeList(map(int, emoji.get('roles', [])))
-        user = emoji.get('user', None)
-        if user:
+        if user := emoji.get('user', None):
             self.user = self._state.get_user(int(user['id']))
         else:
             self.user = None

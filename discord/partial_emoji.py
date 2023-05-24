@@ -86,9 +86,8 @@ class PartialEmoji(_EmojiTag):
             You can then use what comes out when you add a reaction or similar.
         """
 
-        match = re.match('^<(a?):([\-\w]+):(\d+)>$', string)
-        if match:
-            return cls(animated=bool(match.group(1)), name=match.group(2), id=int(match.group(3)))
+        if match := re.match('^<(a?):([\-\w]+):(\d+)>$', string):
+            return cls(animated=bool(match[1]), name=match[2], id=int(match[3]))
         raise ValueError('The Passed Emoji is not a discord custom-emoji.')
 
     @classmethod
@@ -117,8 +116,8 @@ class PartialEmoji(_EmojiTag):
         if self.id is None:
             return self.name
         if self.animated:
-            return '<a:%s:%s>' % (self.name, self.id)
-        return '<:%s:%s>' % (self.name, self.id)
+            return f'<a:{self.name}:{self.id}>'
+        return f'<:{self.name}:{self.id}>'
 
     def __repr__(self):
         return '<{0.__class__.__name__} animated={0.animated} name={0.name!r} id={0.id}>'.format(self)
@@ -127,9 +126,7 @@ class PartialEmoji(_EmojiTag):
         if self.is_unicode_emoji():
             return isinstance(other, PartialEmoji) and self.name == other.name
 
-        if isinstance(other, _EmojiTag):
-            return self.id == other.id
-        return False
+        return self.id == other.id if isinstance(other, _EmojiTag) else False
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -146,9 +143,7 @@ class PartialEmoji(_EmojiTag):
         return self.id is None
 
     def _as_reaction(self):
-        if self.id is None:
-            return self.name
-        return '%s:%s' % (self.name, self.id)
+        return self.name if self.id is None else f'{self.name}:{self.id}'
 
     @property
     def created_at(self):
@@ -156,10 +151,7 @@ class PartialEmoji(_EmojiTag):
 
         .. versionadded:: 1.6
         """
-        if self.is_unicode_emoji():
-            return None
-
-        return utils.snowflake_time(self.id)
+        return None if self.is_unicode_emoji() else utils.snowflake_time(self.id)
 
     @property
     def url(self):

@@ -62,7 +62,7 @@ def convert_emoji_reaction(emoji):
         emoji = emoji.emoji
 
     if isinstance(emoji, Emoji):
-        return '%s:%s' % (emoji.name, emoji.id)
+        return f'{emoji.name}:{emoji.id}'
     if isinstance(emoji, PartialEmoji):
         return emoji._as_reaction()
     if isinstance(emoji, str):
@@ -222,8 +222,7 @@ class Attachment(Hashable):
             The contents of the attachment.
         """
         url = self.proxy_url if use_cached else self.url
-        data = await self._http.get_from_cdn(url)
-        return data
+        return await self._http.get_from_cdn(url)
 
     async def to_file(self, *, use_cached=False, spoiler=False):
         """|coro|
@@ -597,7 +596,7 @@ class Message(Hashable):
 
         for handler in ('author', 'member', 'mentions', 'mention_roles', 'call', 'flags'):
             try:
-                getattr(self, '_handle_%s' % handler)(data[handler])
+                getattr(self, f'_handle_{handler}')(data[handler])
             except KeyError:
                 continue
 
@@ -848,18 +847,18 @@ class Message(Hashable):
         """
 
         transformations = {
-            re.escape('<#%s>' % channel.id): '#' + channel.name
+            re.escape(f'<#{channel.id}>'): f'#{channel.name}'
             for channel in self.channel_mentions
         }
 
         mention_transforms = {
-            re.escape('<@%s>' % member.id): '@' + member.display_name
+            re.escape(f'<@{member.id}>'): f'@{member.display_name}'
             for member in self.mentions
         }
 
         # add the <@!user_id> cases as well..
         second_mention_transforms = {
-            re.escape('<@!%s>' % member.id): '@' + member.display_name
+            re.escape(f'<@!{member.id}>'): f'@{member.display_name}'
             for member in self.mentions
         }
 
@@ -868,7 +867,7 @@ class Message(Hashable):
 
         if self.guild is not None:
             role_transforms = {
-                re.escape('<@&%s>' % role.id): '@' + role.name
+                re.escape(f'<@&{role.id}>'): f'@{role.name}'
                 for role in self.role_mentions
             }
             transformations.update(role_transforms)
@@ -1001,8 +1000,7 @@ class Message(Hashable):
     def all_components(self):
         """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
-            for component in action_row:
-                yield component
+            yield from action_row
 
     @property
     def all_buttons(self):
@@ -1604,8 +1602,7 @@ class PartialMessage(Hashable):
     def all_components(self):
         """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
         for action_row in self.components:
-            for component in action_row:
-                yield component
+            yield from action_row
 
     @property
     def all_buttons(self):

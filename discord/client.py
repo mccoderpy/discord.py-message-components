@@ -108,7 +108,7 @@ class _ClientEventTask(asyncio.Task):
         ]
         if self._exception is not None:
             info.append(('exception', repr(self._exception)))
-        return '<ClientEventTask {}>'.format(' '.join('%s=%s' % t for t in info))
+        return f"<ClientEventTask {' '.join('%s=%s' % t for t in info)}>"
 
 class Client:
     r"""Represents a client connection that connects to Discord.
@@ -288,9 +288,7 @@ class Client:
 
         .. versionadded:: 1.6
         """
-        if self.ws:
-            return self.ws.is_ratelimited()
-        return False
+        return self.ws.is_ratelimited() if self.ws else False
 
     @property
     def user(self):
@@ -356,10 +354,9 @@ class Client:
 
     def dispatch(self, event, *args, **kwargs):
         log.debug('Dispatching event %s', event)
-        method = 'on_' + event
+        method = f'on_{event}'
 
-        listeners = self._listeners.get(event)
-        if listeners:
+        if listeners := self._listeners.get(event):
             removed = []
             for i, (future, condition) in enumerate(listeners):
                 if isinstance(future, asyncio.Future):
@@ -374,7 +371,7 @@ class Client:
                         removed.append(i)
                     else:
                         if result:
-                            if len(args) == 0:
+                            if not args:
                                 future.set_result(None)
                             elif len(args) == 1:
                                 future.set_result(args[0])
@@ -387,10 +384,8 @@ class Client:
                     else:
                         for idx in reversed(removed):
                             del listeners[idx]
-                else:
-                    result = condition(*args)
-                    if result:
-                        self._schedule_event(future, method, *args, **kwargs)
+                elif result := condition(*args):
+                    self._schedule_event(future, method, *args, **kwargs)
 
 
         try:
@@ -409,7 +404,7 @@ class Client:
         overridden to have a different implementation.
         Check :func:`~discord.on_error` for more details.
         """
-        print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
+        print(f'Ignoring exception in {event_method}', file=sys.stderr)
         traceback.print_exc()
 
     @utils.deprecated('Guild.chunk')
@@ -666,7 +661,7 @@ class Client:
         reconnect = kwargs.pop('reconnect', True)
 
         if kwargs:
-            raise TypeError("unexpected keyword argument(s) %s" % list(kwargs.keys()))
+            raise TypeError(f"unexpected keyword argument(s) {list(kwargs.keys())}")
 
         await self.login(*args, bot=bot)
         await self.connect(reconnect=reconnect)
@@ -865,8 +860,7 @@ class Client:
         """
 
         for guild in self.guilds:
-            for channel in guild.channels:
-                yield channel
+            yield from guild.channels
 
     def get_all_members(self):
         """Returns a generator with every :class:`.Member` the client can see.
@@ -883,8 +877,7 @@ class Client:
             A member the client can see.
         """
         for guild in self.guilds:
-            for member in guild.members:
-                yield member
+            yield from guild.members
 
     # listeners/waiters
 
@@ -1183,11 +1176,7 @@ class Client:
             if me is None:
                 continue
 
-            if activity is not None:
-                me.activities = (activity,)
-            else:
-                me.activities = ()
-
+            me.activities = (activity, ) if activity is not None else ()
             me.status = status_enum
 
     # Guild stuff
@@ -1580,13 +1569,10 @@ class Client:
             raise InvalidData('Unknown channel type {type} for channel ID {id}.'.format_map(data))
 
         if ch_type in (ChannelType.group, ChannelType.private):
-            channel = factory(me=self.user, data=data, state=self._connection)
-        else:
-            guild_id = int(data['guild_id'])
-            guild = self.get_guild(guild_id) or Object(id=guild_id)
-            channel = factory(guild=guild, state=self._connection, data=data)
-
-        return channel
+            return factory(me=self.user, data=data, state=self._connection)
+        guild_id = int(data['guild_id'])
+        guild = self.get_guild(guild_id) or Object(id=guild_id)
+        return factory(guild=guild, state=self._connection, data=data)
 
     async def fetch_webhook(self, webhook_id):
         """|coro|

@@ -37,7 +37,7 @@ from .channel import DMChannel
 class _RawReprMixin:
     def __repr__(self):
         value = ' '.join('%s=%r' % (attr, getattr(self, attr)) for attr in self.__slots__)
-        return '<%s %s>' % (self.__class__.__name__, value)
+        return f'<{self.__class__.__name__} {value}>'
 
 
 class RawMessageDeleteEvent(_RawReprMixin):
@@ -237,8 +237,7 @@ class RawInteractionCreateEvent(_RawReprMixin):
     def __init__(self, data, http=None):
         self.http = http
         self._type = data.get('t', data.get('type', None))
-        d = data.get('d', None)
-        if d:
+        if d := data.get('d', None):
             self.__token = d.get('token', None)
             self._version = d.get('version', None)
             self._type = d.get(type, None)

@@ -146,16 +146,16 @@ class CogMeta(type):
 
         listeners_as_list = []
         for listener in listeners.values():
-            for listener_name in listener.__cog_listener_names__:
-                # I use __name__ instead of just storing the value so I can inject
-                # the self attribute when the time comes to add them to the bot
-                listeners_as_list.append((listener_name, listener.__name__))
-
+            listeners_as_list.extend(
+                (listener_name, listener.__name__)
+                for listener_name in listener.__cog_listener_names__
+            )
         interaction_listeners_as_list = []
         for interaction_listener in cog_interaction_listeners.values():
-            for listener_name, custom_id in interaction_listener.__interaction_listener_names__:
-                interaction_listeners_as_list.append((listener_name, interaction_listener.__name__, custom_id))
-
+            interaction_listeners_as_list.extend(
+                (listener_name, interaction_listener.__name__, custom_id)
+                for listener_name, custom_id in interaction_listener.__interaction_listener_names__
+            )
         new_cls.__cog_listeners__ = listeners_as_list
         new_cls.__cog_interaction_listeners__ = interaction_listeners_as_list
 
