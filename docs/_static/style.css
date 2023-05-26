@@ -93,6 +93,8 @@ Historically however, thanks to:
   --error-text: var(--white);
   --helpful-background: #00c8d7;
   --helpful-text: var(--black);
+  --experimental-background: #304a96;
+  --experimental-text: var(--grey-2);
   --codeblock-background: var(--grey-2);
   --codeblock-border: var(--grey-4);
   --codeblock-text: var(--grey-6);
@@ -156,6 +158,8 @@ Historically however, thanks to:
   --error-text: var(--white);
   --helpful-background: #008ea4;
   --helpful-text: var(--white);
+  --experimental-background: rgba(79, 123, 253, 0.47);
+  --experimental-text: var(--white);
   --codeblock-background: var(--grey-6);
   --codeblock-border: var(--black);
   --codeblock-text: var(--grey-1);
@@ -932,6 +936,21 @@ div.helpful > p.admonition-title {
 
 div.helpful > p.admonition-title::before {
   content: '\0e873';
+}
+
+/* helpful admonitions */
+div.experimental {
+  border-left-color: var(--experimental-background);
+}
+
+div.experimental > p.admonition-title {
+  background-color: var(--experimental-background);
+  color: var(--experimental-text);
+}
+
+div.experimental > p.admonition-title::before {
+  font-family: FontAwesome, serif;
+  content: '\f0c3';
 }
 
 dl.field-list > dd {

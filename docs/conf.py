@@ -62,6 +62,7 @@ extensions = [
     'details',
     'exception_hierarchy',
     'attributetable',
+    'experimental_feature',
     'resourcelinks',
 ]
 
@@ -140,7 +141,8 @@ html_favicon = './images/discord4py-logo.ico'
 
 extlinks = {
     'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-%s'),
-    'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-%s')
+    'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-%s'),
+    'dis-gd': ('https://dis.gd/%s', 'GH-%s'),
 }
 
 rst_prolog = """
