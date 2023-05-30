@@ -206,6 +206,28 @@ class SystemChannelFlags(BaseFlags):
         """:class:`bool`: Returns ``True`` if the system channel is used for Nitro boosting notifications."""
         return 2
 
+    @flag_value
+    def guild_reminder_notifications(self):
+        """:class:`bool`: Returns ``True`` if the system channel is used for server setup tips."""
+        return 4
+
+    @flag_value
+    def join_notification_replies(self):
+        """:class:`bool`: Returns ``True`` if sticker reply buttons should show under member join messages."""
+        return 8
+
+    @flag_value
+    def role_subscription_purchase_notifications(self):
+        """:class:`bool`: Returns ``True`` if the system channel is used for role subscription purchase and
+        renewal notifications."""
+        return 16
+
+    @flag_value
+    def role_subscription_purchase_notification_replies(self):
+        """:class:`bool`: Returns ``True`` if sticker reply buttons should show under role subscription purchase and
+        renewal messages."""
+        return 32
+
 
 @fill_with_flags()
 class ChannelFlags(BaseFlags):
@@ -213,8 +235,13 @@ class ChannelFlags(BaseFlags):
     __slots__ = ()
 
     @flag_value
+    def removed_from_guild_feed(self):
+        """:class:`bool`: Returns ``True`` if the channel is removed from the guild's home feed/from highlights."""
+        return 0
+
+    @alias_flag_value
     def removed_from_home(self):
-        """:class:`bool`: Returns ``True`` if the channel is removed from the guild's home feed."""
+        """:class:`bool`: An alias to :attr:`removed_from_guild_feed`."""
         return 0
 
     @flag_value
@@ -224,16 +251,63 @@ class ChannelFlags(BaseFlags):
 
     @flag_value
     def removed_from_active_now(self):
-        """:class:`bool`: Returns ``True`` if the channel is removed from the active now section in the guild's home feed."""
+        """:class:`bool`: Returns ``True`` if the channel is removed from the active now section in the guild's feed."""
         return 2
 
     @flag_value
     def require_tags(self):
         """
         :class:`bool`:
-        Returns ``True`` if this channel is a :class:`ForumChannel` that requires providing at least one tag when creating a post.
+        Returns ``True`` if this channel is a :class:`ForumChannel` that requires at least one tag when creating a post.
         """
         return 4
+
+    @flag_value
+    def is_spam(self):
+        """:class:`bool`: Returns ``True`` if the channel is marked as spam."""
+        return 5
+
+    @flag_value
+    def is_resource_channel(self):
+        """:class:`bool`: Returns ``True`` if the channel is a resource channel."""
+        return 7
+
+    @flag_value
+    def clyde_ai(self):
+        """:class:`bool`: Returns ``True`` if clyde has access to this thread.
+
+            .. experiment:: Clyde, Discord's AI Chatbot
+                :article: 13066317497239-Clyde-Discord-s-AI-Chatbot
+        """
+        return 8
+
+    # TODO: add IS_SCHEDULED_FOR_DELETION (1 << 9) flag when we get more info on it
+
+    @flag_value
+    def is_media_channel(self):
+        """:class:`bool`: Returns ``True`` if the channel is a media channel."""
+        return 10
+
+    @flag_value
+    def summaries_disabled(self):
+        """:class:`bool`: Returns ``True`` if AI summaries are disabled for this channel.
+
+            .. experiment:: AI powered summaries
+                :article: 12926016807575-Summaries-AI
+        """
+        return 11
+
+    # TODO: add APPLICATION_SHELF_CONSENT (1 << 12) flag when we get more info on it
+
+    @flag_value
+    def is_role_subscription_template_preview_channel(self):
+        """:class:`bool`: Returns ``True`` if the channel is part of a role subscription template preview.
+
+            .. experiment:: Role Subscription Template
+        """
+        return 13
+
+    # TODO: add IS_BROADCASTING (1 << 14) flag when we get more info on it
 
 
 @fill_with_flags()
