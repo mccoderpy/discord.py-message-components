@@ -37,21 +37,28 @@ from typing_extensions import (
 )
 
 from .snowflake import SnowflakeID
+from .user import BaseUser
 
 __all__ = (
     'ChannelType',
+    'OverwriteType',
     'Overwrite',
+    'PartialChannel',
     'GuildChannel',
+    'VoiceChannel',
+    'StageChannel',
+    'ForumChannel',
     'ThreadMetadata',
-    'PartialChannel'
+    'DMChannel',
+    'GroupChannel'
 )
 
 ChannelType = Literal[0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15]
-
+OverwriteType = Literal[0, 1]
 
 class Overwrite(TypedDict):
     id: SnowflakeID
-    type: Literal[0, 1]
+    type: OverwriteType
     allow: str
     deny: str
 
@@ -61,7 +68,7 @@ class GuildChannel(TypedDict):
     type: ChannelType
     name: NotRequired[Optional[str]]
     position: NotRequired[int]
-    parent_id: NotRequired[Optional[SnowflakeID]]
+    parent_id: NotRequired[SnowflakeID]
     permission_overwrites: NotRequired[List[Overwrite]]
 
 
@@ -79,3 +86,34 @@ class PartialChannel(TypedDict):
     type: ChannelType
     name: NotRequired[Optional[str]]
     # TODO: What fields are missing here?
+
+
+class DMChannel(PartialChannel):
+    last_message_id: NotRequired[Optional[SnowflakeID]]
+    recipients: NotRequired[List[BaseUser]]
+
+
+class GroupChannel(DMChannel, total=False):
+    owner_id: SnowflakeID
+    icon: Optional[str]
+    managed: NotRequired[bool]
+
+
+class VoiceChannel(GuildChannel, total=False):
+    rtc_region: Optional[str]
+    bitrate: int
+    user_limit: int
+    video_quality_mode: int
+    rate_limit_per_user: int
+    nsfw: bool
+
+
+class StageChannel(VoiceChannel, total=False):
+    topic: Optional[str]
+    privacy_level: int
+    discoverable_disabled: bool
+
+
+class ForumChannel(GuildChannel, total=False):
+    topic: Optional[str]
+    nsfw: bool

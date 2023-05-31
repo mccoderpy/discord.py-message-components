@@ -34,17 +34,20 @@ from typing import (
     Coroutine,
     Dict,
     List,
+    overload,
     Optional,
     Sequence,
+    Iterable,
     Tuple,
     TYPE_CHECKING,
     Union
 )
+from typing_extensions import Literal
 
 from . import abc, utils
 from .asset import Asset
 from .components import ActionRow, BaseSelect, Button
-from .enums import AutoArchiveDuration, ChannelType, PostSortOrder, try_enum, VoiceRegion
+from .enums import AutoArchiveDuration, ChannelType, PostSortOrder, ForumLayout, VoiceRegion, VideoQualityMode, try_enum
 from .errors import ClientException, InvalidArgument, NoMoreItems, ThreadIsArchived
 from .flags import ChannelFlags, MessageFlags
 from .http import handle_message_parameters
@@ -54,17 +57,26 @@ from .partial_emoji import PartialEmoji
 from .permissions import PermissionOverwrite, Permissions
 
 if TYPE_CHECKING:
+    from .types.channel import (
+        DMChannel as DMChannelData,
+        GroupChannel as GroupChannelData,
+        VoiceChannel as VoiceChannelData,
+        StageChannel as StageChannelData,
+        ForumChannel as ForumChannelData,
+    )
     from .state import ConnectionState
     from .mentions import AllowedMentions
     from .file import File
     from .embeds import Embed
-    from .member import Member
+    from .member import Member, VoiceState
+    from .user import User, ClientUser
     from .message import Message, PartialMessage
     from .guild import Guild
     from .role import Role
+    from .webhook import Webhook
 
 MISSING = utils.MISSING
-
+MSNG = utils._MISSING
 
 __all__ = (
     'TextChannel',
@@ -83,9 +95,9 @@ __all__ = (
 )
 
 
-async def _single_delete_strategy(messages):
+async def _single_delete_strategy(messages: List[Message], reason: Optional[str] = None) -> None:
     for m in messages:
-        await m.delete()
+        await m.delete(reason=reason)
 
 
 class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
@@ -207,7 +219,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         return list(self._threads.values())
 
     @utils.copy_doc(abc.GuildChannel.permissions_for)
-    def permissions_for(self, member: Member) -> Permissions:
+    def permissions_for(self, member: Member, /) -> Permissions:
         base = super().permissions_for(member)
 
         # text channels do not have voice related permissions
@@ -216,20 +228,20 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         return base
 
     @property
-    def members(self):
+    def members(self) -> List[Member]:
         """List[:class:`Member`]: Returns all members that can see this channel."""
         return [m for m in self.guild.members if self.permissions_for(m).read_messages]
 
-    def is_nsfw(self):
+    def is_nsfw(self) -> bool:
         """:class:`bool`: Checks if the channel is NSFW."""
         return self.nsfw
 
-    def is_news(self):
+    def is_news(self) -> bool:
         """:class:`bool`: Checks if the channel is a news channel."""
         return self._type == ChannelType.news.value
 
     @property
-    def last_message(self):
+    def last_message(self) -> Optional[Message]:
         """Fetches the last message from this channel in cache.
 
         The message might not be valid or point to an existing message.
@@ -249,7 +261,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         """
         return self._state._get_message(self.last_message_id) if self.last_message_id else None
 
-    async def edit(self, *, reason=None, **options):
+    async def edit(self, *, reason: Optional[str] = None, **options) -> None:
         """|coro|
 
         Edits the channel.
@@ -305,14 +317,14 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         await self._edit(options, reason=reason)
 
     @utils.copy_doc(abc.GuildChannel.clone)
-    async def clone(self, *, name=None, reason=None):
+    async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> TextChannel:
         return await self._clone_impl({
             'topic': self.topic,
             'nsfw': self.nsfw,
             'rate_limit_per_user': self.slowmode_delay
         }, name=name, reason=reason)
 
-    async def delete_messages(self, messages):
+    async def delete_messages(self, messages: Iterable[Message], reason: Optional[str] = None) -> None:
         """|coro|
 
         Deletes a list of messages. This is similar to :meth:`Message.delete`
@@ -334,6 +346,8 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         -----------
         messages: Iterable[:class:`abc.Snowflake`]
             An iterable of messages denoting which ones to bulk delete.
+        reason: Optional[:class:`str`]
+            The reason for deleting these messages. Shows up on the audit log.
 
         Raises
         ------
@@ -362,17 +376,20 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             raise ClientException('Can only bulk delete messages up to 100 messages')
 
         message_ids = [m.id for m in messages]
-        await self._state.http.delete_messages(self.id, message_ids)
+        await self._state.http.delete_messages(self.id, message_ids, reason=reason)
 
-    async def purge(self,
-                    *,
-                    limit: Optional[int] = 100,
-                    check: Callable = None,
-                    before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
-                    after: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
-                    around: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
-                    oldest_first: Optional[bool] = False,
-                    bulk: Optional[bool] = True):
+    async def purge(
+            self,
+            *,
+            limit: Optional[int] = 100,
+            check: Callable = None,
+            before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            after: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            around: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            oldest_first: Optional[bool] = False,
+            bulk: Optional[bool] = True,
+            reason: Optional[str] = None
+    ) -> List[Message]:
         """|coro|
 
         Purges a list of messages that meet the criteria given by the predicate
@@ -420,6 +437,8 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             a bot's own messages without :attr:`Permissions.manage_messages`. When ``True``, will
             fall back to single delete if current account is a user bot (now deprecated), or if messages are
             older than two weeks.
+        reason: Optional[:class:`str`]
+            The reason for deleting the messages. Shows up on the audit log.
 
         Raises
         -------
@@ -452,17 +471,17 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                 if count >= 2:
                     # more than 2 messages -> bulk delete
                     to_delete = ret[-count:]
-                    await strategy(to_delete)
+                    await strategy(to_delete, reason=reason)
                 elif count == 1:
                     # delete a single message
-                    await ret[-1].delete()
+                    await ret[-1].delete(reason=reason)
 
                 return ret
             else:
                 if count == 100:
                     # we've reached a full 'queue'
                     to_delete = ret[-100:]
-                    await strategy(to_delete)
+                    await strategy(to_delete, reason=reason)
                     count = 0
                     await asyncio.sleep(1)
 
@@ -470,10 +489,10 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                     if msg.id < minimum_time:
                         # older than 14 days old
                         if count == 1:
-                            await ret[-1].delete()
+                            await ret[-1].delete(reason=reason)
                         elif count >= 2:
                             to_delete = ret[-count:]
-                            await strategy(to_delete)
+                            await strategy(to_delete, reason=reason)
 
                         count = 0
                         strategy = _single_delete_strategy
@@ -481,7 +500,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
                     count += 1
                     ret.append(msg)
 
-    async def webhooks(self):
+    async def webhooks(self) -> List[Webhook]:
         """|coro|
 
         Gets the list of webhooks from this channel.
@@ -503,7 +522,13 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         data = await self._state.http.channel_webhooks(self.id)
         return [Webhook.from_state(d, state=self._state) for d in data]
 
-    async def create_webhook(self, *, name, avatar=None, reason=None):
+    async def create_webhook(
+            self,
+            *,
+            name: str,
+            avatar: Optional[bytes] = None,
+            reason: Optional[str] = None
+    ) -> Webhook:
         """|coro|
 
         Creates a webhook for this channel.
@@ -540,10 +565,10 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         if avatar is not None:
             avatar = utils._bytes_to_base64_data(avatar)
 
-        data = await self._state.http.create_webhook(self.id, name=str(name), avatar=avatar, reason=reason)
+        data = await self._state.http.create_webhook(self.id, name=name, avatar=avatar, reason=reason)
         return Webhook.from_state(data, state=self._state)
 
-    async def follow(self, *, destination, reason=None):
+    async def follow(self, *, destination: TextChannel, reason: Optional[str] = None) -> Webhook:
         """
         Follows a channel using a webhook.
 
@@ -588,7 +613,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         data = await self._state.http.follow_webhook(self.id, webhook_channel_id=destination.id, reason=reason)
         return Webhook._as_follower(data, channel=destination, user=self._state.user)
 
-    def get_partial_message(self, message_id):
+    def get_partial_message(self, message_id: id) -> PartialMessage:
         """Creates a :class:`PartialMessage` from the message ID.
 
         This is useful if you want to work with a message and only have its ID without
@@ -718,14 +743,14 @@ class ThreadMember:
         The ID of the guild the thread member belongs to
 
     """
-    def __init__(self, *, state, guild, data):
-        self._state = state
-        self.guild = guild
-        self.thread_id = int(data.get('id', 0))
-        self.guild_id = int(data.get('guild_id', guild.id))
-        self.id = int(data.get('user_id', self._state.self_id))
-        self.joined_at = datetime.datetime.fromisoformat(data.get('join_timestamp'))
-        self.flags = int(data.get('flags'))
+    def __init__(self, *, state: ConnectionState, guild: Guild, data):
+        self._state: ConnectionState = state
+        self.guild: Guild = guild
+        self.thread_id: int = int(data.get('id', 0))
+        self.guild_id: int = int(data.get('guild_id', guild.id))
+        self.id: int = int(data.get('user_id', self._state.self_id))
+        self.joined_at: datetime.datetime = datetime.datetime.fromisoformat(data.get('join_timestamp'))
+        self.flags: int = int(data.get('flags'))
 
     @classmethod
     def _from_thread(cls, *, thread, data):
@@ -762,7 +787,7 @@ class ThreadMember:
     @property
     def mention(self) -> str:
         """Returns a string the client renders as a mention of the user"""
-        return '<@%s>' % self.id
+        return f'<@{self.id}>'
 
 
 class ThreadChannel(abc.Messageable, Hashable):
@@ -776,9 +801,9 @@ class ThreadChannel(abc.Messageable, Hashable):
     type: :class:`ChannelType`
         The type of the thread
     """
-    def __init__(self, *, state, guild, data):
+    def __init__(self, *, state: ConnectionState, guild: Guild, data):
         self._state: ConnectionState = state
-        self.id = int(data['id'])
+        self.id: int = int(data['id'])
         self.type: ChannelType = ChannelType.try_value(data['type'])
         self._members: Dict[int, ThreadMember] = {}
         self._update(guild, data)
@@ -840,7 +865,7 @@ class ThreadChannel(abc.Messageable, Hashable):
     def _add_self(self, data: Dict[str, Any]) -> None:
         self._add_member(ThreadMember(state=self._state, guild=self.guild, data=data))
 
-    async def _get_channel(self) -> None:
+    async def _get_channel(self) -> ThreadChannel:
         return self
 
     def _add_member(self, member: ThreadMember) -> None:
@@ -1294,44 +1319,65 @@ class ThreadChannel(abc.Messageable, Hashable):
         return self
 
 
-class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
+class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
     __slots__ = ('name', 'id', 'guild', 'bitrate', 'user_limit',
                  '_state', 'position', '_overwrites', 'category_id',
-                 'rtc_region')
+                 'rtc_region', 'slowmode_delay', 'last_message_id',)
 
-    def __init__(self, *, state, guild, data):
-        self._state = state
-        self.id = int(data['id'])
+    if TYPE_CHECKING:
+        guild: Guild
+        name: str
+        nsfw: bool
+        slowmode_delay: int
+        rtc_region: Optional[VoiceRegion]
+        video_quality_mode: VideoQualityMode
+        category_id: Optional[int]
+        position: int
+        bitrate: Optional[int]
+        user_limit: Optional[int]
+
+    def __init__(
+            self,
+            *,
+            state: ConnectionState,
+            guild: Guild,
+            data: Union[VoiceChannelData, StageChannelData]
+    ) -> None:
+        self._state: ConnectionState = state
+        self.id: int = int(data['id'])
         self._update(guild, data)
 
-    def _get_voice_client_key(self):
+    def _get_voice_client_key(self) -> Tuple[int, str]:
         return self.guild.id, 'guild_id'
 
-    def _get_voice_state_pair(self):
+    def _get_voice_state_pair(self) -> Tuple[int, int]:
         return self.guild.id, self.id
 
-    def _update(self, guild, data):
+    def _update(self, guild: Guild, data: Union[VoiceChannelData, StageChannelData]) -> None:
         self.guild = guild
         self.name = data['name']
         self.rtc_region = data.get('rtc_region')
         if self.rtc_region:
             self.rtc_region = try_enum(VoiceRegion, self.rtc_region)
+        self.video_quality_mode = try_enum(VideoQualityMode, data.get('video_quality_mode'))
         self.category_id = utils._get_as_snowflake(data, 'parent_id')
         self.position = data['position']
         self.bitrate = data.get('bitrate')
         self.user_limit = data.get('user_limit')
+        self.nsfw = data.get('nsfw', False)
+        self.slowmode_delay = data.get('rate_limit_per_user', 0)
         self._fill_overwrites(data)
 
     @property
-    def _sorting_bucket(self):
+    def _sorting_bucket(self) -> int:
         return ChannelType.voice.value
 
     @staticmethod
-    def channel_type():
+    def channel_type() -> ChannelType:
         return ChannelType.voice
 
     @property
-    def members(self):
+    def members(self) -> List[Member]:
         """List[:class:`Member`]: Returns all members that are currently inside this voice channel."""
         ret = []
         for user_id, state in self.guild._voice_states.items():
@@ -1342,7 +1388,7 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
         return ret
 
     @property
-    def voice_states(self):
+    def voice_states(self) -> Dict[int, VoiceState]:
         """Returns a mapping of member IDs who have voice states in this channel.
 
         .. versionadded:: 1.3
@@ -1359,8 +1405,12 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
         """
         return {key: value for key, value in self.guild._voice_states.items() if value.channel.id == self.id}
 
+    def is_nsfw(self) -> bool:
+        """:class:`bool`: Checks if the channel is NSFW."""
+        return self.nsfw
+
     @utils.copy_doc(abc.GuildChannel.permissions_for)
-    def permissions_for(self, member):
+    def permissions_for(self, member: Member, /) -> Permissions:
         base = super().permissions_for(member)
 
         # voice channels cannot be edited by people who can't connect to them,
@@ -1370,6 +1420,251 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, Hashable):
             denied.update(manage_channels=True, manage_roles=True)
             base.value &= ~denied.value
         return base
+
+    async def delete_messages(self, messages: Iterable[Message], *, reason: Optional[str] = None) -> None:
+        """|coro|
+
+        Deletes a list of messages. This is similar to :meth:`Message.delete`
+        except it bulk deletes multiple messages.
+
+        As a special case, if the number of messages is 0, then nothing
+        is done. If the number of messages is 1 then single message
+        delete is done. If it's more than two, then bulk delete is used.
+
+        You cannot bulk delete more than 100 messages or messages that
+        are older than 14 days old.
+
+        You must have the :attr:`~Permissions.manage_messages` permission to
+        use this.
+
+        Usable only by bot accounts.
+
+        Parameters
+        -----------
+        messages: Iterable[:class:`abc.Snowflake`]
+            An iterable of messages denoting which ones to bulk delete.
+        reason: Optional[:class:`str`]
+            The reason for deleting these messages. Shows up on the audit log.
+
+        Raises
+        ------
+        ClientException
+            The number of messages to delete was more than 100.
+        Forbidden
+            You do not have proper permissions to delete the messages or
+            you're not using a bot account.
+        NotFound
+            If single delete, then the message was already deleted.
+        HTTPException
+            Deleting the messages failed.
+        """
+        if not isinstance(messages, (list, tuple)):
+            messages = list(messages)
+
+        if len(messages) == 0:
+            return # do nothing
+
+        if len(messages) == 1:
+            message_id = messages[0].id
+            await self._state.http.delete_message(self.id, message_id)
+            return
+
+        if len(messages) > 100:
+            raise ClientException('Can only bulk delete messages up to 100 messages')
+
+        message_ids = [m.id for m in messages]
+        await self._state.http.delete_messages(self.id, message_ids, reason=reason)
+
+    async def purge(
+            self,
+            *,
+            limit: Optional[int] = 100,
+            check: Callable = None,
+            before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            after: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            around: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            oldest_first: Optional[bool] = False,
+            bulk: Optional[bool] = True,
+            reason: Optional[str] = None
+    ) -> List[Message]:
+        """|coro|
+
+        Purges a list of messages that meet the criteria given by the predicate
+        ``check``. If a ``check`` is not provided then all messages are deleted
+        without discrimination.
+
+        You must have the :attr:`~Permissions.manage_messages` permission to
+        delete messages even if they are your own (unless you are a user
+        account). The :attr:`~Permissions.read_message_history` permission is
+        also needed to retrieve message history.
+
+        Internally, this employs a different number of strategies depending
+        on the conditions met such as if a bulk delete is possible or if
+        the account is a user bot or not.
+
+        Examples
+        ---------
+
+        Deleting bot's messages ::
+
+            def is_me(m):
+                return m.author == client.user
+
+            deleted = await channel.purge(limit=100, check=is_me)
+            await channel.send('Deleted {} message(s)'.format(len(deleted)))
+
+        Parameters
+        -----------
+        limit: Optional[:class:`int`]
+            The number of messages to search through. This is not the number
+            of messages that will be deleted, though it can be.
+        check: Callable[[:class:`Message`], :class:`bool`]
+            The function used to check if a message should be deleted.
+            It must take a :class:`Message` as its sole parameter.
+        before: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
+            Same as ``before`` in :meth:`history`.
+        after: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
+            Same as ``after`` in :meth:`history`.
+        around: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
+            Same as ``around`` in :meth:`history`.
+        oldest_first: Optional[:class:`bool`]
+            Same as ``oldest_first`` in :meth:`history`.
+        bulk: :class:`bool`
+            If ``True``, use bulk delete. Setting this to ``False`` is useful for mass-deleting
+            a bot's own messages without :attr:`Permissions.manage_messages`. When ``True``, will
+            fall back to single delete if current account is a user bot (now deprecated), or if messages are
+            older than two weeks.
+        reason: Optional[:class:`str`]
+            The reason for deleting the messages. Shows up on the audit log.
+
+        Raises
+        -------
+        Forbidden
+            You do not have proper permissions to do the actions required.
+        HTTPException
+            Purging the messages failed.
+
+        Returns
+        --------
+        List[:class:`.Message`]
+            The list of messages that were deleted.
+        """
+
+        if check is None:
+            check = lambda m: True
+
+        iterator = self.history(limit=limit, before=before, after=after, oldest_first=oldest_first, around=around)
+        ret = []
+        count = 0
+
+        minimum_time = int((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+        strategy = self.delete_messages if bulk else _single_delete_strategy
+
+        while True:
+            try:
+                msg = await iterator.next()
+            except NoMoreItems:
+                # no more messages to poll
+                if count >= 2:
+                    # more than 2 messages -> bulk delete
+                    to_delete = ret[-count:]
+                    await strategy(to_delete, reason=reason)
+                elif count == 1:
+                    # delete a single message
+                    await ret[-1].delete(reason=reason)
+
+                return ret
+            else:
+                if count == 100:
+                    # we've reached a full 'queue'
+                    to_delete = ret[-100:]
+                    await strategy(to_delete, reason=reason)
+                    count = 0
+                    await asyncio.sleep(1)
+
+                if check(msg):
+                    if msg.id < minimum_time:
+                        # older than 14 days old
+                        if count == 1:
+                            await ret[-1].delete(reason=reason)
+                        elif count >= 2:
+                            to_delete = ret[-count:]
+                            await strategy(to_delete, reason=reason)
+
+                        count = 0
+                        strategy = _single_delete_strategy
+
+                    count += 1
+                    ret.append(msg)
+
+    async def webhooks(self) -> List[Webhook]:
+        """|coro|
+
+        Gets the list of webhooks from this channel.
+
+        Requires :attr:`~.Permissions.manage_webhooks` permissions.
+
+        Raises
+        -------
+        Forbidden
+            You don't have permissions to get the webhooks.
+
+        Returns
+        --------
+        List[:class:`Webhook`]
+            The webhooks for this channel.
+        """
+
+        from .webhook import Webhook
+        data = await self._state.http.channel_webhooks(self.id)
+        return [Webhook.from_state(d, state=self._state) for d in data]
+
+    async def create_webhook(
+            self,
+            *,
+            name: str,
+            avatar: Optional[bytes] = None,
+            reason: Optional[str] = None
+    ) -> Webhook:
+        """|coro|
+
+        Creates a webhook for this channel.
+
+        Requires :attr:`~.Permissions.manage_webhooks` permissions.
+
+        .. versionchanged:: 1.1
+            Added the ``reason`` keyword-only parameter.
+
+        Parameters
+        -------------
+        name: :class:`str`
+            The webhook's name.
+        avatar: Optional[:class:`bytes`]
+            A :term:`py:bytes-like object` representing the webhook's default avatar.
+            This operates similarly to :meth:`~ClientUser.edit`.
+        reason: Optional[:class:`str`]
+            The reason for creating this webhook. Shows up in the audit logs.
+
+        Raises
+        -------
+        HTTPException
+            Creating the webhook failed.
+        Forbidden
+            You do not have permissions to create a webhook.
+
+        Returns
+        --------
+        :class:`Webhook`
+            The created webhook.
+        """
+
+        from .webhook import Webhook
+        if avatar is not None:
+            avatar = utils._bytes_to_base64_data(avatar)
+
+        data = await self._state.http.create_webhook(self.id, name=name, avatar=avatar, reason=reason)
+        return Webhook.from_state(data, state=self._state)
+
 
 
 class VoiceChannel(VocalGuildChannel, abc.Messageable):
@@ -1415,11 +1710,19 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         A value of ``None`` indicates automatic voice region detection.
 
         .. versionadded:: 1.7
+    slowmode_delay: :class:`int`
+        The channel's slowmode delay in seconds. A value of ``0`` indicates that slowmode is disabled.
+
+        .. versionadded:: 2.0
+    nsfw: :class:`bool`
+        Whether the channel is marked as NSFW.
+
+        .. versionadded:: 2.0
     """
 
     __slots__ = ('last_message_id',)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         attrs = [
             ('id', self.id),
             ('name', self.name),
@@ -1432,10 +1735,10 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
 
     @staticmethod
-    def channel_type():
+    def channel_type() -> ChannelType:
         return ChannelType.voice
 
-    async def _get_channel(self):
+    async def _get_channel(self) -> VoiceChannel:
         return self
 
     @property
@@ -1444,13 +1747,13 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         return ChannelType.voice
 
     @utils.copy_doc(abc.GuildChannel.clone)
-    async def clone(self, *, name=None, reason=None):
+    async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> VoiceChannel:
         return await self._clone_impl({
             'bitrate': self.bitrate,
             'user_limit': self.user_limit
         }, name=name, reason=reason)
 
-    async def edit(self, *, reason=None, **options):
+    async def edit(self, *, reason: Optional[str] = None, **options):
         """|coro|
 
         Edits the channel.
@@ -1487,6 +1790,12 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
             A value of ``None`` indicates automatic voice region detection.
 
             .. versionadded:: 1.7
+        slowmode_delay: :class:`int`
+            The new slowmode delay for this channel in seconds. A value of ``0`` disables slowmode.
+
+            .. versionadded:: 2.0
+        nsfw: :class:`bool`
+            Whether the channel is NSFW. This can only be set by guild administrators.
 
         Raises
         ------
@@ -1546,6 +1855,14 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
     rtc_region: Optional[:class:`VoiceRegion`]
         The region for the stage channel's voice communication.
         A value of ``None`` indicates automatic voice region detection.
+    slowmode_delay: :class:`int`
+        The channel's slowmode delay in seconds. A value of ``0`` indicates that slowmode is disabled.
+
+        .. versionadded:: 2.0
+    nsfw: :class:`bool`
+        Whether the channel is marked as NSFW.
+
+        .. versionadded:: 2.0
     """
     __slots__ = ('topic', 'last_message_id')
 
@@ -1562,19 +1879,19 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
     
-    def _update(self, guild, data):
+    def _update(self, guild: Guild, data: StageChannelData):
         super()._update(guild, data)
         self.topic = data.get('topic')
 
     @staticmethod
-    def channel_type():
+    def channel_type() -> ChannelType:
         return ChannelType.stage_voice
     
-    async def _get_channel(self):
+    async def _get_channel(self) -> StageChannel:
         return self
     
     @property
-    def requesting_to_speak(self):
+    def requesting_to_speak(self) -> List[Member]:
         """List[:class:`Member`]: A list of members who are requesting to speak in the stage channel."""
         return [member for member in self.members if member.voice.requested_to_speak_at is not None]
 
@@ -1584,12 +1901,12 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
         return ChannelType.stage_voice
 
     @utils.copy_doc(abc.GuildChannel.clone)
-    async def clone(self, *, name=None, reason=None):
+    async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> StageChannel:
         return await self._clone_impl({
             'topic': self.topic,
         }, name=name, reason=reason)
 
-    async def edit(self, *, reason=None, **options):
+    async def edit(self, *, reason: Optional[str] = None, **options) -> None:
         """|coro|
 
         Edits the channel.
@@ -1705,7 +2022,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         """:class:`str`: Returns an empty string as you can't jump to a category."""
         return ''
 
-    def is_nsfw(self):
+    def is_nsfw(self) -> bool:
         """:class:`bool`: Checks if the category is NSFW."""
         return self.nsfw
 
@@ -1715,7 +2032,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
             'nsfw': self.nsfw
         }, name=name, reason=reason)
 
-    async def edit(self, *, reason=None, **options):
+    async def edit(self, *, reason: Optional[str] = None, **options) -> None:
         """|coro|
 
         Edits the channel.
@@ -1752,6 +2069,65 @@ class CategoryChannel(abc.GuildChannel, Hashable):
 
         await self._edit(options=options, reason=reason)
 
+    @overload
+    async def move(
+            self,
+            *,
+            beginning: Literal[True] = ...,
+            end: Literal[False] = ...,
+            before: MSNG = ...,
+            after: MSNG = ...,
+            offset: int = 0,
+            category: None = MISSING,
+            sync_permissions: bool = False,
+            reason: Optional[str] = None
+    ) -> None: ...
+
+    @overload
+    async def move(
+            self,
+            *,
+            beginning: Literal[False] = ...,
+            end: Literal[True] = ...,
+            before: MSNG = ...,
+            after: MSNG = ...,
+            offset: int = 0,
+            category: None = MISSING,
+            sync_permissions: bool = False,
+            reason: Optional[str] = None
+    ) -> None:
+        ...
+
+    @overload
+    async def move(
+            self,
+            *,
+            beginning: Literal[False] = ...,
+            end: Literal[False] = ...,
+            before: abc.Snowflake = ...,
+            after: MSNG = ...,
+            offset: int = 0,
+            category: None = MISSING,
+            sync_permissions: bool = False,
+            reason: Optional[str] = None
+    ) -> None:
+        ...
+
+    @overload
+    async def move(
+            self,
+            *,
+            beginning: Literal[False] = ...,
+            end: Literal[False] = ...,
+            before: MSNG = ...,
+            after: abc.Snowflake = ...,
+            offset: int = 0,
+            category: None = MISSING,
+            sync_permissions: bool = False,
+            reason: Optional[str] = None
+    ) -> None:
+        ...
+
     @utils.copy_doc(abc.GuildChannel.move)
     async def move(self, **kwargs):
         kwargs.pop('category', None)
@@ -1771,7 +2147,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         return ret
 
     @property
-    def text_channels(self):
+    def text_channels(self) -> List[TextChannel]:
         """List[:class:`TextChannel`]: Returns the text channels that are under this category."""
         ret = [c for c in self.guild.channels
             if c.category_id == self.id
@@ -1780,7 +2156,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         return ret
 
     @property
-    def voice_channels(self):
+    def voice_channels(self) -> List[VoiceChannel]:
         """List[:class:`VoiceChannel`]: Returns the voice channels that are under this category."""
         ret = [c for c in self.guild.channels
             if c.category_id == self.id
@@ -1789,7 +2165,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         return ret
 
     @property
-    def stage_channels(self):
+    def stage_channels(self) -> List[StageChannel]:
         """List[:class:`StageChannel`]: Returns the voice channels that are under this category.
 
         .. versionadded:: 1.7
@@ -1801,7 +2177,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         return ret
 
     @property
-    def forum_channels(self):
+    def forum_channels(self) -> List[ForumChannel]:
         """List[:class:`ForumChannel`]: Returns the forum channels that are under this category."""
         ret = [c for c in self.guild.channels
                if c.category_id == self.id
@@ -1809,7 +2185,14 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         ret.sort(key=lambda c: (c.position, c.id))
         return ret
 
-    async def create_text_channel(self, name, *, overwrites=None, reason=None, **options):
+    async def create_text_channel(
+            self,
+            name: str,
+            *,
+            overwrites: Optional[Dict[abc.Snowflake, PermissionOverwrite]] = None,
+            reason: Optional[str] = None,
+            **options
+    ) -> TextChannel:
         """|coro|
 
         A shortcut method to :meth:`Guild.create_text_channel` to create a :class:`TextChannel` in the category.
@@ -1821,7 +2204,14 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         """
         return await self.guild.create_text_channel(name, overwrites=overwrites, category=self, reason=reason, **options)
 
-    async def create_voice_channel(self, name, *, overwrites=None, reason=None, **options):
+    async def create_voice_channel(
+            self,
+            name: str,
+            *,
+            overwrites: Optional[Dict[abc.Snowflake, PermissionOverwrite]] = None,
+            reason: Optional[str] = None,
+            **options
+    ) -> VoiceChannel:
         """|coro|
 
         A shortcut method to :meth:`Guild.create_voice_channel` to create a :class:`VoiceChannel` in the category.
@@ -1833,7 +2223,14 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         """
         return await self.guild.create_voice_channel(name, overwrites=overwrites, category=self, reason=reason, **options)
 
-    async def create_stage_channel(self, name, *, overwrites=None, reason=None, **options):
+    async def create_stage_channel(
+            self,
+            name: str,
+            *,
+            overwrites: Optional[Dict[abc.Snowflake, PermissionOverwrite]] = None,
+            reason: Optional[str] = None,
+            **options
+    ) -> StageChannel:
         """|coro|
 
         A shortcut method to :meth:`Guild.create_stage_channel` to create a :class:`StageChannel` in the category.
@@ -1855,7 +2252,7 @@ class CategoryChannel(abc.GuildChannel, Hashable):
             slowmode_delay: Optional[int] = None,
             default_post_slowmode_delay: Optional[int] = None,
             default_auto_archive_duration: Optional[AutoArchiveDuration] = None,
-            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            overwrites: Optional[Dict[abc.Snowflake, PermissionOverwrite]] = None,
             nsfw: Optional[bool] = None,
             position: Optional[int] = None,
             reason: Optional[str] = None
@@ -1915,23 +2312,23 @@ class DMChannel(abc.Messageable, Hashable):
 
     __slots__ = ('id', 'recipient', 'last_message_id', 'me', '_state')
 
-    def __init__(self, *, me, state, data):
-        self._state = state
+    def __init__(self, *, me: ClientUser, state: ConnectionState, data: DMChannelData) -> None:
+        self._state: ConnectionState = state
         self.recipient = state.store_user(data['recipients'][0])
-        self.me = me
-        self.id = int(data['id'])
+        self.me: ClientUser = me
+        self.id: int = int(data['id'])
 
-    async def _get_channel(self):
+    async def _get_channel(self) -> DMChannel:
         return self
 
-    def __str__(self):
-        return 'Direct Message with %s' % self.recipient
+    def __str__(self) -> str:
+        return f'Direct Message with {self.recipient}'
 
-    def __repr__(self):
-        return '<DMChannel id={0.id} recipient={0.recipient!r}>'.format(self)
+    def __repr__(self) -> str:
+        return f'<DMChannel id={self.id} recipient={self.recipient!r}>'
 
     @staticmethod
-    def channel_type():
+    def channel_type() -> ChannelType:
         return ChannelType.private
 
     @property
@@ -1940,11 +2337,11 @@ class DMChannel(abc.Messageable, Hashable):
         return ChannelType.private
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime.datetime:
         """:class:`datetime.datetime`: Returns the direct message channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
-    def permissions_for(self, user=None):
+    def permissions_for(self, user: Optional[abc.Snowflake] = None) -> Permissions:
         """Handles permission resolution for a :class:`User`.
 
         This function is there for compatibility with other channel types.
@@ -1973,7 +2370,7 @@ class DMChannel(abc.Messageable, Hashable):
         base.manage_messages = False
         return base
 
-    def get_partial_message(self, message_id):
+    def get_partial_message(self, message_id: int) -> PartialMessage:
         """Creates a :class:`PartialMessage` from the message ID.
 
         This is useful if you want to work with a message and only have its ID without
@@ -2035,10 +2432,16 @@ class GroupChannel(abc.Messageable, Hashable):
 
     __slots__ = ('id', 'recipients', 'owner', 'icon', 'name', 'last_message_id', 'me', '_state')
 
-    def __init__(self, *, me, state, data):
-        self._state = state
-        self.id = int(data['id'])
-        self.me = me
+    if TYPE_CHECKING:
+        icon: Optional[str]
+        name: Optional[str]
+        owner: User
+        recipients: List[User]
+
+    def __init__(self, *, me: ClientUser, state: ConnectionState, data: GroupChannelData) -> None:
+        self._state: ConnectionState = state
+        self.id: int = int(data['id'])
+        self.me: ClientUser = me
         self._update_group(data)
 
     def _update_group(self, data):
@@ -2056,10 +2459,10 @@ class GroupChannel(abc.Messageable, Hashable):
         else:
             self.owner = utils.find(lambda u: u.id == owner_id, self.recipients)
 
-    async def _get_channel(self):
+    async def _get_channel(self) -> GroupChannel:
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.name:
             return self.name
 
@@ -2068,11 +2471,11 @@ class GroupChannel(abc.Messageable, Hashable):
 
         return ', '.join(map(lambda x: x.name, self.recipients))
 
-    def __repr__(self):
-        return '<GroupChannel id={0.id} name={0.name!r}>'.format(self)
+    def __repr__(self) -> str:
+        return f'<GroupChannel id={self.id} name={self.name!r}>'
 
     @staticmethod
-    def channel_type():
+    def channel_type() -> ChannelType:
         return ChannelType.group
 
     @property
@@ -2081,7 +2484,7 @@ class GroupChannel(abc.Messageable, Hashable):
         return ChannelType.group
 
     @property
-    def icon_url(self):
+    def icon_url(self) -> Asset:
         """:class:`Asset`: Returns the channel's icon asset if available.
 
         This is equivalent to calling :meth:`icon_url_as` with
@@ -2089,7 +2492,12 @@ class GroupChannel(abc.Messageable, Hashable):
         """
         return self.icon_url_as()
 
-    def icon_url_as(self, *, format='webp', size=1024):
+    def icon_url_as(
+            self,
+            *,
+            format: Literal['webp', 'jpeg', 'jpg', 'png'] = 'webp',
+            size: int = 1024
+    ) -> Asset:
         """Returns an :class:`Asset` for the icon the channel has.
 
         The format must be one of 'webp', 'jpeg', 'jpg' or 'png'.
@@ -2117,11 +2525,11 @@ class GroupChannel(abc.Messageable, Hashable):
         return Asset._from_icon(self._state, self, 'channel', format=format, size=size)
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime.datetime:
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
-    def permissions_for(self, user):
+    def permissions_for(self, user: User) -> Permissions:
         """Handles permission resolution for a :class:`User`.
 
         This function is there for compatibility with other channel types.
@@ -2265,6 +2673,8 @@ class ForumPost(ThreadChannel):
     """
     Represents a post in a :class:`ForumChannel`, this is very similar to a :class:`ThreadChannel`
 
+    .. versionadded:: 2.0
+
     Attributes
     ----------
     guild: :class:`Guild`
@@ -2273,11 +2683,14 @@ class ForumPost(ThreadChannel):
         The ID of the post
     """
     def __init__(self, *, state, guild, data: dict) -> None:
-        self._state: ConnectionState = state
-        self.guild: Guild = guild
-        self.id: int = int(data['id'])
-        self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(map(int, data.get("applied_tags",[])))
         super().__init__(state=self._state, guild=self.guild, data=data)
+        self._state: ConnectionState = state
+        self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(map(int, data.get("applied_tags",[])))
+
+
+    @staticmethod
+    def channel_type():
+        return ChannelType.public_thread
 
     def _update(self, guild, data) -> ForumPost:
         try:
@@ -2413,6 +2826,15 @@ class ForumTag(Hashable):
     """
     __slots__ = ('id', 'name', 'moderated', 'emoji_id', 'emoji_name', 'guild', '_state')
 
+    if TYPE_CHECKING:
+        guild: Guild
+        _state: ConnectionState
+        id: int
+        name: str
+        moderated: bool
+        emoji_id: Optional[int]
+        emoji_name: Optional[str]
+
     def __init__(
             self,
             name: str,
@@ -2420,11 +2842,8 @@ class ForumTag(Hashable):
             emoji_id: Optional[int] = None,
             emoji_name: Optional[str] = None
     ):
-        self.guild: Guild
-        self._state: ConnectionState
-        self.id: int
-        self.name: str = name
-        self.moderated: bool = moderated
+        self.name = name
+        self.moderated = moderated
         self.emoji_id = emoji_id
         self.emoji_name = emoji_name
 
@@ -2457,7 +2876,7 @@ class ForumTag(Hashable):
         self.name = data['name']
         self.moderated = data.get('moderated', False)
         self.emoji_id = utils._get_as_snowflake(data, 'emoji_id')
-        self.emoji_name = data.get('emoji_name', None)
+        self.emoji_name = data.get('emoji_name')
         return self
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2512,6 +2931,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
         position: :class:`int`
             The position in the channel list. This is a number that starts at 0. e.g. the
             top channel is position 0.
+        nsfw: :class:`bool`
+            Whether the channel is marked as NSFW.
         last_post_id: Optional[:class:`int`]
             The ID of the last post that was createt in this forum, this may
             *not* point to an existing or valid post.
@@ -2520,17 +2941,38 @@ class ForumChannel(abc.GuildChannel, Hashable):
             in posts inside this channel. A value of `0` denotes that it is disabled.
             Bots and users with :attr:`~Permissions.manage_channels` or
             :attr:`~Permissions.manage_messages` bypass slowmode.
+        default_auto_archive_duration: :class:`int`
+            The default duration for which threads in this channel are automatically archived.
+        default_sort_order: :class:`PostSortOrder`
+            The default sort order for posts in this channel.
+        default_forum_layout: :class:`ForumLayout`
+            The default layout for posts in this channel.
         """
 
     __slots__ = ('name', 'id', 'guild', 'topic', '_state', '__deleted', 'nsfw',
                  'category_id', 'position', 'slowmode_delay', '_overwrites',
                  '_type', 'last_message_id', 'default_auto_archive_duration',
                  '_posts', '_tags', 'flags', 'default_reaction_emoji', 'last_post_id',
-                 'default_sort_order')
+                 'default_sort_order', 'default_forum_layout',)
 
-    def __init__(self, *, state, guild, data):
-        self._state = state
-        self.id = int(data['id'])
+    if TYPE_CHECKING:
+        guild: Guild
+        name: str
+        category_id: Optional[int]
+        topic: Optional[str]
+        flags: ChannelFlags
+        position: int
+        nsfw: bool
+        slowmode_delay: int
+        default_auto_archive_duration: int
+        default_reaction_emoji: Optional[PartialEmoji]
+        last_message_id: Optional[int]
+        default_sort_order: PostSortOrder
+
+
+    def __init__(self, *, state: ConnectionState, guild: Guild, data) -> None:
+        self._state: ConnectionState = state
+        self.id: int = int(data['id'])
         self._type = data["type"]
         self._posts: Dict[int, ForumPost] = {}
         self._tags: Dict[int, ForumTag] = {}
@@ -2553,7 +2995,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             for post in self.posts:
                 guild._remove_post(post)
 
-    def _update(self, guild, data):
+    def _update(self, guild: Guild, data: ForumChannelData):
         self.guild: Guild = guild
         self.name: str = data['name']
         self.category_id: int = utils._get_as_snowflake(data, 'parent_id')
@@ -2578,7 +3020,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
             AutoArchiveDuration,
             data.get('default_auto_archive_duration', 1440)
         )
-        self.default_sort_order: Optional[PostSortOrder] = try_enum(PostSortOrder, data.get('default_sort_order', None))
+        self.default_sort_order: Optional[PostSortOrder] = try_enum(PostSortOrder, data.get('default_sort_order'))
+        self.default_forum_layout: Optional[ForumLayout] = try_enum(ForumLayout, data.get('default_forum_layout'))
         self._fill_overwrites(data)
         self._fill_tags(data)
 
@@ -2589,7 +3032,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         for t in tags:
             self._tags[int(t['id'])] = ForumTag._with_state(state=state, guild=guild, data=t)
 
-    async def _get_channel(self):
+    async def _get_channel(self) -> ForumChannel:
         return self
 
     @property
@@ -2598,11 +3041,11 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return try_enum(ChannelType, self._type)
 
     @staticmethod
-    def channel_type() -> ChannelType.forum_channel:
+    def channel_type() -> ChannelType:
         return ChannelType.forum_channel
 
     @property
-    def _sorting_bucket(self):
+    def _sorting_bucket(self) -> int:
         return ChannelType.forum_channel.value
 
     def _add_post(self, post: ForumPost) -> None:
@@ -2613,7 +3056,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     def get_post(self, id: int) -> Optional[ForumPost]:
         """Optional[:class:`ForumPost`]: Returns a post in the forum with the given ID. or None when not found."""
-        return self._posts.get(int(id), None)
+        return self._posts.get(id, None)
 
     @property
     def posts(self) -> List[ForumPost]:
@@ -2636,7 +3079,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return list(self._tags.values())
 
     @utils.copy_doc(abc.GuildChannel.permissions_for)
-    def permissions_for(self, member: Member) -> Permissions:
+    def permissions_for(self, member: Member, /) -> Permissions:
         base = super().permissions_for(member)
 
         # forum channels do not have voice related permissions
@@ -2645,7 +3088,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return base
 
     @property
-    def members(self):
+    def members(self) -> List[Member]:
         """List[:class:`Member`]: Returns all members that can see this channel."""
         return [m for m in self.guild.members if self.permissions_for(m).read_messages]
 
@@ -2674,6 +3117,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             available_tags: Sequence[ForumTag] = MISSING,
             tags_required: bool = MISSING,
             default_post_sort_order: Optional[PostSortOrder] = MISSING,
+            default_forum_layout: Optional[ForumLayout] = MISSING,
             position: int = MISSING,
             nsfw: bool = MISSING,
             sync_permissions: bool = False,
@@ -2700,8 +3144,10 @@ class ForumChannel(abc.GuildChannel, Hashable):
             You can use this to reorder the tags.
         tags_required: :class:`bool`
             Whether new created post require at least one tag provided on creation
-        default_post_sort_order: Optional[`PostSortOrder`]
+        default_post_sort_order: Optional[:class:`PostSortOrder`]
             How the posts in the forum will be sorted for users by default.
+        default_forum_layout: Optional[:class:`ForumLayout`]
+        	The default forum layout view used to display posts to users.
         position: :class:`int`
             The new channel's position.
         nsfw: :class:`bool`
@@ -2751,6 +3197,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
         if default_post_sort_order is not MISSING:
             payload['default_sort_order'] = default_post_sort_order.value
 
+        if default_forum_layout is not MISSING:
+            payload['default_forum_layout'] = default_forum_layout.value
+
         if position is not MISSING:
             payload['position'] = position
 
@@ -2772,16 +3221,17 @@ class ForumChannel(abc.GuildChannel, Hashable):
         return await self._edit(options=payload, reason=reason)
 
     @utils.copy_doc(abc.GuildChannel.clone)
-    async def clone(self, *, name=None, reason=None) -> ForumChannel:
+    async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> ForumChannel:
         return await self._clone_impl({
             'topic': self.topic,
             'nsfw': self.nsfw,
             'flags': self.flags,
+            'available_tags': self.available_tags,
             'rate_limit_per_user': self.slowmode_delay,
             'default_auto_archive_duration': self.default_auto_archive_duration
         }, name=name, reason=reason)
 
-    async def webhooks(self):
+    async def webhooks(self) -> List[Webhook]:
         """|coro|
 
         Gets the list of webhooks from this channel.
@@ -2803,7 +3253,13 @@ class ForumChannel(abc.GuildChannel, Hashable):
         data = await self._state.http.channel_webhooks(self.id)
         return [Webhook.from_state(d, state=self._state) for d in data]
 
-    async def create_webhook(self, *, name, avatar=None, reason=None):
+    async def create_webhook(
+            self,
+            *,
+            name: str,
+            avatar: Optional[bytes] = None,
+            reason: Optional[str] = None
+    ) -> Webhook:
         """|coro|
 
         Creates a webhook for this channel.
@@ -2837,7 +3293,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
         if avatar is not None:
             avatar = utils._bytes_to_base64_data(avatar)
 
-        data = await self._state.http.create_webhook(self.id, name=str(name), avatar=avatar, reason=reason)
+        data = await self._state.http.create_webhook(
+            self.id, name=name, avatar=avatar, reason=reason
+        )
         return Webhook.from_state(data, state=self._state)
 
     async def create_post(

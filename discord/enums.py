@@ -51,6 +51,7 @@ __all__ = (
     'AutoArchiveDuration',
     'MessageType',
     'VoiceRegion',
+    'VideoQualityMode',
     'SpeakingState',
     'VerificationLevel',
     'ContentFilter',
@@ -75,7 +76,9 @@ __all__ = (
     'AutoModEventType',
     'AutoModTriggerType',
     'AutoModKeywordPresetType',
-    'PostSortOrder'
+    'PostSortOrder',
+    'ForumLayout',
+
 )
 
 
@@ -695,6 +698,17 @@ class VoiceRegion(Enum):
         return self.value
 
 
+class VideoQualityMode(Enum):
+    auto     = 1
+    full     = 2
+
+    def __str__(self):
+        return self.name
+
+    def __int__(self):
+        return self.value
+
+
 class SpeakingState(Enum):
     none       = 0
     voice      = 1
@@ -1032,6 +1046,17 @@ class AutoModActionType(Enum):
 class PostSortOrder(Enum):
     latest_activity = 0
     creation_date   = 1
+
+
+class ForumLayout(Enum):
+    not_set       = 0
+    classic       = 1
+    list          = 1
+    list_view     = 1
+    grid          = 2
+    grid_view     = 2
+    gallery       = 2
+    gallery_view  = 2
 
 
 def try_enum(cls: Type[Enum], val: Any):

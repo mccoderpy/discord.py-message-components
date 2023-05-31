@@ -1541,6 +1541,21 @@ of :class:`enum.Enum`.
 
         The US West region for VIP guilds.
 
+.. class:: VideoQualityMode
+
+    Specifies the camera video quality for all channel participants in a :class:`VoiceChannel` / :class:`StageChannel`.
+
+    .. attribute:: auto
+         Automatic set per-user for optimal performance.
+
+    .. attribute:: full
+
+        The quality is enforced to 720p for all participants.
+
+    .. attribute:: 720p
+        An aliase to :attr:`.full`
+
+
 .. class:: VerificationLevel
 
     Specifies a :class:`Guild`\'s verification level, which is the criteria in
@@ -2533,6 +2548,22 @@ of :class:`enum.Enum`.
     .. attribute:: creation_date
 
         Sort forum posts by creation time (from most recent to oldest)
+
+.. class:: ForumLayout
+
+    Type used to display posts in `ForumChannel` channels.
+
+    .. attribute:: not_set
+
+        No default has been set for forum channel
+
+    .. attribute:: list_view
+
+        Display posts as a list
+
+    .. attribute:: gallery_view
+
+        Display posts as a collection of tiles (grid)
 
 Async Iterator
 ----------------
