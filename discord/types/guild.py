@@ -40,6 +40,7 @@ from .channel import GuildChannel
 from .emoji import BaseEmoji
 from .snowflake import SnowflakeID
 from .sticker import GuildSticker
+from .user import User
 
 __all__ = (
     'PermissionFlags',
@@ -53,6 +54,8 @@ __all__ = (
     'RoleTag',
     'WelcomeScreen',
     'WelcomeScreenChannel',
+    'ScheduledEventEntityMetadata',
+    'ScheduledEvent',
 )
 
 DefaultMessageNotificationLevel = Literal[0, 1]
@@ -154,6 +157,9 @@ PermissionFlags = Literal[
     'use_external_sounds',
     'send_voice_messages'
 ]
+ScheduledEventPrivacyLevel = Literal[2]
+ScheduledEventStatus = Literal[1, 2, 3, 4]
+ScheduledEntityType = Literal[1, 2, 3]
 
 
 
@@ -283,3 +289,27 @@ class GuildWidget(TypedDict):
     channels: List[GuildChannel]
     members: List[GuildWidgetUser]
     presence_count: int
+
+
+class ScheduledEventEntityMetadata(TypedDict, total=False):
+    location: str
+
+
+class ScheduledEvent(TypedDict):
+    id: SnowflakeID
+    guild_id: SnowflakeID
+    name: str
+    channel_id: Optional[SnowflakeID]
+    creator_id: NotRequired[Optional[SnowflakeID]]
+    description: NotRequired[Optional[str]]
+    scheduled_start_time: str
+    scheduled_end_time: Optional[str]
+    privacy_level: ScheduledEventPrivacyLevel
+    status: ScheduledEventStatus
+    entity_type: ScheduledEntityType
+    entity_id: Optional[SnowflakeID]
+    entity_metadata: Optional[ScheduledEventEntityMetadata]
+    creator: NotRequired[User]
+    user_count: NotRequired[int]
+    image: NotRequired[Optional[str]]
+    broadcast_to_directory_channels: NotRequired[bool]
