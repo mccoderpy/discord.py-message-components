@@ -568,12 +568,11 @@ class Guild(Hashable):
         except KeyError:
             pass
 
-        empty_tuple = tuple()
         for presence in data.get('presences', []):
             user_id = int(presence['user']['id'])
             member = self.get_member(user_id)
             if member is not None:
-                member._presence_update(presence, empty_tuple)
+                member._presence_update(presence)
 
         if 'channels' in data:
             channels = data['channels']
@@ -611,6 +610,11 @@ class Guild(Hashable):
     def channels(self) -> List[Union[GuildChannel, ThreadChannel, ForumPost]]:
         """List[:class:`abc.GuildChannel`, :class:`ThreadChannel`, :class:`ForumPost`]: A list of channels that belongs to this guild."""
         return list(self._channels.values())
+
+    @property
+    def server_guide_channels(self) -> List[GuildChannel]:
+        """List[:class:`abc.GuildChannel`]: A list of channels that are part of the servers guide."""
+        return [c for c in self._channels.values() if c.flags.is_resource_channel]
 
     @property
     def events(self) -> List[GuildScheduledEvent]:
@@ -713,7 +717,8 @@ class Guild(Hashable):
     def thread_channels(self) -> List[ThreadChannel]:
         """List[:class:`ThreadChannel`]: A list of **cached** thread channels the guild has.
 
-        This is sorted by the position of the threads :attr:`~discord.ThreadChannel.parent` and are in UI order from top to bottom.
+        This is sorted by the position of the threads :attr:`~discord.ThreadChannel.parent`
+        and are in UI order from top to bottom.
         """
         r = list()
         [r.extend(ch.threads) for ch in self._channels.values() if isinstance(ch, TextChannel)]
@@ -724,7 +729,8 @@ class Guild(Hashable):
     def forum_channels(self) -> List[ForumChannel]:
         """List[:class:`ForumChannel`]: A list of forum channels the guild has.
 
-        This is sorted by the position of the forums :attr:`~discord.ForumChannel.parent` and are in UI order from top to bottom.
+        This is sorted by the position of the forums :attr:`~discord.ForumChannel.parent`
+        and are in UI order from top to bottom.
         """
         r = [ch for ch in self._channels.values() if isinstance(ch, ForumChannel)]
         r.sort(key=lambda f: (f.parent_channel.position, f.id))
@@ -734,11 +740,24 @@ class Guild(Hashable):
     def forum_posts(self) -> List[ForumPost]:
         """List[:class:`ForumPost`]: A list of **cached** forum posts the guild has.
 
-        This is sorted by the position of the forums :attr:`~discord.ForumPost.parent` and are in UI order from top to bottom.
+        This is sorted by the position of the forums :attr:`~discord.ForumPost.parent`
+        and are in UI order from top to bottom.
         """
         r = [ch for ch in self._channels.values() if isinstance(ch, ForumPost)]
         r.sort(key=lambda f: (f.parent_channel.position, f.id))
         return r
+
+    @property
+    def guide_channels(self) -> GuildChannel:
+        """List[:class:`GuildChannel`]: A list of channels that are part of the server guide.
+
+            There is an alias for this called :attr:`~Guild.resource_channels`.
+        """
+        r: List[GuildChannel] = [ch for ch in self._channels.values() if ch.flags.is_resource_channel]
+        r.sort(key=lambda c: (c.position, c.id))
+        return r
+
+    resource_channels = guide_channels
 
     @property
     def categories(self) -> List[CategoryChannel]:
@@ -786,7 +805,9 @@ class Guild(Hashable):
             channels.sort(key=lambda c: (c._sorting_bucket, c.position, c.id))
         return as_list
 
-    def get_channel(self, channel_id: int) -> Optional[Union[CategoryChannel, TextChannel, StageChannel, VoiceChannel, ThreadChannel, ForumPost]]:
+    def get_channel(self, channel_id: int) -> Optional[
+        Union[CategoryChannel, TextChannel, StageChannel, VoiceChannel, ThreadChannel, ForumPost]
+    ]:
         """Returns a channel with the given ID.
 
         Parameters
@@ -815,12 +836,6 @@ class Guild(Hashable):
         """:class:`SystemChannelFlags`: Returns the guild's system channel settings."""
         return SystemChannelFlags._from_value(self._system_channel_flags)
 
-    async def welcome_screen(self) -> Optional[WelcomeScreen]:
-        """Optional[:class:`WelcomeScreen`]: fetches the welcome screen from the guild if any."""
-        data = await self._state.http.get_welcome_screen(guild_id=self.id)
-        if data:
-            self._welcome_screen = WelcomeScreen(state=self._state, guild=self, data=data)
-            return self._welcome_screen
 
     @property
     def rules_channel(self) -> Optional[TextChannel]:
@@ -1257,7 +1272,9 @@ class Guild(Hashable):
             else:
                 default_auto_archive_duration = try_enum(AutoArchiveDuration, default_auto_archive_duration)
                 if not isinstance(default_auto_archive_duration, AutoArchiveDuration):
-                    raise InvalidArgument('%s is not a valid default_auto_archive_duration' % default_auto_archive_duration)
+                    raise InvalidArgument(
+                        f'{default_auto_archive_duration} is not a valid default_auto_archive_duration'
+                    )
                 else:
                     options['default_auto_archive_duration'] = default_auto_archive_duration.value
 
@@ -1268,18 +1285,19 @@ class Guild(Hashable):
 
         parent_id = category.id if category else None
         return self._state.http.create_channel(
-            self.id, channel_type.value, name=name, parent_id=parent_id, permission_overwrites=perms, reason=reason, **options
+            self.id, channel_type.value, name=name, parent_id=parent_id,
+            permission_overwrites=perms, reason=reason, **options
         )
 
     async def create_text_channel(
-            self,
-            name: str,
-            *,
-            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
-            category: Optional[CategoryChannel] = None,
-            reason: Optional[str] = None,
-            **options
-            ):
+        self,
+        name: str,
+        *,
+        overwrites: Optional[Dict[Snowflake, PermissionOverwrite]] = None,
+        category: Optional[CategoryChannel] = None,
+        reason: Optional[str] = None,
+        **options
+    ) -> TextChannel:
         """|coro|
 
         Creates a :class:`TextChannel` for the guild.
@@ -1368,14 +1386,14 @@ class Guild(Hashable):
         return channel
 
     async def create_voice_channel(
-            self,
-            name: str,
-            *,
-            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
-            category: Optional[CategoryChannel] = None,
-            reason: Optional[str] = None,
-            **options
-            ):
+        self,
+        name: str,
+        *,
+        overwrites: Optional[Dict[Snowflake, PermissionOverwrite]] = None,
+        category: Optional[CategoryChannel] = None,
+        reason: Optional[str] = None,
+        **options
+    ) -> VoiceChannel:
         """|coro|
 
         This is similar to :meth:`create_text_channel` except makes a :class:`VoiceChannel` instead, in addition
@@ -1415,15 +1433,15 @@ class Guild(Hashable):
         return channel
 
     async def create_stage_channel(
-            self,
-            name: str,
-            *,
-            topic: Optional[str] = None,
-            category: Optional[CategoryChannel] = None,
-            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
-            reason: Optional[str] = None,
-            position: Optional[int] = None
-            ):
+        self,
+        name: str,
+        *,
+        topic: Optional[str] = None,
+        category: Optional[CategoryChannel] = None,
+        overwrites: Optional[Dict[Snowflake, PermissionOverwrite]] = None,
+        reason: Optional[str] = None,
+        position: Optional[int] = None
+    ) -> StageChannel:
         """|coro|
 
         This is similar to :meth:`create_text_channel` except makes a :class:`StageChannel` instead, in addition
@@ -1471,7 +1489,7 @@ class Guild(Hashable):
             slowmode_delay: Optional[int] = None,
             default_post_slowmode_delay: Optional[int] = None,
             default_auto_archive_duration: Optional[AutoArchiveDuration] = None,
-            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            overwrites: Optional[Dict[Snowflake, PermissionOverwrite]] = None,
             nsfw: Optional[bool] = None,
             category: Optional[CategoryChannel] = None,
             position: Optional[int] = None,
@@ -1550,7 +1568,7 @@ class Guild(Hashable):
             self,
             name: str,
             *,
-            overwrites: Optional[Dict[Union[Member, Role], PermissionOverwrite]] = None,
+            overwrites: Optional[Dict[Snowflake, PermissionOverwrite]] = None,
             reason: Optional[str] = None,
             position: Optional[int] = None
     ) -> CategoryChannel:
@@ -2693,9 +2711,9 @@ class Guild(Hashable):
             self,
             user: Snowflake,
             *,
-            reason: Optional[str] = None,
             delete_message_days: Optional[int] = None,
-            delete_message_seconds: Optional[int] = 0
+            delete_message_seconds: Optional[int] = 0,
+            reason: Optional[str] = None
     ) -> None:
         """|coro|
 
@@ -2718,6 +2736,8 @@ class Guild(Hashable):
         delete_message_seconds: :class:`int`
             The number of days worth of messages to delete from the user
             in the guild. The minimum is 0 and the maximum is 604800 (7 days).
+
+            .. versionadded:: 2.0
         reason: Optional[:class:`str`]
             The reason the user got banned.
 
@@ -3333,6 +3353,7 @@ class Guild(Hashable):
             name_localizations: Optional[Localizations] = Localizations(),
             description: str = 'No description',
             description_localizations: Optional[Localizations] = Localizations(),
+            is_nsfw: bool = False,
             default_required_permissions: Optional['Permissions'] = None,
             options: Optional[List[Union['SubCommandGroup', 'SubCommand', 'SlashCommandOption']]] = [],
             connector: Optional[Dict[str, str]] = {},
@@ -3344,6 +3365,7 @@ class Guild(Hashable):
             name_localizations=name_localizations,
             description=description,
             description_localizations=description_localizations,
+            is_nsfw=is_nsfw,
             default_member_permissions=default_required_permissions,
             options=options,
             connector=connector,
@@ -3360,6 +3382,7 @@ class Guild(Hashable):
             name_localizations: Optional[Localizations] = Localizations(),
             description: str = 'No description',
             description_localizations: Optional[Localizations] = Localizations(),
+            is_nsfw: bool = False,
             default_required_permissions: Optional[Permissions] = None,
             func: Awaitable = default_callback,
             cog: Optional[Cog] = None
@@ -3369,6 +3392,7 @@ class Guild(Hashable):
             name_localizations=name_localizations,
             description=description,
             description_localizations=description_localizations,
+            is_nsfw=is_nsfw,
             default_member_permissions=default_required_permissions,
             func=func,
             guild_id=self.id,
@@ -3383,6 +3407,7 @@ class Guild(Hashable):
             name_localizations: Optional[Localizations] = Localizations(),
             description: str = 'No description',
             description_localizations: Optional[Localizations] = Localizations(),
+            is_nsfw: bool = False,
             default_required_permissions: Optional[Permissions] = None,
             func: Awaitable = default_callback,
             cog: Optional[Cog] = None
@@ -3392,6 +3417,7 @@ class Guild(Hashable):
             name_localizations=name_localizations,
             description=description,
             description_localizations=description_localizations,
+            is_nsfw=is_nsfw,
             default_member_permissions=default_required_permissions,
             func=func,
             guild_id=self.id,
@@ -3399,6 +3425,13 @@ class Guild(Hashable):
             cog=cog
         )
         return await self._register_application_command(command)
+
+    async def welcome_screen(self) -> Optional[WelcomeScreen]:
+        """Optional[:class:`WelcomeScreen`]: fetches the welcome screen from the guild if any."""
+        data = await self._state.http.get_welcome_screen(guild_id=self.id)
+        if data:
+            self._welcome_screen = WelcomeScreen(state=self._state, guild=self, data=data)
+            return self._welcome_screen
 
     async def automod_rules(self) -> List[AutoModRule]:
         """|coro|
