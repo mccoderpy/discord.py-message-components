@@ -77,9 +77,10 @@ if TYPE_CHECKING:
     from .mentions import AllowedMentions
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
-    from .channel import TextChannel, VoiceChannel, StageChannel, TextChannel, ForumChannel, ForumPost
+    from .channel import TextChannel, VoiceChannel, StageChannel, TextChannel, ForumChannel, ForumPost, DMChannel
 
     MentionableChannel = Union[TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost]
+    MessageableChannel = Union[PartialMessageable, TextChannel, VoiceChannel, StageChannel, ThreadChannel, ForumPost, DMChannel]
 
 __all__ = (
     'Attachment',
@@ -682,7 +683,7 @@ class Message(Hashable):
         self.components: List[ActionRow] = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
-        self.channel: Messageable = channel
+        self.channel: MessageableChannel = channel
         interaction = data.get('interaction')
         self.interaction: Optional[MessageInteraction] = MessageInteraction(
             state=state,
@@ -696,7 +697,9 @@ class Message(Hashable):
         self.tts: bool = data['tts']
         self.content: Optional[str] = data['content']
         self.nonce: Optional[str] = data.get('nonce')
-        self.stickers: List[Union[Sticker, GuildSticker]] = [Sticker(data=data, state=state) for data in data.get('sticker_items', [])]
+        self.stickers: List[Union[Sticker, GuildSticker]] = [
+            Sticker(data=data, state=state) for data in data.get('sticker_items', [])
+        ]
 
         try:
             ref = data['message_reference']
@@ -1145,7 +1148,7 @@ class Message(Hashable):
         """Optional[:class:`ThreadChannel`]: The thread that belongs to this message, if there is one"""
         return getattr(self, '_thread', None)
 
-    async def delete(self, *, delay: Optional[float] = None):
+    async def delete(self, *, delay: Optional[float] = None, reason: Optional[str] = None):
         """|coro|
 
         Deletes the message.
@@ -1162,6 +1165,8 @@ class Message(Hashable):
         delay: Optional[:class:`float`]
             If provided, the number of seconds to wait in the background
             before deleting the message. If the deletion fails then it is silently ignored.
+        reason: Optional[:class:`str`]
+            The reason for deleting this message. Shows up on the audit log.
 
         Raises
         ------
@@ -1176,7 +1181,7 @@ class Message(Hashable):
             async def delete():
                 await asyncio.sleep(delay)
                 try:
-                    await self._state.http.delete_message(self.channel.id, self.id)
+                    await self._state.http.delete_message(self.channel.id, self.id, reason=reason)
                 except HTTPException:
                     pass
 
@@ -1723,13 +1728,13 @@ class PartialMessage(Hashable):
         'to_message_reference_dict',
     )
 
-    def __init__(self, *, channel: Union[PartialMessageable, Messageable], id: int) -> None:
+    def __init__(self, *, channel: MessageableChannel, id: int) -> None:
         if not isinstance(channel, PartialMessageable) and int(channel.type) not in {0, 1, 2, 3, 5, 10, 11, 12, 15}:
             raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
-        self.channel: Messageable = channel
+        self.channel: MessageableChannel = channel
         self._state: ConnectionState = channel._state
-        self.id = id
+        self.id: int = id
 
     def _update(self, data):
         # This is used for duck typing purposes.
@@ -1744,12 +1749,12 @@ class PartialMessage(Hashable):
         return '<PartialMessage id={0.id} channel={0.channel!r}>'.format(self)
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime:
         """:class:`datetime.datetime`: The partial message's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
     @utils.cached_slot_property('_cs_guild')
-    def guild(self):
+    def guild(self) -> Optional[Guild]:
         """Optional[:class:`Guild`]: The guild that the partial message belongs to, if applicable."""
         return getattr(self.channel, 'guild', None)
 
