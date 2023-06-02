@@ -1289,7 +1289,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         if slowmode_delay is not MISSING:
             payload['rate_limit_per_user'] = slowmode_delay
 
-        data = await self._state.http.edit_channel(self.id, options=payload, reason=reason)
+        data = await self._state.http.edit_channel(self.id, reason=reason, **payload)
         self._update(self.guild, data)
         return self
 
@@ -2384,7 +2384,7 @@ class ForumPost(ThreadChannel):
         if slowmode_delay is not MISSING:
             payload['rate_limit_per_user'] = slowmode_delay
 
-        data = await self._state.http.edit_channel(self.id, options=payload, reason=reason)
+        data = await self._state.http.edit_channel(self.id, reason=reason, **payload)
         return self._update(self.guild, data)
 
 
