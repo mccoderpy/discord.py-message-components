@@ -59,6 +59,12 @@ __all__ = (
     'ReconnectWebSocket',
 )
 
+# if you want to show your bot as online on mobile, change this to
+# BROWSER = 'discord'
+# DEVICE = 'android'
+BROWSER = 'discord4py'
+DEVICE = 'discord4py'
+
 
 class ReconnectWebSocket(Exception):
     """Signals to safely reconnect the websocket."""
@@ -388,8 +394,8 @@ class DiscordWebSocket:
                 'token': self.token,
                 'properties': {
                     'os': sys.platform,
-                    'browser': 'discord.py-message-components',
-                    'device': 'discord.py-message-components',
+                    'browser': BROWSER,
+                    'device': DEVICE,
                     'referrer': '',
                     'referring_domain': ''
                 },
@@ -550,6 +556,7 @@ class DiscordWebSocket:
             func = self._discord_parsers[event]
         except KeyError:
             log.debug('Unknown event %s.', event)
+            log.info(f'Unknown event %s! Please report this to the library developers!', event)
         else:
             func(data)
 
