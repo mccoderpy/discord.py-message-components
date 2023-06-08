@@ -227,6 +227,12 @@ class AutoModTriggerMetadata:
 
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
+
+    mention_raid_protection_enabled: Optional[:class:`bool`]
+        Whether to automatically detect mention raids
+
+        .. note::
+            This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
     """
     def __init__(
             self,
@@ -234,7 +240,8 @@ class AutoModTriggerMetadata:
             regex_patterns: Optional[List[Union[str, Pattern]]] = None,
             presets: Optional[List[AutoModKeywordPresetType]] = None,
             exempt_words: Optional[List[str]] = None,
-            total_mentions_limit: Optional[int] = None
+            total_mentions_limit: Optional[int] = None,
+            mention_raid_protection_enabled: Optional[bool] = None
     ) -> None:
         """Additional data used to determine whether a rule should be triggered.
         Different fields are relevant based on the value of :attr:`AutoModRule.trigger_type`
@@ -248,11 +255,12 @@ class AutoModTriggerMetadata:
                 This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
 
         regex_patterns: Optional[List[Union[:class:`str`, :class`~re.Pattern`]]]
-            Regular expression patterns which will be matched against content (Maximum of 10, each max. 260 characters long)
+            Regular expression patterns which will be matched against content
+            (Maximum of 10, each max. 260 characters long)
 
             .. warning::
-                Only <Rust `https://docs.rs/regex/latest/regex/`>_ flowered RegEx patterns are currently supported by Discord.
-                So things like lookarounds are not allowed as they are not supported in Rust.
+                Only <Rust `https://docs.rs/regex/latest/regex/`>_ flowered RegEx patterns are currently supported
+                by Discord. So things like lookarounds are not allowed as they are not supported in Rust.
 
             .. note::
                 This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
@@ -261,19 +269,29 @@ class AutoModTriggerMetadata:
             The internally pre-defined word sets which will be searched for in content
 
             .. note::
-                This field is only required if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset`
+                This field is only required if :attr:`~AutoModRule.trigger_type` is
+                :attr:`~AutoModTriggerType.keyword_preset`
 
         exempt_words: Optional[List[:class:`str`]]
             Substrings which should be excluded from the blacklist.
 
             .. note::
-                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword_preset` :attr:`~AutoModTriggerType.keyword`
+                This field is only allowed if :attr:`~AutoModRule.trigger_type` is
+                :attr:`~AutoModTriggerType.keyword_preset` :attr:`~AutoModTriggerType.keyword`
 
         total_mentions_limit: Optional[:class:`int`]
             Total number of unique role and user mentions allowed per message (Maximum of 50)
 
             .. note::
-                This field is only allowed if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.mention_spam`
+                This field is only allowed if :attr:`~AutoModRule.trigger_type`
+                is :attr:`AutoModTriggerType.mention_spam`
+
+        mention_raid_protection_enabled: Optional[:class:`bool`]
+            Whether to automatically detect mention raids
+
+            .. note::
+                This field is only allowed if :attr:`~AutoModRule.trigger_type`
+                is :attr:`AutoModTriggerType.mention_spam`
 
         Raises
         -------
@@ -291,6 +309,7 @@ class AutoModTriggerMetadata:
             raise TypeError('exempt_words can only be used with keyword_filter or preset')
         self.exempt_words: Optional[List[str]] = exempt_words
         self.total_mentions_limit: Optional[int] = total_mentions_limit
+        self.mention_raid_protection_enabled: Optional[bool] = mention_raid_protection_enabled
 
     @property
     def prefix_keywords(self) -> Iterator[str]:
@@ -405,21 +424,22 @@ class AutoModTriggerMetadata:
                 return base
             elif self.total_mentions_limit:
                 return {
-                    'mention_total_limit': self.total_mentions_limit
+                    'mention_total_limit': self.total_mentions_limit,
+                    'mention_raid_protection_enabled': self.mention_raid_protection_enabled
                 }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Self:
         self = cls.__new__(cls)
-        presets = data.get('presets', None)
+        self.presets = presets = data.get('presets')
         if presets:
-            self.presets = data['presets']
             self.exempt_words = data.get('allow_list', [])
         else:
-            self.keyword_filter = data.get('keyword_filter', None)
-            self.regex_patterns = data.get('regex_patterns', None)
-            self.exempt_words = data.get('allow_list', None)
-        self.total_mentions_limit = data.get('mention_total_limit', None)
+            self.keyword_filter = data.get('keyword_filter')
+            self.regex_patterns = data.get('regex_patterns')
+            self.exempt_words = data.get('allow_list')
+        self.total_mentions_limit = data.get('mention_total_limit')
+        self.mention_raid_protection_enabled = data.get('mention_raid_protection_enabled')
         return self
 
 

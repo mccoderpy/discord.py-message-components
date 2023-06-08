@@ -45,6 +45,9 @@ from typing_extensions import Literal
 
 if TYPE_CHECKING:
     from os import PathLike
+    from .types.guild import (
+        Guild as GuildData,
+    )
     from .state import ConnectionState
     from .abc import Snowflake, GuildChannel
     from .ext.commands import Cog
@@ -368,8 +371,9 @@ class Guild(Hashable):
                  'description', 'max_presences', 'max_members', 'max_video_channel_users',
                  'premium_tier', 'premium_subscription_count', '_system_channel_flags',
                  'preferred_locale', 'discovery_splash', '_rules_channel_id',
-                 '_public_updates_channel_id', 'premium_progress_bar_enabled',
-                 '_welcome_screen', 'stickers', '_automod_rules')
+                 '_public_updates_channel_id', '_safety_alerts_channel_id',
+                 'premium_progress_bar_enabled', '_welcome_screen',
+                 'stickers', '_automod_rules')
 
     _PREMIUM_GUILD_LIMITS = {
         None: _GuildLimit(emoji=50, sticker=5, bitrate=96e3, filesize=8388608),
@@ -499,7 +503,7 @@ class Guild(Hashable):
 
         return role
 
-    def _from_data(self, guild):
+    def _from_data(self, guild: GuildData) -> None:
         # according to Stan, this is always available even if the guild is unavailable
         # I don't have this guarantee when someone updates the guild.
         member_count = guild.get('member_count', None)
@@ -539,6 +543,7 @@ class Guild(Hashable):
         self.discovery_splash = guild.get('discovery_splash')
         self._rules_channel_id = utils._get_as_snowflake(guild, 'rules_channel_id')
         self._public_updates_channel_id = utils._get_as_snowflake(guild, 'public_updates_channel_id')
+        self._safety_alerts_channel_id = utils._get_as_snowflake(guild, 'safety_alerts_channel_id')
         self.premium_progress_bar_enabled: bool = guild.get('premium_progress_bar_enabled')
         cache_online_members = self._state.member_cache_flags.online
         cache_joined = self._state.member_cache_flags.joined
@@ -857,9 +862,21 @@ class Guild(Hashable):
 
         If no channel is set, then this returns ``None``.
 
-        .. versionadded:: 1.4
+        .. versionadded:: 2.0
         """
         channel_id = self._public_updates_channel_id
+        return channel_id and self._channels.get(channel_id)
+
+    @property
+    def safety_alerts_channel(self) -> Optional[TextChannel]:
+        """Optional[:class:`TextChannel`]: Return's the guild's channel where Discord
+        sends safety alerts in. The guild must be a Community guild.
+
+        If no channel is set, then this returns ``None``.
+
+        .. versionadded:: 2.0
+        """
+        channel_id = self._safety_alerts_channel_id
         return channel_id and self._channels.get(channel_id)
 
     @property
