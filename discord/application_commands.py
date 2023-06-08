@@ -59,6 +59,7 @@ from .enums import (
     try_enum
 )
 from .permissions import Permissions
+from .abc import GuildChannel
 
 if TYPE_CHECKING:
     from datetime import datetime

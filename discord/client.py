@@ -66,7 +66,7 @@ from .errors import *
 from .enums import Status, VoiceRegion
 from .gateway import *
 from .activity import BaseActivity, create_activity
-from .voice_client import VoiceClient
+from .voice_client import VoiceRegionInfo, VoiceClient
 from .http import HTTPClient
 from .state import ConnectionState
 from . import utils
@@ -2805,3 +2805,22 @@ class Client:
         data = await self.http.get_all_nitro_stickers()
         packs = [StickerPack(state=self._connection, data=d) for d in data['sticker_packs']]
         return packs
+
+    async def fetch_voice_regions(self) -> List[VoiceRegionInfo]:
+        """|coro|
+
+        Returns a list of :class:`.VoiceRegionInfo` that can be used when creating or editing a
+        :attr:`VoiceChannel` or :attr:`StageChannel`\'s region.
+
+        .. note::
+
+            This method is an API call.
+            For general usage, consider using the :class:`VoiceRegion` enum instead.
+
+        Returns
+        --------
+        List[:class:`.VoiceRegionInfo`]
+            The voice regions that can be used.
+        """
+        data = await self.http.get_voice_regions()
+        return [VoiceRegionInfo(data=d) for d in data]

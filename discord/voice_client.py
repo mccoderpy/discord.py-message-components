@@ -25,6 +25,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 """Some documentation to refer to:
 
@@ -58,6 +59,11 @@ from typing import (
     Tuple
 )
 
+if TYPE_CHECKING:
+    from .types.voice import (
+        VoiceRegion as VoiceRegionData,
+    )
+
 from . import opus, utils
 from .backoff import ExponentialBackoff
 from .gateway import *
@@ -72,6 +78,84 @@ except ImportError:
     has_nacl = False
 
 log = logging.getLogger(__name__)
+
+__all__ = (
+    'VoiceRegionInfo',
+    'VoiceClient',
+    'VoiceProtocol',
+)
+
+
+class VoiceRegionInfo:
+    """A class containing info about a specific voice region.
+
+    These can be retrieved via :meth:`~discord.Client.fetch_voice_regions`.
+
+    .. versionadded:: 2.0
+
+    Attributes
+    ------------
+    id: :class:`str`
+        The unique ID of the region.
+    name: :class:`str`
+        The name of the region.
+    vip: :class:`bool`
+        Indicates if this is a VIP-only server.
+    optimal: :class:`bool`
+    	``True`` for a single server that is closest to the current user's client
+    deprecated: :class:`bool`
+        Indicates if this is a deprecated voice region (avoid switching to these).
+    custom: :class:`bool`
+        Indicates if this is a custom voice region (used for events/etc).
+
+    .. container:: operations
+
+        .. describe:: x == y
+            Whether two voice regions are equal.
+        .. describe:: x != y
+            Whether two voice regions are not equal.
+        .. describe:: x > y
+            Whether a voice region is optimal over another.
+        .. describe:: x < y
+            Whether a voice region is not optimal over another.
+        .. describe:: str(x)
+            Returns the id of the region.
+        .. describe:: repr(x)
+            Returns a representation of the region.
+        ..
+    """
+    def __init__(self, *, data: VoiceRegionData) -> None:
+        self.id: str = data['id']
+        self.name: str = data['name']
+        self.vip: bool = data['vip']
+        self.optimal: bool = data['optimal']
+        self.deprecated: bool = data['deprecated']
+        self.custom: bool = data['custom']
+
+    def __repr__(self) -> str:
+        return f'<VoiceRegion id={self.id} name={self.name!r} vip={self.vip} optimal={self.optimal}' \
+               f' deprecated={self.deprecated} custom={self.custom}>'
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, VoiceRegionInfo) and other.id == self.id
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
+
+    def __gt__(self, other: Any) -> bool:
+        return isinstance(other, VoiceRegionInfo) and self.optimal and not other.optimal
+
+    def __ge__(self, other: Any) -> bool:
+        return isinstance(other, VoiceRegionInfo) and self.optimal and not other.optimal
+
+    def __lt__(self, other: Any) -> bool:
+        return isinstance(other, VoiceRegionInfo) and not self.optimal and other.optimal
+
+    def __le__(self, other: Any) -> bool:
+        return isinstance(other, VoiceRegionInfo) and not self.optimal and other.optimal
+
+    def __str__(self) -> str:
+        return self.id
 
 
 class VoiceProtocol:

@@ -25,6 +25,8 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+import io
+
 from typing import (
     BinaryIO,
     Optional,
@@ -52,8 +54,6 @@ if TYPE_CHECKING:
     
     HAS_HTTP_CONNECTION = Union[ConnectionState, OAuth2Client]
 
-
-import io
 
 from .errors import DiscordException, InvalidArgument
 from . import utils

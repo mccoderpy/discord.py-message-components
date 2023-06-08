@@ -1462,6 +1462,9 @@ of :class:`enum.Enum`.
 
     Specifies the region a voice server belongs to.
 
+    .. note::
+        If you wan\'t to fetch all currently available voice regions, consider using :meth:`Client.fetch_voice_regions`.
+
     .. attribute:: amsterdam
 
         The Amsterdam region.
@@ -3682,6 +3685,14 @@ Sticker
     :inherited-members:
     :members:
     :exclude-members: pack, pack_id, sort_value
+
+VoiceRegionInfo
+~~~~~~~~~~~~~~~~
+
+.. attributetable:: VoiceRegionInfo
+
+.. autoclass:: VoiceRegionInfo()
+    :members:
 
 RawMessageDeleteEvent
 ~~~~~~~~~~~~~~~~~~~~~~~

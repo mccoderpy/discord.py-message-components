@@ -57,7 +57,7 @@ from .shard import AutoShardedClient, ShardInfo
 from .player import *
 from .webhook import *
 from .welcome_screen import *
-from .voice_client import VoiceClient, VoiceProtocol
+from .voice_client import *
 from .sink import *
 from .audit_logs import AuditLogChanges, AuditLogEntry, AuditLogDiff
 from .raw_models import *
@@ -67,6 +67,7 @@ from .scheduled_event import GuildScheduledEvent
 from .automod import *
 
 MISSING = utils.MISSING
+Mentionable = abc.Mentionable
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
