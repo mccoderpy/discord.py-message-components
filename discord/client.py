@@ -322,7 +322,7 @@ class Client:
         proxy_auth = options.pop('proxy_auth', None)
         unsync_clock = options.pop('assume_unsync_clock', True)
         self.gateway_version: int = options.get('gateway_version', 10)
-        self.api_error_locale: Locale = options.pop('api_error_locale', None)
+        self.api_error_locale: Locale = options.pop('api_error_locale', 'en-US')
         self.auto_check_for_updates: bool = options.pop('auto_check_for_updates', False)
         self.http = HTTPClient(
             connector,
@@ -1243,7 +1243,7 @@ class Client:
             *,
             check: Optional[Callable[[Any, ...], bool]] = None,
             timeout: Optional[float] = None
-    ) -> Optional[Tuple[Coro, ...]]:
+    ) -> Coroutine[Any, Any, Any]:
         """|coro|
 
         Waits for a WebSocket event to be dispatched.
@@ -2793,7 +2793,8 @@ class Client:
         return Webhook.from_state(data, state=self._connection)
 
     async def fetch_all_nitro_stickers(self) -> List[StickerPack]:
-        """
+        """|coro|
+
         Retrieves a :class:`list` with all build-in :class:`~discord.StickerPack` 's.
 
         Returns
