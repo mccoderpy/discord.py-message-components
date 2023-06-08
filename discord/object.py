@@ -27,12 +27,14 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
+    Any,
     Type,
     Optional,
     TYPE_CHECKING
 )
 
 if TYPE_CHECKING:
+    from .abc import Snowflake
     from datetime import datetime
     from .state import ConnectionState
 
@@ -41,7 +43,12 @@ from .types.snowflake import SnowflakeID
 
 from . import utils
 from .mixins import Hashable
+
 MISSING = utils.MISSING
+
+__all__ = (
+    'Object',
+)
 
 
 class Object(Hashable):
@@ -79,11 +86,12 @@ class Object(Hashable):
     type: :class:`object`
         The object this should represent if any.
     """
+    id: int
 
     def __init__(
             self,
             id: SnowflakeID,
-            type: Type = utils.MISSING,
+            type: Type = MISSING,
             *,
             state: Optional[ConnectionState] = MISSING
     ):
@@ -98,7 +106,7 @@ class Object(Hashable):
     def __repr__(self) -> str:
         return f'<Object id={self.id!r} type={self.type!r}>'
     
-    def __instancecheck__(self, other) -> bool:
+    def __instancecheck__(self, other: Any) -> bool:
         if self.type is not MISSING:
             return self.type == type(other)
         return self.__class__ == type(other)
@@ -107,3 +115,8 @@ class Object(Hashable):
     def created_at(self) -> datetime:
         """:class:`datetime.datetime`: Returns the snowflake's creation time in UTC."""
         return utils.snowflake_time(self.id)
+
+
+if TYPE_CHECKING:
+    class Object(Snowflake, Object):
+        pass
