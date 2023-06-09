@@ -642,21 +642,22 @@ class ConnectionState:
                 self.dispatch('thread_create', thread)
 
     def parse_thread_update(self, data):
-        guild = self._get_guild(int(data['guild_id']))
-        thread = guild.get_channel(int(data['id']))
-        if not thread:
-            thread = ThreadChannel(state=self, guild=guild, data=data)
-            if isinstance(thread.parent_channel, ForumChannel):
-                post = ForumPost(state=self, guild=guild, data=data)
-                guild._add_post(post)
+        guild_id = int(data['guild_id'])
+        guild = self._get_guild(guild_id)
+        if guild is not None:
+            thread_id = int(data['id'])
+            thread = guild.get_channel(thread_id)
+            if thread is not None:
+                old_thread = copy.copy(thread)
+                thread._update(guild, data)
+                if isinstance(thread.parent_channel, ForumChannel):
+                    self.dispatch('post_update', old_thread, thread)
+                else:
+                    self.dispatch('thread_update', old_thread, thread)
             else:
-                guild._add_thread(thread)
-        old_thread = copy.copy(thread)
-        thread._update(guild, data)
-        if isinstance(thread.parent_channel, ForumChannel):
-            self.dispatch('post_update', old_thread, thread)
+                log.debug('THREAD_UPDATE referencing an unknown channel ID: %s. Discarding.', thread_id)
         else:
-            self.dispatch('thread_update', old_thread, thread)
+            log.debug('THREAD_UPDATE referencing an unknown guild ID: %s. Discarding.', guild_id)
 
     def parse_thread_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
