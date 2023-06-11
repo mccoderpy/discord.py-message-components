@@ -23,8 +23,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+
+from typing import Optional, List, TYPE_CHECKING
+from typing_extensions import Literal
 
 from .asset import Asset
 from .welcome_screen import WelcomeScreen
@@ -34,6 +37,8 @@ from .mixins import Hashable
 from .enums import ChannelType, VerificationLevel, try_enum
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from .state import ConnectionState
     from .scheduled_event import GuildScheduledEvent
 
@@ -88,7 +93,7 @@ class PartialInviteChannel:
     @property
     def mention(self):
         """:class:`str`: The string that allows you to mention the channel."""
-        return '<#%s>' % self.id
+        return f'<#{self.id}>'
 
     @property
     def created_at(self):
@@ -142,47 +147,54 @@ class PartialInviteGuild:
     __slots__ = ('_state', 'features', 'icon', 'banner', 'id', 'name', 'splash',
                  'verification_level', 'description', 'welcome_screen')
 
-    def __init__(self, state: 'ConnectionState', data, id):
-        self._state = state
-        self.id = id
-        self.name = data['name']
-        self.features = data.get('features', [])
-        self.icon = data.get('icon')
-        self.banner = data.get('banner')
-        self.splash = data.get('splash')
-        self.verification_level = try_enum(VerificationLevel, data.get('verification_level'))
-        self.description = data.get('description')
+    def __init__(self, state: ConnectionState, data, id):
+        self._state: ConnectionState = state
+        self.id: int = id
+        self.name: str = data['name']
+        self.features: List[str] = data.get('features', [])
+        self.icon: Optional[str] = data.get('icon')
+        self.banner: Optional[str] = data.get('banner')
+        self.splash: Optional[str] = data.get('splash')
+        self.verification_level: VerificationLevel = try_enum(VerificationLevel, data.get('verification_level'))
+        self.description: Optional[str] = data.get('description')
+        self.welcome_screen: Optional[WelcomeScreen]
         welcome_screen = data.get('welcome_screen', None)
         if welcome_screen:
             self.welcome_screen = WelcomeScreen(state=state, guild=self._state._get_guild(self.id) or self, data=welcome_screen)
         else:
             self.welcome_screen = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<{0.__class__.__name__} id={0.id} name={0.name!r} features={0.features} ' \
                'description={0.description!r}>'.format(self)
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime:
         """:class:`datetime.datetime`: Returns the guild's creation time in UTC."""
         return snowflake_time(self.id)
 
     @property
-    def icon_url(self):
+    def icon_url(self) -> Asset:
         """:class:`Asset`: Returns the guild's icon asset."""
         return self.icon_url_as()
 
-    def is_icon_animated(self):
+    def is_icon_animated(self) -> bool:
         """:class:`bool`: Returns ``True`` if the guild has an animated icon.
 
         .. versionadded:: 1.4
         """
         return bool(self.icon and self.icon.startswith('a_'))
 
-    def icon_url_as(self, *, format=None, static_format='webp', size=1024):
+    def icon_url_as(
+            self,
+            *,
+            format: Literal['webp', 'jpeg', 'jpg', 'png', 'gif'] = None,
+            static_format: Literal['webp', 'jpeg', 'jpg', 'png'] = 'webp',
+            size: int =1024
+    ) -> Asset:
         """The same operation as :meth:`Guild.icon_url_as`.
 
         Returns
@@ -193,11 +205,16 @@ class PartialInviteGuild:
         return Asset._from_guild_icon(self._state, self, format=format, static_format=static_format, size=size)
 
     @property
-    def banner_url(self):
+    def banner_url(self) -> Asset:
         """:class:`Asset`: Returns the guild's banner asset."""
         return self.banner_url_as()
 
-    def banner_url_as(self, *, format='webp', size=2048):
+    def banner_url_as(
+            self,
+            *,
+            format: Literal['webp', 'jpeg', 'jpg', 'png'] = 'webp',
+            size: int = 2048
+    ) -> Asset:
         """The same operation as :meth:`Guild.banner_url_as`.
 
         Returns
@@ -208,11 +225,16 @@ class PartialInviteGuild:
         return Asset._from_guild_image(self._state, self.id, self.banner, 'banners', format=format, size=size)
 
     @property
-    def splash_url(self):
+    def splash_url(self) -> Asset:
         """:class:`Asset`: Returns the guild's invite splash asset."""
         return self.splash_url_as()
 
-    def splash_url_as(self, *, format='webp', size=2048):
+    def splash_url_as(
+            self,
+            *,
+            format: Literal['webp', 'jpeg', 'jpg', 'png'] = 'webp',
+            size: int = 2048
+    ) -> Asset:
         """The same operation as :meth:`Guild.splash_url_as`.
 
         Returns
@@ -221,6 +243,7 @@ class PartialInviteGuild:
             The resulting CDN asset.
         """
         return Asset._from_guild_image(self._state, self.id, self.splash, 'splashes', format=format, size=size)
+
 
 class Invite(Hashable):
     r"""Represents a Discord :class:`Guild` or :class:`abc.GuildChannel` invite.
@@ -265,6 +288,8 @@ class Invite(Hashable):
     +------------------------------------+----------------------------------------------------------+
     | :attr:`approximate_presence_count` | :meth:`Client.fetch_invite`                              |
     +------------------------------------+----------------------------------------------------------+
+    | :attr:`scheduled_event`            | :meth:`Client.fetch_invite`                              |
+    +------------------------------------+----------------------------------------------------------+
 
     If it's not in the table above then it is available by all methods.
 
@@ -296,6 +321,8 @@ class Invite(Hashable):
     approximate_presence_count: Optional[:class:`int`]
         The approximate number of members currently active in the guild.
         This includes idle, dnd, online, and invisible members. Offline members are excluded.
+    scheduled_event: Optional[:class:`GuildScheduledEvent`]
+        The scheduled event attached to this invite link, if any.
     channel: Union[:class:`abc.GuildChannel`, :class:`Object`, :class:`PartialInviteChannel`]
         The channel the invite is for.
     """
@@ -303,34 +330,35 @@ class Invite(Hashable):
     __slots__ = ('max_age', 'code', 'guild', 'revoked', 'created_at', 'uses',
                  'temporary', 'max_uses', 'inviter', 'channel', '_state',
                  'approximate_member_count', 'approximate_presence_count',
-                 'event')
+                 'scheduled_event')
 
     BASE = 'https://discord.gg'
 
-    def __init__(self, *, state: 'ConnectionState', data):
+    def __init__(self, *, state: ConnectionState, data) -> None:
         self._state = state
         self.max_age = data.get('max_age')
         self.code = data.get('code')
         self.guild = data.get('guild')
-        self.revoked = data.get('revoked')
-        self.created_at = parse_time(data.get('created_at'))
-        self.temporary = data.get('temporary')
-        self.uses = data.get('uses')
-        self.max_uses = data.get('max_uses')
-        self.approximate_presence_count = data.get('approximate_presence_count')
-        self.approximate_member_count = data.get('approximate_member_count')
+        self.revoked: Optional[bool] = data.get('revoked')
+        self.created_at: datetime = parse_time(data.get('created_at'))
+        self.temporary: Optional[bool] = data.get('temporary')
+        self.uses: Optional[int] = data.get('uses')
+        self.max_uses: Optional[int] = data.get('max_uses')
+        self.approximate_presence_count: Optional[int] = data.get('approximate_presence_count')
+        self.approximate_member_count: Optional[int] = data.get('approximate_member_count')
 
         inviter_data = data.get('inviter')
         self.inviter = None if inviter_data is None else self._state.store_user(inviter_data)
         self.channel = data.get('channel')
+        self.scheduled_event: Optional[GuildScheduledEvent]
         guild_scheduled_event = data.get('guild_scheduled_event', None)
         if guild_scheduled_event is not None:
-            self.event: Optional['GuildScheduledEvent'] = state.store_event(guild=self.guild, data=guild_scheduled_event)
+            self.scheduled_event = state.store_event(guild=self.guild, data=guild_scheduled_event)
         else:
-            self.event = None
+            self.scheduled_event = None
 
     @classmethod
-    def from_incomplete(cls, *, state, data):
+    def from_incomplete(cls, *, state: ConnectionState, data) -> Invite:
         try:
             guild_id = int(data['guild']['id'])
         except KeyError:
@@ -358,7 +386,7 @@ class Invite(Hashable):
         return cls(state=state, data=data)
 
     @classmethod
-    def from_gateway(cls, *, state, data):
+    def from_gateway(cls, *, state: ConnectionState, data) -> Invite:
         guild_id = _get_as_snowflake(data, 'guild_id')
         guild = state._get_guild(guild_id)
         channel_id = _get_as_snowflake(data, 'channel_id')
@@ -372,28 +400,29 @@ class Invite(Hashable):
         data['channel'] = channel
         return cls(state=state, data=data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.url
 
-    def __repr__(self):
-        return '<Invite code={0.code!r} guild={0.guild!r} ' \
-                'online={0.approximate_presence_count} ' \
-                'members={0.approximate_member_count}>'.format(self)
+    def __repr__(self) -> str:
+        return f'<Invite code={self.code!r} guild={self.guild!r} ' \
+               f'online={self.approximate_presence_count} ' \
+               f'members={self.approximate_member_count} ' \
+               f'scheduled_event={self.scheduled_event}>'
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.code)
 
     @property
-    def id(self):
+    def id(self) -> str:
         """:class:`str`: Returns the proper code portion of the invite."""
         return self.code
 
     @property
     def url(self):
         """:class:`str`: A property that retrieves the invite URL."""
-        return self.BASE + '/' + self.code
+        return f"{self.BASE}/{self.code}{f'?event={self.scheduled_event.id}' if self.scheduled_event else ''}"
 
-    async def delete(self, *, reason=None):
+    async def delete(self, *, reason: Optional[str] = None) -> None:
         """|coro|
 
         Revokes the instant invite.
@@ -416,3 +445,22 @@ class Invite(Hashable):
         """
 
         await self._state.http.delete_invite(self.code, reason=reason)
+
+    def set_scheduled_event(self, event: GuildScheduledEvent) -> None:
+        """Links the given scheduled event to this invite.
+
+        .. note::
+
+            Scheduled events aren't actually associated with invites on the API.
+            Any guild channel invite can have an event attached to it. Using
+            :meth:`abc.GuildChannel.create_invite`, :meth:`Client.fetch_invite`,
+            or this method, you can link scheduled events.
+
+        .. versionadded:: 2.0
+
+        Parameters
+        ----------
+        event: :class:`ScheduledEvent`
+            The scheduled event object to link.
+        """
+        self.scheduled_event = event

@@ -964,7 +964,6 @@ class GuildChannel:
     async def create_invite(
             self,
             *,
-            reason: Optional[str] = None,
             max_age: int = 0,
             max_uses: int = 0,
             temporary: bool = False,
@@ -972,7 +971,8 @@ class GuildChannel:
             target_event: Optional[GuildScheduledEvent] = None,
             target_type: Optional[InviteTargetType] = None,
             target_user: Optional[User] = None,
-            target_application_id: Optional[int] = None
+            target_application_id: Optional[int] = None,
+            reason: Optional[str] = None,
     ) -> Invite:
         """|coro|
 

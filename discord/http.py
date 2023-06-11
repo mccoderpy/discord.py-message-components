@@ -86,9 +86,9 @@ class MultipartParameters:
             multipart: Optional[List[Dict[str, Any]]] = None,
             files: Optional[Sequence[File]] = None
     ):
-        self.payload = payload
-        self.multipart = multipart
-        self.files = files
+        self.payload: Optional[Dict[str, Any]] = payload
+        self.multipart: Optional[List[Dict[str, Any]]] = multipart
+        self.files: Optional[Sequence[File]] = files
 
     def __enter__(self):
         return self
@@ -1702,7 +1702,7 @@ class HTTPClient:
     # Misc
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
-
+    
     async def get_gateway(self, *, encoding='json', v=10, zlib=True):
         try:
             data = await self.request(Route('GET', '/gateway'))
@@ -1726,11 +1726,15 @@ class HTTPClient:
             value = '{0}?encoding={1}&v={2}'
         return data['shards'], value.format(data['url'], encoding, v)
 
-    def get_user(self, user_id):
+    def get_voice_regions(self):
+        return self.request(Route('GET', '/voice/regions'))
+
+    def get_user(self, user_id: int):
         return self.request(Route('GET', '/users/{user_id}', user_id=user_id))
 
-    def get_user_profile(self, user_id):
+    def get_user_profile(self, user_id: int):
         return self.request(Route('GET', '/users/{user_id}/profile', user_id=user_id))
 
     def get_all_nitro_stickers(self):
         return self.request(Route('GET', '/sticker-packs'))
+    
