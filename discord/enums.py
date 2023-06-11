@@ -777,6 +777,7 @@ class DefaultAvatar(Enum):
     green   = 2
     orange  = 3
     red     = 4
+    pink    = 5
 
     def __str__(self):
         return self.name

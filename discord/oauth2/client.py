@@ -434,12 +434,14 @@ class OAuth2Client:
             data = await self.http.exchange_refresh_token(access_token.refresh_token)
         except HTTPException as e:
             if e.status == 400:
-                raise InvalidRefreshToken()
+                raise InvalidRefreshToken() from e
             raise
         
         old_access_token = copy(access_token)
         access_token._update(data)
+
         await self.access_token_store.store_refreshed_access_token(old_access_token, access_token)
+
         return access_token
     
     async def revoke_access_token(self, access_token: AccessToken, /) -> None:
@@ -760,7 +762,7 @@ class OAuth2Client:
         if raw:
             return data
         
-        return GuildMember(client=self, data=data)
+        return GuildMember(client=self, data=data) if data else None
     
     @overload
     async def fetch_connections(self, access_token: AccessToken, /) -> List[Connection]: ...

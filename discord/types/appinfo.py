@@ -34,7 +34,7 @@ from typing_extensions import (
 )
 
 from .snowflake import SnowflakeID
-from .user import BaseUser
+from .user import User
 
 __all__ = (
     'TeamMember',
@@ -49,7 +49,7 @@ class TeamMember(TypedDict):
     membership_state: int
     permissions: List[str]
     team_id: SnowflakeID
-    user: BaseUser
+    user: User
 
 
 class Team(TypedDict):
@@ -88,7 +88,7 @@ class AppInfo(PartialAppInfo):
     rpc_origins: NotRequired[List[str]]
     terms_of_service_url: NotRequired[str]
     privacy_policy_url: NotRequired[str]
-    owner: NotRequired[BaseUser]
+    owner: NotRequired[User]
     team: Optional[Team]
     guild_id: NotRequired[SnowflakeID]
     primary_sku_id: NotRequired[SnowflakeID]

@@ -1314,7 +1314,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         if slowmode_delay is not MISSING:
             payload['rate_limit_per_user'] = slowmode_delay
 
-        data = await self._state.http.edit_channel(self.id, options=payload, reason=reason)
+        data = await self._state.http.edit_channel(self.id, reason=reason, **payload)
         self._update(self.guild, data)
         return self
 
@@ -1322,7 +1322,8 @@ class ThreadChannel(abc.Messageable, Hashable):
 class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
     __slots__ = ('name', 'id', 'guild', 'bitrate', 'user_limit',
                  '_state', 'position', '_overwrites', 'category_id',
-                 'rtc_region', 'slowmode_delay', 'last_message_id',)
+                 'rtc_region', 'slowmode_delay', 'last_message_id',
+                 'nsfw', 'video_quality_mode')
 
     if TYPE_CHECKING:
         guild: Guild
@@ -2683,7 +2684,7 @@ class ForumPost(ThreadChannel):
         The ID of the post
     """
     def __init__(self, *, state, guild, data: dict) -> None:
-        super().__init__(state=self._state, guild=self.guild, data=data)
+        super().__init__(state=state, guild=guild, data=data)
         self._state: ConnectionState = state
         self._applied_tags: utils.SnowflakeList = utils.SnowflakeList(map(int, data.get("applied_tags",[])))
 
@@ -2797,7 +2798,7 @@ class ForumPost(ThreadChannel):
         if slowmode_delay is not MISSING:
             payload['rate_limit_per_user'] = slowmode_delay
 
-        data = await self._state.http.edit_channel(self.id, options=payload, reason=reason)
+        data = await self._state.http.edit_channel(self.id, reason=reason, **payload)
         return self._update(self.guild, data)
 
 

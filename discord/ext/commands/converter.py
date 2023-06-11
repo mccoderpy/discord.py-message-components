@@ -122,8 +122,9 @@ class MemberConverter(IDConverter):
     1. Lookup by ID.
     2. Lookup by mention.
     3. Lookup by name#discrim
-    4. Lookup by name
-    5. Lookup by nickname
+    4. Lookup by display name (global_name)
+    5. Lookup by username
+    6. Lookup by nickname
 
     .. versionchanged:: 1.5
          Raise :exc:`.MemberNotFound` instead of generic :exc:`.BadArgument`
@@ -207,13 +208,14 @@ class UserConverter(IDConverter):
     1. Lookup by ID.
     2. Lookup by mention.
     3. Lookup by name#discrim
-    4. Lookup by name
+    4. Lookup by display name (global_name)
+    5. Lookup by username
 
     .. versionchanged:: 1.5
          Raise :exc:`.UserNotFound` instead of generic :exc:`.BadArgument`
 
     .. versionchanged:: 1.6
-        This converter now lazily fetches users from the HTTP APIs if an ID is passed
+        This converter now lazily fetches users from the HTTP APIs if an ID is passed,
         and it's not available in cache.
     """
     async def convert(self, ctx, argument):
@@ -248,7 +250,7 @@ class UserConverter(IDConverter):
             if result is not None:
                 return result
 
-        predicate = lambda u: u.name == arg
+        predicate = lambda u: u.global_name == arg or  u.username == arg
         result = discord.utils.find(predicate, state._users.values())
 
         if result is None:

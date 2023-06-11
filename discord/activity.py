@@ -100,6 +100,9 @@ t.ActivityFlags = {
     JOIN_REQUEST: 8,
     SYNC: 16,
     PLAY: 32
+    PARTY_PRIVACY_FRIENDS: 64
+    PARTY_PRIVACY_VOICE_CHANNEL: 128
+    EMBEDDED: 256
 }
 """
 

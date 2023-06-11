@@ -34,6 +34,7 @@ from typing import (
     Set,
     Union,
     List,
+    Type,
     TYPE_CHECKING,
     TypeVar
 )
@@ -42,10 +43,14 @@ from typing_extensions import (
     Literal
 )
 
-from ..abc import User as _BaseUser
+from datetime import (
+    datetime,
+    timedelta,
+    timezone
+)
+
 from ..mixins import Hashable
 from ..asset import Asset
-from ..colour import Colour
 from ..enums import Locale, DefaultAvatar, PremiumType, IntegrationType, try_enum
 from ..flags import ApplicationFlags, PublicUserFlags, GuildMemberFlags
 from ..utils import (
@@ -56,7 +61,8 @@ from ..utils import (
     SupportsStr,
     MISSING
 )
-from ..user import BaseUser
+from ..user import BaseUser, _BaseUser
+from ..member import flatten_user
 from ..permissions import Permissions
 from ..webhook import Webhook
 
@@ -65,25 +71,21 @@ from .errors import (
     AccessTokenNotRefreshable
 )
 
-from datetime import (
-    datetime,
-    timedelta,
-    timezone
-)
-
 if TYPE_CHECKING:
-    from .client import OAuth2Client
-    from . import types
     from ..types import (
         user,
         guild,
         appinfo
     )
     from ..types.snowflake import SnowflakeID
-   
-    T = TypeVar('T')
-    DatetimeLike = Union[int, str, datetime]
-    
+    from .client import OAuth2Client
+    from . import types
+
+
+T = TypeVar('T')
+DatetimeLike = Union[int, str, datetime]
+
+
 __all__ = (
     'AccessToken',
     'AccessTokenInfo',
@@ -392,10 +394,10 @@ class AccessToken:
         ------
         AttributeError
             The client attribute is not set
-        
         :exc:`AccessTokenNotRefreshable`:
             The access token is not refreshable
-        
+        :exc:`InvalidRefreshToken`
+            The refresh token is invalid or has expired
         
         Returns
         -------
@@ -411,21 +413,15 @@ class AccessToken:
         client = self.client
         if not client:
             raise AttributeError('client attribute is not set so you can\'t call this from the access token directly')
-        await self._client.refresh_access_token(self)
-        return self
+
+        return await self._client.refresh_access_token(self)
     
     async def revoke(self) -> None:
         """|coro|
         
         Revokes the access token.
         
-        .. note::
-            This is only available when :attr:`.client` is set
-        
-        Raises
-        ------
-        AttributeError:
-            The client attribute is not set
+        For more details, see :meth:`.OAuth2Client.revoke_access_token`.
         """
         
         client = self.client
@@ -433,27 +429,28 @@ class AccessToken:
             raise AttributeError('client attribute is not set so you can\'t call this from the access token directly')
         
         await self._client.revoke_access_token(self)
-        
-    async def fetch_info(self):
+
+    @overload
+    async def fetch_info(self) -> AccessTokenInfo: ...
+
+    @overload
+    async def fetch_info(self, *, raw: Literal[False]) -> AccessTokenInfo: ...
+
+    @overload
+    async def fetch_info(self, *, raw: Literal[True]) -> types.CurrentAuthorizationInfo: ...
+
+    async def fetch_info(
+            self,
+            *,
+            raw: Literal[True, False] = False
+    ) -> Union[AccessTokenInfo, types.CurrentAuthorizationInfo]:
         """|coro|
         
         Fetches the authorization information for the access token.
         
-        .. note::
-            This is only available when :attr:`.client` is set
-        
-        Raises
-        ------
-        AttributeError:
-            The client attribute is not set
-        
-        Returns
-        -------
-        :class:`~discord.oauth2.OAuth2AuthInfo`:
-            The authorization information
+        Fpr details, see :meth:`.OAuth2Client.fetch_access_token_info`.
         """
-        data = await self._client.fetch_access_token_info(self)
-        return data
+        return await self._client.fetch_access_token_info(self)
     
     @overload
     async def fetch_user(self) -> User: ...
@@ -701,7 +698,7 @@ class PartialAppInfo:
     __slots__ = ('_client', 'description', 'id', 'name', 'bot_public', 'bot_require_code_grant', 'icon',
                  'verify_key', 'custom_install_url', 'tags', '_flags', 'interactions_endpoint_url')
     
-    def __init__(self, *, client: OAuth2Client, data: appinfo.PartialAppInfo):
+    def __init__(self, *, client: OAuth2Client, data: appinfo.PartialAppInfo) -> None:
         self._client: OAuth2Client = client
         self.id = int(data['id'])
         self.name = data['name']
@@ -713,11 +710,12 @@ class PartialAppInfo:
         self._flags = data.get('flags', 0)
         self.verify_key = data['verify_key']
 
-    def __repr__(self):
-        return '<{0.__class__.__name__} id={0.id} name={0.name!r} description={0.description!r} public={0.bot_public}>'.format(self)
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} id={self.id} name={self.name!r} description={self.description!r} ' \
+               f'public={self.bot_public}>'
     
     @property
-    def icon_url(self):
+    def icon_url(self) -> Asset:
         """:class:`~discord.Asset`: Retrieves the application's icon asset.
 
         This is equivalent to calling :meth:`icon_url_as` with
@@ -730,7 +728,7 @@ class PartialAppInfo:
             *,
             format: Literal['png', 'jpeg', 'jpg', 'webp'] = 'webp',
             size=1024
-    ):
+    ) -> Asset:
         """Returns an :class:`~discord.Asset` for the icon the application has.
 
         The format must be one of 'webp', 'jpeg', 'jpg' or 'png'.
@@ -803,9 +801,11 @@ class AccessTokenInfo:
         }
 
 
-class PartialUser(Hashable):
+class PartialUser(_BaseUser):
     """Represents a partial Discord User retrieved via an OAuth2 :class:`AccessToken`.
-    
+
+    This
+
     .. container:: operations
         
         .. describe:: x == y
@@ -818,45 +818,75 @@ class PartialUser(Hashable):
             Returns the partial user's hash.
         
         .. describe:: str(x)
-            Returns the partial user's username and discriminator.
-    
+            Returns the :attr:`username` if :attr:`is_migrated` is true, else the user's name with discriminator.
+
+            .. note::
+
+                When the migration is complete, this will always return the :attr:`username` .
+
+    .. versionadded:: 2.0
+
     Attributes
     -----------
     id: :class:`int`
         The user's ID.
-    name: :class:`str`
+    username: :class:`str`
         The user's username.
+    global_name: Optional[:class:`str`]
+        The users global name if set.
+        In the client UI this referred to as "Display Name".
     discriminator: :class:`str`
-        The user's discriminator (4-digit discord-tag).
+        The user's discriminator.
+
+        .. deprecated:: 2.0
+
+        .. important::
+            This will be removed in the future.
+            Read more about it :dis-gd:`here <usernames>`.
     avatar: Optional[:class:`str`]
         The user's avatar hash.
     avatar_decoration: Optional[:class:`str`]
         The user's avatar decoration hash.
     """
-    def __init__(self, *, client: OAuth2Client, data: types.PartialUser):
+    def __init__(self, *, client: OAuth2Client, data: types.User):
         self._client = client
         self.id: int = int(data['id'])
-        self.name: str = data['username']
-        self.discriminator: str = data['discriminator']
+        self.username: str = data['username']
+        self.global_name: Optional[str] = data.get('global_name')
+        self.discriminator: str = data.get('discriminator')
         self.avatar: str = data.get('avatar')
-        self.avatar_decoration: str = data.get('avatar_decoration', None)
+        self.avatar_decoration: str = data.get('avatar_decoration')
         self._public_flags: int = data.get('public_flags', 0)
 
     def __str__(self) -> str:
-        return '{0.name}#{0.discriminator}'.format(self)
+        return f'{self.username}' if self.is_migrated else f'{self.name}#{self.discriminator}'
     
     def __repr__(self) -> str:
         return self.__str__()
     
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, self.__class__) and other.id == self.id
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, _BaseUser) and other.id == self.id
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.id >> 22
-    
+
+    @property
+    def name(self) -> str:
+        """:class:`str`: This is an alias of :attr:`username` which replaces the previous `name` attribute.
+
+        .. note::
+            It is recommended to use :attr:`username` instead as this might be removed in the future.
+        """
+        return self.username
+
+    @property
+    def is_migrated(self) -> bool:
+        """:class:`bool`: Indicates if the user has migrated to the :dis-gd:`new username system <usernames>`."""
+        return self.discriminator == '0'
+
     @property
     def public_flags(self) -> PublicUserFlags:
         """:class:`PublicUserFlags`: The available public flags the user has."""
@@ -865,7 +895,17 @@ class PartialUser(Hashable):
     @property
     def mention(self) -> str:
         """:class:`str`: Returns a string that allows you to mention the given user in discord."""
-        return '<@{0.id}>'.format(self)
+        return f'<@{self.id}>'
+
+    @property
+    def display_name(self) -> str:
+        """:class:`str`: Returns the user's display name.
+
+        For regular users this is just their :attr:`global_name` if set else their :attr:`username`, but
+        if they have a guild specific nickname then that
+        is returned instead.
+        """
+        return self.global_name or self.username
 
     @property
     def created_at(self) -> datetime:
@@ -934,16 +974,23 @@ class PartialUser(Hashable):
 
     @property
     def default_avatar(self) -> DefaultAvatar:
-        """:class:`DefaultAvatar`: Returns the default avatar for a given user. This is calculated by the user's discriminator."""
-        return try_enum(DefaultAvatar, int(self.discriminator) % len(DefaultAvatar))
+        """:class:`DefaultAvatar`: Returns the default avatar for a given user.
+        For non-migrated users this is calculated by the user's discriminator.
+        For :dis-gd:`migrated <usernames>` users this is calculated by the user's ID.
+        """
+        if self.is_migrated:
+            value = (self.id >> 22) % len(DefaultAvatar)
+        else:
+            value = int(self.discriminator) % len(DefaultAvatar)
+        return try_enum(DefaultAvatar, value)
 
     @property
     def default_avatar_url(self) -> Asset:
         """:class:`~discord.Asset`: Returns a URL for a user's default avatar."""
-        return Asset(self._client, '/embed/avatars/{}.png'.format(self.default_avatar.value))
+        return Asset(self._client, f'/embed/avatars/{self.default_avatar.value}.png')
 
 
-class User(PartialUser):
+class User(BaseUser):
     """Represents a full Discord user retrieved via an OAuth2 :class:`AccessToken`.
     
     .. note::
@@ -954,10 +1001,19 @@ class User(PartialUser):
     -----------
     id: :class:`int`
         The user's ID.
-    name: :class:`str`
+    username: :class:`str`
         The user's username.
+    global_name: Optional[:class:`str`]
+        The users global name if set.
+        In the client UI this referred to as "Display Name".
     discriminator: :class:`str`
-        The user's discriminator (4-digit discord-tag).
+        The user's discriminator.
+
+        .. deprecated:: 2.0
+
+        .. important::
+            This will be removed in the future.
+            Read more about it :dis-gd:`here <usernames>`.
     avatar: Optional[:class:`str`]
         The user's avatar hash.
     bot: :class:`bool`
@@ -968,8 +1024,6 @@ class User(PartialUser):
         Indicates if the user has MFA enabled on their account.
     banner: Optional[:class:`str`]
         The user's banner hash.
-    banner_color: Optional[:class:`~discord.Colour`]
-        The user's banner color.
     locale: Optional[:class:`~discord.Locale`]
         The user's chosen language option.
     verified: Optional[:class:`bool`]
@@ -979,19 +1033,13 @@ class User(PartialUser):
     premium_type: :class:`PremiumType`
         The user's premium subscription type.
     """
-    __slots__ = (
-        '_client', 'id', 'name', 'discriminator', 'avatar', 'bot', 'system', 'banner_color', 'mfa_enabled',
-        'banner', 'locale', 'verified', 'email', '_public_flags', '_flags', 'premium_type',)
+    __slots__ = BaseUser.__slots__ + (
+        '_client', 'mfa_enabled', 'locale', 'verified', 'email', '_flags', 'premium_type',
+    )
     
     def __init__(self, *, client: OAuth2Client, data: types.User):
-        super().__init__(client=client, data=data)
-        self.bot: bool = data.get('bot', False)
-        self.system: bool = data.get('system', False)
-        accent_color = data.get('accent_color', None)
-        if accent_color:
-            accent_color = Colour(accent_color)
-        self.banner_color: Optional[Colour] = accent_color
-        self.banner: Optional[str] = data.get('banner', None)
+        super().__init__(state=client, data=data)
+        self._client: OAuth2Client = client
         self.mfa_enabled: bool = data.get('mfa_enabled', False)
         self.locale: Locale = try_enum(Locale, data.get('locale', None))
         email = data.get('email', MISSING)
@@ -999,80 +1047,16 @@ class User(PartialUser):
         self.verified: bool = data.get('verified', MISSING if email is MISSING else False)
         self.premium_type: Optional[PremiumType] = try_enum(PremiumType, data.get('premium_type', None))
         self._flags: int = data.get('flags', 0)
-    
-    def __str__(self) -> str:
-        return '{0.name}#{0.discriminator}'.format(self)
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, self.__class__) and other.id == self.id
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return self.id >> 22
 
     @property
     def flags(self) -> PublicUserFlags:
         """:class:`PublicUserFlags`: The available flags the user has. This might be the same as :attr:`public_flags`."""
         return PublicUserFlags._from_value(self._flags)
 
-    @property
-    def banner_url(self) -> Optional[Asset]:
-        """
-        Optional[:class:`~discord.Asset`]: Returns an asset for the banner the user has, if any.
-        This is equal to calling :meth:`banner_url_as` with the default arguments.
-
-        Returns
-        --------
-        Optional[:class:`~discord.Asset`]
-            The resulting CDN asset if any.
-        """
-        return self.banner_url_as()
-
-    def is_banner_animated(self) -> bool:
-        """:class:`bool`: Indicates if the user has an animated banner."""
-        return bool(self.banner and self.banner.startswith('a_'))
-
-    def banner_url_as(
-            self,
-            *,
-            format: Optional[Literal['jpeg', 'jpg', 'webp', 'png', 'gif']] = None,
-            static_format: Literal['png', 'jpeg', 'webp'] = 'webp',
-            size: int = 1024
-    ) -> Optional[Asset]:
-        """Returns an :class:`~discord.Asset` for the banner the user has. Could be ``None``.
-
-        The format must be one of 'webp', 'jpeg', 'jpg', 'png' or 'gif', and
-        'gif' is only valid for animated banners. The size must be a power of 2
-        between 16 and 4096.
-
-        Parameters
-        -----------
-        format: Optional[:class:`str`]
-            The format to attempt to convert the banner to.
-            If the format is ``None``, then it is automatically
-            detected into either 'gif' or static_format depending on the
-            banner being animated or not.
-        static_format: Optional[:class:`str`]
-            Format to attempt to convert only non-animated banner to.
-            Defaults to 'webp'
-        size: :class:`int`
-            The size of the image to display.
-
-        Raises
-        ------
-        InvalidArgument
-            Bad image format passed to ``format`` or ``static_format``, or
-            invalid ``size``.
-
-        Returns
-        --------
-        Optional[:class:`~discord.Asset`]
-            The resulting CDN asset if any.
-        """
-        return Asset._from_banner(self._client, self, format=format, static_format=static_format, size=size)
-
+    @classmethod
+    def _copy(cls: Type[User], user: User) -> User:
+        return super()._copy(user)
     
 class PartialGuild(Hashable):
     """
@@ -1171,8 +1155,8 @@ class PartialGuild(Hashable):
         """
         return Asset._from_guild_icon(self._client, self, format=format, static_format=static_format, size=size)
 
-
-class GuildMember(Hashable, _BaseUser):
+@flatten_user(PartialUser)
+class GuildMember(_BaseUser):
     """Represents a member of a guild.
 
     .. container:: operations
@@ -1219,6 +1203,20 @@ class GuildMember(Hashable, _BaseUser):
         '_user', 'role_ids', '_flags', '_communication_disabled_until'
     )
 
+    if TYPE_CHECKING:
+        name: str
+        username: str
+        global_name: str
+        id: int
+        discriminator: str
+        bot: bool
+        system: bool
+        created_at: datetime
+        default_avatar: str
+        avatar: Optional[str]
+        public_flags: PublicUserFlags
+        banner: Optional[str]
+
     def __init__(self, *, client: OAuth2Client, data: user.Member):
         self._client: OAuth2Client = client
         self.id: SnowflakeID = int(data['user']['id'])
@@ -1229,7 +1227,7 @@ class GuildMember(Hashable, _BaseUser):
         self.nick: Optional[str] = data.get('nick', None)
         self.guild_avatar: Optional[str] = data.get('avatar', None)
         self.premium_since: Optional[datetime] = datetime.fromisoformat(data['premium_since']) if data.get('premium_since') else None
-        self._user: BaseUser = BaseUser(state=client, data=data['user'])
+        self._user: PartialUser = PartialUser(client=client, data=data['user'])
         self.role_ids: SnowflakeList = SnowflakeList(map(int, data.get('roles', [])))
         self._flags = data.get('flags', 0)
         self._communication_disabled_until: Optional[str] = data.get('communication_disabled_until', None)
@@ -1237,16 +1235,21 @@ class GuildMember(Hashable, _BaseUser):
     def __str__(self):
         return str(self._user)
     
-    def __repr__(self):
-        return '<GuildMember id={1.id} name={1.name!r} discriminator={1.discriminator!r} nick={0.nick!r}>'.format(self, self._user)
+    def __repr__(self) -> str:
+        user = self._user
+        if not user.is_migrated:
+            return f'<GuildMember id={user.id} username={user.username!r} global_name={user.global_name} ' \
+                   f'discriminator={user.discriminator!r} nick={self.nick!r} guild={self.guild!r}>'
+        return f'<GuildMember id={user.id} username={user.username!r} global_name={user.global_name} ' \
+               f'nick={self.nick!r} guild={self.guild!r}>'
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, _BaseUser) and other.id == self.id
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._user)
 
     @property
@@ -1255,19 +1258,19 @@ class GuildMember(Hashable, _BaseUser):
         return GuildMemberFlags._from_value(self._flags)
     
     @property
-    def mention(self):
+    def mention(self) -> str:
         """:class:`str`: Returns a string that allows you to mention the member in discord."""
-        return '<@%s>' % self.id
+        return f'<@{self.id}>'
     
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         """:class:`str`: Returns the user's display name.
 
         For regular users this is just their username, but
         if they have a guild specific nickname then that
         is returned instead.
         """
-        return self.nick or self._user.name
+        return self.nick or self._user.display_name
     
     @property
     def communication_disabled_until(self) -> Optional[datetime]:

@@ -40,22 +40,29 @@ from . import (
     guild,
     user
 )
-
+from .snowflake import SnowflakeID
 
 WebhookType = Literal[1, 2, 3]
 
 
-class Webhook(TypedDict):
-    id: str
+class PartialWebhook(TypedDict):
+    id: SnowflakeID
     type: WebhookType
-    guild_id: NotRequired[str]
-    channel_id: Optional[str]
-    user: NotRequired[user.User]
-    name: Optional[str]
-    avatar: Optional[str]
     token: NotRequired[str]
-    application_id: Optional[str]
-    source_guild: NotRequired[guild.PartialGuild]
-    source_channel: NotRequired[channel.PartialChannel]
-    url: NotRequired[str]
-    
+
+
+class Webhook(PartialWebhook, total=False):
+    guild_id: str
+    channel_id: str
+    user: user.User
+    name: str
+    avatar: str
+    application_id: str
+    source_guild: guild.PartialGuild
+    source_channel: channel.PartialChannel
+    url: str
+
+
+class FollowedChannel(TypedDict):
+    channel_id: SnowflakeID
+    webhook_id: SnowflakeID

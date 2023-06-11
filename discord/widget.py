@@ -84,8 +84,13 @@ class WidgetChannel:
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return snowflake_time(self.id)
 
+
 class WidgetMember(BaseUser):
     """Represents a "partial" member of the widget's guild.
+
+    .. versionchanged:: 2.0
+        The :attr:`name` attribute was renamed to :attr:`username` due to the (upcoming)
+        :dis-gd:`username changes <username>`.
 
     .. container:: operations
 
@@ -103,16 +108,29 @@ class WidgetMember(BaseUser):
 
         .. describe:: str(x)
 
-            Returns the widget member's `name#discriminator`.
+            Returns the :attr:`username` if :attr:`is_migrated` is true, else the user's name with discriminator.
+
+            .. note::
+
+                When the migration is complete, this will always return the :attr:`username`.
 
     Attributes
     -----------
     id: :class:`int`
         The member's ID.
-    name: :class:`str`
+    username: :class:`str`
         The member's username.
+    global_name: Optional[:class:`str`]
+        The member's global name if set.
+        In the client UI this is referred to as "Display Name".
+
+        .. versionadded:: 2.0
     discriminator: :class:`str`
         The member's discriminator.
+
+        .. important::
+            This will be removed in a future API version.
+            Read more about it :dis-gd:`here <usernames>`.
     bot: :class:`bool`
         Whether the member is a bot.
     status: :class:`Status`
@@ -157,6 +175,7 @@ class WidgetMember(BaseUser):
     def display_name(self):
         """:class:`str`: Returns the member's display name."""
         return self.nick or self.name
+
 
 class Widget:
     """Represents a :class:`Guild` widget.

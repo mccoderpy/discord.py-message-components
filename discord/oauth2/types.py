@@ -137,7 +137,7 @@ class CurrentAuthorizationInfo(TypedDict):
     application: appinfo.PartialAppInfo
     scopes: List[str]
     expires: str
-    user: NotRequired[user.BaseUser]
+    user: NotRequired[PartialUser]
 
 
 class IntegrationAccount(TypedDict):

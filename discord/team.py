@@ -23,6 +23,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
+
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    List
+)
+from typing_extensions import Literal
+
+if TYPE_CHECKING:
+    from .state import ConnectionState
+    from .types.appinfo import (
+        Team as TeamData,
+        TeamMember as TeamMemberData,
+    )
 
 from . import utils
 from .user import BaseUser
@@ -54,20 +69,19 @@ class Team:
     """
     __slots__ = ('_state', 'id', 'name', 'icon', 'owner_id', 'members')
 
-    def __init__(self, state, data):
-        self._state = state
+    def __init__(self, state: ConnectionState, data: TeamData) -> None:
+        self._state: ConnectionState = state
+        self.id: int = utils._get_as_snowflake(data, 'id')
+        self.name: str = data['name']
+        self.icon: str = data['icon']
+        self.owner_id: int = utils._get_as_snowflake(data, 'owner_user_id')
+        self.members: List[TeamMember] = [TeamMember(self, self._state, member) for member in data['members']]
 
-        self.id = utils._get_as_snowflake(data, 'id')
-        self.name = data['name']
-        self.icon = data['icon']
-        self.owner_id = utils._get_as_snowflake(data, 'owner_user_id')
-        self.members = [TeamMember(self, self._state, member) for member in data['members']]
-
-    def __repr__(self):
-        return '<{0.__class__.__name__} id={0.id} name={0.name}>'.format(self)
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} id={self.id} name={self.name}>'
 
     @property
-    def icon_url(self):
+    def icon_url(self) -> Asset:
         """:class:`.Asset`: Retrieves the team's icon asset.
 
         This is equivalent to calling :meth:`icon_url_as` with
@@ -75,7 +89,7 @@ class Team:
         """
         return self.icon_url_as()
 
-    def icon_url_as(self, *, format='webp', size=1024):
+    def icon_url_as(self, *, format: Literal['webp', 'jpeg', 'jpg', 'png'] = 'webp', size: int = 1024) -> Asset:
         """Returns an :class:`Asset` for the icon the team has.
 
         The format must be one of 'webp', 'jpeg', 'jpg' or 'png'.
@@ -103,12 +117,17 @@ class Team:
         return Asset._from_icon(self._state, self, 'team', format=format, size=size)
 
     @property
-    def owner(self):
+    def owner(self) -> Optional[TeamMember]:
         """Optional[:class:`TeamMember`]: The team's owner."""
         return utils.get(self.members, id=self.owner_id)
 
+
 class TeamMember(BaseUser):
     """Represents a team member in a team.
+
+    .. versionchanged:: 2.0
+        The :attr:`name` attribute was renamed to :attr:`username` due to the (upcoming)
+        :dis-gd:`username changes <username>`.
 
     .. container:: operations
 
@@ -126,18 +145,28 @@ class TeamMember(BaseUser):
 
         .. describe:: str(x)
 
-            Returns the team member's name with discriminator.
+            Returns the team member's :attr:`username` if :attr:`is_migrated` is true, else the user's name with discriminator.
+
+            .. note::
+
+                When the migration is complete, this will always return the :attr:`username`.
 
     .. versionadded:: 1.3
 
     Attributes
     -------------
-    name: :class:`str`
+    username: :class:`str`
         The team member's username.
+    global_name: Optional[:class:`str`]
+        The team members :attr:`~User.global_name` if any.
     id: :class:`int`
         The team member's unique ID.
     discriminator: :class:`str`
-        The team member's discriminator. This is given when the username has conflicts.
+        The team member's discriminator.
+
+        .. important::
+            This will be removed in a future API version.
+            Read more about it :dis-gd:`here <usernames>`.
     avatar: Optional[:class:`str`]
         The avatar hash the team member has. Could be None.
     bot: :class:`bool`
@@ -149,12 +178,15 @@ class TeamMember(BaseUser):
     """
     __slots__ = BaseUser.__slots__ + ('team', 'membership_state', 'permissions')
 
-    def __init__(self, team, state, data):
-        self.team = team
-        self.membership_state = try_enum(TeamMembershipState, data['membership_state'])
-        self.permissions = data['permissions']
+    def __init__(self, team: Team, state: ConnectionState, data: TeamMemberData):
+        self.team: Team = team
+        self.membership_state: TeamMembershipState = try_enum(TeamMembershipState, data['membership_state'])
+        self.permissions: List[str] = data['permissions']
         super().__init__(state=state, data=data['user'])
 
-    def __repr__(self):
-        return '<{0.__class__.__name__} id={0.id} name={0.name!r} ' \
-               'discriminator={0.discriminator!r} membership_state={0.membership_state!r}>'.format(self)
+    def __repr__(self) -> str:
+        if not self.is_migrated:
+            return f'<{self.__class__.__name__} id={self.id} username={self.name!r} global_name={self.global_name} ' \
+                   f'discriminator={self.discriminator!r} membership_state={self.membership_state!r}>'
+        return f'<{self.__class__.__name__} id={self.id} username={self.name!r} global_name={self.global_name} ' \
+               f'membership_state={self.membership_state!r}>'

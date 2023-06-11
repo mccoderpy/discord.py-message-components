@@ -29,7 +29,9 @@ from typing import (
     Any,
     Dict,
     List,
+    Union,
     Optional,
+    Type,
     TYPE_CHECKING
 )
 
@@ -43,67 +45,89 @@ from .colour import Colour
 from .asset import Asset
 
 if TYPE_CHECKING:
+    from .types.user import (
+        User as UserData,
+        ClientUser as ClientUserData,
+    )
     import datetime
     from .abc import GuildChannel
-    from .channel import DMChannel
+    from .channel import DMChannel, ThreadChannel
     from .guild import Guild
     from .message import Message
     from .permissions import Permissions
     from .state import ConnectionState
+    from .oauth2.client import OAuth2Client
+
+    HAS_HTTP_CONNECTION = Union[ConnectionState, OAuth2Client]
 
 
-_BaseUser = abc.User
 MISSING = utils.MISSING
+
+
+class _BaseUser:
+    __slots__ = ()
+    id: int
 
 
 class BaseUser(_BaseUser):
     __slots__ = (
-        'name', 'id', 'discriminator', 'avatar', 'banner', 'banner_color',
-        'hex_banner_color', 'bot', 'system', '_public_flags', '_state'
+        'username', 'id', 'global_name', 'discriminator', 'avatar', 'banner', 'avatar_decoration',
+        'bot', 'system', '_accent_color', '_public_flags', '_state'
     )
+    
+    if TYPE_CHECKING:
+        username: str
+        id: int
+        discriminator: str
+        global_name: str | None
+        bot: bool
+        system: bool
+        _state: HAS_HTTP_CONNECTION
+        avatar: str | None
+        avatar_decoration: str | None
+        banner: str | None
+        _accent_color: int | None
+        _public_flags: int
 
-    def __init__(self, *, state: ConnectionState, data: Dict[str, Any]):
-        self._state: ConnectionState = state
+    def __init__(self, *, state: HAS_HTTP_CONNECTION, data: UserData) -> None:
+        self._state: HAS_HTTP_CONNECTION = state
         self._update(data)
 
-    def __str__(self):
-        return '{0.name}#{0.discriminator}'.format(self)
-
-    def __eq__(self, other: object):
+    def __str__(self) -> str:
+        return f'{self.username}' if self.is_migrated else f'{self.name}#{self.discriminator}'
+    
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, _BaseUser) and other.id == self.id
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.id >> 22
 
-    def _update(self, data: Dict[str, Any]) -> None:
-        self.name = data['username']
+    def _update(self, data: UserData) -> None:
         self.id = int(data['id'])
-        self.discriminator = data['discriminator']
+        self.username = data['username']
+        self.global_name = data.get('global_name', None)
+        self.discriminator: str = data.get('discriminator', '0')  # Deprecated
         self.avatar = data['avatar']
         self.banner = data.get('banner', None)
-        banner_color = data.get('accent_color', None)
-        if banner_color:
-            self.banner_color = Colour(banner_color)
-        else:
-            self.banner_color = None
-        self.hex_banner_color: str = data.get('banner_color', None)
+        self.avatar_decoration = data.get('avatar_decoration', None)
+        self._accent_color = data.get('accent_color', None)
         self._public_flags = data.get('public_flags', 0)
         self.bot = data.get('bot', False)
         self.system = data.get('system', False)
 
     @classmethod
-    def _copy(cls, user) -> User:
+    def _copy(cls: Type[User], user: User) -> User:
         self = cls.__new__(cls)  # bypass __init__
-
-        self.name = user.name
         self.id = user.id
+        self.username = user.username
+        self.global_name = user.global_name
         self.discriminator = user.discriminator
         self.avatar = user.avatar
         self.banner = user.banner
-        self.banner_color = user.banner_color
+        self._accent_color = user._accent_color
         self.bot = user.bot
         self._state = user._state
         self._public_flags = user._public_flags
@@ -112,20 +136,62 @@ class BaseUser(_BaseUser):
 
     def _to_minimal_user_json(self) -> Dict[str, Any]:
         return {
-            'username': self.name,
+            'username': self.username,
+            'global_name': self.global_name,
             'id': self.id,
             'avatar': self.avatar,
             'banner': self.banner,
-            'accent_color': self.banner_color,
+            'avatar_decoration': self.avatar_decoration,
+            'accent_color': self._accent_color,
             'discriminator': self.discriminator,
             'bot': self.bot,
         }
+    
+    @property
+    def name(self) -> str:
+        """:class:`str`: This is an alias of :attr:`username` which replaces the previous `name` attribute.
 
+        .. versionadded: 2.0
+
+        .. note::
+            It is recommended to use :attr:`username` instead as this might be removed in the future.
+        """
+        return self.username
+    
+    @property
+    def is_migrated(self) -> bool:
+        """:class:`bool`: Indicates if the user has migrated to the :dis-gd:`new username system <usernames>`."""
+        return self.discriminator == '0'
+    
     @property
     def public_flags(self) -> PublicUserFlags:
         """:class:`PublicUserFlags`: The publicly available flags the user has."""
         return PublicUserFlags._from_value(self._public_flags)
+    
+    @property
+    def accent_color(self) -> Optional[Colour]:
+        """Optional[:class:`Colour`]: A colour object that represents the user's banner colour.
+        
+        .. note::
 
+            This information is only available via :meth:`Client.fetch_user`.
+        """
+        return Colour(self._accent_color)
+    
+    @property
+    def accent_colour(self) -> Optional[Colour]:
+        """Optional[:class:`Colour`]: An alias for :attr:`accent_color`."""
+        return self.accent_color
+    
+    banner_color = accent_color
+    banner_colour = accent_color
+    
+    @property
+    def hex_banner_color(self) -> Optional[str]:
+        """Optional[:class:`str`]: Returns a hexadecimal representation of the user's banner colour, if available."""
+        if self._accent_color:
+            return f'#{self._accent_color:0>6x}'
+        
     @property
     def avatar_url(self) -> Asset:
         """:class:`Asset`: Returns an :class:`Asset` for the avatar the user has.
@@ -185,13 +251,20 @@ class BaseUser(_BaseUser):
 
     @property
     def default_avatar(self) -> DefaultAvatar:
-        """:class:`DefaultAvatar`: Returns the default avatar for a given user. This is calculated by the user's discriminator."""
-        return try_enum(DefaultAvatar, int(self.discriminator) % len(DefaultAvatar))
+        """:class:`DefaultAvatar`: Returns the default avatar for a given user.
+        For non-migrated users this is calculated by the user's discriminator.
+        For :dis-gd:`migrated <usernames>` users this is calculated by the user's ID.
+        """
+        if self.is_migrated:
+            value = (self.id >> 22) % len(DefaultAvatar)
+        else:
+            value = int(self.discriminator) % 5
+        return try_enum(DefaultAvatar, value)
 
     @property
     def default_avatar_url(self) -> Asset:
         """:class:`Asset`: Returns a URL for a user's default avatar."""
-        return Asset(self._state, '/embed/avatars/{}.png'.format(self.default_avatar.value))
+        return Asset(self._state, f'/embed/avatars/{self.default_avatar.value}.png')
 
     @property
     def banner_url(self) -> Optional[Asset]:
@@ -270,9 +343,9 @@ class BaseUser(_BaseUser):
     @property
     def mention(self) -> str:
         """:class:`str`: Returns a string that allows you to mention the given user."""
-        return '<@{0.id}>'.format(self)
+        return f'<@{self.id}>'
 
-    def permissions_in(self, channel: GuildChannel) -> Permissions:
+    def permissions_in(self, channel: Union[GuildChannel, ThreadChannel]) -> Permissions:
         """An alias for :meth:`abc.GuildChannel.permissions_for`.
 
         Basically equivalent to:
@@ -299,13 +372,13 @@ class BaseUser(_BaseUser):
     def display_name(self) -> str:
         """:class:`str`: Returns the user's display name.
 
-        For regular users this is just their username, but
+        For regular users this is just their :attr:`global_name` if set else their :attr:`username`, but
         if they have a guild specific nickname then that
         is returned instead.
         """
-        return self.name
+        return self.global_name or self.username
 
-    def mentioned_in(self, message: Message):
+    def mentioned_in(self, message: Message) -> bool:
         """Checks if the user is mentioned in the specified message.
 
         Parameters
@@ -328,6 +401,10 @@ class BaseUser(_BaseUser):
 class ClientUser(BaseUser):
     """Represents your Discord user.
 
+    .. versionchanged:: 2.0
+        The :attr:`name` attribute was renamed to :attr:`username` due to the (upcoming)
+        :dis-gd:`username changes <username>`.
+
     .. container:: operations
 
         .. describe:: x == y
@@ -344,12 +421,21 @@ class ClientUser(BaseUser):
 
         .. describe:: str(x)
 
-            Returns the user's name with discriminator.
+            Returns the :attr:`username` if :attr:`is_migrated` is true, else the user's name with discriminator.
+
+            .. note::
+
+                When the migration is complete, this will always return the :attr:`username` .
 
     Attributes
     -----------
-    name: :class:`str`
+    username: :class:`str`
         The user's username.
+    global_name: Optional[:class:`str`]
+        The user's global name if set.
+        In the client UI, this is referred to as "Display Name".
+
+        .. versionadded:: 2.0
     id: :class:`int`
         The user's unique ID.
     discriminator: :class:`str`
@@ -368,14 +454,17 @@ class ClientUser(BaseUser):
     __slots__ = BaseUser.__slots__ + \
                 ('locale', '_flags', 'verified', 'mfa_enabled', '__weakref__')
 
-    def __init__(self, *, state, data):
+    def __init__(self, *, state: ConnectionState, data: ClientUserData) -> None:
         super().__init__(state=state, data=data)
 
-    def __repr__(self):
-        return '<ClientUser id={0.id} name={0.name!r} discriminator={0.discriminator!r}' \
-               ' bot={0.bot} mfa_enabled={0.mfa_enabled}>'.format(self)
+    def __repr__(self) -> str:
+        if not self.is_migrated:
+            return f'<ClientUser id={self.id} username={self.name!r} discriminator={self.discriminator!r} ' \
+                   f'global_name={self.global_name} bot={self.bot} mfa_enabled={self.mfa_enabled}>'
+        return f'<ClientUser id={self.id} username={self.name!r} global_name={self.global_name!r}' \
+               f' bot={self.bot} mfa_enabled={self.mfa_enabled}>'
 
-    def _update(self, data: Dict[str, Any]) -> None:
+    def _update(self, data: ClientUserData) -> None:
         super()._update(data)
         self.locale = data.get('locale')
         self._flags = data.get('flags', 0)
@@ -384,6 +473,7 @@ class ClientUser(BaseUser):
     async def edit(
             self,
             username: str = MISSING,
+            global_name: str = MISSING,
             avatar: bytes = MISSING
     ) -> None:
         """|coro|
@@ -403,6 +493,8 @@ class ClientUser(BaseUser):
         -----------
         username: :class:`str`
             The new username you wish to change to.
+        global_name: :class:`str`
+            The new global name you wish to change to.
         avatar: :class:`bytes`
             A :term:`py:bytes-like object` representing the image to upload.
             Could be ``None`` to denote no avatar.
@@ -416,24 +508,26 @@ class ClientUser(BaseUser):
         """
 
         payload = {}
-        
+
         if username is not MISSING:
             payload['username'] = username
-        
+
+        if global_name is not MISSING:
+            payload['global_name'] = global_name
+
         if avatar is not MISSING:
-            if avatar is None:
-                payload['avatar'] = None
-            else:
-                payload['avatar'] = _bytes_to_base64_data(avatar)
+            payload['avatar'] = None if avatar is None else _bytes_to_base64_data(avatar)
 
-        http = self._state.http
-
-        data = await http.edit_profile(payload)
+        data = await self._state.http.edit_profile(payload)
         self._update(data)
 
 
 class User(BaseUser, abc.Messageable):
     """Represents a Discord user.
+
+    .. versionchanged:: 2.0
+        The :attr:`name` attribute was renamed to :attr:`username` due to the (upcoming)
+        :dis-gd:`username changes <username>`.
 
     .. container:: operations
 
@@ -451,18 +545,44 @@ class User(BaseUser, abc.Messageable):
 
         .. describe:: str(x)
 
-            Returns the user's name with discriminator.
+            Returns the :attr:`username` if :attr:`is_migrated` is true, else the user's name with discriminator.
+            
+            .. note::
+                When the migration is complete, this will always return the :attr:`username`.
 
     Attributes
     -----------
-    name: :class:`str`
+    username: :class:`str`
         The user's username.
+    global_name: Optional[:class:`str`]
+        The user's global name if set.
+        In the client UI, this is referred to as "Display Name".
+
+        .. versionadded:: 2.0
     id: :class:`int`
         The user's unique ID.
     discriminator: :class:`str`
-        The user's discriminator. This is given when the username has conflicts.
+        The user's discriminator.
+
+        .. deprecated:: 2.0
+
+        .. important::
+            This will be removed in the future.
+            Read more about it :dis-gd:`here <usernames>`.
     avatar: Optional[:class:`str`]
         The avatar hash the user has. Could be None.
+    banner: Optional[:class:`str`]
+        The banner hash the user has. Could be None.
+        
+        .. note::
+        
+            This is only available via :meth:`Client.fetch_user`.
+
+        .. versionadded:: 2.0
+    avatar_decoration: Optional[:class:`str`]
+        The avatar decoration hash the user has. Could be None.
+
+        .. versionadded:: 2.0
     bot: :class:`bool`
         Specifies if the user is a bot account.
     system: :class:`bool`
@@ -471,12 +591,14 @@ class User(BaseUser, abc.Messageable):
 
     __slots__ = BaseUser.__slots__ + ('__weakref__',)
 
-    def __repr__(self):
-        return '<User id={0.id} name={0.name!r} discriminator={0.discriminator!r} bot={0.bot}>'.format(self)
+    def __repr__(self) -> str:
+        if not self.is_migrated:
+            return f'<User id={self.id} username={self.name!r} global_name={self.global_name!r} ' \
+                   f'discriminator={self.discriminator!r} bot={self.bot}>'
+        return f'<User id={self.id} username={self.name!r} global_name={self.global_name!r} bot={self.bot}>'
 
-    async def _get_channel(self):
-        ch = await self.create_dm()
-        return ch
+    async def _get_channel(self) -> DMChannel:
+        return await self.create_dm()
 
     @property
     def dm_channel(self) -> Optional[DMChannel]:

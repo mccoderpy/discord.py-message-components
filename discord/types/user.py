@@ -52,7 +52,8 @@ __all__ = (
 class BaseUser(TypedDict):
     id: SnowflakeID
     username: str
-    discriminator: str
+    global_name: Optional[str]
+    discriminator: str  # Deprecated :(
     avatar: Optional[str]
 
 
@@ -62,7 +63,6 @@ class User(BaseUser, total=False):
     system: NotRequired[bool]
     avatar_decoration: NotRequired[str]
     banner: NotRequired[Optional[str]]
-    banner_color: NotRequired[Optional[str]]
     accent_color: NotRequired[Optional[int]]
 
 
@@ -70,6 +70,7 @@ class ClientUser(User, total=False):
     verified: NotRequired[bool]
     mfa_enabled: NotRequired[bool]
     flags: NotRequired[int]
+    locale: NotRequired[str]
     # There are some other fields, but they are not usable by bots so empty
 
 
@@ -84,11 +85,12 @@ class PartialMember(TypedDict):
     deaf: bool
     mute: bool
     joined_at: str
-    flags: int
+    flags: NotRequired[int]
     
 
 class Member(PartialMember):
     avatar: NotRequired[Optional[str]]
+    banner: NotRequired[Optional[str]]
     user: User
     nick: NotRequired[Optional[str]]
     premium_since: NotRequired[Optional[str]]
@@ -99,6 +101,7 @@ class Member(PartialMember):
 
 class _OptionalMemberWithUser(PartialMember):
     avatar: NotRequired[Optional[str]]
+    banner: NotRequired[Optional[str]]
     nick: NotRequired[Optional[str]]
     premium_since: Optional[str]
     pending: NotRequired[bool]
