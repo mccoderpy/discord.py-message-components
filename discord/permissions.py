@@ -694,25 +694,6 @@ class PermissionOverwrite:
 
     The values supported by this are the same as :class:`Permissions`
     with the added possibility of it being set to ``None``.
-
-    .. container:: operations
-
-        .. describe:: x == y
-
-            Checks if two overwrites are equal.
-        .. describe:: x != y
-
-            Checks if two overwrites are not equal.
-        .. describe:: iter(x)
-
-           Returns an iterator of ``(perm, value)`` pairs. This allows it
-           to be, for example, constructed as a dict or a list of pairs.
-           Note that aliases are not shown.
-
-    Parameters
-    -----------
-    \*\*kwargs
-        Set the value of permissions by their name.
     """
 
     __slots__ = ('_values',)
@@ -793,7 +774,11 @@ class PermissionOverwrite:
             setattr(self, key, value)
 
     def __eq__(self, other) -> bool:
+        """Checks if two overwrites are equal."""
         return isinstance(other, PermissionOverwrite) and self._values == other._values
+    def __ne__(self, other) -> bool:
+        """Checks if two overwrites are not equal."""
+        return not self.__eq__(other)
 
     def _set(self, key: PermissionFlags, value: Optional[bool]) -> None:
         if value not in (True, None, False):
@@ -864,5 +849,9 @@ class PermissionOverwrite:
             setattr(self, key, value)
 
     def __iter__(self) -> Iterator[Tuple[PermissionFlags, bool]]:
+        """Returns an iterator of ``(perm, value)`` pairs.
+        This allows it to be, for example, constructed as a dict or a list  of pairs.
+
+        Note that aliases are not shown."""
         for key in self.PURE_FLAGS:
             yield key, self._values.get(key)

@@ -63,6 +63,7 @@ extensions = [
     'exception_hierarchy',
     'attributetable',
     'experimental_feature',
+    'operations',
     'resourcelinks',
 ]
 
@@ -76,7 +77,10 @@ language = 'en'
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members']
 autodoc_typehints = 'none'
+autodoc_typehints_format = 'short'
+# autodoc_preserve_defaults = True
 autoclass_content = 'both'  # document class docstring and __init__ docstring
+
 
 # Links used for cross-referencing stuff in other documentation
 intersphinx_mapping = {
