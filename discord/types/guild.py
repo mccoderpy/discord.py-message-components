@@ -232,6 +232,7 @@ class Guild(TypedDict):
     premium_subscription_count: NotRequired[int]
     preferred_locale: str
     public_updates_channel_id: Optional[SnowflakeID]
+    safety_alerts_channel_id: Optional[SnowflakeID]
     max_video_channel_users: NotRequired[int]
     approximate_member_count: NotRequired[int]
     approximate_presence_count: NotRequired[int]
