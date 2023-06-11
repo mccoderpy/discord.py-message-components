@@ -41,8 +41,9 @@ from typing import (
     Callable,
     TypeVar,
     Protocol,
+    overload,
     TYPE_CHECKING,
-    runtime_checkable
+    runtime_checkable, Generic,
 )
 
 import os
@@ -69,7 +70,7 @@ from inspect import isawaitable as _isawaitable, signature as _signature
 from operator import attrgetter
 
 from .errors import InvalidArgument
-from .enums import TimestampStyle
+from .enums import TimestampStyle, InviteTargetType
 
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec, TypeGuard, Self
@@ -86,6 +87,7 @@ if TYPE_CHECKING:
 
 T = TypeVar('T')
 R = TypeVar('R')
+_IterableClassType = TypeVar('_IterableClassType', bound=Type[Iterable])
 _Iterable = TypeVar('_Iterable', bound=Iterable)
 MaybeAwaitable = Union[Awaitable[T], T]
 
@@ -508,17 +510,27 @@ def styled_timestamp(
 
 
 async def create_voice_activity(channel: VoiceChannel, target_application_id: int, **kwargs):
-    return await channel.create_invite(targe_type=2, target_application_id=target_application_id, **kwargs)
+    return await channel.create_invite(
+        target_type=InviteTargetType.embedded_application,
+        target_application_id=target_application_id,
+        **kwargs
+    )
 
+@overload
+def _unique(iterable: _Iterable[T]) -> _Iterable[T]: ...
 
-def _unique(iterable: _Iterable[T]) -> _Iterable[T]:
+@overload
+def _unique(iterable: _Iterable[T], return_type: _IterableClassType) -> _IterableClassType[T]: ...
+# idk why this typing this doesn't work
+
+def _unique(
+        iterable: _Iterable[T],
+        return_type: Optional[_IterableClassType] = None
+) -> Union[_Iterable[T], _IterableClassType[T]]:
     seen = set()
     adder = seen.add
-    origin_type = type(iterable)
-    if origin_type not in {list, tuple, set}:
-        origin_type = list
-    return origin_type([x for x in iterable if not (x in seen or adder(x))])
-
+    return_type = return_type or type(iterable)
+    return return_type(x for x in iterable if not (x in seen or adder(x)))
 
 def _get_as_snowflake(data: Dict[str, Any], key: str) -> Optional[int]:
     try:
@@ -532,7 +544,7 @@ def _get_as_snowflake(data: Dict[str, Any], key: str) -> Optional[int]:
 def _get_mime_type_for_image(data: bytes) -> str:
     if data.startswith(b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'):
         return 'image/png'
-    elif data[0:3] == b'\xff\xd8\xff' or data[6:10] in (b'JFIF', b'Exif'):
+    elif data[:3] == b'\xff\xd8\xff' or data[6:10] in (b'JFIF', b'Exif'):
         return 'image/jpeg'
     elif data.startswith((b'\x47\x49\x46\x38\x37\x61', b'\x47\x49\x46\x38\x39\x61')):
         return 'image/gif'

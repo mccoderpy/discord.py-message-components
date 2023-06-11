@@ -136,8 +136,10 @@ class User(Snowflake, Protocol):
 
     Attributes
     -----------
-    name: :class:`str`
+    username: :class:`str`
         The user's username.
+    global_name: Optional[:class:`str`]
+        The users display name, if set.
     discriminator: :class:`str`
         The user's discriminator.
     avatar: Optional[:class:`str`]
@@ -147,9 +149,18 @@ class User(Snowflake, Protocol):
     """
     
     __slots__ = ()
-
+    username: str
+    global_name: Optional[str]
+    discriminator: str
+    avatar: Optional[str]
+    bot: bool
+    
     @property
-    @abc.abstractmethod
+    def name(self):
+        """:class:`str`: An alias for :attr:`name`."""
+        raise NotImplementedError
+    
+    @property
     def display_name(self):
         """:class:`str`: Returns the user's display name."""
         raise NotImplementedError
