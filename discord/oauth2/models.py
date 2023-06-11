@@ -1057,7 +1057,8 @@ class User(BaseUser):
     @classmethod
     def _copy(cls: Type[User], user: User) -> User:
         return super()._copy(user)
-    
+
+
 class PartialGuild(Hashable):
     """
     Represents a partial guild returned by the OAuth2 API.

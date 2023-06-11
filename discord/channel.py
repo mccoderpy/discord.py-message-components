@@ -3464,6 +3464,11 @@ class PartialMessageable(abc.Messageable, Hashable):
         return f'https://discord.com/channels/@me/{self.id}'
 
     @property
+    def mention(self) -> str:
+        """:class:`str`: Returns a string that allows the client to mention the channel"""
+        return f'<#{self.id}>'
+
+    @property
     def created_at(self) -> datetime.datetime:
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
