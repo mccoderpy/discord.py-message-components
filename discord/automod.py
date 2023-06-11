@@ -135,7 +135,7 @@ class AutoModAction:
         
         action_type = self.type  # speedup attribute access
         
-        if action_type.block_message:
+        if action_type == AutoModActionType.block_message:
             try:
                 custom_message: Optional[str] = metadata['custom_message']
             except KeyError:
@@ -145,13 +145,13 @@ class AutoModAction:
                     raise ValueError('The maximum length of the custom message is 150 characters.')
                 self.custom_message: Optional[str] = custom_message
             
-        elif action_type.send_alert_message:
+        elif action_type == AutoModActionType.send_alert_message:
             try:
                 self.channel_id: Optional[int] = metadata['channel_id']
             except KeyError:
                 raise TypeError('If the type is send_alert_message you must specify a channel_id')
         
-        elif action_type.timeout_user:
+        elif action_type == AutoModActionType.timeout_user:
             try:
                 timeout_duration: Optional[Union[int, datetime.timedelta]] = metadata['timeout_duration']
             except KeyError:
@@ -168,13 +168,13 @@ class AutoModAction:
             'type': int(self.type)
         }
         metadata = {}
-        if self.type.block_message:
+        if self.type == AutoModActionType.block_message:
             custom_message = getattr(self, 'custom_message', None)
             if custom_message:
                 metadata['custom_message'] = self.custom_message
-        if self.type.send_alert_message:
+        elif self.type == AutoModActionType.send_alert_message:
             metadata['channel_id'] = self.channel_id
-        elif self.type.timeout_user:
+        elif self.type == AutoModActionType.timeout_user:
             metadata['duration_seconds'] = self.timeout_duration
         base['metadata'] = metadata
         return base
@@ -183,11 +183,11 @@ class AutoModAction:
     def from_dict(cls, data: Dict[str, Any]) -> Self:
         action_type = try_enum(AutoModActionType, data['type'])
         metadata = data['metadata']
-        if action_type.block_message:
+        if action_type == AutoModActionType.block_message:
             metadata['custom_message'] = metadata.pop('custom_message', None)
-        elif action_type.timeout_user:
+        elif action_type == AutoModActionType.timeout_user:
             metadata['timeout_duration'] = metadata.pop('duration_seconds')
-        elif action_type.send_alert_message:
+        elif action_type == AutoModActionType.send_alert_message:
             metadata['channel_id'] = int(metadata['channel_id'])
         return cls(action_type, **metadata)
 
