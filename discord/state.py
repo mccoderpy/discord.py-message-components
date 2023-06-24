@@ -601,12 +601,12 @@ class ConnectionState:
             interaction.channel = self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id)\
                                   or PartialMessageable(id=interaction.channel_id, type=ChannelType.private, state=self)
 
-        if interaction.type.ApplicationCommand or interaction.type.ApplicationCommandAutocomplete:
+        if interaction.type in (InteractionType.ApplicationCommand, InteractionType.ApplicationCommandAutocomplete):
             cmd = self._get_client()._get_application_command(interaction.data.id)
             if cmd and not cmd.disabled:
                 interaction._command = cmd
                 self._get_client()._schedule_event(cmd._parse_arguments, '_application_command_invoke', interaction)
-        elif interaction.type.Component:
+        elif interaction.type == InteractionType.Component:
             interaction._message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
             if interaction.cached_message is not None:
                 if interaction.data.component_type == ComponentType.Button:
@@ -620,7 +620,7 @@ class ConnectionState:
                     self.dispatch('raw_button_click', interaction, interaction.component)
                 elif interaction.data.component_type.value in {3, 5, 6, 7, 8}:
                     self.dispatch('raw_selection_select', interaction, interaction.component)
-        elif interaction.type.ModalSubmit:
+        elif interaction.type == InteractionType.ModalSubmit:
             self.dispatch('modal_submit', interaction)
 
     def parse_thread_create(self, data):

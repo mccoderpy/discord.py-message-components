@@ -27,17 +27,20 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Union)
+from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Union, Match)
 
 from typing_extensions import Literal
 
 from . import abc, utils
+from .object import Object
 from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel, ForumPost, PartialMessageable
 from .components import *
 from .embeds import Embed
 from .enums import (
     ApplicationCommandType,
     ComponentType,
+    Locale,
+    ChannelType,
     InteractionCallbackType,
     InteractionType, Locale,
     MessageType,
@@ -89,7 +92,8 @@ __all__ = (
 
 class EphemeralMessage:
     """
-    Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without :meth:`~discord.Message.delete` method.
+    Like a normal :class:`~discord.Message` but with a modified :meth:`edit` method and without
+    :meth:`~discord.Message.delete` method.
     """
     # This class will be removed in the future when we switched to use the WebhookMessage model instead
     def __init__(self, *, state, channel, data, interaction):
@@ -238,14 +242,14 @@ class EphemeralMessage:
             self)
 
     def __eq__(self, other):
-        return isinstance(other.__class__, self.__class__) and self.id == other.id
+        return isinstance(other, self.__class__) and self.id == other.id
 
     @property
     def all_components(self):
-        """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
+        """Union[:class:`Button`, :class:`BaseSelect`]:
+        Yields all buttons and selects that are contained in the message"""
         for action_row in self.components:
-            for component in action_row:
-                yield component
+            yield from action_row
 
     @property
     def all_buttons(self):
@@ -440,6 +444,33 @@ class BaseInteraction:
     select (an) option(s) of :class:`~discord.SelectMenu` or using an application-command in discord
     For more general information's about Interactions visit the Documentation of the
     `Discord-API <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object>`_
+
+    Attributes
+    ------------
+    id: :class:`int`
+        The id of the interaction
+    type: :class:`~discord.InteractionType`
+        The type of the interaction
+    user_id: :class:`int`
+        The id of the user who triggered the interaction.
+    channel_id: :class:`int`
+        The id of the channel where the interaction was triggered.
+    data: :class:`~discord.InteractionData`
+        Some internal needed metadata for the interaction, depending on the type.
+    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
+        A mapping of message id's to the message objects that were sent using :attr:`respond`.
+    author_locale: Optional[:class:`~discord.Locale`]
+        The locale of the user who triggered the interaction.
+    guild_locale: Optional[:class:`~discord.Locale`]
+        The locale of the guild where the interaction was triggered.
+    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The message of the interaction, if any.
+    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The cached version of :attr:`message`, if any.
+    guild_id: Optional[:class:`int`]
+        The id of the guild where the interaction was triggered, if any.
+    app_permissions: Optional[:class:`~discord.Permissions`]
+        The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
     """
 
     def __init__(self, state: ConnectionState, data: InteractionPayload) -> None:
@@ -449,18 +480,38 @@ class BaseInteraction:
         self._application_id = int(data.get('application_id'))
         self.id: int = int(data['id'])
         self._token = data['token']
-        self.guild_id: int = utils._get_as_snowflake(data, 'guild_id')
-        self.channel_id: int = int(data.get('channel_id', data.get('channel', {}).get('id', 0)))
+        self.guild_id: Optional[int] = utils._get_as_snowflake(data, 'guild_id')
+
+        channel_data = data.get('channel', {})
+        self.channel_id: int = int(data.get('channel_id', channel_data.get('id', 0)))
+        self.app_permissions: Optional[Permissions] = None
+
+        channel = None
+        guild = self.guild or Object(id=self.guild_id) if self.guild_id else None
+        if guild:
+            self.app_permissions = Permissions(int(data.get('app_permissions', 0)))
+            channel = guild.get_channel(self.channel_id)
+
+        if not channel:
+            factory, ch_type = _channel_factory(channel_data['type'])
+            if ch_type in (ChannelType.group, ChannelType.private):
+                channel = factory(me=state.user, data=channel_data, state=state)
+            else:
+                # Note, that this is partial data, so things might be missing
+                channel = factory(guild=guild, state=state, data=data)  # TODO: Do we get the overwrites here?
+
+        self._channel = channel
+
         message_data = data.get('message', {})
         if message_data:
             if MessageFlags._from_value(message_data['flags']).ephemeral:
-                self.message = EphemeralMessage(state=state, channel=self.channel, data=message_data, interaction=self)
+                self.message = EphemeralMessage(state=state, channel=channel, data=message_data, interaction=self)
             else:
-                self.message = Message(state=state, channel=self.channel, data=message_data)
-            self.cached_message = self.message and self._state._get_message(self.message.id)
+                self.message = Message(state=state, channel=channel, data=message_data)
+            self.cached_message = self.message and state._get_message(self.message.id)
             self.message_id = self.message.id
         self.data: InteractionData = InteractionData(
-            data=data.get('data', None),
+            data=data.get('data', {}),
             state=state,
             guild=self.guild,
             channel_id=self.channel_id
@@ -470,11 +521,6 @@ class BaseInteraction:
         self.user_id: int = int(self._user['id'])
         self.author_locale: Locale = try_enum(Locale, data['locale'])
         self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale'))
-        app_permissions = data.get('app_permissions')
-        if app_permissions:
-            self.app_permissions: Optional[Permissions] = Permissions(int(app_permissions))
-        else:
-            self.app_permissions = None
         self._message: Optional[Message, EphemeralMessage] = None
         self.member: Optional[Member] = None
         self.user: Optional[User] = None
@@ -484,7 +530,7 @@ class BaseInteraction:
         self._command = None
         self._component = None
         self._callback_message: Optional[Union[Message, EphemeralMessage]] = None
-        self.messages: Optional[Dict[Union[str, int], Union[Message, EphemeralMessage]]] = {}
+        self.messages: Dict[Union[str, int], Union[Message, EphemeralMessage]] = {}
 
     def __repr__(self) -> str:
         """Represents a :class:`~discord.BaseInteraction` object."""
@@ -799,8 +845,6 @@ class BaseInteraction:
         if self.deferred_modal:
             raise TypeError('After responding to the interaction with a modal, you can\'t respond.')
         state = self._state
-        if not self.channel:
-            self.channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
 
         flags = MessageFlags._from_value(0)
         flags.ephemeral = hidden
@@ -987,7 +1031,7 @@ class BaseInteraction:
             self,
             '_channel',
             self.guild.get_channel(self.channel_id) if self.guild_id else self._state.get_channel(self.channel_id)
-        ) or PartialMessageable(state=self._state, id=self.channel_id)
+        ) or PartialMessageable(state=self._state, id=self.channel_id, guild_id=self.guild_id)
 
     @channel.setter
     def channel(self, channel):
@@ -1028,22 +1072,50 @@ class BaseInteraction:
 
 class ApplicationCommandInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when a :class:`~discord.SlashCommand`,
-    :class:`~discord.UserCommand` or :class:`~discord.MessageCommand` is used.
+    Holds the data of an interaction when a `~discord.SlashCommand`,
+    :class:`~discord.UserCommand` or :class:`~discord.MessageCommand` is used and allows responding to it.
+
+    Attributes
+    ------------
+    id: :class:`int`
+        The id of the interaction
+    type: :class:`~discord.InteractionType`
+        The type of the interaction
+    user_id: :class:`int`
+        The id of the user who triggered the interaction.
+    channel_id: :class:`int`
+        The id of the channel where the interaction was triggered.
+    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
+        A mapping of message id's to the message objects that were sent using :attr:`respond`.
+    author_locale: Optional[:class:`~discord.Locale`]
+        The locale of the user who triggered the interaction.
+    guild_locale: Optional[:class:`~discord.Locale`]
+        The locale of the guild where the interaction was triggered.
+    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The message of the interaction, if any.
+    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The cached version of :attr:`message`, if any.
+    guild_id: Optional[:class:`int`]
+        The id of the guild where the interaction was triggered, if any.
+    app_permissions: Optional[:class:`~discord.Permissions`]
+        The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
+    target: Optional[Union[:class:`~discord.Member`, :class:`~discord.Message`]]
+        The resolved target of the interaction, if it is a user or message command.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.target: Optional[Union[Member, Message]] = None
+
         if self.data.type.user:
             self.target = self.data.resolved.members[self.data.target_id]
         elif self.data.type.message:
             self.target = self.data.resolved.messages[self.data.target_id]
-        else:
-            self.target = None
 
     @property
     def command(self) -> Optional[Union[SlashCommand, MessageCommand, UserCommand]]:
-        """Optional[:class:`~discord.ApplicationCommand`]: The application-command that was invoked."""
+        """Union[:class:`~discord.SlashCommand`, :class:`~discord.UserCommand`, :class:`~discord.MessageCommand`]:
+        The application-command that was invoked."""
         if getattr(self, '_command', None) is not None:
             return self._command
         return self._state._get_client()._get_application_command(self.data.id) \
@@ -1076,8 +1148,38 @@ class ApplicationCommandInteraction(BaseInteraction):
 
 class ComponentInteraction(BaseInteraction):
     """
-    Represents the data of an interaction which will be received when any :class:`~discord.BaseSelect` or :class:`~discord.Button` is used.
+    Holds the data of an interaction with a button or select and allows responding to it.
+
+    Attributes
+    ------------
+    id: :class:`int`
+        The id of the interaction
+    type: :class:`~discord.InteractionType`
+        The type of the interaction
+    user_id: :class:`int`
+        The id of the user who triggered the interaction.
+    channel_id: :class:`int`
+        The id of the channel where the interaction was triggered.
+    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
+        A mapping of message id's to the message objects that were sent using :attr:`respond`.
+    author_locale: Optional[:class:`~discord.Locale`]
+        The locale of the user who triggered the interaction.
+    guild_locale: Optional[:class:`~discord.Locale`]
+        The locale of the guild where the interaction was triggered.
+    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The message of the interaction, if any.
+    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The cached version of :attr:`message`, if any.
+    guild_id: Optional[:class:`int`]
+        The id of the guild where the interaction was triggered, if any.
+    app_permissions: Optional[:class:`~discord.Permissions`]
+        The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
+    match: Optional[:class:`~re.Match`]
+        The RegEx :ref:`Match <https://docs.python.org/3/library/re.html#match-objects>`_ result of the custom_id of
+        the component, if an ``on_click`` or ``on_select`` decorator was used.
     """
+    if TYPE_CHECKING:
+        match: Optional[Match]
 
     @property
     def component(self) -> Union[Button, SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]:
@@ -1133,8 +1235,36 @@ class ComponentInteraction(BaseInteraction):
 
 class AutocompleteInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when autocomplete for a
+    Holds the data of an application command autocomplete interaction that will be received when autocomplete for a
     :class:`~discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` is set to :obj:`True`.
+
+    .. info::
+        To respond with the autocomplete choices, use :meth:`send_choices`.
+
+    Attributes
+    ------------
+    id: :class:`int`
+        The id of the interaction
+    type: :class:`~discord.InteractionType`
+        The type of the interaction
+    user_id: :class:`int`
+        The id of the user who triggered the interaction.
+    channel_id: :class:`int`
+        The id of the channel where the interaction was triggered.
+    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
+        A mapping of message id's to the message objects that were sent using :attr:`respond`.
+    author_locale: Optional[:class:`~discord.Locale`]
+        The locale of the user who triggered the interaction.
+    guild_locale: Optional[:class:`~discord.Locale`]
+        The locale of the guild where the interaction was triggered.
+    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The message of the interaction, if any.
+    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The cached version of :attr:`message`, if any.
+    guild_id: Optional[:class:`int`]
+        The id of the guild where the interaction was triggered, if any.
+    app_permissions: Optional[:class:`~discord.Permissions`]
+        The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
     """
 
     @property
@@ -1181,6 +1311,7 @@ class AutocompleteInteraction(BaseInteraction):
             )
 
     @utils.copy_doc(send_choices)
+    @utils.deprecated('send_choices')
     async def suggest(self, choices: List[SlashCommandOptionChoice]) -> None:
         """An aliase for :meth:`.send_choices`"""
         return await self.send_choices(choices)
@@ -1194,8 +1325,42 @@ class AutocompleteInteraction(BaseInteraction):
 
 class ModalSubmitInteraction(BaseInteraction):
     """
-    Represents the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is pressed.
+    Holds the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is
+    pressed and allows responding to it.
+
+    .. note::
+        You **can't** respond to a modal submit interaction with another modal.
+
+    Attributes
+    ------------
+    id: :class:`int`
+        The id of the interaction
+    type: :class:`~discord.InteractionType`
+        The type of the interaction
+    user_id: :class:`int`
+        The id of the user who triggered the interaction.
+    channel_id: :class:`int`
+        The id of the channel where the interaction was triggered.
+    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
+        A mapping of message id's to the message objects that were sent using :attr:`respond`.
+    author_locale: Optional[:class:`~discord.Locale`]
+        The locale of the user who triggered the interaction.
+    guild_locale: Optional[:class:`~discord.Locale`]
+        The locale of the guild where the interaction was triggered.
+    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The message of the interaction, if any.
+    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
+        The cached version of :attr:`message`, if any.
+    guild_id: Optional[:class:`int`]
+        The id of the guild where the interaction was triggered, if any.
+    app_permissions: Optional[:class:`~discord.Permissions`]
+        The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
+    match: Optional[:class:`~re.Match`]
+        The RegEx :ref:`Match <https://docs.python.org/3/library/re.html#match-objects>`_ result of the custom_id of
+        the modal, if an ``on_submit`` decorator was used.
     """
+    if TYPE_CHECKING:
+        match: Optional[Match]
 
     def get_field(self, custom_id) -> Union[TextInput, None]:
         """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`~discord.TextInput.custom_id` match or :class:`None`"""
@@ -1249,7 +1414,7 @@ class ModalSubmitInteraction(BaseInteraction):
         """
         return await super()._defer(InteractionCallbackType.deferred_msg_with_source, hidden)
 
-    async def respond_with_modal(self, modal: 'Modal') -> NotImplementedError:
+    async def respond_with_modal(self, modal: Modal) -> NotImplementedError:
         raise NotImplementedError('You can\'t respond to a modal submit with another modal.')
 
 

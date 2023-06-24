@@ -68,6 +68,11 @@ InteractionType = Literal[1, 2, 3, 4, 5]
 ApplicationCommandType = Literal[1, 2, 3]
 
 
+class PartialInteractionGuild(TypedDict):
+    locale: str
+    id: SnowflakeID
+    features: List[str]
+
 class ResolvedData(TypedDict):
     users: NotRequired[Dict[SnowflakeID, BaseUser]]
     members: NotRequired[Dict[SnowflakeID, PartialMember]]
@@ -120,6 +125,8 @@ class BaseInteraction(TypedDict):
     locale: str
     guild_id: NotRequired[SnowflakeID]
     channel_id: NotRequired[SnowflakeID]
+    channel: NotRequired[PartialChannel]
+    guild: NotRequired[PartialInteractionGuild]
     user: NotRequired[BaseUser]
     member: NotRequired[MemberWithUser]
     app_permissions: NotRequired[str]
