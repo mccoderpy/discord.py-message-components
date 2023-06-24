@@ -1392,7 +1392,7 @@ class Client:
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
                 put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
@@ -1434,7 +1434,14 @@ class Client:
                 listeners = []
                 self._listeners['raw_button_click'] = listeners
 
-            listeners.append((func, lambda i, c: _custom_id.match(str(c.custom_id))))
+            def _check(i: ComponentInteraction, c: Button) -> bool:
+                match = _custom_id.match(str(c.custom_id))
+                if match:
+                    i.match = match
+                    return True
+                return False
+
+            listeners.append((func, _check))
             return func
 
         return decorator
@@ -1461,7 +1468,7 @@ class Client:
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
                 put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
@@ -1502,7 +1509,14 @@ class Client:
                 listeners = []
                 self._listeners['raw_selection_select'] = listeners
 
-            listeners.append((func, lambda i, c: _custom_id.match(str(c.custom_id))))
+            def _check(i: ComponentInteraction, c: Button) -> bool:
+                match = _custom_id.match(str(c.custom_id))
+                if match:
+                    i.match = match
+                    return True
+                return False
+
+            listeners.append((func, _check))
             return func
 
         return decorator
@@ -1525,29 +1539,55 @@ class Client:
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the `custom_id` of the :class:`~discord.Modal` could not be used as a function name,
+            If the :attr:`~discord.Modal.custom_id` of the modal could not be used as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                As the ``custom_id`` is converted to a
+                `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
                 put ``^`` in front and ``$`` at the end of the :attr:`custom_id` if you want that the custom_id must
                 exactly match the specified value.
                 Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
 
-        Example
-        -------
+            .. tip::
+                The resulting `Match <https://docs.python.org/3/library/re.html#match-objects>`_ object will be
+                available under the :class:`~discord.ModalSubmitInteraction.match` attribute of the interaction.
+
+                **See example below.**
+
+        Examples
+        --------
         .. code-block:: python
+            :caption: Simple example of a Modal with a custom_id and a function that's called when the Modal is submitted.
+            :emphasize-lines: 9, 14
 
             # the Modal
-            Modal(title='Create a new suggestion',
-                  custom_id='suggestions_modal',
-                  components=[...])
+            Modal(
+                title='Create a new suggestion',
+                custom_id='suggestions_modal',
+                components=[...]
+            )
 
             # function that's called when the Modal is submitted
             @client.on_submit(custom_id='^suggestions_modal$')
             async def suggestions_modal_callback(i: discord.ModalSubmitInteraction):
                 ...
+
+            # This can also be done based on the function name
+            @client.on_submit()
+            async def suggestions_modal(i: discord.ModalSubmitInteraction):
+                ...
+
+
+        .. code-block:: python
+            :caption: You can also use a more advanced RegEx containing groups to easily allow dynamic custom-id's
+            :emphasize-lines: 1, 3
+
+            @client.on_submit(custom_id='^ticket_answer:(?P<id>[0-9]+)$')
+            async def ticket_answer_callback(i: discord.ModalSubmitInteraction):
+                user_id = int(i.match['id'])
+                user = client.get_user(user_id) or await client.fetch_user(user_id)
 
         Raises
         ------
@@ -1568,7 +1608,14 @@ class Client:
                 listeners = []
                 self._listeners['modal_submit'] = listeners
 
-            listeners.append((func, lambda i: _custom_id.match(str(i.custom_id))))
+            def _check(i: ModalSubmitInteraction) -> bool:
+                match = _custom_id.match(str(i.custom_id))
+                if match:
+                    i.match = match
+                    return True
+                return False
+
+            listeners.append((func, _check))
             return func
 
         return decorator

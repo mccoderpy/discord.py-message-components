@@ -34,9 +34,11 @@ import sys
 import traceback
 import types
 from typing import (
+    Callable,
     Optional,
     Union,
     Dict,
+    List,
     Tuple
 )
 
@@ -112,8 +114,8 @@ class BotBase(GroupMixin):
     def __init__(self, command_prefix, help_command=_default, description=None, **options):
         super().__init__(**options)
         self.command_prefix = command_prefix
-        self.extra_events = {}
-        self.extra_interaction_events = {}
+        self.extra_events: Dict[str, List[Callable[..., ...]]] = {}
+        self.extra_interaction_events: Dict[str, List[Tuple[Callable[..., ...], Callable[..., ...]]]] = {}
         self.__cogs = {}
         self.__extensions = {}
         self._checks = []
@@ -442,7 +444,7 @@ class BotBase(GroupMixin):
         This adds an interaction(decorator) like :meth:`on_click` or :meth:`on_select` to the client listeners.
 
         .. note::
-            This should not use directly; only cogs use this to register them.
+            This should not be used directly; it's used internal when a Cog is loaded.
 
         """
         try:
@@ -451,24 +453,35 @@ class BotBase(GroupMixin):
             listeners = []
             self.extra_interaction_events[_type] = listeners
         if _type == 'modal_submit':
-            listeners.append((func, lambda i: custom_id.match(str(i.custom_id))))
+            def _check(i):
+                match = custom_id.match(str(i.custom_id))
+                if match:
+                    i.match = match
+                    return True
+                return False
         else:
-            listeners.append((func, lambda i, c: custom_id.match(str(c.custom_id))))
+            def _check(i, b):
+                match = custom_id.match(str(b.custom_id))
+                if match:
+                    i.match = match
+                    return True
+                return False
 
-    def remove_interaction_listener(self, _type, func, custom_id: re.Pattern):
+        # We store this in the function here, so we can remove it later easily
+        listener = (func.__func__, _check)
+        setattr(func.__func__, '__listener__', listener)
+        listeners.append(listener)
+
+    def remove_interaction_listener(self, _type, func):
         """
         This removes an interaction(decorator) like :meth:`on_click` or :meth:`on_select` from the client listeners.
 
         .. note::
-            This should not use directly; only cogs use this to remove them.
-
+            This should not be used directly; it's used internal when a Cog is un-loaded.
         """
         try:
             if _type in self.extra_interaction_events:
-                if _type == 'modal_submit':
-                    self.extra_interaction_events[_type].remove((func, lambda i: custom_id.match(str(i.custom_id))))
-                else:
-                    self.extra_interaction_events[_type].remove((func, lambda i, c: custom_id.match(str(c.custom_id))))
+                self.extra_interaction_events[_type].remove(func.__listener__)
         except ValueError:
             pass
 

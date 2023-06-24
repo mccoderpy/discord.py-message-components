@@ -115,7 +115,7 @@ class CogMeta(type):
 
         commands = {}
         listeners = {}
-        cog_interaction_listeners = {}
+        interaction_listeners = {}
 
         no_bot_cog = 'Commands or listeners must not start with cog_ or bot_ (in method {0.__name__}.{1})'
 
@@ -148,7 +148,7 @@ class CogMeta(type):
                         else:
                             if elem.startswith(('cog_', 'bot_')):
                                 raise TypeError(no_bot_cog.format(base, elem))
-                            cog_interaction_listeners[elem] = value
+                            interaction_listeners[elem] = value
                     else:
                         if elem.startswith(('cog_', 'bot_')):
                             raise TypeError(no_bot_cog.format(base, elem))
@@ -163,12 +163,13 @@ class CogMeta(type):
                 # the self attribute when the time comes to add them to the bot
                 listeners_as_list.append((listener_name, listener.__name__))
 
-        interaction_listeners_as_list = []
-        for interaction_listener in cog_interaction_listeners.values():
-            for listener_name, custom_id in interaction_listener.__interaction_listener_names__:
-                interaction_listeners_as_list.append((listener_name, interaction_listener.__name__, custom_id))
-
         new_cls.__cog_listeners__ = listeners_as_list
+
+        interaction_listeners_as_list = []
+        for interaction_listener in interaction_listeners.values():
+            for listener_name, pattern in interaction_listener.__interaction_listener_names__:
+                interaction_listeners_as_list.append((listener_name, interaction_listener.__name__, pattern))
+
         new_cls.__cog_interaction_listeners__ = interaction_listeners_as_list
 
         return new_cls
@@ -356,7 +357,7 @@ class Cog(metaclass=CogMeta):
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
                 put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
@@ -387,13 +388,13 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
             actual.__cog_interaction_listener__ = True
-            _custom_id = re.compile(custom_id) if (
+            pattern = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
             ) else re.compile(f'^{actual.__name__}$')
             try:
-                actual.__interaction_listener_names__.append(('raw_button_click', _custom_id))
+                actual.__interaction_listener_names__.append(('raw_button_click', pattern))
             except AttributeError:
-                actual.__interaction_listener_names__ = [('raw_button_click', _custom_id)]
+                actual.__interaction_listener_names__ = [('raw_button_click', pattern)]
             return func
         return decorator
 
@@ -419,7 +420,7 @@ class Cog(metaclass=CogMeta):
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
                 put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
@@ -454,18 +455,18 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
             actual.__cog_interaction_listener__ = True
-            _custom_id = re.compile(custom_id) if (
+            pattern = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
             ) else re.compile(f'^{actual.__name__}$')
             try:
-                actual.__interaction_listener_names__.append(('raw_selection_select', _custom_id))
+                actual.__interaction_listener_names__.append(('raw_selection_select', pattern))
             except AttributeError:
-                actual.__interaction_listener_names__ = [('raw_selection_select', _custom_id)]
+                actual.__interaction_listener_names__ = [('raw_selection_select', pattern)]
             return func
         return decorator
 
     @classmethod
-    def on_submit(self, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
+    def on_submit(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
         [Awaitable[Any]], Awaitable[Any]
     ]:
         """
@@ -481,15 +482,21 @@ class Cog(metaclass=CogMeta):
         Parameters
         ----------
         custom_id: Optional[Union[Pattern[AnyStr], AnyStr]]
-            If the :attr:`custom_id` of the :class:`~discord.Modal` could not use as a function name,
+            If the :attr:`~discord.Modal.custom_id` of the modal could not use as a function name,
             or you want to give the function a different name then the custom_id use this one to set the custom_id.
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the :attr:`custom_id` is converted to a `Pattern <https://docs.python.org/3.9/library/re.html#re-objects>`_
+                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
                 put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
+
+            .. tip::
+                The resulting `Match <https://docs.python.org/3/library/re.html#match-objects>`_ object will be
+                available under the :class:`~discord.ModalSubmitInteraction.match` attribute of the interaction.
+
+                **See example below.**
 
         Example
         -------
@@ -501,9 +508,16 @@ class Cog(metaclass=CogMeta):
                   components=[...])
 
             # function that's called when the Modal is submitted
-            @commands.Cog.on_submit(custom_id='suggestions_modal')
+            @commands.Cog.on_submit(custom_id='^suggestions_modal$')
             async def suggestions_modal_callback(self, i: discord.ModalSubmitInteraction):
                 ...
+
+            # You can also use a more advanced RegEx containing groups to easily allow dynamic id's
+            @commands.Cog.on_submit(custom_id='^ticket_answer:(?P<id>[0-9]+)$')
+            async def ticket_answer_callback(i: discord.ModalSubmitInteraction):
+                user_id = int(i.match['id'])
+                user = client.get_user(user_id) or await client.fetch_user(user_id)
+
 
         Raises
         ------
@@ -518,13 +532,13 @@ class Cog(metaclass=CogMeta):
             if not inspect.iscoroutinefunction(actual):
                 raise TypeError('event registered must be a coroutine function')
             actual.__cog_interaction_listener__ = True
-            _custom_id = re.compile(custom_id) if (
+            pattern = re.compile(custom_id) if (
                     custom_id is not None and not isinstance(custom_id, re.Pattern)
             ) else re.compile(f'^{actual.__name__}$')
             try:
-                actual.__interaction_listener_names__.append(('modal_submit', _custom_id))
+                actual.__interaction_listener_names__.append(('modal_submit', pattern))
             except AttributeError:
-                actual.__interaction_listener_names__ = [('modal_submit', _custom_id)]
+                actual.__interaction_listener_names__ = [('modal_submit', pattern)]
             return func
 
         return decorator
@@ -1233,7 +1247,7 @@ class Cog(metaclass=CogMeta):
                 bot.remove_listener(getattr(self, method_name))
 
             for (_type, method_name, custom_id) in self.__cog_interaction_listeners__:
-                bot.remove_interaction_listener(_type, getattr(self, method_name), custom_id)
+                bot.remove_interaction_listener(_type, getattr(self, method_name))
 
             bot.remove_application_cmds_from_cog(self)
 
