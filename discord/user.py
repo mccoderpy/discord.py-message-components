@@ -267,6 +267,14 @@ class BaseUser(_BaseUser):
         return Asset(self._state, f'/embed/avatars/{self.default_avatar.value}.png')
 
     @property
+    def display_avatar(self) -> Asset:
+        """:class:`Asset`: Returns the users display avatar.
+
+        For regular users this is equal to :attr:`avatar_url`.
+        """
+        return self.avatar_url_as(format=None, size=1024)
+
+    @property
     def banner_url(self) -> Optional[Asset]:
         """
         Optional[:class:`Asset`]: Returns an asset for the banner the user has, if any.

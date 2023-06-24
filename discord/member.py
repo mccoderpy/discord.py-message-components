@@ -638,8 +638,20 @@ class Member(abc.Messageable, _BaseUser):
 
     @property
     def display_avatar_url(self) -> Asset:
-        """:class:`Asset`: Returns the guild-specific avatar asset for the member if he has one, else the default avatar asset"""
+        """:class:`Asset`:
+        Returns the displayed avatar of the member.
+
+        This is in the following order:
+        - Guild-specific avatar if available
+        - User avatar if available
+        - Default avatar
+         """
         return self.guild_avatar_url or self.avatar_url
+
+    @property
+    def display_avatar(self) -> Asset:
+        """:class:`Asset`: An alias for :attr:`display_avatar_url`."""
+        return self.display_avatar_url
 
     def display_avatar_url_as(
             self,

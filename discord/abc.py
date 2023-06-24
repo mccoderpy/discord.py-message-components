@@ -166,6 +166,13 @@ class User(Snowflake, Protocol):
         raise NotImplementedError
 
     @property
+    def display_avatar(self):
+        """:class:`Asset`: Returns the user's display avatar.
+        For regular users this is just their default or uploaded avatar.
+        """
+        raise NotImplementedError
+
+    @property
     def mention(self):
         """:class:`str`: Returns a string that allows you to mention the given user."""
         raise NotImplementedError
