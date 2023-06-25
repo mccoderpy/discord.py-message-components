@@ -40,10 +40,35 @@ Client
 
 .. autoclass:: Client
     :members:
-    :exclude-members: fetch_guilds
+    :exclude-members: fetch_guilds, event, once, slash_command, message_command, user_command, on_click, on_select, on_submit
+
+    .. automethod:: Client.event()
+        :decorator:
+
+    .. automethod:: Client.once(name=None, check=None)
+        :decorator:
 
     .. automethod:: Client.fetch_guilds
         :async-for:
+
+    .. automethod:: Client.slash_command
+        :decorator:
+
+    .. automethod:: Client.message_command
+        :decorator:
+
+    .. automethod:: Client.user_command
+        :decorator:
+
+    .. automethod:: Client.on_click
+        :decorator:
+
+    .. automethod:: Client.on_select
+        :decorator:
+
+    .. automethod:: Client.on_submit
+        :decorator:
+
 
 AutoShardedClient
 ~~~~~~~~~~~~~~~~~~
@@ -161,7 +186,7 @@ Event Reference
 
 This section outlines the different types of events listened by :class:`Client`.
 
-There are two ways to register an event, the first way is through the use of
+There are three ways to register an event, the first way is through the use of
 :meth:`Client.event`. The second way is through subclassing :class:`Client` and
 overriding the specific events. For example: ::
 
@@ -172,9 +197,19 @@ overriding the specific events. For example: ::
             if message.author == self.user:
                 return
 
-            if message.content.startswith('$hello'):
-                await message.channel.send('Hello World!')
+            # Note that for commands you should consider using the ext.commands framework or just slash commands
+            if message.content.startswith("$hello"):
+                await message.channel.send("Hello World!")
 
+The third way is to use the :meth:`Client.once` decorator. Which servers as a one-time event listener. For example: ::
+
+    import discord
+
+    client = discord.Client()
+
+    @client.once()
+    async def ready():
+        print("Hey there, I'm online!")
 
 If an event handler raises an exception, :func:`on_error` will be called
 to handle it, which defaults to print a traceback and ignoring the exception.

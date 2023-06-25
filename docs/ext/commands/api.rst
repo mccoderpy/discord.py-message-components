@@ -18,6 +18,34 @@ Bot
 .. autoclass:: discord.ext.commands.Bot
     :members:
     :inherited-members:
+    :exclude-members: after_invoke, before_invoke, check, check_once, command, event, group, listen, once
+
+    .. automethod:: Bot.after_invoke()
+        :decorator:
+
+    .. automethod:: Bot.before_invoke()
+        :decorator:
+
+    .. automethod:: Bot.check()
+        :decorator:
+
+    .. automethod:: Bot.check_once()
+        :decorator:
+
+    .. automethod:: Bot.command(*args, **kwargs)
+        :decorator:
+
+    .. automethod:: Bot.event()
+        :decorator:
+
+    .. automethod:: Bot.group(*args, **kwargs)
+        :decorator:
+
+    .. automethod:: Bot.listen(name=None)
+        :decorator:
+
+    .. automethod:: Bot.once(name=None, check=None)
+        :decorator:
 
 AutoShardedBot
 ~~~~~~~~~~~~~~~~
