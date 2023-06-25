@@ -482,10 +482,11 @@ class HTTPClient:
                 self._locks[bucket] = lock
 
         # header creation
-        headers = {
+        headers = kwargs.get('headers', {})
+        headers.update({
             'User-Agent': self.user_agent,
             'X-Discord-Locale': self.api_error_locale
-        }
+        })
 
         if self.token is not None:
             headers['Authorization'] = 'Bot ' + self.token
@@ -697,7 +698,11 @@ class HTTPClient:
             return self.request(r, files=params.files, form=params.multipart)
         else:
             return self.request(r, json=params.payload)
-
+    
+    def send_voice_message(self, channel_id, *, params: MultipartParameters, x_super_properties: str):
+        r = Route('POST', '/channels/{channel_id}/messages', channel_id=channel_id)
+        return self.request(r, files=params.files, form=params.multipart, headers={'x-super-properties': x_super_properties})
+    
     def send_typing(self, channel_id):
         return self.request(Route('POST', '/channels/{channel_id}/typing', channel_id=channel_id))
 
