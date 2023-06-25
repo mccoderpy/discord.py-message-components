@@ -18,6 +18,55 @@ Bot
 .. autoclass:: discord.ext.commands.Bot
     :members:
     :inherited-members:
+    :exclude-members: after_invoke, before_invoke, check, check_once, command, event, group, listen, once
+
+    .. automethod:: Bot.after_invoke()
+        :decorator:
+
+    .. automethod:: Bot.before_invoke()
+        :decorator:
+
+    .. automethod:: Bot.check()
+        :decorator:
+
+    .. automethod:: Bot.check_once()
+        :decorator:
+
+    .. automethod:: Bot.command(*args, **kwargs)
+        :decorator:
+
+    .. automethod:: Bot.event()
+        :decorator:
+
+    .. automethod:: Bot.group(*args, **kwargs)
+        :decorator:
+
+    .. automethod:: Bot.listen(name=None)
+        :decorator:
+
+    .. automethod:: Bot.once(name=None, check=None)
+        :decorator:
+
+    .. automethod:: Bot.fetch_guilds
+        :async-for:
+
+    .. automethod:: Bot.slash_command
+        :decorator:
+
+    .. automethod:: Bot.message_command
+        :decorator:
+
+    .. automethod:: Bot.user_command
+        :decorator:
+
+    .. automethod:: Bot.on_click
+        :decorator:
+
+    .. automethod:: Bot.on_select
+        :decorator:
+
+    .. automethod:: Bot.on_submit
+        :decorator:
 
 AutoShardedBot
 ~~~~~~~~~~~~~~~~
@@ -125,6 +174,28 @@ Cog
 
 .. autoclass:: discord.ext.commands.Cog
     :members:
+    :excluded-members: listener, slash_command, message_command, user_command, on_click, on_select, on_submit
+
+    .. automethod:: Cog.listener
+        :decorator:
+
+    .. automethod:: Cog.slash_command
+        :decorator:
+
+    .. automethod:: Cog.message_command
+        :decorator:
+
+    .. automethod:: Cog.user_command
+        :decorator:
+
+    .. automethod:: Cog.on_click
+        :decorator:
+
+    .. automethod:: Cog.on_select
+        :decorator:
+
+    .. automethod:: Cog.on_submit
+        :decorator:
 
 CogMeta
 ~~~~~~~~

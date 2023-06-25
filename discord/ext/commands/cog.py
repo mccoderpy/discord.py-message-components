@@ -295,7 +295,7 @@ class Cog(metaclass=CogMeta):
         return getattr(method.__func__, '__cog_special_method__', method)
 
     @classmethod
-    def listener(cls, name=None):
+    def listener(cls, name: Optional[str] = None):
         """A decorator that marks a function as a listener.
 
         This is the cog equivalent of :meth:`.Bot.listen`.
