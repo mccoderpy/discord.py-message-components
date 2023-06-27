@@ -468,7 +468,7 @@ class BotBase(GroupMixin):
                 return False
 
         # We store this in the function here, so we can remove it later easily
-        listener = (func.__func__, _check)
+        listener = (func, _check)
         setattr(func.__func__, '__listener__', listener)
         listeners.append(listener)
 
