@@ -592,7 +592,10 @@ class Guild(Hashable):
                 factory, ch_type = _channel_factory(t['type'])
                 if factory:
                     parent_channel = self.get_channel(int(t['parent_id']))
+                    if parent_channel is None:
+                        continue  # we don't know why this happens sometimes
                     thread = factory(guild=self, data=t, state=self._state)
+
                     if isinstance(parent_channel, ForumChannel):
                         post = ForumPost(state=self._state, guild=self, data=t)
                         self._add_channel(post)
