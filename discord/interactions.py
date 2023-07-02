@@ -490,7 +490,8 @@ class BaseInteraction:
         guild = self.guild or Object(id=self.guild_id) if self.guild_id else None
         if guild:
             self.app_permissions = Permissions(int(data.get('app_permissions', 0)))
-            channel = guild.get_channel(self.channel_id)
+            if isinstance(guild, Guild):
+                channel = guild.get_channel(self.channel_id)
 
         if not channel:
             factory, ch_type = _channel_factory(channel_data['type'])
@@ -498,7 +499,8 @@ class BaseInteraction:
                 channel = factory(me=state.user, data=channel_data, state=state)
             else:
                 # Note, that this is partial data, so things might be missing
-                channel = factory(guild=guild, state=state, data=data)  # TODO: Do we get the overwrites here?
+                channel = PartialMessageable(state=state, id=self.channel_id)
+                # channel = factory(guild=guild, state=state, data=data)  # TODO: Do we get the overwrites here?
 
         self._channel = channel
 
