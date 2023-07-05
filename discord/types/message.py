@@ -103,7 +103,7 @@ MessageType = Literal[
 EmbedType = Literal['rich', 'image', 'video', 'gifv', 'article', 'link']
 MessageActivityType = Literal[1, 2, 3, 5]
 StickerFormatType = Literal[1, 2, 3, 4]
-
+ReactionType = Literal[1, 2]
 
 class ActionRow(TypedDict):
     type: Literal[1]
@@ -233,13 +233,25 @@ class Embed(TypedDict):
     provider: NotRequired[EmbedProvider]
     author: NotRequired[EmbedAuthor]
     fields: NotRequired[List[EmbedField]]
-    
+
+
+class ReactionCountDetails(TypedDict):
+    normal: int
+    burst: int
 
 
 class Reaction(TypedDict):
     count: int
+    burst_count: NotRequired[int]
+    count_details: NotRequired[ReactionCountDetails]
     me: bool
     emoji: PartialEmoji
+    type: Literal[1, 2]
+    burst: NotRequired[bool]  # As burst reactions api is still subject to change this might be removed in the future
+    message_id: NotRequired[SnowflakeID]
+    channel_id: NotRequired[SnowflakeID]
+    user_id: NotRequired[SnowflakeID]
+
 
 
 class ChannelMention(TypedDict):

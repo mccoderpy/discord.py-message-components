@@ -183,13 +183,14 @@ class _FilteredAsyncIterator(_AsyncIterator):
 
 
 class ReactionIterator(_AsyncIterator):
-    def __init__(self, message, emoji, limit: int = 100, after: Optional['Snowflake'] = None):
+    def __init__(self, message, emoji, reaction_type: int, limit: int = 100, after: Optional[Snowflake] = None):
         self.message = message
         self.limit = limit
         self.after = after
         state = message._state
         self.getter = state.http.get_reaction_users
         self.state = state
+        self.reaction_type = reaction_type
         self.emoji = emoji
         self.guild = message.guild
         self.channel_id = message.channel.id
@@ -212,7 +213,9 @@ class ReactionIterator(_AsyncIterator):
             retrieve = self.limit if self.limit <= 100 else 100
 
             after = self.after.id if self.after else None
-            data = await self.getter(self.channel_id, self.message.id, self.emoji, retrieve, after=after)
+            data = await self.getter(
+                self.channel_id, self.message.id, self.emoji, retrieve, type=self.type, after=after
+            )
 
             if data:
                 self.limit -= retrieve

@@ -760,7 +760,7 @@ class HTTPClient:
         )
         return self.request(r)
 
-    def get_reaction_users(self, channel_id, message_id, emoji, limit, after=None):
+    def get_reaction_users(self, channel_id, message_id, emoji, limit, reaction_type, after=None):
         r = Route(
             'GET',
             '/channels/{channel_id}/messages/{message_id}/reactions/{emoji}',
@@ -772,6 +772,8 @@ class HTTPClient:
         params = {'limit': limit}
         if after:
             params['after'] = after
+        if reaction_type != 0:
+            params['type'] = type
         return self.request(r, params=params)
 
     def clear_reactions(self, channel_id, message_id):

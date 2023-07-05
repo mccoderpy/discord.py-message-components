@@ -39,13 +39,14 @@ if TYPE_CHECKING:
     from .abc import Snowflake
 
 from .iterators import ReactionIterator
+from .enums import try_enum, ReactionType
 
 
 class Reaction:
     """Represents a reaction to a message.
 
     Depending on the way this object was created, some attributes can
-    have a value of ``None``.
+    have a value of ``None``
 
     .. container:: operations
 
@@ -72,24 +73,26 @@ class Reaction:
     emoji: Union[:class:`Emoji`, :class:`PartialEmoji`, :class:`str`]
         The reaction emoji. Might be a custom emoji, or a unicode emoji.
     count: :class:`int`
-        Number of times this reaction was made
+        Number of times this reaction was made.
     me: :class:`bool`
         If the user sent this reaction.
     message: :class:`Message`
         Message this reaction is for.
     """
-    __slots__ = ('message', 'count', 'emoji', 'me')
+    __slots__ = ('message', 'count', 'emoji', 'me', '_type')
 
     def __init__(self, *, message: Message, data: ReactionPayload, emoji: Optional[Union[Emoji, PartialEmoji, str]] = None):
         self.message: Message = message
         self.emoji: Union[Emoji, PartialEmoji, str] = emoji or message._state.get_reaction_emoji(data['emoji'])
-        self.count: int = data.get('count', 1)
-        self.me: bool = data.get('me')
+        count_details = data.get('count_details', {})
 
-    @property
-    def custom_emoji(self) -> bool:
-        """:class:`bool`: If this is a custom emoji."""
-        return not isinstance(self.emoji, str)
+        # The burst reactions api is still not stable yet, that's why the code looks like this for now
+        normal_count: int = data.get('count', count_details.get('normal', 0))
+        burst_count: int = data.get('burst_count', count_details.get('burst', 0))
+
+        self.count: int = (burst_count + normal_count) or 1  # this should be fine for now
+        self.me: bool = data.get('me')
+        self._type = data.get('type', 0)
 
     def __eq__(self, other) -> bool:
         return isinstance(other, self.__class__) and other.emoji == self.emoji
@@ -106,7 +109,21 @@ class Reaction:
         return str(self.emoji)
 
     def __repr__(self) -> str:
-        return '<Reaction emoji={0.emoji!r} me={0.me} count={0.count}>'.format(self)
+        return f'<Reaction emoji={self.emoji!r} me={self.me} count={self.count} type={self.type}'
+
+    @property
+    def custom_emoji(self) -> bool:
+        """:class:`bool`: If this is a custom emoji."""
+        return not isinstance(self.emoji, str)
+
+    @property
+    def type(self) -> ReactionType:
+        """:class:`ReactionType`: The type of this reaction; normal or burst."""
+        return try_enum(ReactionType, self._type)
+
+    def is_burst(self) -> bool:
+        """:class:`bool`: Whether this is a burst reaction or not."""
+        return self._type == 1
 
     async def remove(self, user: Snowflake) -> None:
         """|coro|
@@ -211,4 +228,4 @@ class Reaction:
         if limit is None:
             limit = self.count
 
-        return ReactionIterator(self.message, emoji, limit, after)
+        return ReactionIterator(self.message, emoji, self._type, limit, after)

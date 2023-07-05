@@ -50,6 +50,7 @@ __all__ = (
     'InviteTargetType',
     'AutoArchiveDuration',
     'MessageType',
+    'ReactionType',
     'VoiceRegion',
     'VideoQualityMode',
     'SpeakingState',
@@ -667,6 +668,12 @@ class MessageType(Enum):
     stage_raise_hand                             = 30
     stage_topic_change                           = 31
     guild_application_premium_subscription       = 32
+
+
+class ReactionType(Enum):
+    normal = 0
+    burst  = 1
+    super  = 1
 
 
 class VoiceRegion(Enum):

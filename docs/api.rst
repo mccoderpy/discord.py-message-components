@@ -1308,6 +1308,17 @@ of :class:`enum.Enum`.
 
         .. versionadded:: 2.4
 
+.. class:: ReactionType
+
+    .. versionadded:: 2.0
+
+    .. attribute:: normal
+
+        A normal reaction
+
+    .. attribute:: burst
+
+        A :dis-gd:`burst reaction <super-reactions>`.
 
 .. class:: ComponentType
 

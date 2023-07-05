@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 from .member import Member
 from .user import User
 from .message import Message
+from .enums import ReactionType, try_enum
 
 
 class _RawReprMixin:
@@ -157,7 +158,7 @@ class RawReactionActionEvent(_RawReprMixin):
     """
 
     __slots__ = ('message_id', 'user_id', 'channel_id', 'guild_id', 'emoji',
-                 'event_type', 'member')
+                 'event_type', '_type', 'member')
 
     def __init__(self, data, emoji, event_type):
         self.message_id = int(data['message_id'])
@@ -166,11 +167,23 @@ class RawReactionActionEvent(_RawReprMixin):
         self.emoji = emoji
         self.event_type = event_type
         self.member = None
+        self._type = data.get('type', 0)
 
         try:
             self.guild_id = int(data['guild_id'])
         except KeyError:
             self.guild_id = None
+
+    @property
+    def type(self) -> ReactionType:
+        """
+        :class:`ReactionType`: The type of reaction; e.g. normal or burst.
+
+        .. versionadded:: 2.0
+        """
+        return try_enum(ReactionType, self._type)
+
+    # TODO: Add support for things like query reaction members and co. from here.
 
 
 class RawReactionClearEvent(_RawReprMixin):
