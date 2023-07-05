@@ -625,21 +625,27 @@ class ConnectionState:
 
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        parent_channel = guild.get_channel(int(data['parent_id']))
-        
-        if isinstance(parent_channel, ForumChannel):
-            if not parent_channel.get_post(int(data['id'])):
-                post = ForumPost(state=self, guild=guild, data=data)
-                guild._add_post(post)
-                self.dispatch('post_create', post)
+        if guild is not None:
+            parent_channel = guild.get_channel(int(data['parent_id']))
+
+            if parent_channel is not None:
+                if isinstance(parent_channel, ForumChannel):
+                    if not parent_channel.get_post(int(data['id'])):
+                        post = ForumPost(state=self, guild=guild, data=data)
+                        guild._add_post(post)
+                        self.dispatch('post_create', post)
+                elif isinstance(parent_channel, TextChannel):
+                    if not parent_channel.get_thread(int(data['id'])):
+                        thread = ThreadChannel(state=self, guild=guild, data=data)
+                        message = self._get_message(thread.id)
+                        if message:
+                            message._thread = thread
+                        guild._add_thread(thread)
+                        self.dispatch('thread_create', thread)
+            else:
+                log.debug('THREAD_CREATE referencing an unknown channel ID: %s. Discarding.', data['parent_id'])
         else:
-            if not parent_channel.get_thread(int(data['id'])):
-                thread = ThreadChannel(state=self, guild=guild, data=data)
-                message = self._get_message(thread.id)
-                if message:
-                    message._thread = thread
-                guild._add_thread(thread)
-                self.dispatch('thread_create', thread)
+            log.debug('THREAD_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_thread_update(self, data):
         guild_id = int(data['guild_id'])
@@ -661,11 +667,11 @@ class ConnectionState:
 
     def parse_thread_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        thread = guild.get_channel(int(data['id']))
-        if not thread:
-            thread = ThreadChannel._from_partial(state=self, guild=guild, data=data)
-        else:
-            if isinstance(thread.parent_channel, ForumChannel):
+        if guild is not None:
+            thread = guild.get_channel(int(data['id']))
+            if not thread:
+                thread = ThreadChannel._from_partial(state=self, guild=guild, data=data)
+            elif isinstance(thread.parent_channel, ForumChannel):
                 guild._remove_post(thread)
                 self.dispatch('post_delete', thread)
             else:
@@ -673,77 +679,106 @@ class ConnectionState:
                 self.dispatch('thread_delete', thread)
                 if thread.starter_message:
                     thread.starter_message._thread = None
-        self.dispatch('thread_delete', thread)
+            self.dispatch('thread_delete', thread)
+        else:
+            log.debug('THREAD_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_thread_member_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        thread = guild.get_channel(int(data['id']))
-        if thread:
-            old_thread = copy.copy(thread)
-            thread._add_self(data)
-            if isinstance(thread, ForumPost):
-                self.dispatch('post_member_update', old_thread, thread)
+        if guild is not None:
+            thread = guild.get_channel(int(data['id']))
+            if thread is not None:
+                old_thread = copy.copy(thread)
+                thread._add_self(data)
+                if isinstance(thread, ForumPost):
+                    self.dispatch('post_member_update', old_thread, thread)
+                else:
+                    self.dispatch('thread_member_update', old_thread, thread)
             else:
-                self.dispatch('thread_member_update', old_thread, thread)
+                log.debug('THREAD_MEMBER_UPDATE referencing an unknown channel ID: %s. Discarding.', data['id'])
+        else:
+            log.debug('THREAD_MEMBER_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_thread_members_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        thread = guild.get_channel(int(data['id']))
-        if thread:
-            old_thread = copy.copy(thread)
-            thread._sync_from_members_update(data)
+        if guild is not None:
+            thread = guild.get_channel(int(data['id']))
+            if thread is not None:
+                old_thread = copy.copy(thread)
+                thread._sync_from_members_update(data)
 
-            if isinstance(thread, ForumPost):
-                self.dispatch('post_members_update', old_thread, thread)
+                if isinstance(thread, ForumPost):
+                    self.dispatch('post_members_update', old_thread, thread)
+                else:
+                    self.dispatch('thread_members_update', old_thread, thread)
             else:
-                self.dispatch('thread_members_update', old_thread, thread)
+                log.debug('THREAD_MEMBERS_UPDATE referencing an unknown channel ID: %s. Discarding.', data['id'])
+        else:
+            log.debug('THREAD_MEMBERS_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_thread_list_sync(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        old_guild = copy.copy(guild)
-        channel_ids = [int(c) for c in data.get('channel_ids', [])]
-        for t in data['threads']:
-            factory, _ = _channel_factory(t['type'])
-            thread = factory(state=self, guild=guild, data=t)
-            if isinstance(thread.parent_channel, ForumChannel):
-                guild._add_post(thread)
-            else:
-                guild._add_thread(thread)
-            try:
-                channel_ids.remove(thread.parent_id)
-            except ValueError:
-                pass
-        for m in data['members']:
-            me = ThreadMember(state=self,  guild=guild, data=m)
-            thread = guild.get_channel(me.thread_id)
-            thread._add_member(me)
+        if guild is not None:
+            old_guild = copy.copy(guild)
+            channel_ids = [int(c) for c in data.get('channel_ids', [])]
+            for t in data['threads']:
+                factory, _ = _channel_factory(t['type'])
+                thread = factory(state=self, guild=guild, data=t)
+                if isinstance(thread.parent_channel, ForumChannel):
+                    guild._add_post(thread)
+                else:
+                    guild._add_thread(thread)
+                try:
+                    channel_ids.remove(thread.parent_id)
+                except ValueError:
+                    pass
+            for m in data['members']:
+                me = ThreadMember(state=self,  guild=guild, data=m)
+                thread = guild.get_channel(me.thread_id)
+                thread._add_member(me)
 
-        for c in channel_ids:
-            channel = guild.get_channel(c)
-            channel._threads = {}
+            for c in channel_ids:
+                channel = guild.get_channel(c)
+                channel._threads = {}
 
-        self.dispatch('thread_list_sync', old_guild, guild)
+            self.dispatch('thread_list_sync', old_guild, guild)
+        else:
+            log.debug('THREAD_LIST_SYNC referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_guild_scheduled_event_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        event = self.store_event(guild, data)
-        self.dispatch('scheduled_event_create', guild, event)
+        if guild is not None:
+            event = self.store_event(guild, data)
+            self.dispatch('scheduled_event_create', guild, event)
+        else:
+            log.debug('GUILD_SCHEDULED_EVENT_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_guild_scheduled_event_update(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        event = guild.get_event(int(data['id']))
-        if not event:
-            log.debug('GUILD_SCHEDULED_EVENT_UPDATE referencing an unknown event ID: %s. Discarding.', data['id'])
-            return
-        before = copy.copy(event)
-        event._update(data)
-        self.dispatch('scheduled_event_update', guild, before, event)
+        if guild is not None:
+            event = guild.get_event(int(data['id']))
+            if event is not None:
+                before = copy.copy(event)
+                event._update(data)
+                # Do we really need to provide the guild here? The event already has a guild attribute.
+                self.dispatch('scheduled_event_update', guild, before, event)
+            else:
+                log.debug('GUILD_SCHEDULED_EVENT_UPDATE referencing an unknown event ID: %s. Discarding.', data['id'])
+        else:
+            log.debug('GUILD_SCHEDULED_EVENT_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_guild_scheduled_event_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
-        event = guild.get_event(int(data['id']))
-        event._update(data)
-        self.dispatch('scheduled_event_delete', guild, event)
+        if guild is not None:
+            event = guild.get_event(int(data['id']))
+            if event is not None:
+                event._update(data)
+                self.dispatch('scheduled_event_delete', guild, event)
+            else:
+                # TODO: Consider adding a raw event here.
+                log.debug('GUILD_SCHEDULED_EVENT_DELETE referencing an unknown event ID: %s. Discarding.', data['id'])
+        else:
+            log.debug('GUILD_SCHEDULED_EVENT_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']
