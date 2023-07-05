@@ -551,9 +551,9 @@ class BaseInteraction:
             self.cached_message = None
             self.message_id = None
 
-        data = data.get('data')
-        if data is not None:
-            self.data = InteractionData(data=data,state=state, guild=self.guild, channel_id=self.channel_id)
+        interaction_data = data.get('data')
+        if interaction_data is not None:
+            self.data = InteractionData(data=interaction_data,state=state, guild=self.guild, channel_id=self.channel_id)
         else:
             self.data = None
 
