@@ -1102,15 +1102,21 @@ class ApplicationCommandInteraction(BaseInteraction):
     target: Optional[Union[:class:`~discord.Member`, :class:`~discord.Message`]]
         The resolved target of the interaction, if it is a user or message command.
     """
+    if TYPE_CHECKING:
+        target: Optional[Union[Member, User, Message]]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.target: Optional[Union[Member, Message]] = None
-
-        if self.data.type.user:
-            self.target = self.data.resolved.members[self.data.target_id]
-        elif self.data.type.message:
-            self.target = self.data.resolved.messages[self.data.target_id]
+        target_id = self.data.target_id
+        if target_id:
+            target_type = self.data.type
+            resolved = self.data.resolved
+            if target_type == ApplicationCommandType.user:
+                self.target = resolved.members.get(target_id) or resolved.users.get(target_id)
+            elif target_type == ApplicationCommandType.message:
+                self.target = resolved.messages[target_id]
+        else:
+            self.target = None
 
     @property
     def command(self) -> Optional[Union[SlashCommand, MessageCommand, UserCommand]]:
