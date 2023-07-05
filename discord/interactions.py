@@ -480,25 +480,47 @@ class BaseInteraction:
         self._application_id = int(data.get('application_id'))
         self.id: int = int(data['id'])
         self._token = data['token']
-        self.guild_id: Optional[int] = utils._get_as_snowflake(data, 'guild_id')
+        self.type = InteractionType.try_value(data['type'])
+        self.id = int(data['id'])
+        self.guild_id = guild_id = utils._get_as_snowflake(data, 'guild_id')
 
         channel_data = data.get('channel', {})
-        self.channel_id: int = int(data.get('channel_id', channel_data.get('id', 0)))
-        self.app_permissions: Optional[Permissions] = None
+        self.channel_id = channel_id = int(data.get('channel_id', channel_data.get('id', 0)))
 
         channel = None
         guild = self.guild or Object(id=self.guild_id) if self.guild_id else None
         if guild:
-            self.app_permissions = Permissions(int(data.get('app_permissions', 0)))
             channel = guild.get_channel(self.channel_id)
+            member = data.get('member')
+            user = member.get('user')
+            self.app_permissions = Permissions(int(data.get('app_permissions', 0)))
+            self.user_id = user_id = int(user['id'])
+            self.member = guild.get_member(user_id) or Member(state=state, data=member, guild=guild)
+            self.guild_locale = try_enum(Locale, data.get('guild_locale'))
+        else:
+            channel = state._get_private_channel(channel_id)
+            user = data.get('user')
+            self.app_permissions = None
+            self.user_id = int(user['id'])
+            self.member = None
+            self.guild_locale = None
+
+        self.user = state.store_user(user)
+
 
         if not channel:
             factory, ch_type = _channel_factory(channel_data['type'])
             if ch_type in (ChannelType.group, ChannelType.private):
+                # In my tests the required fields for those channels where always present
                 channel = factory(me=state.user, data=channel_data, state=state)
             else:
-                # Note, that this is partial data, so things might be missing
-                channel = factory(guild=guild, state=state, data=data)  # TODO: Do we get the overwrites here?
+                channel = PartialMessageable(
+                    state=state,
+                    id=self.channel_id,
+                    guild_id=self.guild_id,
+                    type=ch_type,
+                    partial_data=channel_data
+                )
 
         self._channel = channel
 

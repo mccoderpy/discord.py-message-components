@@ -590,16 +590,6 @@ class ConnectionState:
     def parse_interaction_create(self, data):
         self.dispatch('interaction_create', data)
         interaction = BaseInteraction.from_type(state=self, data=data)
-        interaction.user = self.store_user(interaction._user)
-        if interaction.guild_id:
-            interaction.channel = interaction.guild.get_channel(interaction.channel_id) or PartialMessageable(id=interaction.channel_id, state=self)
-            interaction.member = interaction.guild.get_member(interaction.user_id)
-            if interaction.member is None:
-                # This can only be the case if ``GUILD_MEMBERS`` Intents are not enabled or the member is not in the cache right now.
-                interaction.member = Member(guild=interaction.guild, data=interaction._member, state=self)
-        else:
-            interaction.channel = self._get_private_channel(interaction.channel_id) or self.get_channel(interaction.channel_id)\
-                                  or PartialMessageable(id=interaction.channel_id, type=ChannelType.private, state=self)
 
         if interaction.type in (InteractionType.ApplicationCommand, InteractionType.ApplicationCommandAutocomplete):
             cmd = self._get_client()._get_application_command(interaction.data.id)
@@ -607,8 +597,7 @@ class ConnectionState:
                 interaction._command = cmd
                 self._get_client()._schedule_event(cmd._parse_arguments, '_application_command_invoke', interaction)
         elif interaction.type == InteractionType.Component:
-            interaction._message = self._get_message(interaction.message_id) if interaction.message is None else interaction.message
-            if interaction.cached_message is not None:
+            if interaction.cached_message is not None:  # Remove this check and on_raw_x events on v2 release
                 if interaction.data.component_type == ComponentType.Button:
                     self.dispatch('button_click', interaction, interaction.component)
                     self.dispatch('raw_button_click', interaction, interaction.component)

@@ -3422,8 +3422,13 @@ class ForumChannel(abc.GuildChannel, Hashable):
 class PartialMessageable(abc.Messageable, Hashable):
     """Represents a partial messageable to aid with working messageable channels when
     only a channel ID are present.
+
     The only way to construct this class is through :meth:`Client.get_partial_messageable`.
-    Note that this class is trimmed down and has no rich attributes.
+
+    .. note::
+        This class is trimmed down and has no rich attributes.
+        However, sometimes there might be partial (raw) data available you can access through :attr:`.partial_data`.
+
     .. container:: operations
         .. describe:: x == y
             Checks if two partial messageables are equal.
@@ -3431,19 +3436,33 @@ class PartialMessageable(abc.Messageable, Hashable):
             Checks if two partial messageables are not equal.
         .. describe:: hash(x)
             Returns the partial messageable's hash.
+
     Attributes
     -----------
     id: :class:`int`
         The channel ID associated with this partial messageable.
     type: Optional[:class:`ChannelType`]
         The channel type associated with this partial messageable, if given.
+    guild_id: Optional[:class:`int`]
+        The guild ID associated with this partial messageable, if given.
+    partial_data: Dict[:class:`str`, Any]
+        A dictionary of partial (raw) api data that might be available for this partial messageable.
     """
 
-    def __init__(self, state: ConnectionState, id: int, type: Optional[ChannelType] = None, *, guild_id: int = None):
+    def __init__(
+            self,
+            state: ConnectionState,
+            id: int,
+            type: Optional[ChannelType] = None,
+            *,
+            guild_id: int = None,
+            partial_data: Dict[str, Any] = {},
+    ):
         self._state: ConnectionState = state
         self.id: int = id
         self.guild_id: Optional[int] = guild_id
         self.type: Optional[ChannelType] = type
+        self.partial_data: Dict[str, Any] = partial_data
     
     def __repr__(self) -> str:
         return f'<PartialMessageable id={self.id} type={self.type!r}{f" guild_id={self.guild_id}" if self.guild_id else ""}>'
@@ -3473,7 +3492,7 @@ class PartialMessageable(abc.Messageable, Hashable):
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return utils.snowflake_time(self.id)
 
-    def permissions_for(self, obj: Any = None) -> Permissions:
+    def permissions_for(self, obj: User = None) -> Permissions:
         """Handles permission resolution for a :class:`User`.
         This function is there for compatibility with other channel types.
         Since partial messageables cannot reasonably have the concept of
@@ -3488,7 +3507,7 @@ class PartialMessageable(abc.Messageable, Hashable):
         Returns
         --------
         :class:`Permissions`
-            The resolved permissions.
+            The resolved permissions. Always none for partial messageables.
         """
 
         return Permissions.none()
