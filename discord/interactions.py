@@ -562,7 +562,6 @@ class BaseInteraction:
         self.deferred_hidden: bool = False
         self.deferred_modal: bool = False
         self._command = None
-        self._component = None
         self._callback_message: Optional[Union[Message, EphemeralMessage]] = None
         self.messages: Dict[Union[str, int], Union[Message, EphemeralMessage]] = {}
 
