@@ -472,13 +472,26 @@ class BaseInteraction:
     app_permissions: Optional[:class:`~discord.Permissions`]
         The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
     """
+    if TYPE_CHECKING:
+        type: InteractionType
+        id: int
+        guild_id: Optional[int]
+        channel_id: int
+        app_permissions: Optional[Permissions]
+        user_id: int
+        user: User
+        member: Optional[Member]
+        author_locale: Locale
+        guild_locale: Optional[Locale]
+        data: Optional[InteractionData]
+        message: Optional[Union[Message, EphemeralMessage]]
+        cached_message: Optional[Union[Message, EphemeralMessage]]
+        message_id: Optional[int]
 
     def __init__(self, state: ConnectionState, data: InteractionPayload) -> None:
         self._state: ConnectionState = state
         self._http: HTTPClient = state.http
-        self.type: InteractionType = InteractionType.try_value(data['type'])
         self._application_id = int(data.get('application_id'))
-        self.id: int = int(data['id'])
         self._token = data['token']
         self.type = InteractionType.try_value(data['type'])
         self.id = int(data['id'])
@@ -487,8 +500,8 @@ class BaseInteraction:
         channel_data = data.get('channel', {})
         self.channel_id = channel_id = int(data.get('channel_id', channel_data.get('id', 0)))
 
-        channel = None
-        guild = self.guild or Object(id=self.guild_id) if self.guild_id else None
+        guild = self.guild or Object(id=guild_id) if guild_id else None  # I'm not sure if we need the Object thing here
+
         if guild:
             channel = guild.get_channel(self.channel_id)
             member = data.get('member')
@@ -524,28 +537,27 @@ class BaseInteraction:
 
         self._channel = channel
 
-        message_data = data.get('message', {})
-        if message_data:
+        message_data = data.get('message')
+        if message_data is not None:
             if MessageFlags._from_value(message_data['flags']).ephemeral:
                 self.message = EphemeralMessage(state=state, channel=channel, data=message_data, interaction=self)
             else:
                 self.message = Message(state=state, channel=channel, data=message_data)
+            # Remove this on release, it's unnecessary as we always get the full message (except reactions for components)
             self.cached_message = self.message and state._get_message(self.message.id)
-            self.message_id = self.message.id
-        self.data: InteractionData = InteractionData(
-            data=data.get('data', {}),
-            state=state,
-            guild=self.guild,
-            channel_id=self.channel_id
-        )
-        self._member = data.get('member')
-        self._user = data.get('user', self._member.get('user') if self._member else None)
-        self.user_id: int = int(self._user['id'])
-        self.author_locale: Locale = try_enum(Locale, data['locale'])
-        self.guild_locale: Locale = try_enum(Locale, data.get('guild_locale'))
-        self._message: Optional[Message, EphemeralMessage] = None
-        self.member: Optional[Member] = None
-        self.user: Optional[User] = None
+            self.message_id = int(message_data['id'])
+        else:
+            self.message = None
+            self.cached_message = None
+            self.message_id = None
+
+        data = data.get('data')
+        if data is not None:
+            self.data = InteractionData(data=data,state=state, guild=self.guild, channel_id=self.channel_id)
+        else:
+            self.data = None
+
+        self.author_locale = try_enum(Locale, data['locale'])
         self.deferred: bool = False
         self.deferred_hidden: bool = False
         self.deferred_modal: bool = False
@@ -556,7 +568,7 @@ class BaseInteraction:
 
     def __repr__(self) -> str:
         """Represents a :class:`~discord.BaseInteraction` object."""
-        return f'<{self.__class__.__name__} {", ".join(["%s=%s" % (k, v) for k, v in self.__dict__.items() if k[0] != "_"])}>'
+        return f'<{self.__class__.__name__} {", ".join([f"{k}={v}" for k, v in self.__dict__.items() if k[0] != "_"])}>'
     
     @property
     def callback_message(self) -> Optional[Union[Message, EphemeralMessage]]:
@@ -1049,6 +1061,7 @@ class BaseInteraction:
         """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`, :class:`~discord.ForumPost`, :class:`~discord.PartialMessageable`
         The channel where the interaction was invoked in.
         """
+        # TODO: I think we can remove this now
         return getattr(
             self,
             '_channel',
@@ -1212,20 +1225,25 @@ class ComponentInteraction(BaseInteraction):
     @property
     def component(self) -> Union[Button, SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]:
         """Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]: The component that was used"""
-        if self._component is None:
+        try:
+            return self._component
+        except AttributeError as e:
             custom_id = self.data.custom_id
             if custom_id:
                 if custom_id.isdigit():
                     custom_id = int(custom_id)
                 if self.data.component_type == ComponentType.Button:
-                    self._component = utils.get(self.message.all_buttons, custom_id=custom_id)
+                    self._component = component = utils.get(self.message.all_buttons, custom_id=custom_id)
                 elif self.data.component_type.value in {3, 5, 6, 7, 8}:
                     select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
                     if select_menu:
                         setattr(select_menu, '_values', self.data.values)
                         setattr(select_menu, '_interaction', self)
-                    self._component = select_menu
-        return self._component
+                    self._component = component = select_menu
+                else:
+                    raise ValueError(f'Unknown component type {self.data.component_type}') from e
+
+                return component
 
     async def defer(
             self,
@@ -1257,8 +1275,7 @@ class ComponentInteraction(BaseInteraction):
         Optional[Union[:class:`~discord.Message, :class:`~discord.EphemeralMessage`]]:
             The message containing the loading-state if :class:`~discord.InteractionCallbackType.deferred_msg_with_source` (``5``) is used, else :obj:`None`.
         """
-        data = await super()._defer(type, hidden)
-        return data
+        return await super()._defer(type, hidden)
 
 
 class AutocompleteInteraction(BaseInteraction):
