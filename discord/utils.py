@@ -87,7 +87,26 @@ if TYPE_CHECKING:
 
 T = TypeVar('T')
 R = TypeVar('R')
-_IterableClassType = TypeVar('_IterableClassType', bound=Type[Iterable])
+_IT = TypeVar(
+    '_IT',
+    Type[list],
+    Type[tuple],
+    Type[set],
+    Type[frozenset],
+    Type[bytes],
+    Type[bytearray],
+    Type[str]
+)
+_IT2 = TypeVar(
+    '_IT2',
+    Type[list],
+    Type[tuple],
+    Type[set],
+    Type[frozenset],
+    Type[bytes],
+    Type[bytearray],
+    Type[str]
+)
 _Iterable = TypeVar('_Iterable', bound=Iterable)
 MaybeAwaitable = Union[Awaitable[T], T]
 
@@ -517,20 +536,35 @@ async def create_voice_activity(channel: VoiceChannel, target_application_id: in
     )
 
 @overload
-def _unique(iterable: _Iterable[T]) -> _Iterable[T]: ...
+def _unique(iterable: _Iterable[T]) -> List[T]: ...
 
 @overload
-def _unique(iterable: _Iterable[T], return_type: _IterableClassType) -> _IterableClassType[T]: ...
-# idk why this typing this doesn't work
+def _unique(iterable: _IT[T], return_type: None) -> _IT[T]: ...
 
-def _unique(
-        iterable: _Iterable[T],
-        return_type: Optional[_IterableClassType] = None
-) -> Union[_Iterable[T], _IterableClassType[T]]:
+@overload
+def _unique(iterable: _Iterable[T], return_type: None) -> List[T]: ...
+
+@overload
+def _unique(iterable: _IT[T]) -> _IT[T]: ...
+
+@overload
+def _unique(iterable: _Iterable[T], return_type: _IT) -> _IT[T]: ...
+
+@overload
+def _unique(iterable: _IT[T], return_type: _IT2) -> _IT2[T]: ...
+# idk why this typing doesn't work...
+
+def _unique(iterable, return_type = None):
     seen = set()
     adder = seen.add
-    return_type = return_type or type(iterable)
+    if return_type is None:
+        return_type = type(iterable)
+    if return_type not in (list, tuple, set, frozenset, bytes, bytearray):
+        return_type = list
     return return_type(x for x in iterable if not (x in seen or adder(x)))
+
+_unique({1: 2, 3: 1, 2: 3})
+_unique({1: 2, 3: 1, 2: 3}, return_type=set)
 
 def _get_as_snowflake(data: Dict[str, Any], key: str) -> Optional[int]:
     try:
