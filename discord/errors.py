@@ -257,11 +257,12 @@ class PrivilegedIntentsRequired(ClientException):
 
     def __init__(self, shard_id):
         self.shard_id = shard_id
-        msg = 'Shard ID %s is requesting privileged intents that have not been explicitly enabled in the ' \
-              'developer portal. It is recommended to go to https://discord.com/developers/applications/ ' \
-              'and explicitly enable the privileged intents within your application\'s page. If this is not ' \
-              'possible, then consider disabling the privileged intents instead.'
-        super().__init__(msg % shard_id)
+        msg = f'\n{f"Shard ID {shard_id}" if shard_id else "Default shard"} is requesting privileged intents ' \
+              f'that have not been explicitly enabled in the developer portal.' \
+              f'\n⚠ It is recommended to go to https://discord.com/developers/applications/ and explicitly enable ' \
+              f'the privileged intents within your application\'s page. ⚠\n' \
+              f'If this is not possible, then consider disabling the privileged intents in the code instead.\n\n'
+        super().__init__(msg)
 
     def __str__(self):
         return '\n'.join(self.args)
