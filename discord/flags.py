@@ -237,22 +237,22 @@ class ChannelFlags(BaseFlags):
     @flag_value
     def removed_from_guild_feed(self):
         """:class:`bool`: Returns ``True`` if the channel is removed from the guild's home feed/from highlights."""
-        return 0
+        return 1 << 0
 
     @alias_flag_value
     def removed_from_home(self):
         """:class:`bool`: An alias to :attr:`removed_from_guild_feed`."""
-        return 0
+        return 1 << 0
 
     @flag_value
     def pinned(self):
         """:class:`bool`: Returns ``True`` if the channel is a :class:`ForumPost` pinned at the top of the parent forum."""
-        return 1
+        return 1 << 1
 
     @flag_value
     def removed_from_active_now(self):
         """:class:`bool`: Returns ``True`` if the channel is removed from the active now section in the guild's feed."""
-        return 2
+        return 1 << 2
 
     @flag_value
     def require_tags(self):
@@ -260,17 +260,17 @@ class ChannelFlags(BaseFlags):
         :class:`bool`:
         Returns ``True`` if this channel is a :class:`ForumChannel` that requires at least one tag when creating a post.
         """
-        return 4
+        return 1 << 4
 
     @flag_value
     def is_spam(self):
         """:class:`bool`: Returns ``True`` if the channel is marked as spam."""
-        return 5
+        return 1 << 5
 
     @flag_value
     def is_resource_channel(self):
         """:class:`bool`: Returns ``True`` if the channel is a resource channel."""
-        return 7
+        return 1 << 7
 
     @flag_value
     def clyde_ai(self):
@@ -279,14 +279,14 @@ class ChannelFlags(BaseFlags):
             .. experiment:: Clyde, Discord's AI Chatbot
                 :article: 13066317497239-Clyde-Discord-s-AI-Chatbot
         """
-        return 8
+        return 1 << 8
 
     # TODO: add IS_SCHEDULED_FOR_DELETION (1 << 9) flag when we get more info on it
 
     @flag_value
     def is_media_channel(self):
         """:class:`bool`: Returns ``True`` if the channel is a media channel."""
-        return 10
+        return 1 << 10
 
     @flag_value
     def summaries_disabled(self):
@@ -295,7 +295,7 @@ class ChannelFlags(BaseFlags):
             .. experiment:: AI powered summaries
                 :article: 12926016807575-Summaries-AI
         """
-        return 11
+        return 1 << 11
 
     # TODO: add APPLICATION_SHELF_CONSENT (1 << 12) flag when we get more info on it
 
@@ -305,7 +305,7 @@ class ChannelFlags(BaseFlags):
 
             .. experiment:: Role Subscription Template
         """
-        return 13
+        return 1 << 13
 
     # TODO: add IS_BROADCASTING (1 << 14) flag when we get more info on it
 
