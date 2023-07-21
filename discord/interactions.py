@@ -739,8 +739,10 @@ class BaseInteraction:
             else:
                 response_type = InteractionCallbackType.update_msg
 
+        m = self.callback_message if self.type.ApplicationCommand else self.message
+        
         if suppress_embeds is not MISSING:
-            flags = MessageFlags._from_value(m.flags.value)
+            flags = MessageFlags._from_value(m.flags.value) if m else MessageFlags._from_value(0)
             flags.suppress_embeds = suppress_embeds
         else:
             flags = MISSING
@@ -749,8 +751,6 @@ class BaseInteraction:
         if not self.channel:
             ch = await self._http.get_channel(self.channel_id)
             self.channel = _channel_factory(ch['type'])[0](state=state, data=ch)
-
-        m = self.callback_message if self.type.ApplicationCommand else self.message
 
         if response_type is MISSING:
             params = handle_message_parameters(
