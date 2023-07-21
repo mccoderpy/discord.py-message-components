@@ -792,7 +792,7 @@ class BaseInteraction:
             msg = await self.get_original_callback()
         else:
             if m is not None:
-                m._update(data)
+                msg = m._update(data)
             else:
                 if MessageFlags._from_value(data['flags']).ephemeral:
                     msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
