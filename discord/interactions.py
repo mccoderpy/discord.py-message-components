@@ -740,7 +740,6 @@ class BaseInteraction:
                 response_type = InteractionCallbackType.update_msg
 
         if suppress_embeds is not MISSING:
-            m = self.callback_message if self.type.ApplicationCommand else self.message
             flags = MessageFlags._from_value(m.flags.value)
             flags.suppress_embeds = suppress_embeds
         else:
@@ -750,6 +749,8 @@ class BaseInteraction:
         if not self.channel:
             ch = await self._http.get_channel(self.channel_id)
             self.channel = _channel_factory(ch['type'])[0](state=state, data=ch)
+
+        m = self.callback_message if self.type.ApplicationCommand else self.message
 
         if response_type is MISSING:
             params = handle_message_parameters(
@@ -790,14 +791,15 @@ class BaseInteraction:
         if not isinstance(data, dict):
             msg = await self.get_original_callback()
         else:
-            if hasattr(self, 'message'):
-                msg = self.message._update(data)
+            if m is not None:
+                m._update(data)
             else:
                 if MessageFlags._from_value(data['flags']).ephemeral:
                     msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
                 else:
                     msg = Message(state=self._state, channel=self.channel, data=data)
-        self.callback_message = msg
+        if not self.deferred:
+            self.callback_message = msg
         is_hidden = msg.flags.ephemeral
 
         if is_hidden:
