@@ -2177,17 +2177,33 @@ class GuildAppCommandPermissions:
     permissions: List[:class:`AppCommandPermission`]
         The permissions for the guild's application commands.
     """
-    def __init__(self, *, data: app_command.GuildApplicationCommandPermissions):
-        self.command_id: int = int(data['id'])
-        self.application_id: int = int(data['application_id'])
-        self.guild_id: int = int(data['guild_id'])
-        self.permissions: List[AppCommandPermission] = [AppCommandPermission(**p) for p in data['permissions']]
+    def __init__(
+            self,
+            *,
+            command_id: int,
+            application_id: int,
+            guild_id: int,
+            permissions: List[AppCommandPermission]
+    ):
+        self.command_id: int = command_id
+        self.application_id: int = application_id
+        self.guild_id: int = guild_id
+        self.permissions: List[AppCommandPermission] = permissions
         
     def to_dict(self) -> dict:
         return {
             'id': self.guild_id,
             'permissions': [p.to_dict() for p in self.permissions]
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> GuildAppCommandPermissions:
+        return cls(
+            command_id=int(data['id']),
+            application_id=int(data['application_id']),
+            guild_id=int(data['guild_id']),
+            permissions=[AppCommandPermission.from_dict(p) for p in data['permissions']]
+        )
 
 
 class AppCommandPermission:
@@ -2241,6 +2257,10 @@ class AppCommandPermission:
             'type': self.type.value,
             'permission': self.permission
         }
+
+    @classmethod
+    def from_dict(cls, data: app_command.ApplicationCommandPermission) -> AppCommandPermission:
+        return cls(int(data['id']), try_enum(AppCommandPermissionType, data['type']), data['permission'])
     
     @classmethod
     async def all_channels(cls, guild_id: SupportsStr, permission: bool) -> AppCommandPermission:

@@ -1056,6 +1056,17 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param interaction: he Interaction-object with all his attributes and methods to respond to the interaction
     :type interaction: :class:`~discord.ModalSubmitInteraction`
 
+.. function:: on_application_command_permissions_update(guild, command, new_permissions):
+
+        Called when the permissions for an application command are updated.
+
+        :param guild: The guild where the permissions were updated.
+        :type guild: :class:`Guild`
+        :param command: The command that was updated.
+        :type command: :class:`ApplicationCommand`
+        :param new_permissions: The new permissions for the command.
+        :type new_permissions: :class:`ApplicationCommandPermissions`
+
 .. _discord-api-utils:
 
 Utility Functions

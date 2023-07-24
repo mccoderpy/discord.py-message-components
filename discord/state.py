@@ -612,6 +612,16 @@ class ConnectionState:
         elif interaction.type == InteractionType.ModalSubmit:
             self.dispatch('modal_submit', interaction)
 
+    def parse_application_command_permissions_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            command_id = int(data['id'])
+            command = self._get_client()._get_application_command(command_id) or Object(id=command_id)
+            new_permissions = GuildAppCommandPermissions.from_dict(data)  # We don't cache permissions for now
+            self.dispatch('application_command_permissions_update', guild, command, new_permissions)
+        else:
+            log.debug('APPLICATION_COMMAND_PERMISSIONS_UPDATE referencing an unknown guild ID %s', data['guild_id'])
+
     def parse_thread_create(self, data):
         guild = self._get_guild(int(data['guild_id']))
         if guild is not None:

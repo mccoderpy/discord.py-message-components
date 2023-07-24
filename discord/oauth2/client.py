@@ -999,7 +999,7 @@ class OAuth2Client:
         if raw:
             return data
         
-        return [GuildAppCommandPermissions(data=entry) for entry in data]
+        return [GuildAppCommandPermissions.from_dict(data=entry) for entry in data]
     
     @overload
     async def fetch_application_command_permissions(
@@ -1074,7 +1074,7 @@ class OAuth2Client:
         if raw:
             return data
         
-        return GuildAppCommandPermissions(data=data)
+        return GuildAppCommandPermissions.from_dict(data=data)
     
     @overload
     async def edit_application_command_permissions(
@@ -1230,4 +1230,4 @@ class OAuth2Client:
         if raw:
             return data
         
-        return GuildAppCommandPermissions(data=data)
+        return GuildAppCommandPermissions.from_dict(data=data)
