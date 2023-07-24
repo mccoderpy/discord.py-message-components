@@ -687,11 +687,15 @@ class SlashCommandOption:
                 else:
                     choices = [SlashCommandOptionChoice(e.name.translate({95: 0x20}), str(e.value)) for e in option_type]
                     option_type = OptionType.string
-            elif issubclass(type(option_type), Converter) or converter is Greedy:
-                converter = copy.copy(option_type)
-                option_type = OptionType.string
-            else:
+            try:
                 option_type, channel_type = OptionType.from_type(option_type)
+            except TypeError:
+                pass
+            else:
+                if issubclass(type(option_type), Converter) or converter is Greedy:
+                    converter = copy.copy(option_type)
+                    option_type = OptionType.string
+
             if not isinstance(option_type, OptionType):
                 raise TypeError(f'Discord does not has a option_type for {option_type.__class__.__name__!r}.')
             if channel_type and not channel_types:
@@ -1920,6 +1924,7 @@ def generate_options(
     TypeError:
         The function/method specified at :attr:`func` is missing a parameter to which the interaction object is passed.
     """
+    # TODO: Rewrite this completely
     from .ext.commands import Converter, Greedy, converter as converters
     from .ext.commands.converter import _Greedy
     _NoneType = type(None)
@@ -1939,6 +1944,7 @@ def generate_options(
                                                                    Localizations()
                                                                    )
         description = descriptions.get(param.name, descriptions.get(connector.get(param.name, ''), 'No Description'))
+        _type = None
         name = connector.get(param.name, param.name)
         choices = []
         channel_types = []
@@ -2011,8 +2017,6 @@ def generate_options(
                 )
             )
             continue
-        elif module.startswith('discord.') and not any([m in module for m in {'application_commands', 'enums'}]):
-            converter = annotation
         elif getattr(annotation, '__origin__', None) is Union:
             # The parameter is annotated with a Union so multiple types are possible.
             args = getattr(annotation, '__args__', [])
@@ -2020,7 +2024,7 @@ def generate_options(
             if isinstance(args, tuple):
                 args = list(args)
             for index, arg in enumerate(args):
-                if isinstance(arg, _NoneType):  # If one of the types is NoneType, then the option is also not required.
+                if arg is _NoneType:  # If one of the types is NoneType, then the option is also not required.
                     required = False
                 elif issubclass(arg, GuildChannel) or isinstance(arg, ChannelType):
                     # If you use Union to define the types of channels you can choose from.
@@ -2044,9 +2048,13 @@ def generate_options(
                                 if hasattr(arg, 'convert'):
                                     union.append(arg)
                                 else:
-                                    conv = getattr(converters, arg.__name__ + 'Converter', arg)
-                                    if conv:
+                                    try:
+                                        conv = getattr(converters, arg.__name__ + 'Converter')
+                                    except AttributeError:
+                                        _type, channel_types = OptionType.from_type(arg)
+                                    else:
                                         union.append(conv)
+
             # remove NoneType's
             [args.remove(rn) for rn in args if rn is _NoneType]
             if all([isinstance(a, ChannelType) for a in args]):
@@ -2063,13 +2071,13 @@ def generate_options(
                                        )
                 )
                 continue
-            elif all([tp.__name__ in ['MemberConverter', 'UserConverter', 'RoleConverter'] for tp in union]):
+            elif union and all([tp.__name__ in ['MemberConverter', 'UserConverter', 'RoleConverter'] for tp in union]):
                 pass
             else:
                 if union:
                     converter = Union[tuple(union)]  # type: ignore
                 options.append(
-                    SlashCommandOption(option_type=str,
+                    SlashCommandOption(option_type=_type or OptionType.string,
                                        name=name,
                                        description=description,
                                        description_localizations=description_localizations,

@@ -444,7 +444,7 @@ class OptionType(Enum):
     def from_type(cls, t) -> Tuple[OptionType, List[ChannelType]]:
 
         if isinstance(t, tuple):  # typing.Union has been used
-            datatypes = [cls.from_type(op) for op in t if op is not None]
+            datatypes = [cls.from_type(op) for op in t if op is not type(None)]
             if all(x == cls.channel for x, _ in datatypes):
                 return cls.channel, [c for _, c in datatypes]
             elif {t for t, _ in datatypes} <= {cls.role, cls.user}:
@@ -850,10 +850,15 @@ class AuditLogAction(Enum):
     thread_update                           = 111
     thread_delete                           = 112
     application_command_permission_update   = 121
+    soundboard_sound_create                 = 130  # or is it general expression create?
+    soundboard_sound_update                 = 131
+    soundboard_sound_delete                 = 132
     auto_moderation_rule_create             = 140
     auto_moderation_rule_update             = 141
     auto_moderation_rule_delete             = 142
     auto_moderation_block_message           = 143
+    auto_moderation_flag_message            = 144
+    auto_moderation_user_communication_disabled = 145
 
     @property
     def category(self):
@@ -906,10 +911,15 @@ class AuditLogAction(Enum):
             AuditLogAction.thread_update:           AuditLogActionCategory.update,
             AuditLogAction.thread_delete:           AuditLogActionCategory.delete,
             AuditLogAction.application_command_permission_update: AuditLogActionCategory.update,
+            AuditLogAction.soundboard_sound_create: AuditLogActionCategory.create,
+            AuditLogAction.soundboard_sound_update: AuditLogActionCategory.update,
+            AuditLogAction.soundboard_sound_delete: AuditLogActionCategory.delete,
             AuditLogAction.auto_moderation_rule_create: AuditLogActionCategory.create,
             AuditLogAction.auto_moderation_rule_update: AuditLogActionCategory.update,
             AuditLogAction.auto_moderation_rule_delete: AuditLogActionCategory.delete,
-            AuditLogAction.auto_moderation_block_message: None
+            AuditLogAction.auto_moderation_block_message: None,
+            AuditLogAction.auto_moderation_flag_message: None,
+            AuditLogAction.auto_moderation_user_communication_disabled: None,
         }
         return lookup[self]
 
@@ -944,11 +954,13 @@ class AuditLogAction(Enum):
             return 'scheduled_event'
         elif v < 121:
             return 'thread'
-        elif v == 121:
+        elif v < 130:
             return 'application_command'
+        elif v < 133:
+            return 'soundboard_sound'
         elif v < 143:
             return 'auto_moderation_rule'
-        elif v < 144:
+        elif v < 150:
             return 'auto_moderation_action'
 
 
