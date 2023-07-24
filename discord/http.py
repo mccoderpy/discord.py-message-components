@@ -1005,23 +1005,27 @@ class HTTPClient:
             'name',
             'parent_id',
             'topic',
+            'template',
+            'icon_emoji',
             'bitrate',
             'nsfw',
             'flags',
-            'default_auto_archive_duration',
             'auto_archive_duration',
+            'default_auto_archive_duration',
             'user_limit',
             'position',
             'permission_overwrites',
             'rate_limit_per_user',
-            'default_reaction_emoji'
+            'default_reaction_emoji',
             'default_thread_rate_limit_per_user',
+            'default_forum_layout',
+            'default_sort_order',
             'available_tags',
             'applied_tags',
             'locked',
             'archived',
             'type',
-            'rtc_region'
+            'rtc_region',
         )
         payload = {
             k: v for k, v in options.items() if k in valid_keys
@@ -1036,10 +1040,27 @@ class HTTPClient:
         payload = {
             'type': channel_type
         }
-
-        valid_keys = ('name', 'parent_id', 'topic', 'bitrate', 'nsfw',
-                      'user_limit', 'position', 'permission_overwrites', 'rate_limit_per_user',
-                      'rtc_region')
+        valid_keys = (
+            'name',
+            'parent_id',
+            'topic',
+            'template',
+            'icon_emoji',
+            'bitrate',
+            'nsfw',
+            'flags',
+            'default_auto_archive_duration',
+            'user_limit',
+            'position',
+            'permission_overwrites',
+            'rate_limit_per_user',
+            'default_reaction_emoji',
+            'default_thread_rate_limit_per_user',
+            'default_forum_layout',
+            'default_sort_order',
+            'available_tags',
+            'rtc_region',
+        )
         payload.update(
             {
                 k: v for k, v in options.items() if k in valid_keys and v is not None

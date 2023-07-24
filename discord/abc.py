@@ -55,6 +55,7 @@ from .context_managers import Typing
 from .enums import ChannelType, InviteTargetType, try_enum
 from .errors import ClientException, InvalidArgument
 from .file import File
+from .flags import ChannelFlags
 from .http import handle_message_parameters
 from .invite import Invite
 from .iterators import HistoryIterator
@@ -77,7 +78,6 @@ if TYPE_CHECKING:
     from .client import Client
     from .state import ConnectionState
     from .embeds import Embed
-    from .flags import ChannelFlags
     from .sticker import GuildSticker
     from .components import ActionRow, Button, BaseSelect
     from .scheduled_event import GuildScheduledEvent
@@ -378,6 +378,16 @@ class GuildChannel:
                 raise InvalidArgument('type field must be of type ChannelType')
             options['type'] = ch_type.value
 
+        try:
+            icon_emoji = options['icon_emoji']
+        except KeyError:
+            pass
+        else:
+            if icon_emoji is None:
+                options['icon_emoji'] = None
+            else:
+                options['icon_emoji'] = icon_emoji.to_dict()
+
         if options:
             data = await self._state.http.edit_channel(self.id, reason=reason, **options)
             return self._update(self.guild, data)
@@ -625,7 +635,7 @@ class GuildChannel:
             base.value &= ~denied.value
         return base
 
-    async def delete(self, *, reason=None):
+    async def delete(self, *, reason: Optional[str] = None) -> None:
         """|coro|
 
         Deletes the channel.
@@ -755,6 +765,7 @@ class GuildChannel:
         ]
         base_attrs['parent_id'] = self.category_id
         base_attrs['name'] = name or self.name
+        base_attrs['flags'] = getattr(self, 'flags', ChannelFlags()).value
         guild_id = self.guild.id
         cls = self.__class__
         data = await self._state.http.create_channel(guild_id, self.type.value, reason=reason, **base_attrs)

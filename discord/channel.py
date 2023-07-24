@@ -1781,8 +1781,13 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
     @utils.copy_doc(abc.GuildChannel.clone)
     async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> VoiceChannel:
         return await self._clone_impl({
+            'nsfw': self.nsfw,
+            'rtc_region': self.rtc_region,
+            # The API gives me a 500 error when I try to clone the icon emoji, so we leave it out for now
+            # 'icon_emoji': self.icon_emoji.to_dict() if self.icon_emoji else None,
             'bitrate': self.bitrate,
-            'user_limit': self.user_limit
+            'user_limit': self.user_limit,
+            'rate_limit_per_user': self.slowmode_delay,
         }, name=name, reason=reason)
 
     async def edit(self, *, reason: Optional[str] = None, **options):
@@ -1941,7 +1946,13 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
     @utils.copy_doc(abc.GuildChannel.clone)
     async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> StageChannel:
         return await self._clone_impl({
+            'nsfw': self.nsfw,
             'topic': self.topic,
+            # The API gives me a 500 error when I try to clone the icon emoji, so we leave it out for now
+            # 'icon_emoji': self.icon_emoji.to_dict() if self.icon_emoji else None,
+            'bitrate': self.bitrate,
+            'user_limit': self.user_limit,
+            'rate_limit_per_user': self.slowmode_delay
         }, name=name, reason=reason)
 
     async def edit(self, *, reason: Optional[str] = None, **options) -> None:
@@ -2909,7 +2920,7 @@ class ForumTag(Hashable):
         return PartialEmoji(name=self.emoji_name, id=self.emoji_id)
     
     @classmethod
-    def _with_state(cls, state: ConnectionState, guild: Guild, data: Dict[str, Any]) -> ForumTag:
+    def _with_state(cls, state: ConnectionState, guild: Guild, data: ForumTagData) -> ForumTag:
         self = cls.__new__(cls)
         self._state = state
         self.guild = guild
@@ -2920,7 +2931,7 @@ class ForumTag(Hashable):
         self.emoji_name = data.get('emoji_name')
         return self
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> ForumTagData:
         base = {
             'name': self.name,
             'moderated': self.moderated
@@ -2973,8 +2984,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The channel's icon-emoji, if set.
         flags: :class:`ChannelFlags`
             The channel's flags.
-        default_reaction_emoji: Optional[:class:`PartialEmoji`
-            The default emoji for reactiong to a post in this forum
+        default_reaction_emoji: Optional[:class:`PartialEmoji`]
+            The default emoji for reacting to a post in this forum
         position: :class:`int`
             The position in the channel list. This is a number that starts at 0. e.g. the
             top channel is position 0.
@@ -2998,18 +3009,15 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The default layout for posts in this channel.
         """
 
-    __slots__ = ('name', 'id', 'guild', 'topic', '_state', '__deleted', 'nsfw',
-                 'category_id', 'position', 'slowmode_delay', '_overwrites',
-                 '_type', 'last_message_id', 'default_auto_archive_duration',
+    __slots__ = ('name', 'id', 'guild', 'topic', 'template', 'icon_emoji', '_state', '__deleted',
+                 'nsfw', 'category_id', 'position', 'slowmode_delay', 'post_slowmode_delay',
+                 '_overwrites', '_type', 'last_message_id', 'default_auto_archive_duration',
                  '_posts', '_tags', 'flags', 'default_reaction_emoji', 'last_post_id',
                  'default_sort_order', 'default_forum_layout',)
 
     if TYPE_CHECKING:
         guild: Guild
         name: str
-        category_id: Optional[int]
-        topic: Optional[str]
-        flags: ChannelFlags
         position: int
         nsfw: bool
         flags: ChannelFlags
@@ -3023,7 +3031,6 @@ class ForumChannel(abc.GuildChannel, Hashable):
         template: Optional[str]
         default_reaction_emoji: Optional[PartialEmoji]
         last_message_id: Optional[int]
-        default_sort_order: PostSortOrder
 
 
     def __init__(self, *, state: ConnectionState, guild: Guild, data) -> None:
@@ -3052,20 +3059,23 @@ class ForumChannel(abc.GuildChannel, Hashable):
                 guild._remove_post(post)
 
     def _update(self, guild: Guild, data: ForumChannelData):
-        self.guild: Guild = guild
-        self.name: str = data['name']
-        self.category_id: int = utils._get_as_snowflake(data, 'parent_id')
-        self.topic: str = data.get('topic')
-        self.flags: ChannelFlags = ChannelFlags._from_value(data['flags'])
-        emoji = data.get('default_reaction_emoji', None)
-        if not emoji:
-            if not hasattr(self, 'default_reaction_emoji'):
-                self.default_reaction_emoji = None
-        else:
-            self.default_reaction_emoji: Optional[PartialEmoji] = PartialEmoji(
-                name=emoji['emoji_name'],
-                id=utils._get_as_snowflake(emoji, 'id') or None
+        self.guild = guild
+        self.name = data['name']
+        self.position = data['position']
+        self.category_id = utils._get_as_snowflake(data, 'parent_id')
+        self.topic = data.get('topic')
+        self.template = data.get('template') or None
+        emoji = data.get('icon_emoji')
+        self.icon_emoji = PartialEmoji.with_state(self._state, animated=False, **emoji) if emoji else None
+        self.flags = ChannelFlags._from_value(data['flags'])
+        emoji: Optional[DefaultReactionEmoji]  = data.get('default_reaction_emoji')
+        if emoji:
+            self.default_reaction_emoji = PartialEmoji(
+                name=emoji.get('emoji_name'),
+                id=utils._get_as_snowflake(emoji, 'emoji_id')
             )
+        elif not hasattr(self, 'default_reaction_emoji'):
+            self.default_reaction_emoji = None
         self.position: int = data['position']
         self.nsfw: bool = data.get('nsfw', False)
         # Does this need coercion into `int`? No idea yet.
@@ -3077,8 +3087,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
             AutoArchiveDuration,
             data.get('default_auto_archive_duration', 1440)
         )
-        self.default_sort_order: Optional[PostSortOrder] = try_enum(PostSortOrder, data.get('default_sort_order'))
-        self.default_forum_layout: Optional[ForumLayout] = try_enum(ForumLayout, data.get('default_forum_layout'))
+        self.default_sort_order: Optional[PostSortOrder] = try_enum(
+            PostSortOrder, data.get('default_sort_order', 0) or 0
+        )
+        self.default_forum_layout: Optional[ForumLayout] = try_enum(
+            ForumLayout, data.get('default_forum_layout', 0) or 0
+        )
         self._fill_overwrites(data)
         self._fill_tags(data)
 
@@ -3185,7 +3199,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
             overwrites: Dict[Union[Member, Role], PermissionOverwrite] = MISSING,
             icon_emoji: Optional[PartialEmoji] = MISSING,
             reason: Optional[str] = None
-    ) -> ForumChannel:
+    ) -> None:
         """|coro|
 
         Edits the channel.
@@ -3221,8 +3235,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The new category for this channel. Can be ``None`` to remove the
             category.
         slowmode_delay: :class:`int`
-            Specifies the slowmode rate limit for user in this channel, in seconds.
-            A value of `0` disables slowmode. The maximum value possible is `21600`.
+            The number of seconds (max. ``21600``) a member must wait between sending messages
+            in posts inside this channel. A value of `0` denotes that it is disabled.
+            Bots and users with :attr:`~Permissions.manage_channels` or
+            :attr:`~Permissions.manage_messages` bypass slowmode.
+        post_slowmode_delay: :class:`int`
+            The number of seconds (max. ``21600``) a member must wait between creating new posts.
         overwrites: :class:`dict`
             A :class:`dict` of target (either a role or a member) to
             :class:`PermissionOverwrite` to apply to the channel.
@@ -3296,13 +3314,25 @@ class ForumChannel(abc.GuildChannel, Hashable):
 
     @utils.copy_doc(abc.GuildChannel.clone)
     async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> ForumChannel:
+        react_emoji = self.default_reaction_emoji
+        if react_emoji and react_emoji.is_unicode_emoji():
+            react_emoji = {'emoji_name': react_emoji.name}
+        elif react_emoji and react_emoji.is_custom_emoji():
+            react_emoji = {'emoji_id': react_emoji.id}
+
         return await self._clone_impl({
             'topic': self.topic,
+            'template': self.template,
+            # The API gives me a 500 error when I try to clone the icon emoji, so we leave it out for now
+            # 'icon_emoji': self.icon_emoji.to_dict() if self.icon_emoji else None,
             'nsfw': self.nsfw,
-            'flags': self.flags,
-            'available_tags': self.available_tags,
-            'rate_limit_per_user': self.slowmode_delay,
-            'default_auto_archive_duration': self.default_auto_archive_duration
+            'available_tags': [t.to_dict() for t in self.available_tags],
+            'default_reaction_emoji': react_emoji,
+            'rate_limit_per_user': self.post_slowmode_delay,
+            'default_thread_rate_limit_per_user': self.slowmode_delay,
+            'default_sort_order': self.default_sort_order.value,
+            'default_forum_layout': self.default_forum_layout.value,
+            'default_auto_archive_duration': self.default_auto_archive_duration.value
         }, name=name, reason=reason)
 
     async def webhooks(self) -> List[Webhook]:
