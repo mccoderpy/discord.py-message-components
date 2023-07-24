@@ -362,8 +362,8 @@ class Guild(Hashable):
         Whether the guild has the boost progress bar enabled.
     """
 
-    __slots__ = ('afk_timeout', 'afk_channel', '_members', '_channels', 'icon',
-                 'name', 'id', 'unavailable', 'banner', 'region', '_state',
+    __slots__ = ('afk_timeout', 'afk_channel', '_members', '_channels', '_stage_instances',
+                 'icon', 'name', 'id', 'unavailable', 'banner', 'region', '_state',
                  '_application_commands', '_roles', '_events', '_member_count', '_large',
                  'owner_id', 'mfa_level', 'emojis', 'features',
                  'verification_level', 'explicit_content_filter', 'splash',
@@ -385,6 +385,7 @@ class Guild(Hashable):
 
     def __init__(self, *, data, state: ConnectionState):
         self._channels: Dict[int, Union[GuildChannel, ThreadChannel]] = {}
+        self._stage_instances: Dict[int, StageInstance] = {}
         self._members: Dict[int, Member] = {}
         self._events: Dict[int, GuildScheduledEvent] = {}
         self._automod_rules: Dict[int, AutoModRule] = {}
@@ -426,6 +427,12 @@ class Guild(Hashable):
 
     def _remove_event(self, event: GuildScheduledEvent):
         self._events.pop(event.id, None)
+
+    def _add_stage_instance(self, instance: StageInstance):
+        self._stage_instances[instance.channel.id] = instance
+
+    def _remove_stage_instance(self, instance: StageInstance):
+        self._stage_instances.pop(instance.channel.id, None)
 
     def _add_automod_rule(self, rule: AutoModRule):
         self._automod_rules[rule.id] = rule
@@ -579,12 +586,13 @@ class Guild(Hashable):
             if member is not None:
                 member._presence_update(presence)
 
+        _state = self._state
         if 'channels' in data:
             channels = data['channels']
             for c in channels:
                 factory, ch_type = _channel_factory(c['type'])
                 if factory:
-                    self._add_channel(factory(guild=self, data=c, state=self._state))
+                    self._add_channel(factory(guild=self, data=c, state=_state))
 
         if 'threads' in data:
             threads = data['threads']
@@ -594,15 +602,19 @@ class Guild(Hashable):
                     parent_channel = self.get_channel(int(t['parent_id']))
                     if parent_channel is None:
                         continue  # we don't know why this happens sometimes, we skipp this for now
-                    thread = factory(guild=self, data=t, state=self._state)
-
+                    thread = factory(guild=self, data=t, state=_state)
+                    self._add_channel(thread)
                     if isinstance(parent_channel, ForumChannel):
-                        post = ForumPost(state=self._state, guild=self, data=t)
-                        self._add_channel(post)
-                        parent_channel._add_post(post)
+                        parent_channel._add_post(thread)
                     else:
                         self._add_channel(thread)
                         parent_channel._add_thread(thread)
+
+        if 'stage_instances' in data:
+            for i in data['stage_instances']:
+                stage = self.get_channel(int(i['channel_id']))
+                if stage is not None:
+                    self._add_stage_instance(StageInstance(state=_state, channel=stage, data=i))
 
     @property
     def application_commands(self) -> List[ApplicationCommand]:
@@ -618,6 +630,10 @@ class Guild(Hashable):
     def channels(self) -> List[Union[GuildChannel, ThreadChannel, ForumPost]]:
         """List[:class:`abc.GuildChannel`, :class:`ThreadChannel`, :class:`ForumPost`]: A list of channels that belongs to this guild."""
         return list(self._channels.values())
+
+    def stage_instances(self) -> List[StageInstance]:
+        """List[:class:`~discord.StageInstance`]: A list of stage instances that belongs to this guild."""
+        return list(self._stage_instances.values())
 
     @property
     def server_guide_channels(self) -> List[GuildChannel]:

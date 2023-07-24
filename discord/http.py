@@ -1080,6 +1080,41 @@ class HTTPClient:
     def delete_channel(self, channel_id, *, reason=None):
         return self.request(Route('DELETE', '/channels/{channel_id}', channel_id=channel_id), reason=reason)
 
+    # Stage instance management
+
+    def create_stage_instance(
+            self,
+            channel_id,
+            topic,
+            privacy_level,
+            send_start_notification,
+            *,
+            reason: Optional[str] = None
+    ):
+        payload = {
+            'channel_id': channel_id,
+            'topic': topic,
+            'privacy_level': privacy_level.value,
+            'send_start_notification': send_start_notification,
+
+        }
+        return self.request(Route('POST', '/stage-instances'), json=payload, reason=reason)
+
+    def get_stage_instance(self, channel_id):
+        return self.request(Route('GET', '/stage-instances/{channel_id}', channel_id=channel_id))
+
+    def edit_stage_instance(self, channel_id, topic, privacy_level=None, *, reason=None):
+        r = Route('PATCH', '/stage-instances/{channel_id}', channel_id=channel_id)
+        payload = {
+            'topic': topic
+        }
+        if privacy_level is not None:
+            payload['privacy_level'] = privacy_level.value
+        return self.request(r, json=payload, reason=reason)
+
+    def delete_stage_instance(self, channel_id, *, reason=None):
+        return self.request(Route('DELETE', '/stage-instances/{channel_id}', channel_id=channel_id), reason=reason)
+
     # Webhook management
 
     def create_webhook(self, channel_id, *, name, avatar=None, reason=None):

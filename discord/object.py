@@ -108,7 +108,7 @@ class Object(Hashable):
     
     def __instancecheck__(self, other: Any) -> bool:
         if self.type is not MISSING:
-            return self.type == type(other)
+            return self.type == type(other)  # This can make some problems, so the lib doesn't use it
         return self.__class__ == type(other)
     
     @property

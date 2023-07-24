@@ -1067,6 +1067,52 @@ to handle it, which defaults to print a traceback and ignoring the exception.
         :param new_permissions: The new permissions for the command.
         :type new_permissions: :class:`ApplicationCommandPermissions`
 
+.. function:: on_scheduled_event_create(event)
+
+    Called when a :class:`GuildScheduledEvent` is created.
+
+    :param event: The event that was created.
+    :type event: :class:`GuildScheduledEvent`
+
+.. function:: on_scheduled_event_update(before, after)
+
+    Called when a :class:`GuildScheduledEvent` is updated.
+
+    :param before: The old event.
+    :type before: :class:`GuildScheduledEvent`
+    :param after: The updated event.
+    :type after: :class:`GuildScheduledEvent`
+
+.. function:: on_scheduled_event_delete(event)
+
+    Called when a :class:`GuildScheduledEvent` is deleted.
+
+    :param event: The event that was deleted.
+    :type event: :class:`GuildScheduledEvent`
+
+.. function:: on_stage_instance_create(stage_instance)
+
+    Called when a :class:`StageInstance` is created.
+
+    :param stage_instance: The stage instance that was created.
+    :type stage_instance: :class:`StageInstance`
+
+.. function:: on_stage_instance_update(before, after)
+
+        Called when a :class:`StageInstance` is updated.
+
+        :param before: The old stage instance.
+        :type before: :class:`StageInstance`
+        :param after: The updated stage instance.
+        :type after: :class:`StageInstance`
+
+.. function:: on_stage_instance_delete(stage_instance)
+
+        Called when a :class:`StageInstance` is deleted.
+
+        :param stage_instance: The stage instance that was deleted.
+        :type stage_instance: :class:`StageInstance`
+
 .. _discord-api-utils:
 
 Utility Functions
@@ -3426,7 +3472,7 @@ GuildScheduledEvent
         :async-for:
 
 AutoModRule
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. attributetable:: AutoModRule
 

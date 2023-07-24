@@ -40,7 +40,7 @@ from .channel import GuildChannel
 from .emoji import BaseEmoji
 from .snowflake import SnowflakeID
 from .sticker import GuildSticker
-from .user import User
+from .user import User, Member
 
 __all__ = (
     'PermissionFlags',
@@ -210,6 +210,7 @@ class Guild(TypedDict):
     permissions: NotRequired[str]
     afk_channel_id: Optional[SnowflakeID]
     afk_timeout: AfkTimeout
+    member_count: NotRequired[int]
     widget_enabled: NotRequired[bool]
     widget_channel_id: NotRequired[Optional[SnowflakeID]]
     verification_level: VerificationLevel
@@ -240,6 +241,7 @@ class Guild(TypedDict):
     nsfw_level: GuildNSFWLevel
     stickers: NotRequired[List[GuildSticker]]
     premium_progress_bar_enabled: bool
+    members: NotRequired[List[Member]]
 
 
 class WelcomeScreenChannel(TypedDict):

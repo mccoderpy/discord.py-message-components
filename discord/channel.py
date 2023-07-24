@@ -42,12 +42,21 @@ from typing import (
     TYPE_CHECKING,
     Union
 )
-from typing_extensions import Literal
+from typing_extensions import Literal, Self
 
 from . import abc, utils
 from .asset import Asset
 from .components import ActionRow, BaseSelect, Button
-from .enums import AutoArchiveDuration, ChannelType, PostSortOrder, ForumLayout, VoiceRegion, VideoQualityMode, try_enum
+from .enums import (
+    AutoArchiveDuration,
+    ChannelType,
+    PostSortOrder,
+    ForumLayout,
+    VoiceRegion,
+    VideoQualityMode,
+    PrivacyLevel,
+    try_enum
+)
 from .errors import ClientException, InvalidArgument, NoMoreItems, ThreadIsArchived
 from .flags import ChannelFlags, MessageFlags
 from .http import handle_message_parameters
@@ -61,6 +70,7 @@ if TYPE_CHECKING:
         DMChannel as DMChannelData,
         GroupChannel as GroupChannelData,
         VoiceChannel as VoiceChannelData,
+        StageInstance as StageInstanceData,
         StageChannel as StageChannelData,
         ForumChannel as ForumChannelData,
         ForumTag as ForumTagData,
@@ -76,6 +86,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .role import Role
     from .webhook import Webhook
+    from .scheduled_event import GuildScheduledEvent
 
 MISSING = utils.MISSING
 MSNG = utils._MISSING
@@ -86,6 +97,7 @@ __all__ = (
     'ThreadChannel',
     'VoiceChannel',
     'StageChannel',
+    'StageInstance',
     'DMChannel',
     'CategoryChannel',
     'GroupChannel',
@@ -343,8 +355,11 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
     async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> TextChannel:
         return await self._clone_impl({
             'topic': self.topic,
+            # The API gives me a 500 error when I try to clone the icon emoji, so we leave it out for now
+            # 'icon_emoji': self.icon_emoji.to_dict() if self.icon_emoji else None,
             'nsfw': self.nsfw,
-            'rate_limit_per_user': self.slowmode_delay
+            'rate_limit_per_user': self.slowmode_delay,
+            'default_auto_archive_duration': self.default_auto_archive_duration.value
         }, name=name, reason=reason)
 
     async def delete_messages(self, messages: Iterable[Message], reason: Optional[str] = None) -> None:
@@ -1359,7 +1374,6 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
         rtc_region: Optional[VoiceRegion]
         video_quality_mode: VideoQualityMode
         category_id: Optional[int]
-        position: int
         bitrate: Optional[int]
         user_limit: Optional[int]
         last_message_id: Optional[int]
@@ -1371,8 +1385,8 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
             guild: Guild,
             data: Union[VoiceChannelData, StageChannelData]
     ) -> None:
-        self._state: ConnectionState = state
-        self.id: int = int(data['id'])
+        self._state = state
+        self.id = int(data['id'])
         self._update(guild, data)
 
     def _get_voice_client_key(self) -> Tuple[int, str]:
@@ -1943,6 +1957,15 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.stage_voice
 
+    @property
+    def has_instance(self) -> bool:
+        """:class:`bool`: Whether the channel has an associated stage instance."""
+        return self.guild._stage_instances.get(self.id) is not None
+
+    def get_instance(self) -> Optional[StageInstance]:
+        """Optional[:class:`StageInstance`]: Returns the associated stage instance, if any."""
+        return self.guild._stage_instances.get(self.id)
+
     @utils.copy_doc(abc.GuildChannel.clone)
     async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> StageChannel:
         return await self._clone_impl({
@@ -2000,6 +2023,158 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
         """
 
         await self._edit(options, reason=reason)
+
+    async def start_instance(
+            self,
+            topic: str,
+            send_start_notification: bool = False,
+            *,
+            reason: Optional[str] = None
+    ) -> StageInstance:
+        """|coro|
+        Starts a new stage instance for this stage channel (e.g. make it go live).
+
+        You must have the :attr:`~Permissions.manage_channels` permission to use this.
+
+        Parameters
+        ----------
+        topic: :class:`str`
+            The topic of the stage instance.
+        send_start_notification: :class:`bool`
+            Whether to send a notification to everyone in the guild that the stage is live.
+
+            This requires the :attr:`~Permissions.mention_everyone` permission.
+        reason: Optional[:class:`str`]
+            The reason for starting the stage instance. Shows up on the audit log.
+
+        Raises
+        ------
+        Forbidden
+            You do not have permissions to start the stage instance.
+        HTTPException
+            Starting the stage instance failed.
+
+        Returns
+        -------
+        :class:`StageInstance`
+            The created stage instance.
+        """
+        data = await self._state.http.create_stage_instance(
+            self.id,
+            topic,
+            PrivacyLevel.guild_only,
+            send_start_notification,
+            reason=reason
+        )
+        instance = StageInstance(state=self._state, channel=self, data=data)
+        self.guild._add_stage_instance(instance) # temporary add to cache
+        return instance
+
+
+class StageInstance(Hashable):
+    """Represents a live instance of a :class:`StageChannel`.
+
+    .. versionadded:: 2.0
+
+    Attributes
+    ----------
+    channel: :class:`StageChannel`
+        The stage channel associated with this instance.
+    privacy_level: :class:`PrivacyLevel`
+        The privacy level of the stage instance. (As of now, this is always :attr:`PrivacyLevel.guild_only`.)
+    topic: :class:`str`
+        The topic of the stage instance.
+    guild_id: :class:`int`
+        The guild ID of the stage instance.
+    id: :class:`int`
+        The ID of the stage instance.
+    event_id: Optional[:class:`int`]
+        The ID of the associated guild scheduled event, if any.
+    """
+    __slots__ = ('_state', 'channel', 'privacy_level', 'topic', 'guild_id', 'id', 'event_id')
+
+    if TYPE_CHECKING:
+        privacy_level: PrivacyLevel
+        topic: str
+
+    def __init__(self, *, state: ConnectionState, channel: StageChannel, data: StageInstanceData):
+        self._state: ConnectionState = state
+        self.channel: StageChannel = channel
+        self.guild_id: int = int(data['guild_id'])
+        self.id: int = int(data['id'])
+        self.event_id: Optional[int] = utils._get_as_snowflake(data, 'guild_scheduled_event_id')
+        self._update(data)
+
+    def __repr__(self) -> str:
+        return f'<StageInstance channel={self.channel!r} topic={self.topic!r} privacy_level={self.privacy_level!r}>'
+
+    def _update(self, data: StageInstanceData) -> None:
+        self.privacy_level = try_enum(PrivacyLevel, data['privacy_level'])
+        self.topic = data['topic']
+
+    def created_at(self) -> datetime.datetime:
+        """:class:`datetime.datetime`: Returns the stage instance's creation time in UTC."""
+        return utils.snowflake_time(self.id)
+
+    @property
+    def event(self) -> Optional[GuildScheduledEvent]:
+        """Optional[:class:`GuildScheduledEvent`]: The event associated with this stage instance, if any, and it is cached."""
+        return self.channel.guild.get_event(self.event_id)
+
+    async def edit(
+            self,
+            *,
+            topic: Optional[str] = None,
+            reason: Optional[str] = None
+    ) -> Self:
+        """|coro|
+
+        Edits the stage instance.
+
+        Parameters
+        ----------
+        topic: Optional[:class:`str`]
+            The new topic of the stage instance.
+        reason: Optional[:class:`str`]
+            The reason for editing the stage instance. Shows up on the audit log.
+
+        Raises
+        ------
+        Forbidden
+            You do not have permissions to edit the stage instance.
+        HTTPException
+            Editing the stage instance failed.
+
+        Returns
+        -------
+        :class:`StageInstance`
+            The edited stage instance.
+        """
+        data = await self._state.http.edit_stage_instance(self.channel.id, topic=topic, reason=reason)
+        self._update(data)
+        return self
+
+
+    async def delete(self, *, reason: Optional[str] = None) -> None:
+        """|coro|
+
+        Deletes the stage instance. (Close the stage)
+
+        You must have the :attr:`~Permissions.manage_channels` permission to use this.
+
+        Parameters
+        ----------
+        reason: Optional[:class:`str`]
+            The reason for deleting the stage instance. Shows up on the audit log.
+
+        Raises
+        ------
+        Forbidden
+            You do not have permissions to delete the stage instance.
+        HTTPException
+            Deleting the stage instance failed.
+        """
+        await self._state.http.delete_stage_instance(self.channel.id, reason=reason)
 
 
 class CategoryChannel(abc.GuildChannel, Hashable):
@@ -2192,7 +2367,10 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         These are sorted by the official Discord UI, which places voice channels below the text channels.
         """
         def comparator(channel):
-            return (not isinstance(channel, TextChannel), channel.position)
+            return (
+                0 if isinstance(channel, VocalGuildChannel) else 1,
+                *((channel.position,) if hasattr(channel, 'position') else (channel.parent_channel.position, channel.id))
+            )
 
         ret = [c for c in self.guild.channels if c.category_id == self.id]
         ret.sort(key=comparator)
@@ -2204,6 +2382,20 @@ class CategoryChannel(abc.GuildChannel, Hashable):
         ret = [c for c in self.guild.channels
             if c.category_id == self.id
             and isinstance(c, TextChannel)]
+        ret.sort(key=lambda c: (c.position, c.id))
+        return ret
+
+    @property
+    def thread_channels(self) -> List[ThreadChannel]:
+        """List[:class:`ThreadChannel`]: Returns the thread channels that are under this category.
+         Only includes public threads and threads that the authorized bot has joined.
+
+         .. note::
+            This also includes forum-posts as they are threads too.
+        """
+        ret = [c for c in self.guild.channels
+            if c.category_id == self.id
+            and isinstance(c, ThreadChannel)]
         ret.sort(key=lambda c: (c.position, c.id))
         return ret
 
