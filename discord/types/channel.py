@@ -38,6 +38,7 @@ from typing_extensions import (
 
 from .snowflake import SnowflakeID
 from .user import BaseUser
+from .emoji import PartialEmoji
 
 __all__ = (
     'ChannelType',
@@ -47,7 +48,10 @@ __all__ = (
     'GuildChannel',
     'VoiceChannel',
     'StageChannel',
+    'StageInstance',
+    'ForumTag',
     'ForumChannel',
+    'DefaultReactionEmoji',
     'ThreadMetadata',
     'DMChannel',
     'GroupChannel'
@@ -55,6 +59,7 @@ __all__ = (
 
 ChannelType = Literal[0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15]
 OverwriteType = Literal[0, 1]
+StagePrivacyLevel = Literal[1, 2]
 
 class Overwrite(TypedDict):
     id: SnowflakeID
@@ -67,6 +72,7 @@ class GuildChannel(TypedDict):
     id: SnowflakeID
     type: ChannelType
     name: NotRequired[Optional[str]]
+    flags: NotRequired[int]
     position: NotRequired[int]
     parent_id: NotRequired[SnowflakeID]
     permission_overwrites: NotRequired[List[Overwrite]]
@@ -81,6 +87,19 @@ class ThreadMetadata(TypedDict):
     create_timestamp: NotRequired[Optional[str]]
 
 
+class DefaultReactionEmoji(TypedDict):
+    emoji_id: NotRequired[SnowflakeID]
+    emoji_name: str
+
+
+class ForumTag(TypedDict):
+    id: SnowflakeID
+    name: str
+    emoji_name: NotRequired[str]
+    emoji_id: NotRequired[SnowflakeID]
+    moderated: NotRequired[bool]
+
+
 class PartialChannel(TypedDict):
     id: SnowflakeID
     type: ChannelType
@@ -89,31 +108,50 @@ class PartialChannel(TypedDict):
 
 
 class DMChannel(PartialChannel):
-    last_message_id: NotRequired[Optional[SnowflakeID]]
     recipients: NotRequired[List[BaseUser]]
+    last_message_id: NotRequired[Optional[SnowflakeID]]
 
 
 class GroupChannel(DMChannel, total=False):
     owner_id: SnowflakeID
-    icon: Optional[str]
     managed: NotRequired[bool]
+    icon: Optional[str]
 
 
 class VoiceChannel(GuildChannel, total=False):
-    rtc_region: Optional[str]
     bitrate: int
     user_limit: int
     video_quality_mode: int
     rate_limit_per_user: int
     nsfw: bool
+    icon_emoji: Optional[PartialEmoji]
+    rtc_region: Optional[str]
 
 
 class StageChannel(VoiceChannel, total=False):
-    topic: Optional[str]
     privacy_level: int
     discoverable_disabled: bool
 
 
+class StageInstance(TypedDict):
+    id: SnowflakeID
+    guild_id: SnowflakeID
+    channel_id: SnowflakeID
+    topic: str
+    privacy_level: StagePrivacyLevel
+    discoverable_disabled: NotRequired[bool]
+    guild_scheduled_event_id: Optional[SnowflakeID]
+
+
 class ForumChannel(GuildChannel, total=False):
-    topic: Optional[str]
     nsfw: bool
+    default_auto_archive_duration: int
+    default_rate_limit_per_user: int
+    rate_limit_per_user: int
+    default_thread_rate_limit_per_user: int
+    default_sort_order: int
+    default_forum_layout: int
+    default_reaction_emoji: DefaultReactionEmoji
+    icon_emoji: Optional[PartialEmoji]
+    topic: Optional[str]
+    template: Optional[bool]

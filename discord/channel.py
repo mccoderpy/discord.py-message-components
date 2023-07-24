@@ -63,6 +63,8 @@ if TYPE_CHECKING:
         VoiceChannel as VoiceChannelData,
         StageChannel as StageChannelData,
         ForumChannel as ForumChannelData,
+        ForumTag as ForumTagData,
+        DefaultReactionEmoji
     )
     from .state import ConnectionState
     from .mentions import AllowedMentions
@@ -133,6 +135,8 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         The category channel ID this channel belongs to, if applicable.
     topic: Optional[:class:`str`]
         The channel's topic. ``None`` if it doesn't exist.
+    icon_emoji: Optional[:class:`PartialEmoji`]
+        The channel's icon-emoji, if set.
     position: :class:`int`
         The position in the channel list. This is a number that starts at 0. e.g. the
         top channel is position 0.
@@ -146,9 +150,24 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         :attr:`~Permissions.manage_messages` bypass slowmode.
     """
 
-    __slots__ = ('name', 'id', 'guild', 'topic', '_state', '__deleted', 'nsfw',
+    __slots__ = ('name', 'id', 'guild', 'topic', 'icon_emoji', '_state', '__deleted', 'nsfw',
                  'category_id', 'position', 'slowmode_delay', '_overwrites',
                  '_type', 'last_message_id', '_threads', 'default_auto_archive_duration')
+
+    if TYPE_CHECKING:
+        _state: ConnectionState
+        guild: Guild
+        name: str
+        id: int
+        guild: Guild
+        nsfw: bool
+        position: int
+        slowmode_delay: int
+        icon_emoji: Optional[PartialEmoji]
+        category_id: Optional[int]
+        last_message_id: Optional[int]
+        default_auto_archive_duration: AutoArchiveDuration
+        topic: Optional[str]
 
     def __init__(self, *, state, guild, data):
         self._state: ConnectionState = state
@@ -182,9 +201,13 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         self.position = data['position']
         self.nsfw = data.get('nsfw', False)
         self.slowmode_delay = data.get('rate_limit_per_user', 0)
+        emoji = data.get('icon_emoji')
+        self.icon_emoji = PartialEmoji.with_state(self._state, animated=False, **emoji) if emoji else None
         self._type = data.get('type', self._type)
         self.last_message_id = utils._get_as_snowflake(data, 'last_message_id')
-        self.default_auto_archive_duration = try_enum(AutoArchiveDuration, data.get('default_auto_archive_duration', 1440))
+        self.default_auto_archive_duration = try_enum(
+            AutoArchiveDuration, data.get('default_auto_archive_duration', 1440)
+        )
         self._fill_overwrites(data)
 
     async def _get_channel(self):
@@ -1320,22 +1343,26 @@ class ThreadChannel(abc.Messageable, Hashable):
 
 
 class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
-    __slots__ = ('name', 'id', 'guild', 'bitrate', 'user_limit',
+    __slots__ = ('name', 'id', 'guild', 'bitrate', 'user_limit', 'icon_emoji',
                  '_state', 'position', '_overwrites', 'category_id',
                  'rtc_region', 'slowmode_delay', 'last_message_id',
                  'nsfw', 'video_quality_mode')
 
     if TYPE_CHECKING:
+        id: int
         guild: Guild
         name: str
         nsfw: bool
         slowmode_delay: int
+        position: int
+        icon_emoji: Optional[PartialEmoji]
         rtc_region: Optional[VoiceRegion]
         video_quality_mode: VideoQualityMode
         category_id: Optional[int]
         position: int
         bitrate: Optional[int]
         user_limit: Optional[int]
+        last_message_id: Optional[int]
 
     def __init__(
             self,
@@ -1357,9 +1384,9 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
     def _update(self, guild: Guild, data: Union[VoiceChannelData, StageChannelData]) -> None:
         self.guild = guild
         self.name = data['name']
-        self.rtc_region = data.get('rtc_region')
-        if self.rtc_region:
-            self.rtc_region = try_enum(VoiceRegion, self.rtc_region)
+        rtc_region = data.get('rtc_region')
+        if rtc_region:
+            self.rtc_region = try_enum(VoiceRegion, rtc_region)
         self.video_quality_mode = try_enum(VideoQualityMode, data.get('video_quality_mode'))
         self.category_id = utils._get_as_snowflake(data, 'parent_id')
         self.position = data['position']
@@ -1367,6 +1394,8 @@ class VocalGuildChannel(abc.Connectable, abc.GuildChannel, abc.Messageable):
         self.user_limit = data.get('user_limit')
         self.nsfw = data.get('nsfw', False)
         self.slowmode_delay = data.get('rate_limit_per_user', 0)
+        emoji = data.get('icon_emoji')
+        self.icon_emoji = PartialEmoji.with_state(self._state, animated=False, **emoji) if emoji else None
         self._fill_overwrites(data)
 
     @property
@@ -1702,6 +1731,8 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
     position: :class:`int`
         The position in the channel list. This is a number that starts at 0. e.g. the
         top channel is position 0.
+    icon_emoji: Optional[:class:`PartialEmoji`]
+        The channel's icon-emoji, if set.
     bitrate: :class:`int`
         The channel's preferred audio bitrate in bits per second.
     user_limit: :class:`int`
@@ -1797,6 +1828,9 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
             .. versionadded:: 2.0
         nsfw: :class:`bool`
             Whether the channel is NSFW. This can only be set by guild administrators.
+        icon_emoji: Optional[:class:`PartialEmoji`]
+            The channels new icon-emoji.
+            **Note that custom emojis are only allowed when the guild has boost level 2 or higher.**
 
         Raises
         ------
@@ -1844,6 +1878,8 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
         The channel ID.
     topic: Optional[:class:`str`]
         The channel's topic. ``None`` if it isn't set.
+    icon_emoji: Optional[:class:`PartialEmoji`]
+        The channel's icon-emoji, if set.
     category_id: Optional[:class:`int`]
         The category channel ID this channel belongs to, if applicable.
     position: :class:`int`
@@ -1879,18 +1915,19 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
             ('category_id', self.category_id)
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
-    
+
     def _update(self, guild: Guild, data: StageChannelData):
         super()._update(guild, data)
         self.topic = data.get('topic')
 
+
     @staticmethod
     def channel_type() -> ChannelType:
         return ChannelType.stage_voice
-    
+
     async def _get_channel(self) -> StageChannel:
         return self
-    
+
     @property
     def requesting_to_speak(self) -> List[Member]:
         """List[:class:`Member`]: A list of members who are requesting to speak in the stage channel."""
@@ -1921,6 +1958,9 @@ class StageChannel(VocalGuildChannel, abc.Messageable):
             The new channel's name.
         topic: :class:`str`
             The new channel's topic.
+        icon_emoji: Optional[:class:`PartialEmoji`]
+            The new channel's icon-emoji.
+            **Note that custom emojis are only allowed when the guild has boost level 2 or higher.**
         position: :class:`int`
             The new channel's position.
         sync_permissions: :class:`bool`
@@ -2925,6 +2965,12 @@ class ForumChannel(abc.GuildChannel, Hashable):
             The category channel ID this channel belongs to, if applicable.
         topic: Optional[:class:`str`]
             The channel's topic. ``None`` if it doesn't exist.
+        template: Optional[:class:`str`]
+            The channel's template. ``None`` if it doesn't exist.
+
+            Currently, this field is only available on some selected guilds.
+        icon_emoji: Optional[:class:`PartialEmoji`]
+            The channel's icon-emoji, if set.
         flags: :class:`ChannelFlags`
             The channel's flags.
         default_reaction_emoji: Optional[:class:`PartialEmoji`
@@ -2935,14 +2981,16 @@ class ForumChannel(abc.GuildChannel, Hashable):
         nsfw: :class:`bool`
             Whether the channel is marked as NSFW.
         last_post_id: Optional[:class:`int`]
-            The ID of the last post that was createt in this forum, this may
+            The ID of the last post that was created in this forum, this may
             *not* point to an existing or valid post.
         slowmode_delay: :class:`int`
             The number of seconds a member must wait between sending messages
             in posts inside this channel. A value of `0` denotes that it is disabled.
             Bots and users with :attr:`~Permissions.manage_channels` or
             :attr:`~Permissions.manage_messages` bypass slowmode.
-        default_auto_archive_duration: :class:`int`
+        post_slowmode_delay: :class:`int`
+            The number of seconds a member must wait between creating new posts.
+        default_auto_archive_duration: :class:`AutoArchiveDuration`
             The default duration for which threads in this channel are automatically archived.
         default_sort_order: :class:`PostSortOrder`
             The default sort order for posts in this channel.
@@ -2964,8 +3012,15 @@ class ForumChannel(abc.GuildChannel, Hashable):
         flags: ChannelFlags
         position: int
         nsfw: bool
+        flags: ChannelFlags
         slowmode_delay: int
-        default_auto_archive_duration: int
+        post_slowmode_delay: int
+        default_sort_order: PostSortOrder
+        default_auto_archive_duration: AutoArchiveDuration
+        category_id: Optional[int]
+        topic: Optional[str]
+        icon_emoji: Optional[PartialEmoji]
+        template: Optional[str]
         default_reaction_emoji: Optional[PartialEmoji]
         last_message_id: Optional[int]
         default_sort_order: PostSortOrder
@@ -3014,7 +3069,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
         self.position: int = data['position']
         self.nsfw: bool = data.get('nsfw', False)
         # Does this need coercion into `int`? No idea yet.
-        self.slowmode_delay: int = data.get('rate_limit_per_user', 0)
+        self.slowmode_delay: int = data.get('default_thread_rate_limit_per_user', 0)
+        self.post_slowmode_delay: int = data.get('rate_limit_per_user', 0)
         self._type = data.get('type', self._type)
         self.last_post_id: int = utils._get_as_snowflake(data, 'last_message_id')
         self.default_auto_archive_duration = try_enum(
@@ -3119,12 +3175,15 @@ class ForumChannel(abc.GuildChannel, Hashable):
             tags_required: bool = MISSING,
             default_post_sort_order: Optional[PostSortOrder] = MISSING,
             default_forum_layout: Optional[ForumLayout] = MISSING,
+            default_reaction_emoji: Optional[PartialEmoji] = MISSING,
             position: int = MISSING,
             nsfw: bool = MISSING,
             sync_permissions: bool = False,
             category: Optional[CategoryChannel] = MISSING,
             slowmode_delay: int = MISSING,
+            post_slowmode_delay: int = MISSING,
             overwrites: Dict[Union[Member, Role], PermissionOverwrite] = MISSING,
+            icon_emoji: Optional[PartialEmoji] = MISSING,
             reason: Optional[str] = None
     ) -> ForumChannel:
         """|coro|
@@ -3149,6 +3208,8 @@ class ForumChannel(abc.GuildChannel, Hashable):
             How the posts in the forum will be sorted for users by default.
         default_forum_layout: Optional[:class:`ForumLayout`]
         	The default forum layout view used to display posts to users.
+        default_reaction_emoji: Optional[:class:`PartialEmoji`]
+            The default emoji used to react to posts in the forum.
         position: :class:`int`
             The new channel's position.
         nsfw: :class:`bool`
@@ -3165,6 +3226,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
         overwrites: :class:`dict`
             A :class:`dict` of target (either a role or a member) to
             :class:`PermissionOverwrite` to apply to the channel.
+        icon_emoji: Optional[:class:`PartialEmoji`]
+            The new icon-emoji for the channel.
+            **Note that setting custom emojis require the guild to have boost level 2 or higher.**
         reason: Optional[:class:`str`]
             The reason for editing this channel. Shows up on the audit log.
 
@@ -3196,10 +3260,13 @@ class ForumChannel(abc.GuildChannel, Hashable):
             payload['flags'] = flags
 
         if default_post_sort_order is not MISSING:
-            payload['default_sort_order'] = default_post_sort_order.value
+            payload['default_sort_order'] = default_post_sort_order.value if default_post_sort_order else None
 
         if default_forum_layout is not MISSING:
-            payload['default_forum_layout'] = default_forum_layout.value
+            payload['default_forum_layout'] = default_forum_layout.value if default_forum_layout else None
+
+        if default_reaction_emoji is not MISSING:
+            payload['default_reaction_emoji'] = default_reaction_emoji.to_dict() if default_reaction_emoji else None
 
         if position is not MISSING:
             payload['position'] = position
@@ -3214,10 +3281,16 @@ class ForumChannel(abc.GuildChannel, Hashable):
             payload['category'] = category
 
         if slowmode_delay is not MISSING:
-            payload['rate_limit_per_user'] = slowmode_delay
+            payload['default_thread_rate_limit_per_user'] = slowmode_delay
+
+        if post_slowmode_delay is not MISSING:
+            payload['rate_limit_per_user'] = post_slowmode_delay
 
         if overwrites is not MISSING:
             payload['overwrites'] = overwrites
+
+        if icon_emoji is not MISSING:
+            payload['icon_emoji'] = icon_emoji
 
         return await self._edit(options=payload, reason=reason)
 
