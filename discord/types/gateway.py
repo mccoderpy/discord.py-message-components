@@ -33,17 +33,21 @@ from typing import (
 
 from typing_extensions import (
     Literal,
-    TypedDict
+    TypedDict,
+    NotRequired
 )
 
 from .appinfo import GatewayAppInfo
+from .emoji import PartialEmoji
 from .guild import UnavailableGuild
+from .snowflake import SnowflakeID
 from .user import ClientUser
 
 __all__ = (
     'GatewayPayload',
     'ReadyEvent',
     'VoiceGatewayPayload',
+    'VoiceChannelEffectSendEvent',
 )
 
 
@@ -71,3 +75,15 @@ class VoiceGatewayPayload(TypedDict):
     d: Optional[Dict[str, Any]]
     s: Optional[int]
     t: Optional[str]
+
+
+class VoiceChannelEffectSendEvent(TypedDict):
+    user_id: SnowflakeID
+    guild_id: SnowflakeID
+    channel_id: SnowflakeID
+    sound_id: NotRequired[SnowflakeID]  # This is actually an int for build-in sounds
+    sound_volume: NotRequired[float]
+    sound_override_path: NotRequired[Optional[str]]
+    animation_type: int
+    animation_id: int
+    emoji: NotRequired[Optional[PartialEmoji]]

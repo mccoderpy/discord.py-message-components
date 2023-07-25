@@ -976,11 +976,6 @@ to handle it, which defaults to print a traceback and ignoring the exception.
 
     :param before: The old rule.
     :type before: :class:`AutoModRule`
-
-    .. warning::
-
-        This will be :obj:`None` if the rule was not in the cache before.
-
     :param after: The updated rule.
     :type after: :class:`AutoModRule`
 
@@ -1112,6 +1107,15 @@ to handle it, which defaults to print a traceback and ignoring the exception.
 
         :param stage_instance: The stage instance that was deleted.
         :type stage_instance: :class:`StageInstance`
+
+.. function:: on_voice_channel_effect_send(channel, payload):
+
+        Called when a user uses a voice effect in a :class:`VoiceChannel`.
+
+        :param channel: The voice channel in wich the effect was used.
+        :type channel: :class:`VoiceChannel`
+        :param payload: The payload containing info about the effect.
+        :type payload: :class:`VoiceChannelEffectSendEvent`
 
 .. _discord-api-utils:
 
@@ -3849,6 +3853,13 @@ RawReactionClearEmojiEvent
 .. autoclass:: RawReactionClearEmojiEvent()
     :members:
 
+VoiceChannelEffectSendEvent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: VoiceChannelEffectSendEvent
+
+.. autoclass:: VoiceChannelEffectSendEvent()
+    :members:
 
 .. _discord_api_data:
 

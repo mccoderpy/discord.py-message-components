@@ -24,10 +24,19 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
+from .utils import _get_as_snowflake
 from .member import Member
 from .user import User
+from .partial_emoji import PartialEmoji
 from .message import Message
 from .enums import ReactionType, try_enum
+
+if TYPE_CHECKING:
+    from .state import ConnectionState
 
 
 class _RawReprMixin:
@@ -239,3 +248,54 @@ class RawReactionClearEmojiEvent(_RawReprMixin):
             self.guild_id = int(data['guild_id'])
         except KeyError:
             self.guild_id = None
+
+
+class VoiceChannelEffectSendEvent(_RawReprMixin):
+    """
+    Represents the payload for an :func:`on_voice_channel_effect_send` event.
+
+    .. versionadded:: 2.0
+
+    Attributes
+    -----------
+    guild_id: :class:`int`
+        The guild ID where the effect is being sent.
+    channel_id: :class:`int`
+        The channel ID where the effect is being sent.
+    user_id: :class:`int`
+        The user ID who sent the effect.
+    emoji: Optional[:class:`PartialEmoji`]
+        The emoji used when this is an emoji effect or the emoji associated to the sound.
+    sound_id: Optional[:class:`int`]
+        The sound ID of the soundboard sound used, if any.
+    sound_volume: Optional[:class:`float`]
+        The volume of the soundboard sound used, if any.
+    """
+
+    __slots__ = ('guild_id', 'channel_id', 'user_id', 'emoji', 'sound_id', 'sound_volume')
+
+    if TYPE_CHECKING:
+        _state: ConnectionState
+        guild_id: int
+        channel_id: int
+        user_id: int
+        emoji: Optional[PartialEmoji]
+        sound_id: Optional[int]
+        sound_volume: Optional[float]
+
+    def __init__(self, state, data):
+        self._state = state
+        self.guild_id = int(data['guild_id'])
+        self.channel_id = int(data['channel_id'])
+        self.user_id = int(data['user_id'])
+        emoji = data.get('emoji')
+        self.emoji = PartialEmoji.with_state(state, **emoji) if emoji else None
+        self.sound_id = _get_as_snowflake(data, 'sound_id')
+        self.sound_volume = data.get('sound_volume')
+
+    @property
+    def type(self) -> str:
+        """
+        :class:`str`: The type of effect being sent. Can be ``emoji`` or ``sound``.
+        """
+        return 'emoji' if self.sound_id is None else 'sound'

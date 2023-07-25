@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     from .shard import AutoShardedClient
     from .gateway import DiscordWebSocket
 
-from .types.gateway import ReadyEvent
+from .types import gateway as g
 
 
 class ChunkRequest:
@@ -507,7 +507,7 @@ class ConnectionState:
         finally:
             self._ready_task = None
 
-    def parse_ready(self, data: ReadyEvent):
+    def parse_ready(self, data: g.ReadyEvent):
         if self._ready_task is not None:
             self._ready_task.cancel()
 
@@ -790,7 +790,9 @@ class ConnectionState:
                 guild._add_stage_instance(stage_instance)
                 self.dispatch('stage_instance_create', stage_instance)
             else:
-                log.debug('STAGE_INSTANCE_CREATE referencing an unknown channel ID: %s. Discarding.', data['channel_id'])
+                log.debug(
+                    'STAGE_INSTANCE_CREATE referencing an unknown channel ID: %s. Discarding.', data['channel_id']
+                )
         else:
             log.debug('STAGE_INSTANCE_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
@@ -819,6 +821,20 @@ class ConnectionState:
                 log.debug('STAGE_INSTANCE_DELETE referencing an unknown stage instance: %s. Discarding.', data['id'])
         else:
             log.debug('STAGE_INSTANCE_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_voice_channel_effect_send(self, data: g.VoiceChannelEffectSendEvent):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            channel = guild.get_channel(int(data['channel_id']))
+            if channel is not None:
+                effect = VoiceChannelEffectSendEvent(state=self, data=data)
+                self.dispatch('voice_channel_effect_send', channel, effect)
+            else:
+                log.debug(
+                    'VOICE_CHANNEL_EFFECT_SEND referencing an unknown channel ID: %s. Discarding.', data['channel_id']
+                )
+        else:
+            log.debug('VOICE_CHANNEL_EFFECT_SEND referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']
@@ -1384,18 +1400,18 @@ class ConnectionState:
         guild = self._get_guild(int(data['guild_id']))
         rule_id = int(data['id'])
         if guild is not None:
-            old_rule = guild._automod_rules.pop(rule_id, None)
-            rule = AutoModRule(state=self, guild=guild, **data)
-            guild._add_automod_rule(rule)
-            self.dispatch('automod_rule_update', old_rule, rule)
+            rule = guild._automod_rules.get(rule_id)
+            if rule is not None:
+                old_rule = copy.copy(rule)
+                rule._update(data)
+                self.dispatch('automod_rule_update', old_rule, rule)
         else:
             log.debug('AUTO_MODERATION_RULE_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_auto_moderation_rule_delete(self, data):
         guild = self._get_guild(int(data['guild_id']))
         if guild is not None:
-            rule = AutoModRule(state=self, guild=guild, **data)
-            guild._remove_automod_rule(rule)
+            rule = guild._automod_rules.pop(int(data['id']), None) or AutoModRule(state=self, guild=guild, **data)
             self.dispatch('automod_rule_delete', rule)
         else:
             log.debug('AUTO_MODERATION_RULE_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
@@ -1561,7 +1577,7 @@ class AutoShardedConnectionState(ConnectionState):
         # sync the application-commands
         await self._get_client()._request_sync_commands()
 
-    def parse_ready(self, data: ReadyEvent):
+    def parse_ready(self, data: g.ReadyEvent):
         if not hasattr(self, '_ready_state'):
             self._ready_state = asyncio.Queue()
 
