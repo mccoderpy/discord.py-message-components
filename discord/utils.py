@@ -29,6 +29,7 @@ from typing import (
     Any,
     Set,
     Dict,
+    Generic,
     List,
     Union,
     Type,
@@ -86,6 +87,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar('T')
+T_co = TypeVar('T_co', covariant=True)
 R = TypeVar('R')
 _IT = TypeVar(
     '_IT',
@@ -212,13 +214,19 @@ class cached_property:
         return cls
 
 
-class CachedSlotProperty:
-    def __init__(self, name: str, function: Callable[..., T]) -> None:
+class CachedSlotProperty(Generic[T, T_co]):
+    def __init__(self, name: str, function: Callable[[T], T_co]) -> None:
         self.name: str = name
         self.function = function
         self.__doc__ = getattr(function, '__doc__')
 
-    def __get__(self, instance: Any, owner: Type[Any]) -> T:
+    @overload
+    def __get__(self, instance: None, owner: Type[T]) -> CachedSlotProperty[T, T_co]: ...
+
+    @overload
+    def __get__(self, instance: T, owner: Type[T]) -> T_co: ...
+
+    def __get__(self, instance: Optional[T], owner: Type[T]) -> Any:
         if instance is None:
             return self
 
@@ -230,10 +238,10 @@ class CachedSlotProperty:
             return value
 
 
-def cached_slot_property(name: str) -> Callable[[Callable[..., T]], T]:
-    def decorator(func: Callable[..., T]) -> T:
+def cached_slot_property(name: str) -> Callable[[Callable[[T], T_co]], CachedSlotProperty[T, T_co]]:
+    def decorator(func: Callable[[T], T_co]) -> CachedSlotProperty[T, T_co]:
         return CachedSlotProperty(name, func)
-    
+
     return decorator
 
 
@@ -768,6 +776,35 @@ def resolve_template(code: Union[Template, str]) -> str:
         if m:
             return m.group(1)
     return code
+
+
+_JUMP_URL_REGEX = re.compile(r'^https://(?:canary\.|ptb\.)?discord(?:app)?\.com/channels(?:/@me)?/([0-9]{15,21})(?:/([0-9]{15,21}))?.*$')
+
+def resolve_channel_from_url(jump_url: str) -> Tuple[Optional[int], int]:
+    """
+    Resolves a channel ID from a discord jump URL
+
+    Parameters
+    -----------
+    jump_url: :class:`str`
+        The jump URL.
+
+    Returns
+    --------
+    Tuple[Optional[:class:`int`], :class:`int`]
+        A tuple with the guild ID as the first and the channel ID as the second item.
+        If there is no guild ID then the first item is ``None``.
+
+    Raises
+    -------
+    :exc:`InvalidArgument`
+        The URL is invalid.
+    """
+    m = _JUMP_URL_REGEX.match(jump_url)
+    if m:
+        guild_id, channel_id = m.groups()
+        return int(guild_id) if guild_id else None, int(channel_id)
+    raise InvalidArgument(f'Invalid jump URL: {jump_url}')
 
 
 _MARKDOWN_ESCAPE_SUBREGEX = '|'.join(r'\{0}(?=([\s\S]*((?<!\{0})\{0})))'.format(c)
