@@ -26,11 +26,17 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 
-from typing import Optional, List, TYPE_CHECKING
+from typing import (
+    Optional,
+    List,
+    Tuple,
+    TYPE_CHECKING
+)
 from typing_extensions import Literal
 
 from .asset import Asset
 from .welcome_screen import WelcomeScreen
+from .sticker import GuildSticker
 from .utils import parse_time, snowflake_time, _get_as_snowflake
 from .object import Object
 from .mixins import Hashable
@@ -142,10 +148,13 @@ class PartialInviteGuild:
         The partial guild's invite splash.
     description: Optional[:class:`str`]
         The partial guild's description.
+    premium_subscription_count: :class:`int`
+        The partial guild's "boost" count.
     """
 
     __slots__ = ('_state', 'features', 'icon', 'banner', 'id', 'name', 'splash',
-                 'verification_level', 'description', 'welcome_screen')
+                 'verification_level', 'description', 'premium_subscription_count',
+                 'stickers')
 
     def __init__(self, state: ConnectionState, data, id):
         self._state: ConnectionState = state
@@ -157,12 +166,8 @@ class PartialInviteGuild:
         self.splash: Optional[str] = data.get('splash')
         self.verification_level: VerificationLevel = try_enum(VerificationLevel, data.get('verification_level'))
         self.description: Optional[str] = data.get('description')
-        self.welcome_screen: Optional[WelcomeScreen]
-        welcome_screen = data.get('welcome_screen', None)
-        if welcome_screen:
-            self.welcome_screen = WelcomeScreen(state=state, guild=self._state._get_guild(self.id) or self, data=welcome_screen)
-        else:
-            self.welcome_screen = None
+        self.premium_subscription_count: int = data.get('premium_subscription_count', 0)
+        self.stickers: Tuple[GuildSticker] = tuple(GuildSticker(state=state, data=d) for d in data.get('stickers', []))
 
     def __str__(self) -> str:
         return self.name

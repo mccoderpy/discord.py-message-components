@@ -570,7 +570,7 @@ class Guild(Hashable):
             self._welcome_screen = WelcomeScreen(guild=self, state=self._state, data=welcome_screen)
         else:
             self._welcome_screen = None
-        self.stickers: Tuple['GuildSticker'] = tuple(map(lambda d: state.store_sticker(d), guild.get('stickers', [])))  # type: ignore
+        self.stickers: Tuple[GuildSticker] = tuple(map(lambda d: state.store_sticker(d), guild.get('stickers', [])))  # type: ignore
         for obj in guild.get('voice_states', []):
             self._update_voice_state(obj, int(obj['channel_id']))
 
