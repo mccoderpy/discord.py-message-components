@@ -204,12 +204,6 @@ class AutoModTriggerMetadata:
         .. note::
             This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`AutoModTriggerType.keyword`
 
-    regex_patterns: Optional[List[:class:`~re.Pattern`]]
-            Regular expression patterns which will be matched against content (Maximum of 10, each max. 75 characters long)
-
-            .. note::
-                This field is only present if :attr:`~AutoModRule.trigger_type` is :attr:`~AutoModTriggerType.keyword`
-
     presets: Optional[List[:class:`AutoModKeywordPresetType`]]
         The internally pre-defined word sets which will be searched for in content
 
@@ -303,13 +297,20 @@ class AutoModTriggerMetadata:
         self.keyword_filter: Optional[List[str]] = keyword_filter or []
         if regex_patterns and presets:
             raise TypeError('regex_patterns can only be used with AutoModRule\'s of type keyword')
-        self.regex_patterns: List[Pattern] = [_re_compile(pattern) for pattern in regex_patterns if not isinstance(pattern, Pattern)]
+        self._regex_patterns: List[Union[str, Pattern]] = regex_patterns or []
         self.presets: List[AutoModKeywordPresetType] = presets or []
         if exempt_words and not (presets or keyword_filter):
             raise TypeError('exempt_words can only be used with keyword_filter or preset')
         self.exempt_words: Optional[List[str]] = exempt_words
         self.total_mentions_limit: Optional[int] = total_mentions_limit
         self.mention_raid_protection_enabled: Optional[bool] = mention_raid_protection_enabled
+
+    @utils.cached_slot_property('_cs_regex_patterns')
+    def regex_patterns(self) -> List[Pattern]:
+        """List[:class:`~re.Pattern`]: The compiled regex patterns for this rule, if any."""
+        return [
+            _re_compile(pattern) for pattern in getattr(self, '_regex_patterns', []) if not isinstance(pattern, Pattern)
+        ]
 
     @property
     def prefix_keywords(self) -> Iterator[str]:
@@ -408,7 +409,7 @@ class AutoModTriggerMetadata:
             base = {
                 'keyword_filter': self.keyword_filter,
                 'regex_patterns': [
-                    pattern.pattern for pattern in self.regex_patterns
+                    pattern.pattern if isinstance(pattern, Pattern) else pattern for pattern in self._regex_patterns
                 ]
             }
             if self.exempt_words is not None:
@@ -436,7 +437,7 @@ class AutoModTriggerMetadata:
             self.exempt_words = data.get('allow_list', [])
         else:
             self.keyword_filter = data.get('keyword_filter')
-            self.regex_patterns = data.get('regex_patterns')
+            self._regex_patterns = data.get('regex_patterns')
             self.exempt_words = data.get('allow_list')
         self.total_mentions_limit = data.get('mention_total_limit')
         self.mention_raid_protection_enabled = data.get('mention_raid_protection_enabled')
@@ -629,7 +630,8 @@ class AutoModRule:
         exempt_roles: List[:class:`.Snowflake`]
             Up to 20 :class:`~discord.Role`'s, that should not be affected by the rule.
         exempt_channels: List[:class:`.Snowflake`]
-            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`/:class:`~discord.StageChannel`'s, that should not be affected by the rule.
+            Up to 50 :class:`~discord.TextChannel`/:class:`~discord.VoiceChannel`/:class:`~discord.StageChannel`'s,
+            that should not be affected by the rule.
         reason: Optional[:class:`str`]
             The reason for editing the rule. Shows up in the audit log.
 

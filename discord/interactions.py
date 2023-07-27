@@ -1403,20 +1403,57 @@ class ModalSubmitInteraction(BaseInteraction):
         The RegEx :ref:`Match <https://docs.python.org/3/library/re.html#match-objects>`_ result of the custom_id of
         the modal, if an ``on_submit`` decorator was used.
     """
+
     if TYPE_CHECKING:
         match: Optional[Match]
 
-    def get_field(self, custom_id) -> Union[TextInput, None]:
-        """Optional[:class:`~discord.TextInput`]: Returns the field witch :attr:`~discord.TextInput.custom_id` match or :class:`None`"""
+    @overload
+    def get_field(self, custom_id: str) -> Optional[TextInput]: ...
+
+    @overload
+    def get_field(self, custom_id: re.Pattern) -> Optional[Tuple[TextInput, Match]]: ...
+
+    def get_field(self, custom_id: Union[str, re.Pattern]) -> Optional[Union[TextInput, Tuple[TextInput, Match]]]:
+        """
+        Gets the field wich :attr:`~discord.TextInput.custom_id` match, if any.
+
+        Parameters
+        ----------
+        custom_id: Union[:class:`str`, |pattern_object|]
+            The custom_id of the field to get.
+
+            .. note::
+                You can also pass a |pattern_object| when you want to use dynamic custom_id's.
+                Only the first matching field will be returned.
+
+        Returns
+        -------
+        Optional[Union[:class:`~discord.TextInput`, Tuple[:class:`~discord.TextInput`, |match_object|]]]:
+            - If ``custom_id`` is a :class:`str`, the found :class:`TextInput` is returned, if any.
+            - if ``custom_id`` is a |pattern_object| a :class:`tuple` is returned containing the field
+                wich :attr:`~discord.TextInput.custom_id` matches and the corresponding |match_object|, if any.
+        """
+        if isinstance(custom_id, re.Pattern):
+            def _check(_c: TextInput):
+                match = custom_id.match(_c.custom_id)
+                if match:
+                    return _c, match
+        else:
+            def _check(_c: TextInput):
+                if _c.custom_id == custom_id:
+                    return _c
         for ar in self.data.components:
             for c in ar:
-                if c.custom_id == custom_id:
-                    return c
+                result = _check(c)
+                if result:
+                    return result
         return None
 
     @property
     def fields(self) -> List[TextInput]:
-        """List[:class:`~discord.TextInput`] Returns a :class:`list` containing the fields of the :class:`~discord.Modal`."""
+        """
+        List[:class:`~discord.TextInput`]: Returns a :class:`list` containing the fields of the :class:`~discord.Modal`.
+        """
         field_list = []
         for ar in self.data.components:
             for c in ar:
