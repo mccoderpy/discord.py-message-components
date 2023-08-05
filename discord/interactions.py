@@ -25,9 +25,21 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+import re
 import asyncio
 import logging
-from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Union, Match)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Match,
+    Optional,
+    overload,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union
+)
 
 from typing_extensions import Literal
 
@@ -59,6 +71,7 @@ from .permissions import Permissions
 from .reaction import Reaction
 from .role import Role
 from .user import User
+from .utils import cached_slot_property, MISSING
 
 if TYPE_CHECKING:
     import datetime
@@ -73,8 +86,6 @@ if TYPE_CHECKING:
     from .application_commands import SlashCommandOptionChoice, SlashCommand, MessageCommand, UserCommand
 
 
-MISSING = utils.MISSING
-
 log = logging.getLogger(__name__)
 
 __all__ = (
@@ -86,7 +97,7 @@ __all__ = (
     'ModalSubmitInteraction',
     'option_str',
     'option_float',
-    'option_int'
+    'option_int',
 )
 
 
@@ -246,7 +257,7 @@ class EphemeralMessage:
 
     @property
     def all_components(self):
-        """Union[:class:`Button`, :class:`BaseSelect`]:
+        """Union[:class:`Button`, :ref:`Select <select-like-objects>`]:
         Yields all buttons and selects that are contained in the message"""
         for action_row in self.components:
             yield from action_row
@@ -260,7 +271,7 @@ class EphemeralMessage:
 
     @property
     def all_select_menus(self):
-        """Returns all :class:`SelectMenu`'s that are contained in the message"""
+        """Returns all :ref:`Select <select-like-objects>`'s that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
                 if int(component.type) in {3, 5, 6, 7, 8}:
@@ -292,13 +303,13 @@ class EphemeralMessage:
             The new embed to replace the original with.
             Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds`to send.
+            A list containing up to 10 embeds to send.
             If ``None`` or empty, all embeds will be removed.
             
             If passed, ``embed`` does also count towards the limit of 10 embeds.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
@@ -445,32 +456,34 @@ class BaseInteraction:
     For more general information's about Interactions visit the Documentation of the
     `Discord-API <https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object>`_
 
+    The following attributes are always available:
+
     Attributes
     ------------
     id: :class:`int`
-        The id of the interaction
+        The id of the interaction.
     type: :class:`~discord.InteractionType`
-        The type of the interaction
+        The type of the interaction.
     user_id: :class:`int`
         The id of the user who triggered the interaction.
     channel_id: :class:`int`
         The id of the channel where the interaction was triggered.
     data: :class:`~discord.InteractionData`
         Some internal needed metadata for the interaction, depending on the type.
-    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
-        A mapping of message id's to the message objects that were sent using :attr:`respond`.
     author_locale: Optional[:class:`~discord.Locale`]
         The locale of the user who triggered the interaction.
     guild_locale: Optional[:class:`~discord.Locale`]
         The locale of the guild where the interaction was triggered.
-    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The message of the interaction, if any.
-    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The cached version of :attr:`message`, if any.
     guild_id: Optional[:class:`int`]
         The id of the guild where the interaction was triggered, if any.
     app_permissions: Optional[:class:`~discord.Permissions`]
         The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
+
+        This is similar to `interaction.channel.permissions_for(innteraction.guild.me)` but calculated on discord side.
+    author_permissions: Optional[:class:`~discord.Permissions`]
+        The author's permissions in the channel where the interaction was triggered, if it was in a guild.
+
+        This is similar to `interaction.channel.permissions_for(interaction.author)`, but calculated on discord side.
     """
     if TYPE_CHECKING:
         type: InteractionType
@@ -478,6 +491,7 @@ class BaseInteraction:
         guild_id: Optional[int]
         channel_id: int
         app_permissions: Optional[Permissions]
+        author_permissions: Optional[Permissions]
         user_id: int
         user: User
         member: Optional[Member]
@@ -505,6 +519,7 @@ class BaseInteraction:
         if guild:
             channel = guild.get_channel(self.channel_id)
             member = data.get('member')
+            self.author_permissions = Permissions(int(member.get('permissions', 0)))
             user = member.get('user')
             self.app_permissions = Permissions(int(data.get('app_permissions', 0)))
             self.user_id = user_id = int(user['id'])
@@ -514,6 +529,7 @@ class BaseInteraction:
             channel = state._get_private_channel(channel_id)
             user = data.get('user')
             self.app_permissions = None
+            self.author_permissions = None
             self.user_id = int(user['id'])
             self.member = None
             self.guild_locale = None
@@ -571,7 +587,7 @@ class BaseInteraction:
     
     @property
     def callback_message(self) -> Optional[Union[Message, EphemeralMessage]]:
-        """Optional[Union[:class:`Message`, :class:`EphemeralMessage`]: The initial interaction response message,if any. (``@original``)"""
+        """Optional[Union[:class:`Message`, :class:`EphemeralMessage`]: The initial interaction response message, if any. (``@original``)"""
         return self._callback_message
     
     @callback_message.setter
@@ -579,7 +595,7 @@ class BaseInteraction:
         self._callback_message = value
         if value:
             self.messages['@original'] = value
-    
+
     async def _defer(
             self,
             response_type: Optional[InteractionCallbackType] = InteractionCallbackType.deferred_update_msg,
@@ -650,8 +666,9 @@ class BaseInteraction:
     ) -> Union[Message, EphemeralMessage]:
         """|coro|
 
-        Responds to the interaction by editing the original or callback message depending on the :attr:`BaseInteraction.type`.
-        
+        Responds to the interaction by editing the original (:attr:`~ComponentInteraction.message`)
+        or :attr:`callback_message`, depending on the :attr:`~BaseInteraction.type`.
+
         Parameters
         -----------
         content: Optional[:class:`str`]
@@ -661,13 +678,13 @@ class BaseInteraction:
             The new embed to replace the original with.
             Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds`to send.
+            A list containing up to 10 embeds to send.
             If ``None`` or empty, all embeds will be removed.
             
             If passed, ``embed`` does also count towards the limit of 10 embeds.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow` or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
@@ -840,9 +857,9 @@ class BaseInteraction:
             A list containing up to 10 embeds.
             
             If passed, ``embed`` also counts towards the limit of 10.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s.
+            Each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
@@ -898,11 +915,11 @@ class BaseInteraction:
                 content=content,
                 tts=tts,
                 flags=flags,
-                embed=embed if embed else MISSING,
-                embeds=embeds if embeds else MISSING,
-                file=file if file else MISSING,
-                files=files if files else MISSING,
-                components=components if components else MISSING,
+                embed=embed or MISSING,
+                embeds=embeds or MISSING,
+                file=file or MISSING,
+                files=files or MISSING,
+                components=components or MISSING,
                 allowed_mentions=allowed_mentions,
                 previous_allowed_mentions=state.allowed_mentions
             )
@@ -924,11 +941,11 @@ class BaseInteraction:
                 content=content,
                 tts=tts,
                 flags=flags,
-                embed=embed if embed else MISSING,
-                embeds=embeds if embeds else MISSING,
-                file=file if file else MISSING,
-                files=files if files else MISSING,
-                components=components if components else MISSING,
+                embed=embed or MISSING,
+                embeds=embeds or MISSING,
+                file=file or MISSING,
+                files=files or MISSING,
+                components=components or MISSING,
                 allowed_mentions=allowed_mentions,
                 previous_allowed_mentions=state.allowed_mentions
             )
@@ -1057,8 +1074,15 @@ class BaseInteraction:
 
     @property
     def channel(self) -> Union[DMChannel, TextChannel, ThreadChannel, ForumPost, VoiceChannel, PartialMessageable]:
-        """Union[:class:`~discord.TextChannel`, :class:`~discord.ThreadChannel`, :class:`~discord.DMChannel`, :class:`~discord.VoiceChannel`, :class:`~discord.ForumPost`, :class:`~discord.PartialMessageable`
-        The channel where the interaction was invoked in.
+        """
+        Union[
+            :class:`~discord.TextChannel`,
+            :class:`~discord.ThreadChannel`,
+            :class:`~discord.DMChannel`,
+            :class:`~discord.VoiceChannel`,
+            :class:`~discord.ForumPost`,
+            :class:`~discord.PartialMessageable`
+        ]: The channel where the interaction was invoked in.
         """
         # TODO: I think we can remove this now
         return getattr(
@@ -1077,18 +1101,20 @@ class BaseInteraction:
         return self._state._get_guild(self.guild_id)
 
     @property
+    @utils.deprecated('is_dm')
     def message_is_dm(self) -> bool:
+        """:class:`bool`: An deprecated alias to :attr:`is_dm`."""
+        return not self.guild_id
+
+    @property
+    def is_dm(self) -> bool:
         """:class:`bool`: Whether the interaction was invoked in a :class:`~discord.DMChannel`."""
         return not self.guild_id
 
     @property
-    def message_is_hidden(self) -> bool:
-        """:class:`bool`: Whether the :attr:`message` has the :func:`~discord.MessageFlags.ephemeral` flag."""
-        return self.message and self.message.flags.ephemeral
-
-    @property
     def bot(self):
-        """Union[:class:`~discord.Client`, :class:`~discord.ext.commands.Bot`]: The :class:`~discord.Client`/:class:`~discord.ext.commands.Bot` instance of the bot."""
+        """Union[:class:`~discord.Client`, :class:`~discord.ext.commands.Bot`]:
+        The :class:`~discord.Client`/:class:`~discord.ext.commands.Bot` instance of the bot."""
         return self._state._get_client()
 
     @classmethod
@@ -1112,9 +1138,9 @@ class ApplicationCommandInteraction(BaseInteraction):
     Attributes
     ------------
     id: :class:`int`
-        The id of the interaction
+        The id of the interaction.
     type: :class:`~discord.InteractionType`
-        The type of the interaction
+        The type of the interaction.
     user_id: :class:`int`
         The id of the user who triggered the interaction.
     channel_id: :class:`int`
@@ -1125,10 +1151,6 @@ class ApplicationCommandInteraction(BaseInteraction):
         The locale of the user who triggered the interaction.
     guild_locale: Optional[:class:`~discord.Locale`]
         The locale of the guild where the interaction was triggered.
-    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The message of the interaction, if any.
-    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The cached version of :attr:`message`, if any.
     guild_id: Optional[:class:`int`]
         The id of the guild where the interaction was triggered, if any.
     app_permissions: Optional[:class:`~discord.Permissions`]
@@ -1193,9 +1215,9 @@ class ComponentInteraction(BaseInteraction):
     Attributes
     ------------
     id: :class:`int`
-        The id of the interaction
+        The id of the interaction.
     type: :class:`~discord.InteractionType`
-        The type of the interaction
+        The type of the interaction.
     user_id: :class:`int`
         The id of the user who triggered the interaction.
     channel_id: :class:`int`
@@ -1207,7 +1229,7 @@ class ComponentInteraction(BaseInteraction):
     guild_locale: Optional[:class:`~discord.Locale`]
         The locale of the guild where the interaction was triggered.
     message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The message of the interaction, if any.
+        The message the component is attached to.
     cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
         The cached version of :attr:`message`, if any.
     guild_id: Optional[:class:`int`]
@@ -1215,34 +1237,36 @@ class ComponentInteraction(BaseInteraction):
     app_permissions: Optional[:class:`~discord.Permissions`]
         The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
     match: Optional[:class:`~re.Match`]
-        The RegEx :ref:`Match <https://docs.python.org/3/library/re.html#match-objects>`_ result of the custom_id of
+        The RegEx |match_object| result of the custom_id of
         the component, if an ``on_click`` or ``on_select`` decorator was used.
     """
     if TYPE_CHECKING:
         match: Optional[Match]
 
     @property
-    def component(self) -> Union[Button, SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]:
-        """Union[:class:`~discord.Button`, :class:`~discord.SelectMenu`]: The component that was used"""
-        try:
-            return self._component
-        except AttributeError as e:
-            custom_id = self.data.custom_id
-            if custom_id:
-                if custom_id.isdigit():
-                    custom_id = int(custom_id)
-                if self.data.component_type == ComponentType.Button:
-                    self._component = component = utils.get(self.message.all_buttons, custom_id=custom_id)
-                elif self.data.component_type.value in {3, 5, 6, 7, 8}:
-                    select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
-                    if select_menu:
-                        setattr(select_menu, '_values', self.data.values)
-                        setattr(select_menu, '_interaction', self)
-                    self._component = component = select_menu
-                else:
-                    raise ValueError(f'Unknown component type {self.data.component_type}') from e
+    def message_is_hidden(self) -> bool:
+        """:class:`bool`: Whether the :attr:`message` has the :func:`~discord.MessageFlags.ephemeral` flag."""
+        return self.message and self.message.flags.ephemeral
 
-                return component
+    @cached_slot_property('_cs_component')
+    def component(self) -> Union[Button, SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]:
+        """
+        Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>` like objects]: The component that was used
+        """
+        custom_id = self.data.custom_id
+        component_type = self.data.component_type
+        if custom_id.isdigit():
+            custom_id = int(custom_id)
+
+        if component_type == ComponentType.Button:
+            return utils.get(self.message.all_buttons, custom_id=custom_id)
+        elif component_type.value in {3, 5, 6, 7, 8}:
+            select_menu = utils.get(self.message.all_select_menus, custom_id=custom_id)
+            setattr(select_menu, '_values', self.data.values)
+            setattr(select_menu, '_interaction', self)
+            return select_menu
+        else:
+            raise ValueError(f'Unknown component type {self.data.component_type}')
 
     async def defer(
             self,
@@ -1282,29 +1306,22 @@ class AutocompleteInteraction(BaseInteraction):
     Holds the data of an application command autocomplete interaction that will be received when autocomplete for a
     :class:`~discord.SlashCommandOption` with :attr:`~discord.SlashCommandOption.autocomplete` is set to :obj:`True`.
 
-    .. info::
-        To respond with the autocomplete choices, use :meth:`send_choices`.
+    To respond with the autocomplete choices, use :meth:`send_choices`.
 
     Attributes
     ------------
     id: :class:`int`
-        The id of the interaction
+        The id of the interaction.
     type: :class:`~discord.InteractionType`
-        The type of the interaction
+        The type of the interaction.
     user_id: :class:`int`
         The id of the user who triggered the interaction.
     channel_id: :class:`int`
         The id of the channel where the interaction was triggered.
-    messages: Dict[:class:`int`, Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]]
-        A mapping of message id's to the message objects that were sent using :attr:`respond`.
     author_locale: Optional[:class:`~discord.Locale`]
         The locale of the user who triggered the interaction.
     guild_locale: Optional[:class:`~discord.Locale`]
         The locale of the guild where the interaction was triggered.
-    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The message of the interaction, if any.
-    cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The cached version of :attr:`message`, if any.
     guild_id: Optional[:class:`int`]
         The id of the guild where the interaction was triggered, if any.
     app_permissions: Optional[:class:`~discord.Permissions`]
@@ -1342,7 +1359,7 @@ class AutocompleteInteraction(BaseInteraction):
         ------
         ValueError
             When more than 25 choices are passed.
-        discord.NotFound
+        NotFound
             You have been waited to long with responding to the interaction.
         """
         if len(choices) > 25:
@@ -1368,19 +1385,18 @@ class AutocompleteInteraction(BaseInteraction):
 
 
 class ModalSubmitInteraction(BaseInteraction):
-    """
-    Holds the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal` is
-    pressed and allows responding to it.
+    """Holds the data of an interaction that will be received when the ``Submit`` button of a :class:`~discord.Modal`
+    is pressed and allows responding to it.
 
     .. note::
         You **can't** respond to a modal submit interaction with another modal.
 
     Attributes
-    ------------
+    -----------
     id: :class:`int`
-        The id of the interaction
+        The id of the interaction.
     type: :class:`~discord.InteractionType`
-        The type of the interaction
+        The type of the interaction.
     user_id: :class:`int`
         The id of the user who triggered the interaction.
     channel_id: :class:`int`
@@ -1391,16 +1407,14 @@ class ModalSubmitInteraction(BaseInteraction):
         The locale of the user who triggered the interaction.
     guild_locale: Optional[:class:`~discord.Locale`]
         The locale of the guild where the interaction was triggered.
-    message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
-        The message of the interaction, if any.
     cached_message: Optional[Union[:class:`~discord.Message`, :class:`~discord.EphemeralMessage`]
         The cached version of :attr:`message`, if any.
     guild_id: Optional[:class:`int`]
         The id of the guild where the interaction was triggered, if any.
     app_permissions: Optional[:class:`~discord.Permissions`]
         The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
-    match: Optional[:class:`~re.Match`]
-        The RegEx :ref:`Match <https://docs.python.org/3/library/re.html#match-objects>`_ result of the custom_id of
+    match: Optional[|match_object|]
+        The RegEx |match_object| result of the custom_id of
         the modal, if an ``on_submit`` decorator was used.
     """
 

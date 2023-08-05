@@ -1371,6 +1371,8 @@ of :class:`enum.Enum`.
 
 .. class:: ReactionType
 
+    The type of a :class:`Reaction`.
+
     .. versionadded:: 2.0
 
     .. attribute:: normal
@@ -1442,6 +1444,32 @@ of :class:`enum.Enum`.
    |                        |       | ``grey_url``,  |    :alt: URL Button Picture    |
    |                        |       | ``Link_Button``|                                |
    +------------------------+-------+----------------+--------------------------------+
+
+.. class:: InteractionType
+
+    Specifies the type of an interaction received from discord.
+
+    .. attribute:: PingAck
+
+        A ping interaction, those are only used for
+        `http-only interactions <https://discord.com/developers/docs/interactions/receiving-and-responding#receiving-an-interaction>`_
+        wich are currently not supported by discord4py.
+
+    .. attribute:: ApplicationCommand
+
+        A user invoked a slash, user or message command.
+
+    .. attribute:: Component
+
+        A user pressed a button, or submitted a select menu.
+
+    .. attribute:: ApplicationCommandAutocomplete
+
+        Sent regularly when a user is filling out a slash-command option, that has autocomplete enabled.
+
+    .. attribute:: ModalSubmit
+
+        A user submitted a modal.
 
 .. _defer: :meth:`discord.BaseInteraction.defer`
 
@@ -2678,6 +2706,30 @@ of :class:`enum.Enum`.
     .. attribute:: gallery_view
 
         Display posts as a collection of tiles (grid)
+
+.. class:: OnboardingMode
+
+    Defines the criteria used to satisfy Onboarding constraints that are required for enabling.
+
+    .. attribute:: default
+
+        Counts only Default Channels towards constraints
+
+    .. attribute:: advanced
+
+        Counts Default Channels and Questions towards constraints
+
+.. class:: OnboardingPromptType
+
+        Defines the way a prompts' options are displayed.
+
+        .. attribute:: multiple_choice
+
+            The options are displayed as a grid of buttons
+
+        .. attribute:: dropdown
+
+            The options are displayed in a dropdown menu
 
 Async Iterator
 ----------------

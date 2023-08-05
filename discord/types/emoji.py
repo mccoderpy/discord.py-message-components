@@ -53,7 +53,7 @@ class BaseEmoji(TypedDict):
     id: Optional[SnowflakeID]          # The ID of the emoji
     name: Optional[str]                # The emoji name
     roles: NotRequired[SnowflakeList]  # The roles allowed to use this emoji
-    user: NotRequired[BaseUser]            # The user that created this emoji
+    user: NotRequired[BaseUser]        # The user that created this emoji
     require_colons: NotRequired[bool]  # Whether this emoji must be wrapped in colons
     managed: NotRequired[bool]         # Whether this emoji is managed
     animated: NotRequired[bool]        # Whether this emoji is animated

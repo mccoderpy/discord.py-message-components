@@ -26,15 +26,16 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
-    Union,
-    Optional,
-    List,
-    Dict,
-    Type,
     Any,
-    TYPE_CHECKING,
+    Awaitable,
+    Callable,
     Coroutine,
-    Awaitable
+    Dict,
+    List,
+    Optional,
+    Type,
+    TYPE_CHECKING,
+    Union,
 )
 
 from typing_extensions import Literal
@@ -47,7 +48,7 @@ import warnings
 from enum import Enum
 from types import FunctionType
 
-from .utils import async_all, find, get, snowflake_time, SupportsStr
+from .utils import async_all, find, get, snowflake_time, copy_doc, SupportsStr
 from .channel import PartialMessageable
 from .enums import (
     Enum as DiscordEnum,
@@ -56,7 +57,7 @@ from .enums import (
     OptionType,
     Locale,
     AppCommandPermissionType,
-    try_enum
+    try_enum,
 )
 from .permissions import Permissions
 from .abc import GuildChannel
@@ -66,7 +67,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .state import ConnectionState
     from .ext.commands import Cog, Greedy, Converter
-    from .interactions import ApplicationCommandInteraction, BaseInteraction
+    from .interactions import ApplicationCommandInteraction, AutocompleteInteraction, BaseInteraction
     from .types import (
         app_command
     )
@@ -439,8 +440,20 @@ class ApplicationCommand:
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
-    def error(self, coro) -> Coroutine:
-        """A decorator to set an error handler for this command similar to :func:`on_application_command_error` but only for this command"""
+    def error(self, coro: Callable[[ApplicationCommandInteraction, Exception], Coroutine]):
+        """A decorator to set an error handler for this command similar to :func:`on_application_command_error`
+        but only for this command
+
+        Parameters
+        ----------
+        coro: Callable[[:class:`~discord.ApplicationCommandInteraction`, :class:`Exception`], Coroutine]
+            The |coroutine_link|_ to use as an error handler.
+
+        Raises
+        ------
+        TypeError
+            If the error handler is not a coroutine.
+        """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The error handler must be a coroutine.')
         self.on_error = coro
@@ -472,7 +485,9 @@ class ApplicationCommand:
 
     @property
     def created_at(self) -> Optional[datetime]:
-        """Optional[:class:`datetime.datetime`]: The creation time of the command in UTC, only set if the bot is running"""
+        """
+        Optional[:class:`~datetime.datetime`]: The creation time of the command in UTC, only set if the bot is running
+        """
         if self.id:
             return snowflake_time(self.id)
 
@@ -1077,16 +1092,21 @@ class SubCommand(SlashCommandOption):
             else:
                 self._state.dispatch('application_command_error', self, interaction, exc)
 
-    def autocomplete_callback(self, coro):
+    def autocomplete_callback(self, coro: Callable[[AutocompleteInteraction, ...], Coroutine]):
         """
-        A decorator that sets a coroutine function as the function that will be called
+       A decorator that sets a |coroutine_link|_ function as the function that will be called
         when discord sends an autocomplete interaction for this sub-command.
 
         Parameters
         ----------
-        coro: Callable[Any, Any, Coroutine]
+        coro: Callable[[:class:`AutocompleteInteraction`, ...], Coroutine]
             The function that should be set as autocomplete_func for this command.
             Must take the same amount of params the sub-command itself takes.
+
+        Raises
+        ------
+        TypeError
+            The function passed is not a coroutine.
         """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
@@ -1116,7 +1136,8 @@ class SubCommand(SlashCommandOption):
             else:
                 self.base_command._state.dispatch('application_command_error', self, interaction, exc)
 
-    def error(self, coro):
+    @copy_doc(ApplicationCommand.error)
+    def error(self, coro: Callable[[ApplicationCommandInteraction, Exception], Coroutine]):
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The error handler registered must be a coroutine.')
         self.on_error = coro
@@ -1163,16 +1184,22 @@ class GuildOnlySubCommand(SubCommand):
                   ', '.join([str(g) for g in self.guild_ids])
                   )
 
-    def autocomplete_callback(self, coro: Coroutine[Any, Any, Awaitable]):
-        """
-        A decorator that sets a coroutine function as the function that will be called
+    def autocomplete_callback(self, coro: Callable[[AutocompleteInteraction, ...], Coroutine]):
+        """A decorator that sets a |coroutine_link|_ function as the function that will be called
         when discord sends an autocomplete interaction for this command.
+
 
         Parameters
         ----------
-        coro: Callable[Any, Any, Coroutine]
+        coro: Callable[[:class:`AutocompleteInteraction`, ...], Coroutine]
             The function that should be set as autocomplete_func for this command.
             Must take the same amount of params the command itself takes.
+
+
+        Raises
+        ------
+        TypeError
+            The function passed is not a coroutine.
         """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
@@ -1181,7 +1208,8 @@ class GuildOnlySubCommand(SubCommand):
             cmd.autocomplete_func = coro
         return coro
 
-    def error(self, coro):
+    @copy_doc(ApplicationCommand.error)
+    def error(self, coro: Callable[[ApplicationCommandInteraction, Exception], Coroutine]):
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The error handler registered must be a coroutine.')
         for cmd in self._commands:
@@ -1345,17 +1373,21 @@ class SlashCommand(ApplicationCommand):
         """:class:`bool`: Whether the command has sub-commands or not"""
         return bool(self.sub_commands)
 
-    def autocomplete_callback(self, coro):
+    def autocomplete_callback(self, coro: Callable[[AutocompleteInteraction, ...], Coroutine]):
         """
-        A decorator that sets a coroutine function as the function that will be called
+        A decorator that sets a |coroutine_link|_ function as the function that will be called
         when discord sends an autocomplete interaction for this command.
 
         Parameters
         ----------
-        coro: Callable[Any, Any, :class:`Awaitable`]
+        coro: Callable[[:class:`AutocompleteInteraction`, ...], Coroutine]
             The function that should be set as :attr:`SlashCommand.autocomplete_func` for this command.
             Must take the same amount of params the command itself takes.
 
+        Raises
+        ------
+        TypeError
+            The function passed is not a coroutine.
         """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
@@ -1643,16 +1675,21 @@ class GuildOnlySlashCommand(SlashCommand):
                   ', '.join([str(g) for g in self.guild_ids])
                   )
 
-    def autocomplete_callback(self, coro: 'Coroutine[Any, Any, Awaitable]'):
+    def autocomplete_callback(self, coro: Callable[[AutocompleteInteraction, ...], Coroutine]):
         """
-        A decorator that sets a coroutine function as the function that will be called
+        A decorator that sets a |coroutine_link|_ function as the function that will be called
         when discord sends an autocomplete interaction for this command.
 
         Parameters
         ----------
-        coro: Callable[Any, Any, Coroutine]
+        coro: Callable[[:class:`AutocompleteInteraction`, ...], Coroutine]
             The function that should be set as autocomplete_func for this command.
             Must take the same amount of params the command itself takes.
+
+        Raises
+        ------
+        TypeError
+            The function passed is not a coroutine.
         """
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The autocomplete callback function must be a coroutine.')
@@ -1661,7 +1698,8 @@ class GuildOnlySlashCommand(SlashCommand):
             cmd.autocomplete_func = coro
         return coro
 
-    def error(self, coro):
+    @copy_doc(ApplicationCommand.error)
+    def error(self, coro: Callable[[ApplicationCommandInteraction, Exception], Coroutine]):
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError('The error handler registered must be a coroutine.')
         for cmd in self._commands:

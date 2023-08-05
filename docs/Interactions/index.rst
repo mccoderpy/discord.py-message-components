@@ -10,7 +10,7 @@
 Here you find the most staff related to interactions.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     application-commands
     message-components

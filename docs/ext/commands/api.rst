@@ -174,7 +174,7 @@ Cog
 
 .. autoclass:: discord.ext.commands.Cog
     :members:
-    :excluded-members: listener, slash_command, message_command, user_command, on_click, on_select, on_submit
+    :exclude-members: listener, slash_command, message_command, user_command, on_click, on_select, on_submit
 
     .. automethod:: Cog.listener
         :decorator:

@@ -32,18 +32,20 @@ from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, URLAndCustomIDNotAlowed
 
 from typing import (
-    overload,
     Any,
-    Iterator,
-    Union,
-    Type,
-    Tuple,
-    List,
-    Dict,
-    Optional,
     Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    overload,
+    Tuple,
+    Type,
+    TypeAlias,
     TypeVar,
     TYPE_CHECKING,
+    Union,
 )
 
 from typing_extensions import Literal, Self
@@ -66,6 +68,7 @@ if TYPE_CHECKING:
     from .interactions import ComponentInteraction
     
     P = ParamSpec('P')
+    Select: TypeAlias = Union['SelectMenu', 'UserSelect', 'RoleSelect', 'MentionableSelect', 'ChannelSelect']
 
 
 __all__ = (
@@ -834,7 +837,7 @@ class Modal:
         A developer-defined identifier for the component, max 100 characters
     title: :class:`str`
         The title of the popup modal, max 45 characters
-    components: List[Union[:class:`ActionRow`, List[:class:`TextInput`],:class:` TextInput`]]
+    components: List[Union[:class:`ActionRow`, List[:class:`TextInput`], :class:`TextInput`]]
         Between 1 and 5 (inclusive) components that make up the modal.
     """
     def __init__(
@@ -1109,15 +1112,16 @@ class ChannelSelect(BaseSelect):
         return base
 
 
-class ActionRow:
+class ActionRow(Generic[T]):
     """
-    Represents an ActionRow-Part for the components of a :class:`~discord.Message`.
+    Represents an ActionRow-Part for the components of a :class:`~discord.Message` or :class:`Modal`.
 
     Attributes
     ----------
     components: List[Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]]
         The components the :class:`~discord.ActionRow` holds.
-        This could be up to 5 :class:`Button` or one :ref:`Select <select-like-objects>` like object/:class:`TextInput`.
+        This could be up to **five** :class:`Button`, **one** :ref:`Select <select-like-objects>` like object
+        or **one** :class:`TextInput`.
     """
 
     @overload
@@ -1129,46 +1133,38 @@ class ActionRow:
     @overload
     def __init__(self, components: TextInput) -> None: ...
 
-    def __init__(self, *components: T[Union[Button, BaseSelect, TextInput]]) -> None:
+    def __init__(self, *components: T) -> None:
         """
         Represents an ActionRow-Part for the components of a :class:`~discord.Message`.
 
-        .. note ::
-
-            For more information about ActionRows visit the
-            `Discord-API Documentation <https://discord.com/developers/docs/interactions/message-components#actionrow>`_.
-
         Parameters
         ----------
-        *components: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
-            The components the :class:`~discord.ActionRow` should hold.
-            This could be up to 5 :class:`Button` or one :ref:`Select <select-like-objects>` like object/:class:`TextInput`.
+        *components: Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]
+            This could be up to **five** :class:`Button`, **one** :ref:`Select <select-like-objects>` like object
+            or **one** :class:`TextInput`.
         """
-        self.components: List[T] = [c for c in components]
+        self.components: List[T] = list(components)
 
     @overload
-    def __class_getitem__(cls, item: Button) -> ActionRow: ...
-
-    @overload
-    def __class_getitem__(cls, item: Tuple[Button, ...]) -> ActionRow: ...
-
-    @overload
-    def __class_getitem__(cls, item: BaseSelect) -> ActionRow: ...
-
-    @overload
-    def __class_getitem__(cls, item: TextInput) -> ActionRow:
+    def __class_getitem__(cls, item: Type[Button]) -> ActionRow[Button]:
         ...
 
-    def __class_getitem__(cls, item: T) -> ActionRow(T):
-        if isinstance(item, tuple):
-            return ActionRow(*item)
-        else:
-            return ActionRow(item)
+    @overload
+    def __class_getitem__(cls, item: Tuple[Type[Button], ...]) -> ActionRow[Button, ...]: ...
+
+    @overload
+    def __class_getitem__(cls, item: Type[BaseSelect]) -> ActionRow[BaseSelect]: ...
+
+    @overload
+    def __class_getitem__(cls, item: Type[TextInput]) -> ActionRow[TextInput]: ...
+
+    def __class_getitem__(cls, item: Type[T]) -> ActionRow[T]:
+        return ActionRow(*item) if isinstance(item, tuple) else ActionRow(item)
 
     def __repr__(self) -> str:
         return f'<ActionRow components={self.components}>'
 
-    def __iter__(self) -> Iterator[Union[Button, BaseSelect, TextInput]]:
+    def __iter__(self) -> Iterator[T]:
         for component in self.components:
             yield component
 
@@ -1229,22 +1225,22 @@ class ActionRow:
     def __len__(self) -> int:
         return len(self.components)
 
-    def __invert__(self) -> List[Union[Button, BaseSelect, TextInput]]:
+    def __invert__(self) -> List[T]:
         return self.components
 
-    def __getitem__(self, item: int) -> Union[Button, BaseSelect, TextInput]:
+    def __getitem__(self, item: int) -> T:
         return self.components[item]
 
-    def __setitem__(self, index: int, component: Union[Button, BaseSelect, TextInput]) -> None:
+    def __setitem__(self, index: int, component: T) -> None:
         self.set_component_at(index, component)
 
-    def add_component(self: Self, component: Union[Button, BaseSelect, TextInput]) -> Self:
+    def add_component(self: Self, component: T) -> Self:
         """
         Adds a component to the :class:`~discord.ActionRow` and returns itself.
 
         Parameters
         ----------
-        component: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
+        component: Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]
             The component to add to the ActionRow.
 
         Returns
@@ -1255,7 +1251,7 @@ class ActionRow:
         self.components.append(component)
         return self
 
-    def insert_component_at(self: Self, index, component: Union[Button, BaseSelect, TextInput]) -> Self:
+    def insert_component_at(self: Self, index, component: T) -> Self:
         """
         Inserts a component before a specified index to the :class:`~discord.ActionRow` and returns itself.
 
@@ -1263,7 +1259,7 @@ class ActionRow:
         -----------
         index: :class:`int`
             The index of where to insert the component.
-        component: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
+        component: Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]
             The component to insert.
 
         Returns
@@ -1274,7 +1270,7 @@ class ActionRow:
         self.components.insert(index, component)
         return self
 
-    def set_component_at(self: Self, index: int, component: Union[Button, SelectMenu]) -> Self:
+    def set_component_at(self: Self, index: int, component: T) -> Self:
         """
         Modifies a component to the :class:`~discord.ActionRow` and returns itself.
 
@@ -1285,7 +1281,7 @@ class ActionRow:
         ----------
         index: :class:`int`
             The index of the component to modify.
-        component: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
+        component: Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]
             The component to replace the old one with.
 
         Raises
@@ -1340,14 +1336,14 @@ class ActionRow:
     @overload
     def add_components(self: Self, components: TextInput) -> Self: ...
 
-    def add_components(self: Self, *components: Union[Button, BaseSelect, TextInput]) -> Self:
+    def add_components(self: Self, *components: T) -> Self:
         """
         Adds multiple components to the :class:`~discord.ActionRow` and returns itself.
 
         Parameters
         ----------
-        *components: Union[:class:`Button`, :class:`SelectMenu`, :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect`, :class:`ChannelSelect`, :class:`TextInput`]
-            The components to add to the ActionRow.
+        *components: Union[:class:`Button`, :ref:`Select <select-like-objects>`, :class:`TextInput`]
+            The components to add to the Action Row.
 
         Returns
         -------

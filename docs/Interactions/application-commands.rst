@@ -7,8 +7,11 @@ ApplicationCommand
 .. attributetable:: ApplicationCommand
 
 .. autoclass:: ApplicationCommand()
+    :exclude-members: error
     :members:
 
+    .. automethod:: error
+        :decorator:
 
 SlashCommand
 ~~~~~~~~~~~~~
@@ -18,16 +21,23 @@ SlashCommand
 .. autoclass:: SlashCommand()
     :members:
     :inherited-members:
+    :exclude-members: autocomplete_callback
 
+    .. automethod:: autocomplete_callback
+        :decorator:
 
-SubCommand
-~~~~~~~~~~~~~
 
 .. attributetable:: SubCommand
 
 .. autoclass:: SubCommand()
     :members:
+    :exclude-members: autocomplete_callback, error
 
+    .. automethod:: autocomplete_callback
+        :decorator:
+
+    .. automethod:: error
+        :decorator:
 
 SlashCommandOption
 ~~~~~~~~~~~~~~~~~~~
@@ -38,7 +48,6 @@ SlashCommandOption
     :members:
     :inherited-members:
 
-
 SlashCommandOptionChoice
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -48,7 +57,6 @@ SlashCommandOptionChoice
     :members:
     :inherited-members:
 
-
 UserCommand
 ~~~~~~~~~~~~~
 
@@ -57,7 +65,6 @@ UserCommand
 .. autoclass:: UserCommand()
     :members:
     :inherited-members:
-
 
 MessageCommand
 ~~~~~~~~~~~~~~~

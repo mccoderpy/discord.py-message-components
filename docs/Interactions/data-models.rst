@@ -44,10 +44,11 @@ ModalSubmitInteraction
 
 .. attributetable:: ModalSubmitInteraction
 
-.. autoclass:: ModalSubmitInteraction()
+.. autoclass:: ModalSubmitInteraction
     :members:
     :inherited-members:
     :exclude-members: defer, respond_with_modal, from_type
+
 
 Localizations
 ~~~~~~~~~~~~~~~

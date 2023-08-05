@@ -973,7 +973,8 @@ class ThreadChannel(abc.Messageable, Hashable):
     @property
     def archive_time(self) -> Optional[datetime.datetime]:
         """
-        Optional[:class:`datetime.datetime`]: When the thread's archive status was last changed, used for calculating recent activity
+        Optional[:class:`~datetime.datetime`]: When the thread's archive status was last changed,
+        used for calculating recent activity
         """
         archive_timestamp = self._thread_meta.get('archive_timestamp', None)
         if archive_timestamp:
@@ -3629,8 +3630,9 @@ class ForumChannel(abc.GuildChannel, Hashable):
             A embed of the post starter-message.
         embeds: List[:class:`Embed`]
             A list of up to 10 embeds to include in the post starter-message.
-        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`BaseSelect`]]]]
-            A list of components to include in the post starter-message.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         file: Optional[class:`File`]
             A file to include in the post starter-message.
         files: List[:class:`File`]

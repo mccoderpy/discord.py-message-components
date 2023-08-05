@@ -204,6 +204,10 @@ class Emoji(_EmojiTag):
         emoji_roles, my_roles = self._roles, self.guild.me._roles
         return any(my_roles.has(role_id) for role_id in emoji_roles)
 
+    def _as_partial(self):
+        from .partial_emoji import PartialEmoji
+        return PartialEmoji.with_state(self._state, animated=self.animated, name=self.name, id=self.id)
+
     async def delete(self, *, reason=None):
         """|coro|
 

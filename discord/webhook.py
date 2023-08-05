@@ -532,9 +532,9 @@ class WebhookMessage(Message):
             Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds. If ``None`` empty, all embeds will be removed.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
             
             .. note::
                 Due to discord limitations this can only be used when the webhook is owned by an application.
@@ -1133,8 +1133,9 @@ class Webhook(Hashable):
         embeds: List[:class:`Embed`]
             A list of embeds to send with the content. Maximum of 10. This cannot
             be mixed with the ``embed`` parameter.
-        components: List[Union[:class:`ActionRow`, List[Union[:class:`Button`, :class:`SelectMenu`]]]]
-            A list of components to include in the message.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
             
             .. note::
                 Due to discord limitations this can only be used when the Webhook was created by a bot.
@@ -1251,9 +1252,9 @@ class Webhook(Hashable):
             Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
             A list containing up to 10 embeds. If ``None`` empty, all embeds will be removed.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
             
             .. note::
                 Due to discord limitations this can only be used when the webhook is owned by an application.

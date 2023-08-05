@@ -50,12 +50,12 @@ from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .enums import try_enum, MessageType, ChannelType, AutoArchiveDuration, InteractionType
 from .errors import InvalidArgument, HTTPException
-from .components import ActionRow, Button, BaseSelect
+from .components import ActionRow
 from .embeds import Embed
 from .member import Member
 from .flags import MessageFlags
 from .file import File
-from .utils import escape_mentions
+from .utils import escape_mentions, MISSING
 from .guild import Guild
 from .mixins import Hashable
 from .sticker import Sticker
@@ -78,9 +78,34 @@ if TYPE_CHECKING:
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
     from .channel import TextChannel, VoiceChannel, StageChannel, TextChannel, ForumChannel, ForumPost, DMChannel
+    from .components import (
+        Button,
+        SelectMenu,
+        UserSelect,
+        RoleSelect,
+        MentionableSelect,
+        ChannelSelect
+    )
 
-    MentionableChannel = Union[TextChannel, VoiceChannel, StageChannel, ThreadChannel, TextChannel, ForumChannel, ForumPost]
-    MessageableChannel = Union[PartialMessageable, TextChannel, VoiceChannel, StageChannel, ThreadChannel, ForumPost, DMChannel]
+    MentionableChannel = Union[
+        TextChannel,
+        VoiceChannel,
+        StageChannel,
+        ThreadChannel,
+        TextChannel,
+        ForumChannel,
+        ForumPost
+    ]
+    MessageableChannel = Union[
+        PartialMessageable,
+        TextChannel,
+        VoiceChannel,
+        StageChannel,
+        ThreadChannel,
+        ForumPost,
+        DMChannel
+    ]
+    Select = Union[SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]
 
 __all__ = (
     'Attachment',
@@ -90,9 +115,6 @@ __all__ = (
     'MessageReference',
     'DeletedReferencedMessage',
 )
-
-
-MISSING = utils.MISSING
 
 
 def convert_emoji_reaction(emoji: Union[Reaction, Emoji, PartialEmoji, str]) -> str:
@@ -1121,8 +1143,9 @@ class Message(Hashable):
             return 'This server has failed Discovery activity requirements for 3 weeks in a row. If this server fails for 1 more week, it will be removed from Discovery.'
 
     @property
-    def all_components(self) -> Iterator[Union[Button, BaseSelect]]:
-        """Returns all :class:`Button`'s and :class:`SelectMenu`'s that are contained in the message"""
+    def all_components(self) -> Iterator[Union[Button, Select]]:
+        """Returns all :class:`Button`'s and :ref:`Select <select-like-objects>` like objects
+        that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
                 yield component
@@ -1136,8 +1159,8 @@ class Message(Hashable):
                     yield component
 
     @property
-    def all_select_menus(self) -> Iterator[BaseSelect]:
-        """Returns all :class:`SelectMenu`'s that are contained in the message"""
+    def all_select_menus(self) -> Iterator[Select]:
+        """Returns all :ref:`Select <select-like-objects>` like objects that are contained in the message"""
         for action_row in self.components:
             for component in action_row:
                 if int(component.type) in {3, 5, 6, 7, 8}:
@@ -1195,7 +1218,7 @@ class Message(Hashable):
             content: Any = MISSING,
             embed: Optional[Embed] = MISSING,
             embeds: Sequence[Embed] = MISSING,
-            components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, Select]]]] = MISSING,
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             keep_existing_attachments: bool = False,
             delete_after: Optional[float] = None,
@@ -1228,13 +1251,13 @@ class Message(Hashable):
             The new embed to replace the original with.
             Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds`to send.
+            A list containing up to 10 embeds to send.
             If ``None`` or empty, all embeds will be removed.
             
             If passed, ``embed`` does also count towards the limit of 10 embeds.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             You can use ``keep_existing_attachments`` to auto-add the existing attachments to the list.
@@ -1510,7 +1533,7 @@ class Message(Hashable):
             tts: bool = False,
             embed: Optional[Embed] = None,
             embeds: Optional[List[Embed]] = None,
-            components: Optional[List[Union[ActionRow, List[Union[Button, BaseSelect]]]]] = None,
+            components: Optional[List[Union[ActionRow, List[Union[Button, Select]]]]] = None,
             file: Optional[File] = None,
             files: Optional[List[File]] = None,
             stickers: Optional[List[GuildSticker]] = None,
@@ -1787,7 +1810,7 @@ class PartialMessage(Hashable):
             content: Any = MISSING,
             embed: Optional[Embed] = MISSING,
             embeds: Sequence[Embed] = MISSING,
-            components: List[Union[ActionRow, List[Union[Button, BaseSelect]]]] = MISSING,
+            components: List[Union[ActionRow, List[Union[Button, Select]]]] = MISSING,
             attachments: Sequence[Union[Attachment, File]] = MISSING,
             delete_after: Optional[float] = None,
             allowed_mentions: Optional[AllowedMentions] = MISSING,
@@ -1822,13 +1845,13 @@ class PartialMessage(Hashable):
             The new embed to replace the original with.
             Could be ``None`` to remove all embeds.
         embeds: Optional[List[:class:`Embed`]]
-            A list containing up to 10 embeds`to send.
+            A list containing up to 10 embeds to send.
             If ``None`` or empty, all embeds will be removed.
             
             If passed, ``embed`` does also count towards the limit of 10 embeds.
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         attachments: List[Union[:class:`Attachment`, :class:`File`]]
             A list containing previous attachments to keep as well as new files to upload.
             

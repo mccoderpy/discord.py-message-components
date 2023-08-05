@@ -23,12 +23,27 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+from __future__ import annotations
 
 import re
 import copy
 import inspect
 
-from typing import Optional, Union, List, Dict, Callable, Awaitable, Pattern, AnyStr, Any
+from typing import (
+    Any,
+    AnyStr,
+    Awaitable,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Pattern,
+    TypeAlias,
+    TypeVar,
+    TYPE_CHECKING,
+    Union,
+)
 
 from ._types import _BaseCommand
 
@@ -39,6 +54,21 @@ __all__ = (
 
 from discord import MISSING, InvalidArgument, Permissions
 from discord.application_commands import *
+
+if TYPE_CHECKING:
+    from discord.interactions import ApplicationCommandInteraction, ComponentInteraction, ModalSubmitInteraction
+    from discord.components import Button, Select
+    from discord.message import Message
+    from discord.user import User
+    from discord.member import Member
+
+    _Coro: TypeAlias = Coroutine[None, None, ...]
+    _SelectCallback: TypeAlias = Callable[[ComponentInteraction, Select], _Coro]
+    _ButtonCallback: TypeAlias = Callable[[ComponentInteraction, Button], _Coro]
+    _ModalCallback: TypeAlias = Callable[[ModalSubmitInteraction], _Coro]
+    _SlashCommandCallback: TypeAlias = Callable[[ApplicationCommandInteraction, ...], _Coro]
+    _MessageCommandCallback: TypeAlias = Callable[[ApplicationCommandInteraction, Message], _Coro]
+    _UserCommandCallback: TypeAlias = Callable[[ApplicationCommandInteraction, Union[User, Member]], _Coro]
 
 
 class CogMeta(type):
@@ -336,9 +366,10 @@ class Cog(metaclass=CogMeta):
         return decorator
     
     @classmethod
-    def on_click(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
+    def on_click(
+            cls,
+            custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
+    ) -> Callable[[_ButtonCallback], _ButtonCallback]:
         """
         A decorator with wich you can assign a function to a specific :class:`~discord.Button` (or its custom_id).
 
@@ -357,8 +388,7 @@ class Cog(metaclass=CogMeta):
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
-                put ``^`` in front and ``$`` at the end
+                As the ``custom_id`` is converted to a |pattern_object| put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
 
@@ -381,7 +411,7 @@ class Cog(metaclass=CogMeta):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
+        def decorator(func: _ButtonCallback) -> _ButtonCallback:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
@@ -399,9 +429,10 @@ class Cog(metaclass=CogMeta):
         return decorator
 
     @classmethod
-    def on_select(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
+    def on_select(
+            cls,
+            custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
+    ) -> Callable[[_SelectCallback], _SelectCallback]:
         """
         A decorator with which you can assign a function to a specific :class:`~discord.SelectMenu` (or its custom_id).
 
@@ -420,8 +451,7 @@ class Cog(metaclass=CogMeta):
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
-                put ``^`` in front and ``$`` at the end
+                As the ``custom_id`` is converted to a |pattern_object| put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
 
@@ -448,7 +478,7 @@ class Cog(metaclass=CogMeta):
         TypeError
             The coroutine passed is not actually a coroutine.
         """
-        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
+        def decorator(func: _SelectCallback) -> _SelectCallback:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
@@ -466,9 +496,10 @@ class Cog(metaclass=CogMeta):
         return decorator
 
     @classmethod
-    def on_submit(cls, custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None) -> Callable[
-        [Awaitable[Any]], Awaitable[Any]
-    ]:
+    def on_submit(
+            cls,
+            custom_id: Optional[Union[Pattern[AnyStr], AnyStr]] = None
+    ) -> Callable[[_ModalCallback], _ModalCallback]:
         """
         A decorator with wich you can assign a function to a specific :class:`~discord.Modal` (or its custom_id).
 
@@ -487,13 +518,12 @@ class Cog(metaclass=CogMeta):
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
-                put ``^`` in front and ``$`` at the end
+                As the ``custom_id`` is converted to a |pattern_object| put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
 
             .. tip::
-                The resulting `Match <https://docs.python.org/3/library/re.html#match-objects>`_ object will be
+                The resulting |match_object| object will be
                 available under the :class:`~discord.ModalSubmitInteraction.match` attribute of the interaction.
 
                 **See example below.**
@@ -525,7 +555,7 @@ class Cog(metaclass=CogMeta):
             The coroutine passed is not actually a coroutine.
         """
 
-        def decorator(func: Awaitable[Any]) -> Awaitable[Any]:
+        def decorator(func: _ModalCallback) -> _ModalCallback:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
@@ -567,7 +597,7 @@ class Cog(metaclass=CogMeta):
             group_desc: Optional[str] = None,
             group_desc_localizations: Optional[Localizations] = Localizations()
     ) -> Callable[
-        [Awaitable[Any]],
+        [_SlashCommandCallback],
         Union[SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand]
     ]:
         """
@@ -673,7 +703,7 @@ class Cog(metaclass=CogMeta):
             - If ``base_name`` and ``guild_ids`` passed: instance of :class:`~discord.GuildOnlySubCommand` representing the guild-only sub-commands.
         """
 
-        def decorator(func: Awaitable[Any]) -> Union[
+        def decorator(func: _SlashCommandCallback) -> Union[
             SlashCommand, GuildOnlySlashCommand, SubCommand, GuildOnlySubCommand
         ]:
             """
@@ -910,7 +940,7 @@ class Cog(metaclass=CogMeta):
             allow_dm: bool = True,
             is_nsfw: bool = False,
             guild_ids: Optional[List[int]] = None
-    ) -> Callable[[Awaitable[Any]], MessageCommand]:
+    ) -> Callable[[_MessageCommandCallback], MessageCommand]:
         """
         A decorator that registers a :class:`~discord.MessageCommand` (shows up under ``Apps`` when right-clicking on a message)
         to the client. The function this is attached to must be a :ref:`coroutine <coroutine>`.
@@ -946,7 +976,7 @@ class Cog(metaclass=CogMeta):
         TypeError:
             The function the decorator is attached to is not actual a :ref:`coroutine <coroutine>`.
         """
-        def decorator(func: Awaitable[Any]) -> MessageCommand:
+        def decorator(func: _MessageCommandCallback) -> MessageCommand:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__
@@ -998,7 +1028,7 @@ class Cog(metaclass=CogMeta):
             allow_dm: bool = True,
             is_nsfw: bool = False,
             guild_ids: Optional[List[int]] = None
-    ) -> Callable[[Awaitable[Any]], UserCommand]:
+    ) -> Callable[[_UserCommandCallback], UserCommand]:
         """A decorator that registers a :class:`UserCommand` (shows up under ``Apps`` when right-clicking on a user) to the client.
         The function this is attached to must be a :ref:`coroutine <coroutine>`.
 
@@ -1033,7 +1063,7 @@ class Cog(metaclass=CogMeta):
         TypeError:
             The function the decorator is attached to is not actual a :ref:`coroutine <coroutine>`.
         """
-        def decorator(func: Awaitable[Any]) -> UserCommand:
+        def decorator(func: _UserCommandCallback) -> UserCommand:
             actual = func
             if isinstance(actual, staticmethod):
                 actual = actual.__func__

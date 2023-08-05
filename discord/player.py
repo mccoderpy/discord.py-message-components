@@ -254,11 +254,11 @@ class FFmpegPCMAudio(FFmpegAudio):
             self,
             source: Union[str, PathLike[str], BufferedIOBase],
             *,
-            executable='ffmpeg',
-            pipe=False,
+            executable: str = 'ffmpeg',
+            pipe: bool = False,
             stderr=None,
-            before_options=None,
-            options=None
+            before_options: Optional[str] = None,
+            options: Optional[str] = None
     ):
         args = []
         subprocess_kwargs = {'stdin': source if pipe else subprocess.DEVNULL, 'stderr': stderr}

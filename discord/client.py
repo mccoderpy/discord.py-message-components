@@ -88,7 +88,7 @@ if TYPE_CHECKING:
         VoiceProtocol,
         Snowflake
     )
-    from .components import Button, BaseSelect
+    from .components import Button, Select
     from .emoji import Emoji
     from .flags import Intents
     from .interactions import ApplicationCommandInteraction, ComponentInteraction, ModalSubmitInteraction
@@ -98,8 +98,9 @@ if TYPE_CHECKING:
     from .sticker import Sticker
 
     _ClickCallback = Callable[[ComponentInteraction, Button], Coroutine[Any, Any, Any]]
-    _SelectCallback = Callable[[ComponentInteraction, BaseSelect], Coroutine[Any, Any, Any]]
+    _SelectCallback = Callable[[ComponentInteraction, Select], Coroutine[Any, Any, Any]]
     _SubmitCallback = Callable[[ModalSubmitInteraction], Coroutine[Any, Any, Any]]
+
 
 
 T = TypeVar('T')
@@ -1473,8 +1474,7 @@ class Client:
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
-                put ``^`` in front and ``$`` at the end
+                As the ``custom_id`` is converted to a |pattern_object| put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'cool blue Button is blue' will let the function bee invoked too.
 
@@ -1549,8 +1549,7 @@ class Client:
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the ``custom_id`` is converted to a `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
-                put ``^`` in front and ``$`` at the end
+                As the ``custom_id`` is converted to a |pattern_object| put ``^`` in front and ``$`` at the end
                 of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'choose_your_gender later' will let the function bee invoked too.
 
@@ -1625,14 +1624,12 @@ class Client:
             You can also specify a regex and if the custom_id matches it, the function will be executed.
 
             .. note::
-                As the ``custom_id`` is converted to a
-                `Pattern <https://docs.python.org/3/library/re.html#re-objects>`_
-                put ``^`` in front and ``$`` at the end of the :attr:`custom_id` if you want that the custom_id must
-                exactly match the specified value.
+                As the ``custom_id`` is converted to a |pattern_object| put ``^`` in front and ``$`` at the end
+                of the :attr:`custom_id` if you want that the custom_id must exactly match the specified value.
                 Otherwise, something like 'suggestions_modal_submit_private' will let the function bee invoked too.
 
             .. tip::
-                The resulting `Match <https://docs.python.org/3/library/re.html#match-objects>`_ object will be
+                The resulting |match_object| object will be
                 available under the :class:`~discord.ModalSubmitInteraction.match` attribute of the interaction.
 
                 **See example below.**
