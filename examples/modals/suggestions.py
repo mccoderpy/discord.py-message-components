@@ -89,7 +89,7 @@ class ModalSuggestions(commands.Cog):
                              name=str(inter.author),
                              url=f'https://discord.com/users/{inter.author.id}'
                              )
-            embed.set_footer(text='See the attachments in the tread below')
+            embed.set_footer(text='See the attachments in the thread below')
             content = None
             if image_urls:
                 url = image_urls.pop(0)[0]
@@ -289,7 +289,7 @@ class ModalSuggestions(commands.Cog):
                     name=str(inter.author),
                     url=f'https://discord.com/users/{inter.author.id}'
                 )
-                embed.set_footer(text='See the attachments in the tread below')
+                embed.set_footer(text='See the attachments in the thread below')
                 content = None
                 if image_urls:
                     url = image_urls.pop(0)[0]

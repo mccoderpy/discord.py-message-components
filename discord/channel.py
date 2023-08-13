@@ -987,7 +987,7 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def parent_channel(self) -> Union[TextChannel, ForumChannel]:
-        """Union[:class:`TextChannel`, :class:`ForumChannel`]: The parent channel of this tread"""
+        """Union[:class:`TextChannel`, :class:`ForumChannel`]: The parent channel of this thread"""
         return self.guild.get_channel(self.parent_id)
 
     @property
@@ -1195,7 +1195,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         Parameters
         -----------
         reason: Optional[:class:`str`]
-            The reason for deleting this tread.
+            The reason for deleting this thread.
             Shows up on the audit log.
 
         Raises
