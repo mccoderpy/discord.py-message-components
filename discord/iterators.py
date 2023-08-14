@@ -214,7 +214,7 @@ class ReactionIterator(_AsyncIterator):
 
             after = self.after.id if self.after else None
             data = await self.getter(
-                self.channel_id, self.message.id, self.emoji, retrieve, type=self.reaction_type, after=after
+                self.channel_id, self.message.id, self.emoji, retrieve, reaction_type=self.reaction_type, after=after
             )
 
             if data:
