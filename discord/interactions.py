@@ -756,9 +756,10 @@ class BaseInteraction:
             else:
                 response_type = InteractionCallbackType.update_msg
 
+        m = self.callback_message if self.type.ApplicationCommand else self.message
+        
         if suppress_embeds is not MISSING:
-            m = self.callback_message if self.type.ApplicationCommand else self.message
-            flags = MessageFlags._from_value(m.flags.value)
+            flags = MessageFlags._from_value(m.flags.value) if m else MessageFlags._from_value(0)
             flags.suppress_embeds = suppress_embeds
         else:
             flags = MISSING
@@ -807,14 +808,15 @@ class BaseInteraction:
         if not isinstance(data, dict):
             msg = await self.get_original_callback()
         else:
-            if hasattr(self, 'message'):
-                msg = self.message._update(data)
+            if m is not None:
+                msg = m._update(data)
             else:
                 if MessageFlags._from_value(data['flags']).ephemeral:
                     msg = EphemeralMessage(state=self._state, data=data, channel=self.channel, interaction=self)
                 else:
                     msg = Message(state=self._state, channel=self.channel, data=data)
-        self.callback_message = msg
+        if not self.deferred:
+            self.callback_message = msg
         is_hidden = msg.flags.ephemeral
 
         if is_hidden:

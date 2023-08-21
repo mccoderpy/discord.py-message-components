@@ -354,7 +354,7 @@ class Guild(Hashable):
         The number goes from 0 to 3 inclusive.
     premium_subscription_count: :class:`int`
         The number of "boosts" this guild currently has.
-    preferred_locale: Optional[:class:`str`]
+    preferred_locale: Optional[:class:`Locale`]
         The preferred locale for the guild. Used when filtering Server Discovery
         results to a specific language.
     discovery_splash: :class:`str`
@@ -527,7 +527,7 @@ class Guild(Hashable):
             state.store_event(guild=self, data=e)
         self.mfa_level = guild.get('mfa_level')
         self.emojis = tuple(map(lambda d: state.store_emoji(self, d), guild.get('emojis', [])))
-        self.features = guild.get('features', [])
+        self.features = guild.get('features', [])  # TODO: make this a private attribute and add a features property that returns GuildFeatures
         self.splash = guild.get('splash')
         self._system_channel_id = utils._get_as_snowflake(guild, 'system_channel_id')
         self.description = guild.get('description')
@@ -1842,7 +1842,7 @@ class Guild(Hashable):
             fields['system_channel_flags'] = system_channel_flags.value
         
         if preferred_locale is not MISSING:
-            fields['preferred_locale'] = preferred_locale
+            fields['preferred_locale'] = str(preferred_locale)
         
         if rules_channel is not MISSING:
             fields['rules_channel_id'] = rules_channel.id if rules_channel else None
