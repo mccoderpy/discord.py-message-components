@@ -67,8 +67,6 @@ if TYPE_CHECKING:
         UserWithMember,
         PartialMember
     )
-    from .abc import Connectable
-    from .client import Client
     from .role import Role
     from .state import ConnectionState
     from .guild import Guild
@@ -840,7 +838,7 @@ class Member(abc.Messageable, _BaseUser):
         return (
             self.communication_disabled_until is not None
             and self.communication_disabled_until
-            > datetime.datetime.now(datetime.timezone.utc)
+            > utils.utcnow()
         )
 
     @utils.deprecated('Member.timeout')
@@ -856,14 +854,15 @@ class Member(abc.Messageable, _BaseUser):
         """|coro|
 
         A shortcut method to timeout a member.
+        This just calls :meth:`~Member.edit` with the `communication_disabled_until` field set.
 
         The :attr:`~Permissions.moderate_members` permission is needed to do this.
 
         Parameters
         -----------
-        until: :class:`datetime.datetime`
+        until: Union[:class:`~datetime.datetime`, :class:`~datetime.timedelta`]
             Until when the member should be timeouted.
-            This can be a timezone aware :class`~datetime.datetime` object or a :class:`~datetime.timedelta` object.
+            This can be a timezone aware datetime object or a timedelta that will be added to the current time.
             
             .. note::
 

@@ -37,8 +37,8 @@ from typing_extensions import (
 )
 
 from .channel import GuildChannel
-from .emoji import BaseEmoji
-from .snowflake import SnowflakeID
+from .emoji import BaseEmoji, PartialEmoji
+from .snowflake import SnowflakeID, SnowflakeList
 from .sticker import GuildSticker
 from .user import User, Member
 
@@ -52,6 +52,9 @@ __all__ = (
     'GuildWidgetSettings',
     'Role',
     'RoleTag',
+    'OnboardingPrompt',
+    'OnboardingPromptOption',
+    'Onboarding',
     'WelcomeScreen',
     'WelcomeScreenChannel',
     'ScheduledEventEntityMetadata',
@@ -160,7 +163,8 @@ PermissionFlags = Literal[
 ScheduledEventPrivacyLevel = Literal[2]
 ScheduledEventStatus = Literal[1, 2, 3, 4]
 ScheduledEntityType = Literal[1, 2, 3]
-
+OnboardingMode = Literal[0, 1]
+OnboardingPromptType = Literal[0, 1]
 
 
 class UnavailableGuild(TypedDict):
@@ -283,6 +287,35 @@ class GuildWidgetUser(TypedDict):
     status: OnlineStatus
     bot: bool
     avatar_url: str
+
+
+class OnboardingPromptOption(TypedDict):
+    id: SnowflakeID
+    channel_ids: SnowflakeList
+    role_ids: SnowflakeList
+    emoji: PartialEmoji
+    title: str
+    description: Optional[str]
+
+
+class OnboardingPrompt(TypedDict):
+    id: SnowflakeID
+    type: OnboardingPromptType
+    options: List[OnboardingPromptOption]
+    title: str
+    single_select: bool
+    required: bool
+    in_onboarding: bool
+
+
+class Onboarding(TypedDict):
+    guild_id: SnowflakeID
+    prompts: List[OnboardingPrompt]
+    default_channel_ids: SnowflakeList
+    enabled: bool
+    mode: OnboardingMode
+    # There are some other fields for storing the seen prompts of the current user
+    # and their selected options, but as bots can't use onboarding itself, we don't them
 
 
 class GuildWidget(TypedDict):

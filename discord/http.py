@@ -26,13 +26,15 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
-    TYPE_CHECKING,
-    Optional,
-    Union,
-    List,
-    Dict,
     Any,
-    Sequence
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
 )
 from typing_extensions import Literal
 
@@ -1787,6 +1789,40 @@ class HTTPClient:
     def delete_automod_rule(self, guild_id: int, rule_id: int, reason: str = None):
         r = Route('DELETE', '/guilds/{guild_id}/auto-moderation/rules/{rule_id}', guild_id=guild_id, rule_id=rule_id)
         return self.request(r, reason=reason)
+
+    # Onboarding management
+    def get_guild_onboarding(self, guild_id: int) -> Response[guild.Onboarding]:
+        return self.request(Route('GET', '/guilds/{guild_id}/onboarding', guild_id=guild_id))
+
+    def edit_guild_onboarding(
+            self,
+            guild_id: int,
+            *,
+            prompts: Optional[List[guild.OnboardingPrompt]] = None,
+            default_channel_ids: Optional[SnowflakeID] = None,
+            enabled: Optional[bool] = None,
+            mode: Optional[guild.OnboardingMode] = None,
+            reason: Optional[str] = None
+    ) -> Response[guild.Onboarding]:
+        payload = {}
+
+        if prompts is not None:
+            payload['prompts'] = prompts
+
+        if default_channel_ids is not None:
+            payload['default_channel_ids'] = default_channel_ids
+
+        if enabled is not None:
+            payload['enabled'] = enabled
+
+        if mode is not None:
+            payload['mode'] = mode
+
+        return self.request(
+            Route('PUT', '/guilds/{guild_id}/onboarding', guild_id=guild_id),
+            json=payload,
+            reason=reason
+        )
 
     # Misc
     def application_info(self):

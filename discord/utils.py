@@ -73,8 +73,31 @@ from operator import attrgetter
 from .errors import InvalidArgument
 from .enums import TimestampStyle, InviteTargetType
 
+DISCORD_EPOCH = 1420070400000
+MAX_ASYNCIO_SECONDS = 3456000
+
+
+class _cached_property:
+    def __init__(self, function: Callable[..., T]) -> None:
+        self.function: Callable[..., T] = function
+        self.__doc__ = getattr(function, '__doc__')
+
+    def __get__(self, instance: Any, owner: Type[Any]) -> T:
+        if instance is None:
+            return self
+
+        value = self.function(instance)
+        setattr(instance, self.function.__name__, value)
+
+        return value
+
+    def __class_getitem__(cls, key: T) -> T:
+        return cls
+
+
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec, TypeGuard, Self
+    from functools import cached_property as cached_property
     from .guild import Guild
     from .channel import VoiceChannel
     from .permissions import Permissions
@@ -85,6 +108,8 @@ if TYPE_CHECKING:
 
     MaybeAwaitableFunc = Callable[P, 'MaybeAwaitable[T]']  # We need to use it as a string here because it's not defined yet
 
+else:
+    cached_property = _cached_property
 
 T = TypeVar('T')
 T_co = TypeVar('T_co', covariant=True)
@@ -112,8 +137,6 @@ _IT2 = TypeVar(
 _Iterable = TypeVar('_Iterable', bound=Iterable)
 MaybeAwaitable = Union[Awaitable[T], T]
 
-DISCORD_EPOCH = 1420070400000
-MAX_ASYNCIO_SECONDS = 3456000
 
 colorama.init()
 
@@ -196,35 +219,19 @@ class _SupportsStr(Protocol):
 SupportsStr = Union[str, _SupportsStr]
 
 
-class cached_property:
-    def __init__(self, function: Callable[..., T]) -> None:
-        self.function: Callable[..., T] = function
-        self.__doc__ = getattr(function, '__doc__')
-
-    def __get__(self, instance: Any, owner: Type[Any]) -> T:
-        if instance is None:
-            return self
-
-        value = self.function(instance)
-        setattr(instance, self.function.__name__, value)
-
-        return value
-    
-    def __class_getitem__(cls, key: T) -> T:
-        return cls
-
-
 class CachedSlotProperty(Generic[T, T_co]):
     def __init__(self, name: str, function: Callable[[T], T_co]) -> None:
-        self.name: str = name
+        self.name = name
         self.function = function
         self.__doc__ = getattr(function, '__doc__')
 
     @overload
-    def __get__(self, instance: None, owner: Type[T]) -> CachedSlotProperty[T, T_co]: ...
+    def __get__(self, instance: None, owner: Type[T]) -> CachedSlotProperty[T, T_co]:
+        ...
 
     @overload
-    def __get__(self, instance: T, owner: Type[T]) -> T_co: ...
+    def __get__(self, instance: T, owner: Type[T]) -> T_co:
+        ...
 
     def __get__(self, instance: Optional[T], owner: Type[T]) -> Any:
         if instance is None:

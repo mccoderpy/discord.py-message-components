@@ -68,8 +68,8 @@ if TYPE_CHECKING:
     from .client import Client
     from .shard import AutoShardedClient
     from .gateway import DiscordWebSocket
-
-from .types import gateway as g
+    from .types import gateway as gw
+    from .types.emoji import PartialEmoji as PartialEmojiPayload
 
 
 class ChunkRequest:
@@ -507,7 +507,7 @@ class ConnectionState:
         finally:
             self._ready_task = None
 
-    def parse_ready(self, data: g.ReadyEvent):
+    def parse_ready(self, data: gw.ReadyEvent):
         if self._ready_task is not None:
             self._ready_task.cancel()
 
@@ -629,20 +629,20 @@ class ConnectionState:
             parent_channel = guild.get_channel(int(data['parent_id']))
 
             if parent_channel is None:
-                log.debug('THREAD_CREATE referencing an unknown channel ID: %s. Discarding.', data['parent_id'])
+                log.debug(
+                    'THREAD_CREATE referencing an unknown channel ID: %s. Discarding.', data['parent_id']
+                )
             elif isinstance(parent_channel, ForumChannel):
-                if not parent_channel.get_post(int(data['id'])):
-                    post = ForumPost(state=self, guild=guild, data=data)
-                    guild._add_post(post)
-                    self.dispatch('post_create', post)
+                post = ForumPost(state=self, guild=guild, data=data)
+                guild._add_channel(post)
+                self.dispatch('post_create', post)
             elif isinstance(parent_channel, TextChannel):
-                if not parent_channel.get_thread(int(data['id'])):
-                    thread = ThreadChannel(state=self, guild=guild, data=data)
-                    message = self._get_message(thread.id)
-                    if message:
-                        message._thread = thread
-                    guild._add_thread(thread)
-                    self.dispatch('thread_create', thread)
+                thread = ThreadChannel(state=self, guild=guild, data=data)
+                message = self._get_message(thread.id)
+                if message:
+                    message._thread = thread
+                guild._add_channel(thread)
+                self.dispatch('thread_create', thread)
         else:
             log.debug('THREAD_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
@@ -671,10 +671,10 @@ class ConnectionState:
             if not thread:
                 thread = ThreadChannel._from_partial(state=self, guild=guild, data=data)
             elif isinstance(thread.parent_channel, ForumChannel):
-                guild._remove_post(thread)
+                guild._remove_channel(thread)
                 self.dispatch('post_delete', thread)
             else:
-                guild._remove_thread(thread)
+                guild._remove_channel(thread)
                 self.dispatch('thread_delete', thread)
                 if thread.starter_message:
                     thread.starter_message._thread = None
@@ -726,10 +726,7 @@ class ConnectionState:
                     log.debug('THREAD_LIST_SYNC referencing an unknown channel type: %s. Discarding.', _)
                     continue
                 thread = factory(state=self, guild=guild, data=t)
-                if isinstance(thread.parent_channel, ForumChannel):
-                    guild._add_post(thread)
-                else:
-                    guild._add_thread(thread)
+                guild._add_channel(thread)
                 try:
                     channel_ids.remove(thread.parent_id)
                 except ValueError:
@@ -822,7 +819,7 @@ class ConnectionState:
         else:
             log.debug('STAGE_INSTANCE_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
-    def parse_voice_channel_effect_send(self, data: g.VoiceChannelEffectSendEvent):
+    def parse_voice_channel_effect_send(self, data: gw.VoiceChannelEffectSendEvent):
         guild = self._get_guild(int(data['guild_id']))
         if guild is not None:
             channel = guild.get_channel(int(data['channel_id']))
@@ -1433,20 +1430,31 @@ class ConnectionState:
             log.debug('GUILD_AUDIT_LOG_ENTRY_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
     
     def _get_reaction_user(self, channel, user_id):
-        if isinstance(channel, TextChannel):
+        if isinstance(channel, (TextChannel, ThreadChannel, VoiceChannel, StageChannel)):
             return channel.guild.get_member(user_id)
         return self.get_user(user_id)
 
-    def get_reaction_emoji(self, data):
+    def get_emoji_from_partial(self, data):
         emoji_id = utils._get_as_snowflake(data, 'id')
 
         if not emoji_id:
-            return data['name']
+            # the name key will be a str
+            return data['name']  # type: ignore
 
         try:
             return self._emojis[emoji_id]
         except KeyError:
-            return PartialEmoji.with_state(self, animated=data.get('animated', False), id=emoji_id, name=data['name'])
+            return PartialEmoji.with_state(
+                self, animated=data.get('animated', False), id=emoji_id, name=data['name']  # type: ignore
+            )
+
+    @staticmethod
+    def emoji_to_partial_payload(emoji: Union[Emoji, PartialEmoji, str]) -> PartialEmojiPayload:
+        if isinstance(emoji, str):
+            return {'name': emoji}  # type: ignore
+        elif isinstance(emoji, Emoji):
+            emoji = emoji._as_partial()
+        return emoji.to_dict()
 
     def _upgrade_partial_emoji(self, emoji):
         emoji_id = emoji.id
@@ -1577,7 +1585,7 @@ class AutoShardedConnectionState(ConnectionState):
         # sync the application-commands
         await self._get_client()._request_sync_commands()
 
-    def parse_ready(self, data: g.ReadyEvent):
+    def parse_ready(self, data: gw.ReadyEvent):
         if not hasattr(self, '_ready_state'):
             self._ready_state = asyncio.Queue()
 

@@ -22,9 +22,9 @@ __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 import logging
 from collections import namedtuple
 
-
-from .client import Client
 from .appinfo import AppInfo
+from .automod import *
+from .client import Client
 from .user import User, ClientUser
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
@@ -53,6 +53,7 @@ from . import utils, opus, abc
 from .enums import *
 from .embeds import *
 from .mentions import AllowedMentions
+from .onboarding import *
 from .shard import AutoShardedClient, ShardInfo
 from .player import *
 from .webhook import *
@@ -64,7 +65,7 @@ from .raw_models import *
 from .team import *
 from .sticker import Sticker, GuildSticker, StickerPack
 from .scheduled_event import GuildScheduledEvent
-from .automod import *
+
 
 MISSING = utils.MISSING
 Mentionable = abc.Mentionable

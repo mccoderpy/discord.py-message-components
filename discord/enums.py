@@ -79,7 +79,8 @@ __all__ = (
     'AutoModKeywordPresetType',
     'PostSortOrder',
     'ForumLayout',
-
+    'OnboardingMode',
+    'OnboardingPromptType',
 )
 
 
@@ -859,6 +860,11 @@ class AuditLogAction(Enum):
     auto_moderation_block_message           = 143
     auto_moderation_flag_message            = 144
     auto_moderation_user_communication_disabled = 145
+    onboarding_question_create              = 163
+    onboarding_question_update              = 164
+    onboarding_update                       = 167
+    server_guide_create                     = 190
+    server_guide_update                     = 191
 
     @property
     def category(self):
@@ -920,6 +926,11 @@ class AuditLogAction(Enum):
             AuditLogAction.auto_moderation_block_message: None,
             AuditLogAction.auto_moderation_flag_message: None,
             AuditLogAction.auto_moderation_user_communication_disabled: None,
+            AuditLogAction.onboarding_question_create: AuditLogActionCategory.create,
+            AuditLogAction.onboarding_question_update: AuditLogActionCategory.update,
+            AuditLogAction.onboarding_update: AuditLogActionCategory.update,
+            AuditLogAction.server_guide_create: AuditLogActionCategory.create,
+            AuditLogAction.server_guide_update: AuditLogActionCategory.update,
         }
         return lookup[self]
 
@@ -960,8 +971,14 @@ class AuditLogAction(Enum):
             return 'soundboard_sound'
         elif v < 143:
             return 'auto_moderation_rule'
-        elif v < 150:
+        elif v < 146:
             return 'auto_moderation_action'
+        elif v < 165:
+            return 'onboarding_question'
+        elif v < 168:
+            return 'onboarding'
+        elif 189 < v < 200:
+            return 'server_guide'
 
 
 class UserFlags(Enum):
@@ -1021,6 +1038,7 @@ class TeamMembershipState(Enum):
 class WebhookType(Enum):
     incoming = 1
     channel_follower = 2
+    application = 3
 
 
 class ExpireBehaviour(Enum):
@@ -1077,6 +1095,16 @@ class ForumLayout(Enum):
     grid_view     = 2
     gallery       = 2
     gallery_view  = 2
+
+
+class OnboardingMode(Enum):
+    default  = 0
+    advanced = 1
+
+
+class OnboardingPromptType(Enum):
+    multiple_choice = 0
+    dropdown        = 1
 
 
 def try_enum(cls: Type[Enum], val: Any):

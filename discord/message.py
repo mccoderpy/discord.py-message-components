@@ -33,13 +33,15 @@ import io
 
 from typing import (
     TYPE_CHECKING,
+    Generic,
     Union,
     Optional,
     Callable,
     Sequence,
     Iterator,
     List,
-    Any
+    Any,
+    TypeVar,
 )
 
 from typing_extensions import Self
@@ -60,7 +62,16 @@ from .guild import Guild
 from .mixins import Hashable
 from .sticker import Sticker
 from .http import handle_message_parameters
-from .channel import PartialMessageable, ThreadChannel
+from .channel import (
+    PartialMessageable,
+    ThreadChannel,
+    TextChannel,
+    VoiceChannel,
+    StageChannel,
+    ForumChannel,
+    ForumPost,
+    DMChannel,
+)
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -68,8 +79,8 @@ if TYPE_CHECKING:
     from .types.message import (
         Attachment as AttachmentPayload,
         Message as MessagePayload,
-        MessageReference as MessageReferencePayload,
-        MessageInteraction as MessageInteractionPayload
+        MessageReference as MessageReferenceData,
+        MessageInteraction as MessageInteractionData
     )
     from .user import User
     from .state import ConnectionState
@@ -77,7 +88,6 @@ if TYPE_CHECKING:
     from .mentions import AllowedMentions
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
-    from .channel import TextChannel, VoiceChannel, StageChannel, TextChannel, ForumChannel, ForumPost, DMChannel
     from .components import (
         Button,
         SelectMenu,
@@ -86,7 +96,6 @@ if TYPE_CHECKING:
         MentionableSelect,
         ChannelSelect
     )
-
     MentionableChannel = Union[
         TextChannel,
         VoiceChannel,
@@ -96,16 +105,9 @@ if TYPE_CHECKING:
         ForumChannel,
         ForumPost
     ]
-    MessageableChannel = Union[
-        PartialMessageable,
-        TextChannel,
-        VoiceChannel,
-        StageChannel,
-        ThreadChannel,
-        ForumPost,
-        DMChannel
-    ]
     Select = Union[SelectMenu, UserSelect, RoleSelect, MentionableSelect, ChannelSelect]
+
+_MCH = TypeVar('_MCH', TextChannel, VoiceChannel, StageChannel, ThreadChannel, ForumPost, DMChannel, PartialMessageable)
 
 __all__ = (
     'Attachment',
@@ -394,7 +396,7 @@ class MessageInteraction:
     user: :class:`User`
         The user who invoked the interaction.
     """
-    def __init__(self, state: ConnectionState, data: MessageInteractionPayload, guild: Optional[Guild] = None) -> None:
+    def __init__(self, state: ConnectionState, data: MessageInteractionData, guild: Optional[Guild] = None) -> None:
         self._state: ConnectionState = state
         self.id: int = int(data['id'])
         self.type: InteractionType = try_enum(InteractionType, data['type'])
@@ -427,7 +429,7 @@ class DeletedReferencedMessage:
 
     __slots__ = ('_parent')
 
-    def __init__(self, parent: Message) -> None:
+    def __init__(self, parent: MessageReference) -> None:
         self._parent = parent
 
     @property
@@ -492,7 +494,7 @@ class MessageReference:
         self.fail_if_not_exists = fail_if_not_exists
 
     @classmethod
-    def with_state(cls, state: ConnectionState, data: MessageReferencePayload) -> MessageReference:
+    def with_state(cls, state: ConnectionState, data: MessageReferenceData) -> MessageReference:
         self = cls.__new__(cls)
         self.message_id = utils._get_as_snowflake(data, 'message_id')
         self.channel_id = int(data.pop('channel_id'))
@@ -544,7 +546,7 @@ class MessageReference:
     def __repr__(self) -> str:
         return '<MessageReference message_id={0.message_id!r} channel_id={0.channel_id!r} guild_id={0.guild_id!r}>'.format(self)
 
-    def to_dict(self) -> MessageReferencePayload:
+    def to_dict(self) -> MessageReferenceData:
         result = {'message_id': self.message_id} if self.message_id is not None else {}
         result['channel_id'] = self.channel_id
         if self.guild_id is not None:
@@ -574,7 +576,7 @@ def flatten_handlers(cls):
 
 
 @flatten_handlers
-class Message(Hashable):
+class Message(Hashable, Generic[_MCH]):
     r"""Represents a message from Discord.
 
     .. container:: operations
@@ -685,6 +687,8 @@ class Message(Hashable):
         .. versionadded:: 1.6
     interaction: Optional[:class:`MessageInteraction`]
         The interaction associated with this message if any.
+    guild: Optional[:class:`Guild`]
+        The guild that the message belongs to if any.
     """
 
     __slots__ = ('_edited_timestamp', 'tts', 'content', 'channel', 'webhook_id',
@@ -692,10 +696,10 @@ class Message(Hashable):
                  '_cs_channel_mentions', '_cs_raw_mentions', 'attachments',
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
                  'role_mentions', '_cs_raw_role_mentions', 'type', 'flags',
-                 '_cs_system_content', '_cs_guild', '_state', 'reactions', 'reference',
-                 'application', 'activity', 'stickers', '_thread', 'interaction')
+                 '_cs_system_content', '_state', 'reactions', 'reference',
+                 'application', 'activity', 'stickers', '_thread', 'interaction', 'guild')
 
-    def __init__(self, *, state: ConnectionState, channel, data: MessagePayload):
+    def __init__(self, *, state: ConnectionState, channel: _MCH, data: MessagePayload):
         self._state: ConnectionState = state
         self.id: int = utils._get_as_snowflake(data, 'id')
         self.webhook_id: Optional[int] = utils._get_as_snowflake(data, 'webhook_id')
@@ -705,7 +709,7 @@ class Message(Hashable):
         self.components: List[ActionRow] = [ActionRow.from_dict(d) for d in data.get('components', [])]
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
-        self.channel: MessageableChannel = channel
+        self.channel: _MCH = channel
         interaction = data.get('interaction')
         self.interaction: Optional[MessageInteraction] = MessageInteraction(
             state=state,
@@ -724,6 +728,11 @@ class Message(Hashable):
         ]
 
         try:
+            self.guild: Optional[Guild] = channel.guild
+        except AttributeError:
+            self.guild: Optional[Guild] = state._get_guild(utils._get_as_snowflake(data, 'guild_id'))
+
+        try:
             ref = data['message_reference']
         except KeyError:
             self.reference: Optional[Union[MessageReference, DeletedReferencedMessage]] = None
@@ -738,7 +747,10 @@ class Message(Hashable):
                     ref.resolved = DeletedReferencedMessage(ref)
                 else:
                     # Right now the channel IDs match but maybe in the future they won't.
-                    if ref.channel_id == channel.id:
+                    if (
+                            ref.channel_id == channel.id or
+                            isinstance(channel, ThreadChannel) and channel.parent_id == ref.channel_id
+                    ):
                         chan = channel
                     else:
                         chan, _ = state._get_guild_channel(resolved)
@@ -875,8 +887,7 @@ class Message(Hashable):
         if thread:
             self._thread = thread._update(self.guild, value)
         else:
-            self._thread = ThreadChannel(state=self._state, guild=self.channel.guild, data=value)
-            self.channel.guild._add_thread(self._thread)
+            self._thread = ThreadChannel(state=self._state, guild=self.guild, data=value)
 
     def _handle_components(self, value):
         self.components = [ActionRow.from_dict(data) for data in value]
@@ -938,11 +949,6 @@ class Message(Hashable):
             del self._cs_guild
         except AttributeError:
             pass
-
-    @utils.cached_slot_property('_cs_guild')
-    def guild(self) -> Guild:
-        """Optional[:class:`Guild`]: The guild that the message belongs to, if applicable."""
-        return getattr(self.channel, 'guild', None)
 
     @utils.cached_slot_property('_cs_raw_mentions')
     def raw_mentions(self) -> List[int]:
@@ -1141,6 +1147,8 @@ class Message(Hashable):
 
         if self.type is MessageType.guild_discovery_grace_period_final_warning:
             return 'This server has failed Discovery activity requirements for 3 weeks in a row. If this server fails for 1 more week, it will be removed from Discovery.'
+
+        # TODO: Add missing system message types
 
     @property
     def all_components(self) -> Iterator[Union[Button, Select]]:
@@ -1529,7 +1537,7 @@ class Message(Hashable):
 
     async def reply(
             self,
-            content=None,
+            content: utils.SupportsStr = None,
             tts: bool = False,
             embed: Optional[Embed] = None,
             embeds: Optional[List[Embed]] = None,
@@ -1652,8 +1660,7 @@ class Message(Hashable):
 
         data = await self._state.http.create_thread(self.channel.id, message_id=self.id, payload=payload, reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
-        self.channel.guild._add_thread(thread)
-        self._thread = thread
+        self.guild._add_channel(thread)
         return thread
 
     def to_reference(self, *, fail_if_not_exists: bool = True):
@@ -1677,7 +1684,7 @@ class Message(Hashable):
 
         return MessageReference.from_message(self, fail_if_not_exists=fail_if_not_exists)
 
-    def to_message_reference_dict(self) -> MessageReference:
+    def to_message_reference_dict(self) -> MessageReferenceData:
         data = {
             'message_id': self.id,
             'channel_id': self.channel.id,
@@ -1698,7 +1705,7 @@ def implement_partial_methods(cls):
 
 
 @implement_partial_methods
-class PartialMessage(Hashable):
+class PartialMessage(Hashable, Generic[_MCH]):
 
     """Represents a partial message to aid with working messages when only
     a message and channel ID are present.
@@ -1731,6 +1738,8 @@ class PartialMessage(Hashable):
         The channel associated with this partial message.
     id: :class:`int`
         The message ID.
+    guild: Optional[:class:`Guild`]
+        The guild associated with this partial message, if applicable.
     """
 
     __slots__ = ('channel', 'id', '_cs_guild', '_state')
@@ -1751,13 +1760,54 @@ class PartialMessage(Hashable):
         'to_message_reference_dict',
     )
 
-    def __init__(self, *, channel: MessageableChannel, id: int) -> None:
+    if TYPE_CHECKING:
+        # Take over the methods from Message that are in _exported_names, so we got the correct type hints.
+
+        def jump_url(self) -> str: ...
+        async def delete(self, *, delay: Optional[float] = None, reason: Optional[str] = None) -> None: ...
+        async def publish(self) -> None: ...
+        async def pin(self, *, reason: Optional[str] = None) -> None: ...
+        async def unpin(self, *, reason: Optional[str] = None) -> None: ...
+        async def add_reaction(self, emoji: Union[Emoji, Reaction, str]) -> None: ...
+        async def remove_reaction(self, emoji: Union[Emoji, Reaction, str], member: Optional[Member] = None) -> None: ...
+        async def clear_reaction(self, emoji: Union[Emoji, Reaction, str]) -> None: ...
+        async def clear_reactions(self) -> None: ...
+        async def reply(
+                self,
+                content: utils.SupportsStr = None,
+                tts: bool = False,
+                embed: Optional[Embed] = None,
+                embeds: Optional[List[Embed]] = None,
+                components: Optional[List[Union[ActionRow, List[Union[Button, Select]]]]] = None,
+                file: Optional[File] = None,
+                files: Optional[List[File]] = None,
+                stickers: Optional[List[GuildSticker]] = None,
+                delete_after: Optional[float] = None,
+                nonce: Optional[int] = None,
+                allowed_mentions: Optional[AllowedMentions] = None,
+                mention_author: Optional[bool] = None,
+                suppress_embeds: bool = False,
+                suppress_notifications: bool = False
+        ) -> Message: ...
+        async def create_thread(
+                self,
+                name: str,
+                *,
+                auto_archive_duration: Optional[Union[AutoArchiveDuration, int]] = None,
+                slowmode_delay: Optional[int] = None,
+                reason: Optional[str] = None
+        ) -> ThreadChannel: ...
+        def to_reference(self, *, fail_if_not_exists: bool = True) -> MessageReference: ...
+        def to_message_reference_dict(self) -> MessageReference: ...
+
+    def __init__(self, *, channel: _MCH, id: int) -> None:
         if not isinstance(channel, PartialMessageable) and int(channel.type) not in {0, 1, 2, 3, 5, 10, 11, 12, 15}:
             raise TypeError('Expected TextChannel, VoiceChannel, ThreadChannel or DMChannel not %r' % type(channel))
 
-        self.channel: MessageableChannel = channel
+        self.channel: _MCH = channel
         self._state: ConnectionState = channel._state
         self.id: int = id
+        self.guild: Optional[Guild] = getattr(channel, 'guild', None)
 
     def _update(self, data):
         # This is used for duck typing purposes.
@@ -1775,11 +1825,6 @@ class PartialMessage(Hashable):
     def created_at(self) -> datetime:
         """:class:`datetime.datetime`: The partial message's creation time in UTC."""
         return utils.snowflake_time(self.id)
-
-    @utils.cached_slot_property('_cs_guild')
-    def guild(self) -> Optional[Guild]:
-        """Optional[:class:`Guild`]: The guild that the partial message belongs to, if applicable."""
-        return getattr(self.channel, 'guild', None)
 
     async def fetch(self) -> Message:
         """|coro|

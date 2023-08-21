@@ -83,7 +83,7 @@ class Reaction:
 
     def __init__(self, *, message: Message, data: ReactionPayload, emoji: Optional[Union[Emoji, PartialEmoji, str]] = None):
         self.message: Message = message
-        self.emoji: Union[Emoji, PartialEmoji, str] = emoji or message._state.get_reaction_emoji(data['emoji'])
+        self.emoji: Union[Emoji, PartialEmoji, str] = emoji or message._state.get_emoji_from_partial(data['emoji'])
         count_details = data.get('count_details', {})
 
         # The burst reactions api is still not stable yet, that's why the code looks like this for now

@@ -76,6 +76,10 @@ language = 'en'
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members']
+autodoc_default_options = {
+    'members': True,
+    'show-inheritance': True,
+}
 autodoc_typehints = 'none'
 autodoc_typehints_format = 'short'
 # autodoc_preserve_defaults = True
@@ -159,6 +163,12 @@ rst_prolog = """
 .. |bugreport| replace:: |bugreport_link|_
 .. |bugreport_link| replace:: *bug report*
 .. _bugreport_link: https://discord4py.dev/bugreport
+.. |match_object| replace:: |match_object_link|_
+.. |match_object_link| replace:: Match
+.. _match_object_link: https://docs.python.org/3/library/re.html#match-objects
+.. |pattern_object| replace:: |pattern_object_link|_
+.. |pattern_object_link| replace:: Pattern
+.. _pattern_object_link: https://docs.python.org/3/library/re.html#regular-expression-objects
 """
 
 # Add any paths that contain templates here, relative to this directory.
