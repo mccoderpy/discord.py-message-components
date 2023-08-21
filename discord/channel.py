@@ -60,7 +60,7 @@ from .enums import (
 from .errors import ClientException, InvalidArgument, NoMoreItems, ThreadIsArchived
 from .flags import ChannelFlags, MessageFlags
 from .http import handle_message_parameters
-from .iterators import ThreadMemberIterator
+from .iterators import ThreadMemberIterator, ArchivedThreadIterator
 from .mixins import Hashable
 from .partial_emoji import PartialEmoji
 from .permissions import PermissionOverwrite, Permissions
@@ -105,7 +105,8 @@ __all__ = (
     'ForumChannel',
     'ForumTag',
     'PartialMessageable',
-    '_channel_factory'
+    '_channel_factory',
+    '_thread_factory',
 )
 
 
@@ -203,7 +204,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         if getattr(self, '_TextChannel__deleted', None) is True:
             guild = self.guild
             for thread in self.threads:
-                guild._remove_thread(thread)
+                guild._remove_channel(thread)
 
     def _update(self, guild, data):
         self.guild = guild
@@ -687,7 +688,8 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
         Creates a new thread in this channel.
 
-        You must have the :attr:`~Permissions.create_public_threads` or for private :attr:`~Permissions.create_private_threads` permission to
+        You must have the :attr:`~Permissions.create_public_threads`,
+        or for private :attr:`~Permissions.create_private_threads` permission to
         use this.
 
         Parameters
@@ -700,11 +702,6 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
             Amount of seconds a user has to wait before sending another message (0-21600)
         private: :class:`bool`
             Whether to create a private thread
-
-            .. note::
-
-                The guild needs to have the ``PRIVATE_THREADS`` feature wich they get with boost level 2
-
         invitable: :class:`bool`
             For private-threads Whether non-moderators can add new members to the thread, default :obj`True`
         reason: Optional[:class:`str`]
@@ -738,7 +735,7 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
         if auto_archive_duration:
             auto_archive_duration = try_enum(
                 AutoArchiveDuration, auto_archive_duration
-            )  # for the case someone pass a number
+            )  # for the case someone passes a number
             if not isinstance(auto_archive_duration, AutoArchiveDuration):
                 raise TypeError(
                     f'auto_archive_duration must be a member of discord.AutoArchiveDuration, not {auto_archive_duration.__class__.__name__!r}'
@@ -759,8 +756,56 @@ class TextChannel(abc.Messageable, abc.GuildChannel, Hashable):
 
         data = await self._state.http.create_thread(self.id, payload=payload, reason=reason)
         thread = ThreadChannel(state=self._state, guild=self.guild, data=data)
-        self.guild._add_thread(thread)
+        self.guild._add_channel(thread)
         return thread
+
+    async def archived_threads(
+            self,
+            *,
+            private: bool = False,
+            joined_private: bool = True,
+            before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            limit: int = 100
+    ) -> ArchivedThreadIterator:
+        """|coro|
+
+        Returns an :class:`abc.AsyncIterator` to retrieve archived threads from this channel.
+
+        Parameters
+        ----------
+        private: :class:`bool`
+            Whether to fetch all private threads instead of public ones. Defaults to ``False``.
+        joined_private: :class:`bool`
+            Whether to only fetch private threads the bot has joined. Defaults to ``True``.
+
+            .. note::
+                The :meth:`~Permissions.manage_threads` permission is required
+                in order to fetch not-joined private threads.
+
+        before: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
+            Only fetch threads created before this date or ID.
+        limit: :class:`int`
+            The maximum number of threads to fetch. Defaults to ``100``.
+
+        Raises
+        ------
+        Forbidden
+            The bot lacks permissions to fetch not-joined private threads.
+        HTTPException
+            Fetching the threads failed.
+
+        Returns
+        -------
+        :class:`ArchivedThreadIterator`
+            An iterator to retrieve the archived threads.
+        """
+        return ArchivedThreadIterator(
+            channel=self,
+            private=private,
+            joined_private=joined_private,
+            before=before,
+            limit=limit
+        )
 
 
 class ThreadMember:
@@ -868,7 +913,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         self.last_message_id: int = utils._get_as_snowflake(data, 'last_message_id')
         self.slowmode_delay: int = int(data.get('rate_limit_per_user', 0))
         self._thread_meta = data.get('thread_metadata', {})
-        me = data.get('member', None)
+        me = data.get('member')
         if me:
             self._members[self._state.self_id] = ThreadMember._from_thread(thread=self, data=me)
         return self
@@ -931,7 +976,7 @@ class ThreadChannel(abc.Messageable, Hashable):
         Returns
         --------
         Optional[Union[:class:`Member`, :class:`ThreadMember`]]
-            The thread owner if cached
+            The thread owners' Member if cached, else the respective ThreadMember.
         """
         return self.guild.get_member(self.owner_id) or self.get_member(self.owner_id)
 
@@ -982,7 +1027,9 @@ class ThreadChannel(abc.Messageable, Hashable):
 
     @property
     def me(self) -> Optional[ThreadMember]:
-        """Optional[:class:`ThreadMember`]: The thread member of the bot, or :obj:`None` if he is not a member of the thread."""
+        """
+        Optional[:class:`ThreadMember`]: The thread member of the bot, or ``None`` if he is not a member of the thread.
+        """
         return self.get_member(self._state.self_id)
 
     @property
@@ -3249,7 +3296,7 @@ class ForumChannel(abc.GuildChannel, Hashable):
         if getattr(self, '_ForumChannel__deleted', None) is True:
             guild = self.guild
             for post in self.posts:
-                guild._remove_post(post)
+                guild._remove_channel(post)
 
     def _update(self, guild: Guild, data: ForumChannelData):
         self.guild = guild
@@ -3715,6 +3762,43 @@ class ForumChannel(abc.GuildChannel, Hashable):
         # TODO: wait for ws event
         return post
 
+    async def archived_posts(
+            self,
+            *,
+            before: Optional[Union[abc.Snowflake, datetime.datetime]] = None,
+            limit: int = 100
+    ) -> ArchivedThreadIterator:
+        """|coro|
+
+        Returns an :class:`abc.AsyncIterator` to retrieve archived posts from this channel.
+
+        Parameters
+        ----------
+        before: Optional[Union[:class:`abc.Snowflake`, :class:`datetime.datetime`]]
+            Only fetch posts created before this date or ID.
+        limit: :class:`int`
+            The maximum number of posts to fetch. Defaults to ``100``.
+
+        Raises
+        ------
+        Forbidden
+            The bot lacks permissions to fetch not-joined private posts.
+        HTTPException
+            Fetching the posts failed.
+
+        Returns
+        -------
+        :class:`ArchivedThreadIterator`
+            An iterator to retrieve the archived threads.
+        """
+        return ArchivedThreadIterator(
+            channel=self,
+            private=False,
+            joined_private=False,
+            before=before,
+            limit=limit
+        )
+
 
 class PartialMessageable(abc.Messageable, Hashable):
     """Represents a partial messageable to aid with working messageable channels when
@@ -3830,6 +3914,19 @@ class PartialMessageable(abc.Messageable, Hashable):
         return PartialMessage(channel=self, id=message_id)
 
 
+def _thread_factory(guild: Guild, state: ConnectionState, data) -> Union[ThreadChannel, ForumPost]:
+    parent_id = utils._get_as_snowflake(data, 'parent_id')
+    try:
+        parent_channel = guild.get_channel(parent_id)
+    except AttributeError:
+        # parent channel not in cache or guild is a discord.Object
+        parent_channel = None
+    if (parent_channel and isinstance(parent_channel, ForumChannel)) or 'applied_tags' in data:
+        return ForumPost(state=state, guild=guild, data=data)
+    # This doesn't guarantee that the channel is not a forum channel, but it's the best we can do
+    return ThreadChannel(state=state, guild=guild, data=data)
+
+
 def _channel_factory(channel_type):
     value = try_enum(ChannelType, channel_type)
     if value is ChannelType.text:
@@ -3847,9 +3944,9 @@ def _channel_factory(channel_type):
     elif value is ChannelType.stage_voice:
         return StageChannel, value
     elif value is ChannelType.public_thread:
-        return ThreadChannel, value
+        return _thread_factory, value
     elif value is ChannelType.private_thread:
-        return ThreadChannel, value
+        return _thread_factory, value
     elif value is ChannelType.forum_channel:
         return ForumChannel, value
     else:

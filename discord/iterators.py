@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from .guild import Guild
     from .abc import Snowflake, Messageable
     from .scheduled_event import GuildScheduledEvent
-    from .channel import ThreadChannel
+    from .channel import ThreadChannel, ForumPost, TextChannel, ForumChannel
     
 
 from .errors import NoMoreItems
@@ -62,6 +62,7 @@ __all__ = (
     'MemberIterator',
     'ReactionIterator',
     'ThreadMemberIterator',
+    'ArchivedThreadIterator',
 )
 
 
@@ -214,7 +215,7 @@ class ReactionIterator(_AsyncIterator):
 
             after = self.after.id if self.after else None
             data = await self.getter(
-                self.channel_id, self.message.id, self.emoji, retrieve, type=self.type, after=after
+                self.channel_id, self.message.id, self.emoji, retrieve, type=self.reaction_type, after=after
             )
 
             if data:
@@ -798,6 +799,72 @@ class ThreadMemberIterator(_AsyncIterator):
         return data
 
 
+class ArchivedThreadIterator(_AsyncIterator):
+    def __init__(
+        self,
+        channel: Union[TextChannel, ForumChannel],
+        limit: int = 100,
+        before: Optional[Union[Snowflake, datetime.datetime]] = None,
+        private: bool = False,
+        joined_private: bool = True
+    ) -> None:
+        self.state = state = channel._state
+        self.guild = channel.guild
+        self.channel_id = channel.id
+        self.limit = limit
+        self._retrieve_type = 0 if channel.__class__.__name__ == 'TextChannel' else 1
+
+        if isinstance(before, datetime.datetime):
+            before = Object(id=time_snowflake(before, high=False))
+
+        self.before: Optional[Object] = before
+
+        self.threads = asyncio.Queue()
+        self.getter = state.http.list_archived_threads
+        self.type = 'private' if private else 'public'
+        self.joined_private = joined_private
+        self.getter = state.http.list_archived_threads
+
+    async def next(self):
+        if self.threads.empty():
+            await self.fill_threads()
+
+        try:
+            return self.threads.get_nowait()
+        except asyncio.QueueEmpty:
+            raise NoMoreItems()
+
+    def _get_retrieve(self):
+        l = self.limit
+        r = 100 if l is None or l > 100 else l
+        self.retrieve = r
+        return r > 0
+
+    async def fill_threads(self):
+        # this is a hack because >circular imports<
+        if self._retrive_type == 0:
+            from .channel import ThreadChannel as Factory
+        else:
+            from .channel import ForumPost as Factory
+
+        if self._get_retrieve():
+            guild = self.guild
+            data = await self.getter(
+                self.channel_id,
+                type=self.type,
+                joined_private=self.joined_private,
+                limit=self.retrieve
+            )
+            if self.limit is None or len(data) < 100 and not data.get('has_more'):
+                self.limit = 0
+
+            for element in data['threads']:
+                thread_member = data['members'].get(int(element['id']))
+                if thread_member is not None:
+                    element['member'] = thread_member
+                await self.threads.put(Factory(guild=guild, state=self.state, data=element))
+
+
 class EventUsersIterator(_AsyncIterator):
     def __init__(self,
                  event: 'GuildScheduledEvent',
@@ -977,7 +1044,9 @@ class BanIterator(_AsyncIterator):
                 data = filter(self._filter, data)
 
             for element in data:
-                await self.ban_entries.put(BanEntry(user=User(state=state, data=element['user']), reason=element['reason']))
+                await self.ban_entries.put(
+                    BanEntry(user=User(state=state, data=element['user']), reason=element['reason'])
+                )
 
     async def _retrieve_bans_before_strategy(self, retrieve):
         """Retrieve bans using before parameter."""

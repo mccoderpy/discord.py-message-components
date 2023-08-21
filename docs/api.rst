@@ -3640,7 +3640,10 @@ TextChannel
 .. autoclass:: TextChannel()
     :members:
     :inherited-members:
-    :exclude-members: history, typing
+    :exclude-members: history, typing, archived_threads
+
+    .. automethod:: archived_threads
+        :async-for:
 
     .. automethod:: history
         :async-for:
@@ -3706,8 +3709,14 @@ ForumChannel
 
 .. attributetable:: ForumChannel
 
+
 .. autoclass:: ForumChannel()
     :members:
+    :inherited-members:
+    :exclude-members: archived_posts
+
+    .. automethod:: archived_posts
+        :async-for:
 
 ForumPost
 ~~~~~~~~~~

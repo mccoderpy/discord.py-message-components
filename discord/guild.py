@@ -80,6 +80,7 @@ from .enums import (
     AutoModEventType,
     AutoArchiveDuration,
     IntegrationType,
+    OnboardingMode,
     try_enum
 )
 from .mixins import Hashable
@@ -87,6 +88,7 @@ from .scheduled_event import GuildScheduledEvent
 from .user import User
 from .invite import Invite
 from .iterators import AuditLogIterator, MemberIterator, BanIterator, BanEntry
+from .onboarding import *
 from .welcome_screen import *
 from .widget import Widget
 from .asset import Asset
@@ -396,31 +398,20 @@ class Guild(Hashable):
 
     def _add_channel(self, channel: Union[GuildChannel, ThreadChannel]):
         self._channels[channel.id] = channel
+        if isinstance(channel, ThreadChannel):
+            parent = channel.parent_channel
+            addr = getattr(parent, '_add_thread', getattr(parent, '_add_post', None))
+            if addr is not None:
+                addr(channel)
 
     def _remove_channel(self, channel: Union[GuildChannel, ThreadChannel]):
         self._channels.pop(channel.id, None)
-
-    def _add_thread(self, thread: ThreadChannel):
-        self._channels[thread.id] = thread
-        thread.parent_channel._add_thread(thread)
-
-    def _remove_thread(self, thread: ThreadChannel):
-        self._channels.pop(thread.id, None)
-        try:
-            thread.parent_channel._remove_thread(thread)
-        except AttributeError:  # parent channel was deleted
-            pass
-
-    def _add_post(self, post: ForumPost):
-        self._channels[post.id] = post
-        post.parent_channel._add_post(post)
-
-    def _remove_post(self, post: ForumPost):
-        self._channels.pop(post.id, None)
-        try:
-            post.parent_channel._remove_post(post)
-        except AttributeError:  # parent channel was deleted
-            pass
+        if isinstance(channel, ThreadChannel):
+            remvr = getattr(
+                channel.parent_channel, '_remove_thread', getattr(channel.parent_channel, '_remove_post', None)
+            )
+            if remvr is not None:
+                remvr(channel)
 
     def _add_event(self, event: GuildScheduledEvent):
         self._events[event.id] = event
@@ -842,7 +833,7 @@ class Guild(Hashable):
         Returns
         --------
         Optional[Union[:class:`.abc.GuildChannel`, :class:`ThreadChannel`, :class:`ForumPost`]]
-            The returned channel or ``None`` if not found.
+            The channel or ``None`` if not found.
         """
         return self._channels.get(channel_id)
 
@@ -1890,11 +1881,40 @@ class Guild(Hashable):
             factory, ch_type = _channel_factory(d['type'])
             if factory is None:
                 raise InvalidData('Unknown channel type {type} for channel ID {id}.'.format_map(d))
-
             channel = factory(guild=self, state=self._state, data=d)
             return channel
 
         return [convert(d) for d in data]
+
+    async def fetch_active_threads(self) -> List[Union[ThreadChannel, ForumPost]]:
+        """|coro|
+
+        Returns all active threads and forum posts in the guild.
+        This includes all public and private threads as long as the current user has permissions to access them.
+        Threads are ordered by their id, in descending order.
+
+        .. note::
+
+            This method is an API call.
+
+        .. versionadded:: 2.0
+
+        Returns
+        -------
+        List[Union[:class:`ThreadChannel`, :class:`ForumPost`]]
+            The active threads and forum posts in the guild.
+        """
+        state = self._state
+        data = await state.http.list_active_threads(self.id)
+        thread_members = data['thread_members']
+
+        def convert(d):
+            thread_member = thread_members.get(int(d['id']))
+            if thread_member:
+                d['member'] = thread_member
+            return _thread_factory(guild=self, state=state, data=d)
+
+        return [convert(d) for d in data['threads']]
 
     def fetch_members(
             self,
@@ -3463,11 +3483,87 @@ class Guild(Hashable):
         return await self._register_application_command(command)
 
     async def welcome_screen(self) -> Optional[WelcomeScreen]:
-        """Optional[:class:`WelcomeScreen`]: fetches the welcome screen from the guild if any."""
-        data = await self._state.http.get_welcome_screen(guild_id=self.id)
+        """|coro|
+
+        Fetches the welcome screen from the guild if any.
+
+        .. versionadded:: 2.0
+
+        Returns
+        --------
+        Optional[:class:`~discord.WelcomeScreen`]
+            The welcome screen of the guild if any.
+        """
+        data = await self._state.http.get_welcome_screen(self.id)
         if data:
-            self._welcome_screen = WelcomeScreen(state=self._state, guild=self, data=data)
-            return self._welcome_screen
+            return WelcomeScreen(state=self._state, guild=self, data=data)
+
+    async def onboarding(self) -> Optional[Onboarding]:
+        """|coro|
+
+        Fetches the
+        `onboarding <https://support.discord.com/hc/en-us/articles/11074987197975-Community-Onboarding-FAQ>`_
+        configuration for the guild.
+
+        .. versionadded:: 2.0
+
+        Returns
+        --------
+        :class:`Onboarding`
+            The onboarding configuration fetched.
+        """
+        data = await self._state.http.get_guild_onboarding(self.id)
+        return Onboarding(data=data, state=self._state, guild=self)
+
+    async def edit_onboarding(
+        self,
+        *,
+        prompts: List[PartialOnboardingPrompt] = MISSING,
+        default_channels: List[Snowflake] = MISSING,
+        enabled: bool = MISSING,
+        mode: OnboardingMode = MISSING,
+        reason: Optional[str] = None
+    ) -> Onboarding:
+        """|coro|
+
+        Edits the onboarding configuration for the guild.
+
+        .. versionadded:: 2.0
+
+        Parameters
+        ----------
+        prompts: List[:class:`PartialOnboardingPrompt`]
+            The prompts that will be shown to new members
+            (if :attr:`~PartialOnboardingPrompt.is_onboarding` is ``True``, otherwise only in customise community).
+        default_channels: List[:class:`.Snowflake`]
+            The channels that will be added to new members' channel list by default.
+        enabled: :class:`bool`
+            Whether the onboarding configuration is enabled.
+        mode: :class:`OnboardingMode`
+            The mode that will be used for the onboarding configuration.
+        reason: Optional[:class:`str`]
+            The reason for editing the onboarding configuration. Shows up in the audit log.
+
+        Raises
+        -------
+        Forbidden
+            You do not have permissions to edit the onboarding configuration.
+        HTTPException
+            Editing the onboarding configuration failed.
+
+        Returns
+        --------
+        :class:`Onboarding`
+            The new onboarding configuration.
+        """
+        data = await self._state.http.edit_guild_onboarding(
+            self.id,
+            prompts=[p._to_dict() for p in prompts] if prompts is not MISSING else None,
+            default_channel_ids=[c.id for c in default_channels] if default_channels is not MISSING else None,
+            enabled=enabled if enabled is not MISSING else None,
+            mode=mode.value if mode is not MISSING else None,
+            reason=reason
+        )
 
     async def automod_rules(self) -> List[AutoModRule]:
         """|coro|
@@ -3484,7 +3580,7 @@ class Guild(Hashable):
         """
         data = await self._state.http.get_automod_rules(guild_id=self.id)
         for rule in data:
-            self._add_automod_rule(AutoModRule(state=self._state, guild=self, **rule))
+            self._add_automod_rule(AutoModRule(state=self._state, guild=self, **rule))  # TODO: Advanced caching
         return self.cached_automod_rules
 
     async def create_automod_rule(
@@ -3547,10 +3643,10 @@ class Guild(Hashable):
             'enabled': enabled,
             'exempt_roles': [str(r.id) for r in exempt_roles]  # type: ignore
         }
-        exempt_channels = [str(c.id) for c in exempt_channels]  # type: ignore
         for action in actions:  # Add the channels where messages should be logged to, to the exempted channels
-            if action.type.send_alert_message and str(action.channel_id) not in exempt_channels:
-                exempt_channels.append(str(action.channel_id))
+            if action.type.send_alert_message and action.channel_id not in exempt_channels:
+                exempt_channels.append(action.channel_id)
+        exempt_channels = [str(c.id) for c in exempt_channels]
         data['exempt_channels'] = exempt_channels
         rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data, reason=reason)
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)

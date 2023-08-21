@@ -34,6 +34,7 @@ from typing import (
     Any,
     Sequence
 )
+from typing_extensions import Literal
 
 import asyncio
 import json
@@ -58,7 +59,14 @@ if TYPE_CHECKING:
     from enums import InteractionCallbackType
     from .embeds import Embed
     from .message import Attachment, MessageReference
+    from .types import (
+        guild
+    )
+    from .types.snowflake import SnowflakeID
     from .utils import SnowflakeList
+
+    T = TypeVar('T')
+    Response = Coroutine[Any, Any, T]
 
 
 MISSING = utils.MISSING
@@ -917,17 +925,35 @@ class HTTPClient:
             params=query_params
         )
 
-    def list_archived_threads(self, channel_id, type, joined_privat=False, *, before=None, limit=None):
-        if type not in ('public', 'privat'):
-            raise ValueError('type must be public or privat, not %s' % type)
-        if joined_privat:
-            r = Route('GET', '/channels/{channel_id}/users/@me/threads/archived/private', channel_id=channel_id)
+    def list_active_threads(self, guild_id: int):
+        return self.request(
+            Route('GET', '/guilds/{guild_id}/threads/active', guild_id=guild_id),
+        )
+
+    def list_archived_threads(
+            self,
+            channel_id: int,
+            type: Literal['private', 'public'],
+            joined_private: bool = False,
+            *,
+            before: Optional[int] = None,
+            limit: int = 100
+    ):
+        if type not in ('public', 'private'):
+            raise ValueError('type must be public or private, not %s' % type)
+        if joined_private:
+            r = Route(
+                'GET',
+                '/channels/{channel_id}/users/@me/threads/archived/private', channel_id=channel_id
+            )
         else:
-            r = Route('GET', '/channels/{channel_id}/threads/archived/{type}', channel_id=channel_id, type=type)
-        params = {
-            'before': int(before),
-            'limit': int(limit)
-        }
+            r = Route(
+                'GET',
+                '/channels/{channel_id}/threads/archived/{type}', channel_id=channel_id, type=type
+            )
+        params = {'limit': limit}
+        if before:
+            params['before'] = before
         return self.request(r, params=params)
 
     def create_post(self, channel_id: int, params: MultipartParameters, reason: Optional[str] = None):

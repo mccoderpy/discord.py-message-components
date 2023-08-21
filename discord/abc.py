@@ -1184,9 +1184,9 @@ class Messageable:
             The rich embed for the content.
         embeds: List[:class:`~discord.Embed`]
             A list containing up to ten embeds
-        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :class:`~discord.BaseSelect`]]]]
-            A list of up to five :class:`~discord.ActionRow`s/:class:`list`s
-            Each containing up to five :class:`~discord.Button`'s or one :class:`~discord.BaseSelect` like object.
+        components: List[Union[:class:`~discord.ActionRow`, List[Union[:class:`~discord.Button`, :ref:`Select <select-like-objects>`]]]]
+            A list of up to five :class:`~discord.ActionRow`s or :class:`list`,
+            each containing up to five :class:`~discord.Button` or one :ref:`Select <select-like-objects>` like object.
         file: :class:`~discord.File`
             The file to upload.
         files: List[:class:`~discord.File`]
