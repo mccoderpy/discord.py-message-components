@@ -39,11 +39,11 @@ from typing import (
     List,
     Optional,
     Pattern,
-    TypeAlias,
     TypeVar,
     TYPE_CHECKING,
     Union,
 )
+from typing_extensions import TypeAlias
 
 from ._types import _BaseCommand
 

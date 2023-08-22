@@ -42,13 +42,12 @@ from typing import (
     overload,
     Tuple,
     Type,
-    TypeAlias,
     TypeVar,
     TYPE_CHECKING,
     Union,
 )
 
-from typing_extensions import Literal, Self
+from typing_extensions import Literal, Self, TypeAlias
 
 if TYPE_CHECKING:
     from typing_extensions import ParamSpec
