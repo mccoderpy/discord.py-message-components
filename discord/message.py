@@ -950,6 +950,11 @@ class Message(Hashable, Generic[_MCH]):
         except AttributeError:
             pass
 
+    @utils.cached_slot_property('_cs_guild')
+    def guild(self) -> Guild:
+        """Optional[:class:`Guild`]: The guild that the message belongs to, if applicable."""
+        return getattr(self.channel, 'guild', None)
+
     @utils.cached_slot_property('_cs_raw_mentions')
     def raw_mentions(self) -> List[int]:
         """List[:class:`int`]: A property that returns an array of user IDs matched with
@@ -1825,6 +1830,11 @@ class PartialMessage(Hashable, Generic[_MCH]):
     def created_at(self) -> datetime:
         """:class:`datetime.datetime`: The partial message's creation time in UTC."""
         return utils.snowflake_time(self.id)
+
+    @utils.cached_slot_property('_cs_guild')
+    def guild(self) -> Guild:
+        """Optional[:class:`Guild`]: The guild that the message belongs to, if applicable."""
+        return getattr(self.channel, 'guild', None)
 
     async def fetch(self) -> Message:
         """|coro|
