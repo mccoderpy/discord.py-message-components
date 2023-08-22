@@ -697,7 +697,7 @@ class Message(Hashable, Generic[_MCH]):
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
                  'role_mentions', '_cs_raw_role_mentions', 'type', 'flags',
                  '_cs_system_content', '_state', 'reactions', 'reference',
-                 'application', 'activity', 'stickers', '_thread', 'interaction', 'guild')
+                 'application', 'activity', 'stickers', '_thread', 'interaction')
 
     def __init__(self, *, state: ConnectionState, channel: _MCH, data: MessagePayload):
         self._state: ConnectionState = state
