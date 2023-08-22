@@ -697,7 +697,7 @@ class Message(Hashable, Generic[_MCH]):
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
                  'role_mentions', '_cs_raw_role_mentions', 'type', 'flags',
                  '_cs_system_content', '_state', 'reactions', 'reference',
-                 'application', 'activity', 'stickers', '_thread', 'interaction')
+                 'application', 'activity', 'stickers', '_thread', 'interaction', 'guild')
 
     def __init__(self, *, state: ConnectionState, channel: _MCH, data: MessagePayload):
         self._state: ConnectionState = state
@@ -710,12 +710,6 @@ class Message(Hashable, Generic[_MCH]):
         self.application = data.get('application')  # TODO: make this a class
         self.activity = data.get('activity')  # TODO: make this a class
         self.channel: _MCH = channel
-        interaction = data.get('interaction')
-        self.interaction: Optional[MessageInteraction] = MessageInteraction(
-            state=state,
-            data=interaction,
-            guild=self.guild
-        ) if interaction else None
         self._edited_timestamp: datetime = utils.parse_time(data['edited_timestamp'])
         self.type: MessageType = try_enum(MessageType, data['type'])
         self.pinned: bool = data['pinned']
@@ -731,7 +725,14 @@ class Message(Hashable, Generic[_MCH]):
             self.guild: Optional[Guild] = channel.guild
         except AttributeError:
             self.guild: Optional[Guild] = state._get_guild(utils._get_as_snowflake(data, 'guild_id'))
-
+        
+        interaction = data.get('interaction')
+        self.interaction: Optional[MessageInteraction] = MessageInteraction(
+            state=state,
+            data=interaction,
+            guild=self.guild
+        ) if interaction else None
+        
         try:
             ref = data['message_reference']
         except KeyError:
@@ -949,12 +950,7 @@ class Message(Hashable, Generic[_MCH]):
             del self._cs_guild
         except AttributeError:
             pass
-
-    @utils.cached_slot_property('_cs_guild')
-    def guild(self) -> Guild:
-        """Optional[:class:`Guild`]: The guild that the message belongs to, if applicable."""
-        return getattr(self.channel, 'guild', None)
-
+    
     @utils.cached_slot_property('_cs_raw_mentions')
     def raw_mentions(self) -> List[int]:
         """List[:class:`int`]: A property that returns an array of user IDs matched with
@@ -1747,7 +1743,7 @@ class PartialMessage(Hashable, Generic[_MCH]):
         The guild associated with this partial message, if applicable.
     """
 
-    __slots__ = ('channel', 'id', '_cs_guild', '_state')
+    __slots__ = ('channel', 'id', 'guild', '_state')
 
     _exported_names = (
         'jump_url',
@@ -1830,12 +1826,7 @@ class PartialMessage(Hashable, Generic[_MCH]):
     def created_at(self) -> datetime:
         """:class:`datetime.datetime`: The partial message's creation time in UTC."""
         return utils.snowflake_time(self.id)
-
-    @utils.cached_slot_property('_cs_guild')
-    def guild(self) -> Guild:
-        """Optional[:class:`Guild`]: The guild that the message belongs to, if applicable."""
-        return getattr(self.channel, 'guild', None)
-
+    
     async def fetch(self) -> Message:
         """|coro|
 
