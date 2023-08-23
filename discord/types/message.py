@@ -56,6 +56,7 @@ __all__ = (
     'Reaction',
     'Embed',
     'PartialMessage',
+    'RoleSubscriptionData',
     'Message',
     'MessageReference',
     'MessageActivity',

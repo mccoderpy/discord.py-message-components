@@ -3451,14 +3451,28 @@ Message
 .. autoclass:: Message()
     :members:
 
+EphemeralMessage
+~~~~~~~~~~~~~~~~~
+
 .. attributetable:: EphemeralMessage
 
 .. autoclass:: EphemeralMessage()
     :members:
 
+MessageInteraction
+~~~~~~~~~~~~~~~~~~~
+
 .. attributetable:: MessageInteraction
 
 .. autoclass:: MessageInteraction()
+    :members:
+
+RoleSubscriptionInfo
+~~~~~~~~~~~~~~~~~~~~
+
+.. attributable:: RoleSubscriptionInfo
+
+.. autoclass:: RoleSubscriptionInfo()
     :members:
 
 DeletedReferencedMessage

@@ -79,6 +79,7 @@ if TYPE_CHECKING:
     from .types.message import (
         Attachment as AttachmentPayload,
         Message as MessagePayload,
+        RoleSubscriptionData,
         MessageReference as MessageReferenceData,
         MessageInteraction as MessageInteractionData
     )
@@ -88,6 +89,7 @@ if TYPE_CHECKING:
     from .mentions import AllowedMentions
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
+    from .role import Role
     from .components import (
         UserSelect,
         RoleSelect,
@@ -415,6 +417,39 @@ class MessageInteraction:
         return f'<MessageInteraction command={self.name} user={self.user} interaction_id={self.id}>'
 
 
+class RoleSubscriptionInfo:
+    """Represents a message's role subscription information.
+
+    This is currently only attached to messages of type :attr:`MessageType.role_subscription_purchase`.
+
+    .. versionadded:: 2.0
+
+    Attributes
+    -----------
+    role_subscription_listing_id: :class:`int`
+        The ID of the SKU and listing that the user is subscribed to.
+    tier_name: :class:`str`
+        The name of the tier that the user is subscribed to.
+    total_months_subscribed: :class:`int`
+        The cumulative number of months that the user has been subscribed for.
+    is_renewal: :class:`bool`
+        Whether this notification is for a renewal rather than a new purchase.
+    """
+
+    __slots__ = (
+        'role_subscription_listing_id',
+        'tier_name',
+        'total_months_subscribed',
+        'is_renewal',
+    )
+
+    def __init__(self, data: RoleSubscriptionData) -> None:
+        self.role_subscription_listing_id: int = int(data['role_subscription_listing_id'])
+        self.tier_name: str = data['tier_name']
+        self.total_months_subscribed: int = data['total_months_subscribed']
+        self.is_renewal: bool = data['is_renewal']
+
+
 class DeletedReferencedMessage:
     """A special sentinel type that denotes whether the
     resolved message referenced message had since been deleted.
@@ -684,7 +719,19 @@ class Message(Hashable, Generic[_MCH]):
 
         .. versionadded:: 1.6
     interaction: Optional[:class:`MessageInteraction`]
-        The interaction associated with this message if any.
+        The interaction this message is a response to, if any.
+
+        .. versionadded:: 2.0
+    role_subscription: Optional[:class:`RoleSubscriptionInfo`]
+        The data of the role subscription purchase or renewal that prompted this
+        :attr:`MessageType.role_subscription_purchase` message.
+
+        .. versionadded:: 2.0
+    position: Optional[:class:`int`]
+        A generally increasing integer with potentially gaps or duplicates that represents
+        the approximate position of the message in a thread.
+
+        .. versionadded:: 2.0
     guild: Optional[:class:`Guild`]
         The guild that the message belongs to if any.
     """
@@ -695,7 +742,17 @@ class Message(Hashable, Generic[_MCH]):
                  '_cs_clean_content', '_cs_raw_channel_mentions', 'nonce', 'pinned',
                  'role_mentions', '_cs_raw_role_mentions', 'type', 'flags',
                  '_cs_system_content', '_state', 'reactions', 'reference',
-                 'application', 'activity', 'stickers', '_thread', 'interaction', 'guild')
+                 'application', 'activity', 'stickers', '_thread', 'interaction', 'guild',
+                 'role_subscription', 'position',)
+
+    if TYPE_CHECKING:
+        _state: ConnectionState
+        channel: _MCH
+        author: Union[User, Member]
+        mentions: List[Union[User, Member]]
+        role_mentions: List[Role]
+        reactions: List[Reaction]
+
 
     def __init__(self, *, state: ConnectionState, channel: _MCH, data: MessagePayload):
         self._state: ConnectionState = state
@@ -715,6 +772,7 @@ class Message(Hashable, Generic[_MCH]):
         self.tts: bool = data['tts']
         self.content: Optional[str] = data['content']
         self.nonce: Optional[str] = data.get('nonce')
+        self.position: Optional[int] = data.get('position')
         self.stickers: List[Union[Sticker, GuildSticker]] = [
             Sticker(data=data, state=state) for data in data.get('sticker_items', [])
         ]
@@ -756,6 +814,14 @@ class Message(Hashable, Generic[_MCH]):
 
                     ref.resolved = self.__class__(channel=chan, data=resolved, state=state)
 
+        self.role_subscription: Optional[RoleSubscriptionInfo] = None
+        try:
+            role_subscription = data['role_subscription_data']
+        except KeyError:
+            pass
+        else:
+            self.role_subscription = RoleSubscriptionInfo(role_subscription)
+
         for handler in ('author', 'member', 'mentions', 'mention_roles', 'flags', 'thread'):
             try:
                 getattr(self, '_handle_%s' % handler)(data[handler])
@@ -763,7 +829,10 @@ class Message(Hashable, Generic[_MCH]):
                 continue
 
     def __repr__(self) -> str:
-        return '<Message id={0.id} channel={0.channel!r} type={0.type!r} author={0.author!r} flags={0.flags!r}>'.format(self)
+        return (
+            '<Message id={0.id} channel={0.channel!r} type={0.type!r} '
+            'author={0.author!r} flags={0.flags!r}>'.format(self)
+        )
 
     def __remove_from_cache__(self, _):
         self._state._messages.remove(self)
@@ -1059,27 +1128,35 @@ class Message(Hashable, Generic[_MCH]):
         regardless of the :attr:`Message.type`.
 
         In the case of :attr:`MessageType.default`\, this just returns the
-        regular :attr:`Message.content`. Otherwise this returns an English
-        message denoting the contents of the system message.
+        regular :attr:`Message.content`.
+        Otherwise, this returns an English message denoting the contents of the system message.
         """
 
         if self.type is MessageType.default:
             return self.content
 
         if self.type is MessageType.pins_add:
-            return '{0.name} pinned a message to this channel.'.format(self.author)
+            return f'{self.author.display_name} pinned a message to this channel.'
 
         if self.type is MessageType.recipient_add:
-            return '{0.name} added {1.name} to the group.'.format(self.author, self.mentions[0])
+            return (
+                f'{self.author.display_name} added {self.mentions[0].display_name} to the '
+                f'{"thread" if self.guild else "group"}.'
+            )
 
         if self.type is MessageType.recipient_remove:
-            return '{0.name} removed {1.name} from the group.'.format(self.author, self.mentions[0])
+            return (
+                f'{self.author.display_name} removed {self.mentions[0].display_name} from the '
+                f'{"thread" if self.guild else "group"}.'
+            )
 
         if self.type is MessageType.channel_name_change:
-            return '{0.author.name} changed the channel name: {0.content}'.format(self)
+            if getattr(self.channel, "parent_channel", self.channel).type is ChannelType.forum_channel:
+                return f'{self.author.display_name} changed the post title: **{self.content}**'
+            return f'{self.author.display_name} changed the channel name: **{self.content}**'
 
         if self.type is MessageType.channel_icon_change:
-            return '{0.author.name} changed the channel icon.'.format(self)
+            return f'{self.author.display_name} changed the channel icon.'
 
         if self.type is MessageType.new_member:
             formats = [
@@ -1111,41 +1188,111 @@ class Message(Hashable, Generic[_MCH]):
             call_ended = self.call.ended_timestamp is not None
 
             if self.channel.me in self.call.participants:
-                return '{0.author.name} started a call.'.format(self)
+                return f'{self.author.display_name} started a call.'
             elif call_ended:
-                return 'You missed a call from {0.author.name}'.format(self)
+                return f'You missed a call from {self.author.display_name}'
             else:
-                return '{0.author.name} started a call \N{EM DASH} Join the call.'.format(self)
+                return f'{self.author.display_name} started a call \N{EM DASH} Join the call.'
 
         if self.type is MessageType.premium_guild_subscription:
-            return '{0.author.name} just boosted the server!'.format(self)
+            return f'{self.author.display_name} just boosted the server!'
 
         if self.type is MessageType.premium_guild_tier_1:
-            return '{0.author.name} just boosted the server! {0.guild} has achieved **Level 1!**'.format(self)
+            if self.content:
+                return (
+                    f'{self.author.display_name} just boosted the server **{self.content}** times! '
+                    f'{self.guild.name} has achieved **Level 1!**'
+                )
+            return f'{self.author.display_name} just boosted the server! {self.guild.name} has achieved **Level 1!**'
 
         if self.type is MessageType.premium_guild_tier_2:
-            return '{0.author.name} just boosted the server! {0.guild} has achieved **Level 2!**'.format(self)
+            if self.content:
+                return (
+                    f'{self.author.display_name} just boosted the server **{self.content}** times! '
+                    f'{self.guild.name} has achieved **Level 2!**'
+                )
+            return f'{self.author.display_name} just boosted the server! {self.guild.name} has achieved **Level 2!**'
 
         if self.type is MessageType.premium_guild_tier_3:
-            return '{0.author.name} just boosted the server! {0.guild} has achieved **Level 3!**'.format(self)
+            if self.content:
+                return (
+                    f'{self.author.display_name} just boosted the server **{self.content}** times! '
+                    f'{self.guild.name} has achieved **Level 3!**'
+                )
+            return f'{self.author.display_name} just boosted the server! {self.guild.name} has achieved **Level 3!**'
 
         if self.type is MessageType.channel_follow_add:
-            return '{0.author.name} has added {0.content} to this channel'.format(self)
+            return f'{self.author.display_name} has added {self.content} to this channel'
 
         if self.type is MessageType.guild_stream:
-            return '{0.author.name} is live! Now streaming {0.author.activity.name}'.format(self)
+            return f'{self.author.display_name} is live! Now streaming {self.author.activity.name}'
 
         if self.type is MessageType.guild_discovery_disqualified:
-            return 'This server has been removed from Server Discovery because it no longer passes all the requirements. Check Server Settings for more details.'
+            return (
+                'This server has been removed from Server Discovery because it no longer passes all the requirements. '
+                'Check Server Settings for more details.'
+            )
 
         if self.type is MessageType.guild_discovery_requalified:
             return 'This server is eligible for Server Discovery again and has been automatically relisted!'
 
         if self.type is MessageType.guild_discovery_grace_period_initial_warning:
-            return 'This server has failed Discovery activity requirements for 1 week. If this server fails for 4 weeks in a row, it will be automatically removed from Discovery.'
+            return (
+                'This server has failed Discovery activity requirements for 1 week. '
+                'If this server fails for 4 weeks in a row, it will be automatically removed from Discovery.'
+            )
 
         if self.type is MessageType.guild_discovery_grace_period_final_warning:
-            return 'This server has failed Discovery activity requirements for 3 weeks in a row. If this server fails for 1 more week, it will be removed from Discovery.'
+            return (
+                'This server has failed Discovery activity requirements for 3 weeks in a row. '
+                'If this server fails for 1 more week, it will be removed from Discovery.'
+            )
+
+        if self.type is MessageType.thread_created:
+            return f'{self.author.display_name} started a thread: **{self.content}**. See all **threads**.'
+
+        if self.type is MessageType.reply:
+            return self.content
+
+        if self.type is MessageType.thread_starter_message:
+            if self.reference is None or self.reference.resolved is None:
+                return 'Sorry, we couldn\'t load the first message in this thread'
+
+            return self.reference.resolved.content
+
+        if self.type is MessageType.guild_invite_reminder:
+            return 'Wondering who to invite?\nStart by inviting anyone who can help you build the server!'
+
+        if self.type is MessageType.premium_guild_subscription and self.role_subscription is not None:
+            role_subscription = self.role_subscription
+            total_months = role_subscription.total_months_subscribed
+            months = '1 month' if total_months == 1 else f'{total_months} months'
+            if role_subscription.is_renewal:
+                return (
+                    f'{self.author.display_name} renewed **{role_subscription.tier_name}** '
+                    f'and has been a subscriber of {self.guild.name} for {months}!'
+                )
+            return (
+                f'{self.author.display_name} joined **{role_subscription.tier_name}** '
+                f'and has been a subscriber of {self.guild.name}  for {months}!'
+            )
+
+        if self.type is MessageType.stage_start:
+            return f'{self.author.display_name} started **{self.content}**.'
+
+        if self.type is MessageType.stage_end:
+            return f'{self.author.display_name} ended **{self.content}**.'
+
+        if self.type is MessageType.stage_speaker_change:
+            return f'{self.author.display_name} is now a speaker.'
+
+        if self.type is MessageType.stage_raise_hand:
+            return f'{self.author.display_name} requested to speak.'
+
+        if self.type is MessageType.stage_topic_change:
+            return f'{self.author.display_name} changed Stage topic: **{self.content}**.'
+
+        return ''
 
         # TODO: Add missing system message types
 
