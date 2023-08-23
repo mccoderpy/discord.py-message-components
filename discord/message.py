@@ -52,7 +52,7 @@ from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .enums import try_enum, MessageType, ChannelType, AutoArchiveDuration, InteractionType
 from .errors import InvalidArgument, HTTPException
-from .components import ActionRow
+from .components import ActionRow, Button, SelectMenu
 from .embeds import Embed
 from .member import Member
 from .flags import MessageFlags
@@ -89,8 +89,6 @@ if TYPE_CHECKING:
     from .abc import Messageable, Snowflake
     from .sticker import GuildSticker
     from .components import (
-        Button,
-        SelectMenu,
         UserSelect,
         RoleSelect,
         MentionableSelect,
