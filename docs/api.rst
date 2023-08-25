@@ -2389,6 +2389,37 @@ of :class:`enum.Enum`.
 
         Represents a member currently in the team.
 
+.. class:: TeamRole:
+
+    A :class:`TeamMember` can be one of four roles (owner, admin, developer, and read-only),
+    and each role inherits the access of those below it.
+    Represents the role of a team member retrieved through :func:`Bot.application_info`.
+
+    .. versionadded:: 2.0
+
+    .. attribute:: owner
+
+        Owners are the most permissiable role, and can take destructive, irreversible actions like deleting team-owned
+        apps or the team itself. Teams are limited to 1 owner.
+
+    .. attribute:: admin
+
+        Admins have similar access as an :attr:`~TeamRole.owner`,
+        except they cannot take destructive actions on the team or team-owned apps.
+
+    .. attribute:: developer
+
+        Developers can access information about team-owned apps, like the client secret or public key.
+        They can also take limited actions on team-owned apps,
+        like configuring interaction endpoints or resetting the bot token.
+        Members with the Developer role cannot manage the team or its members,
+        or take destructive actions on team-owned apps.
+
+    .. attribute:: read_only
+
+        Read-only members can access information about a team and any team-owned apps.
+        Some examples include getting the IDs of applications and exporting payout records.
+
 .. class:: WebhookType
 
     Represents the type of webhook that can be received.

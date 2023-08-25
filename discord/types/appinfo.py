@@ -30,7 +30,8 @@ from typing import (
 )
 from typing_extensions import (
     TypedDict,
-    NotRequired
+    NotRequired,
+    Literal
 )
 
 from .snowflake import SnowflakeID
@@ -44,12 +45,15 @@ __all__ = (
     'AppInfo',
 )
 
+TeamMembershipState = Literal[1, 2]
+TeamRole = Literal['owner', 'admin', 'developer', 'read_only']
 
 class TeamMember(TypedDict):
-    membership_state: int
+    membership_state: TeamMembershipState
     permissions: List[str]
     team_id: SnowflakeID
     user: User
+    role: TeamRole
 
 
 class Team(TypedDict):

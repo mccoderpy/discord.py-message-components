@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 from . import utils
 from .user import BaseUser
 from .asset import Asset
-from .enums import TeamMembershipState, try_enum
+from .enums import TeamMembershipState, TeamRole, try_enum
 
 __all__ = (
     'Team',
@@ -175,18 +175,29 @@ class TeamMember(BaseUser):
         The team that the member is from.
     membership_state: :class:`TeamMembershipState`
         The membership state of the member (e.g. invited or accepted)
+    role: :class:`TeamRole`
+        The role of the team member.
+
+        .. versionadded:: 2.0
     """
-    __slots__ = BaseUser.__slots__ + ('team', 'membership_state', 'permissions')
+    __slots__ = BaseUser.__slots__ + ('team', 'membership_state', 'permissions', 'role')
 
     def __init__(self, team: Team, state: ConnectionState, data: TeamMemberData):
         self.team: Team = team
         self.membership_state: TeamMembershipState = try_enum(TeamMembershipState, data['membership_state'])
         self.permissions: List[str] = data['permissions']
+        self.role: TeamRole = try_enum(TeamRole, data['role'])
         super().__init__(state=state, data=data['user'])
 
     def __repr__(self) -> str:
         if not self.is_migrated:
-            return f'<{self.__class__.__name__} id={self.id} username={self.name!r} global_name={self.global_name} ' \
-                   f'discriminator={self.discriminator!r} membership_state={self.membership_state!r}>'
-        return f'<{self.__class__.__name__} id={self.id} username={self.name!r} global_name={self.global_name} ' \
-               f'membership_state={self.membership_state!r}>'
+            return (
+                f'<{self.__class__.__name__} role={self.role!r} id={self.id} username={self.username!r} '
+                f'global_name={self.global_name} membership_state={self.membership_state!r}>'
+            )
+        return (
+            f'<{self.__class__.__name__} role={self.role!r} id={self.id} username={self.username!r} '
+            f'discriminator={self.discriminator!r} global_name={self.global_name} '
+            f'membership_state={self.membership_state!r}>'
+        )
+

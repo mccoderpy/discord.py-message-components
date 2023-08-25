@@ -67,6 +67,7 @@ __all__ = (
     'PremiumType',
     'FriendFlags',
     'TeamMembershipState',
+    'TeamRole',
     'TextInputStyle',
     'Theme',
     'WebhookType',
@@ -1033,6 +1034,13 @@ class PremiumType(Enum):
 class TeamMembershipState(Enum):
     invited = 1
     accepted = 2
+
+
+class TeamRole(Enum):
+    owner = 'owner'
+    admin = 'admin'
+    developer = 'developer'
+    read_only = 'read_only'
 
 
 class WebhookType(Enum):
