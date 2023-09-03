@@ -26,11 +26,13 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from typing import (
+    Type,
     List,
     Optional
 )
 
 from typing_extensions import (
+    Final,
     Literal,
     NotRequired,
     TypedDict
@@ -43,7 +45,7 @@ from .sticker import GuildSticker
 from .user import User, Member
 
 __all__ = (
-    'PermissionFlags',
+    'PermissionFlag',
     'UnavailableGuild',
     'PartialGuild',
     'Guild',
@@ -69,7 +71,7 @@ VerificationLevel = Literal[0, 1, 2, 3, 4]
 GuildNSFWLevel = Literal[0, 1, 2, 3]
 PremiumTier = Literal[0, 1, 2, 3]
 OnlineStatus = Literal['online', 'idle', 'dnd', 'offline']
-GuildFeature = Literal[
+GuildFeature: Final[Type[str]] = Literal[
     'ANIMATED_BANNER',
     'ANIMATED_ICON',
     'APPLICATION_COMMAND_PERMISSIONS_V2',
@@ -109,9 +111,9 @@ GuildFeature = Literal[
     'MEMBER_PROFILES'
     'APPEALABLE',
     'ROLE_SUBSCRIPTIONS_ENABLED',
-    'ROLE_SUBSCRIPTIONS_ENABLED_FOR_PURCHASE'
+    'ROLE_SUBSCRIPTIONS_ENABLED_FOR_PURCHASE',
 ]
-PermissionFlags = Literal[
+PermissionFlag: Final[Type[str]] = Literal[
     'create_instant_invite',
     'kick_members',
     'ban_members',
@@ -158,14 +160,14 @@ PermissionFlags = Literal[
     'view_creator_monetization_analytics',
     'use_soundboard',
     'use_external_sounds',
-    'send_voice_messages'
+    'send_voice_messages',
+    'set_voice_channel_status',
 ]
 ScheduledEventPrivacyLevel = Literal[2]
 ScheduledEventStatus = Literal[1, 2, 3, 4]
 ScheduledEntityType = Literal[1, 2, 3]
 OnboardingMode = Literal[0, 1]
 OnboardingPromptType = Literal[0, 1]
-
 
 class UnavailableGuild(TypedDict):
     id: SnowflakeID

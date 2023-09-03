@@ -27,17 +27,20 @@ from __future__ import annotations
 
 from typing import (
     ClassVar,
+    Dict,
     Iterator,
     Optional,
     Set,
     Tuple,
     TYPE_CHECKING
 )
+from typing_extensions import Final
 
 from .flags import alias_flag_value, BaseFlags, fill_with_flags, flag_value
 
 if TYPE_CHECKING:
-    from .types.guild import PermissionFlags
+    from .types.guild import PermissionFlag
+
 
 __all__ = (
     'Permissions',
@@ -60,7 +63,7 @@ def make_permission_alias(alias):
 class Permissions(BaseFlags):
     """Wraps up the Discord permission value.
 
-    The properties provided are two way. You can set and retrieve individual
+    The properties provided are two-way. You can set and retrieve individual
     bits using the properties as if they were regular bools. This allows
     you to edit permissions.
 
@@ -108,14 +111,16 @@ class Permissions(BaseFlags):
     __slots__ = ()
     
     if TYPE_CHECKING:
-        VALID_NAMES: ClassVar[Set[str]]
-        PURE_FLAGS: ClassVar[Set[str]]
+        VALID_FLAGS: Final[ClassVar[Dict[PermissionFlag, int]]]
+        DEFAULT_VALUE: ClassVar[int]
         
     def __init__(self, permissions: int = 0, **kwargs: bool) -> None:
         if not isinstance(permissions, int):
-            raise TypeError('Expected int parameter, received %s instead.' % permissions.__class__.__name__)
+            raise TypeError(
+                f'Expected int parameter, received {permissions.__class__.__name__} instead.'
+            )
 
-        self.value = permissions
+        self.value: int = permissions
         for key, value in kwargs.items():
             if key not in self.VALID_FLAGS:
                 raise TypeError('%r is not a valid permission name.' % key)
@@ -126,14 +131,18 @@ class Permissions(BaseFlags):
         if isinstance(other, Permissions):
             return (self.value & other.value) == self.value
         else:
-            raise TypeError("cannot compare {} with {}".format(self.__class__.__name__, other.__class__.__name__))
+            raise TypeError(
+                f"cannot compare {self.__class__.__name__} with {other.__class__.__name__}"
+            )
 
     def is_superset(self, other: Permissions) -> bool:
         """Returns ``True`` if self has the same or more permissions as other."""
         if isinstance(other, Permissions):
             return (self.value | other.value) == self.value
         else:
-            raise TypeError("cannot compare {} with {}".format(self.__class__.__name__, other.__class__.__name__))
+            raise TypeError(
+                f"cannot compare {self.__class__.__name__} with {other.__class__.__name__}"
+            )
 
     def is_strict_subset(self, other: Permissions) -> bool:
         """Returns ``True`` if the permissions on other are a strict subset of those on self."""
@@ -196,8 +205,11 @@ class Permissions(BaseFlags):
            permissions :attr:`administrator`, :attr:`create_instant_invite`, :attr:`kick_members`,
            :attr:`ban_members`, :attr:`change_nickname` and :attr:`manage_nicknames` are
            no longer part of the general permissions.
+
+        .. versionchanged:: 2.0
+            Added :attr:`moderate_members`, :attr:`manage_expressions` and :attr:`create_expressions` permission.
         """
-        return cls(0b01110000000010000000010010110000)
+        return cls(0b10010000000001110000000010000000010010110000)
 
     @classmethod
     def membership(cls):
@@ -205,6 +217,9 @@ class Permissions(BaseFlags):
         "Membership" permissions from the official Discord UI set to ``True``.
 
         .. versionadded:: 1.7
+
+        .. versionchanged:: 2.0
+            Added :attr:`moderate_members` permission.
         """
         return cls(0b10000000000001100000000000000000000000111)
 
@@ -216,14 +231,23 @@ class Permissions(BaseFlags):
         .. versionchanged:: 1.7
            Permission :attr:`read_messages` is no longer part of the text permissions.
            Added :attr:`use_slash_commands` permission.
+
+        .. versionchanged:: 2.0
+            Added :attr:`send_voice_messages`, :attr:`manage_threads`, :attr:`create_public_threads`,
+            :attr:`create_private_threads`, :attr:`send_messages_in_threads` and :attr:`use_external_stickers` permission.
         """
-        return cls(0b11110010000000000001111111100001000000)
+        return cls(0b10000000111110010000000000001111111100001000000)
 
     @classmethod
     def voice(cls):
         """A factory method that creates a :class:`Permissions` with all
-        "Voice" permissions from the official Discord UI set to ``True``."""
-        return cls(0b1000000000000000011111100000000001100000000)
+        "Voice" permissions from the official Discord UI set to ``True``.
+
+        .. versionchanged:: 2.0
+            Added :attr:`start_embedded_activities`, :attr:`use_soundboard` :attr:`use_external_sounds` and
+            :attr:`set_voice_channel_status` permission.
+        """
+        return cls(0b1001001001000000000000011111100000000001100000000)
 
     @classmethod
     def stage(cls):
@@ -242,6 +266,15 @@ class Permissions(BaseFlags):
         .. versionadded:: 1.7
         """
         return cls(0b100000001010000000000000000000000)
+
+    @classmethod
+    def events(cls):
+        """A factory method that creates a :class:`Permissions` with all
+        "Events" permissions from the official Discord UI set to ``True``.
+
+        .. versionadded:: 2.0
+        """
+        return cls(0b100000000001000000000000000000000000000000000)
 
     @classmethod
     def advanced(cls):
@@ -353,7 +386,16 @@ class Permissions(BaseFlags):
 
     @flag_value
     def send_messages(self):
-        """:class:`bool`: Returns ``True`` if a user can send messages from all or specific text channels."""
+        """:class:`bool`: Returns ``True`` if a user can send messages from all or specific text channels
+        and create posts in forum channels."""
+        return 1 << 11
+
+    @make_permission_alias('send_messages')
+    def create_posts(self):
+        """:class:`bool`: An alias for :attr:`send_messages`.
+
+        .. versionadded:: 2.0
+        """
         return 1 << 11
 
     @flag_value
@@ -590,12 +632,18 @@ class Permissions(BaseFlags):
 
     @flag_value
     def send_messages_in_threads(self):
-        """:class:`bool`: Returns ``True`` if a user can send messages in threads.
+        """:class:`bool`: Returns ``True`` if a user can send messages in threads and forum posts.
         
         .. versionadded:: 2.0
         """
         return 1 << 38
 
+    @make_permission_alias('send_messages_in_threads')
+    def send_messages_in_posts(self):
+        """:class:`bool`: An alias for :attr:`send_messages_in_threads`."""
+        return 1 << 38
+
+    # TODO: Remove this alias in 2.0 release
     @make_permission_alias('send_messages_in_threads')
     def send_thread_messages(self):
         """:class:`bool`: An alias for :attr:`send_messages_in_threads`."""
@@ -788,7 +836,7 @@ class PermissionOverwrite:
         """Checks if two overwrites are not equal."""
         return not self.__eq__(other)
 
-    def _set(self, key: PermissionFlags, value: Optional[bool]) -> None:
+    def _set(self, key: PermissionFlag, value: Optional[bool]) -> None:
         if value not in (True, None, False):
             raise TypeError('Expected bool or NoneType, received {0.__class__.__name__}'.format(value))
 
@@ -856,7 +904,7 @@ class PermissionOverwrite:
 
             setattr(self, key, value)
 
-    def __iter__(self) -> Iterator[Tuple[PermissionFlags, bool]]:
+    def __iter__(self) -> Iterator[Tuple[PermissionFlag, bool]]:
         """Returns an iterator of ``(perm, value)`` pairs.
         This allows it to be, for example, constructed as a dict or a list  of pairs.
 
