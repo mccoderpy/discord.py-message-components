@@ -126,6 +126,7 @@ class VoiceChannel(GuildChannel, total=False):
     nsfw: bool
     icon_emoji: Optional[PartialEmoji]
     rtc_region: Optional[str]
+    status: Optional[str]
 
 
 class StageChannel(VoiceChannel, total=False):

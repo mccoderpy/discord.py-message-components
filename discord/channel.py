@@ -1814,7 +1814,11 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         .. versionadded:: 2.0
     """
 
-    __slots__ = ('last_message_id',)
+    __slots__ = ('last_message_id', '_status')
+
+    def __init__(self, *, state: ConnectionState, guild: Guild, data: VoiceChannelData) -> None:
+        super().__init__(state=state, guild=guild, data=data)
+        self._status: Optional[str] = data.get('status')
 
     def __repr__(self) -> str:
         attrs = [
@@ -1839,6 +1843,11 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
     def type(self) -> ChannelType:
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.voice
+
+    @property
+    def status(self) -> Optional[str]:
+        """Optional[:class:`str`]: The current channel "status" (0-500 characters) if any."""
+        return self._status
 
     @utils.copy_doc(abc.GuildChannel.clone)
     async def clone(self, *, name: Optional[str] = None, reason: Optional[str] = None) -> VoiceChannel:
@@ -1910,6 +1919,30 @@ class VoiceChannel(VocalGuildChannel, abc.Messageable):
         """
 
         await self._edit(options, reason=reason)
+
+    # TODO: Add/remove this when we got a statement from Discord why bots can't set the channel status
+    # async def set_status(self, status: Optional[str], reason: Optional[str] = None) -> None:
+    #     """|coro|
+    #
+    #     Sets the channels status (for example the current conversation topic or game being played).
+    #     This requires being connected to the voice channel.
+    #
+    #     Parameters
+    #     ----------
+    #     status: Optional[:class:`str`]
+    #         The new status of the channel. Pass ``None`` to remove the status.
+    #     reason: Optional[:class:`str`] = None
+    #         The reason for editing this channel. Shows up on the audit log.
+    #
+    #     Raises
+    #     ------
+    #     Forbidden
+    #         You do not have permissions to edit the channel.
+    #     HTTPException
+    #         Editing the channel status failed.
+    #     """
+    #
+    #     await self._state.http.set_voice_channel_status(self.id, status=status, reason=reason)
 
 
 class StageChannel(VocalGuildChannel, abc.Messageable):

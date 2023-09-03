@@ -654,6 +654,13 @@ class Permissions(BaseFlags):
         .. versionadded:: 2.0"""
         return 1 << 46
 
+    @flag_value
+    def set_voice_channel_status(self):
+        """:class:`bool`: Returns ``True`` if a user can set the status of a voice channel.
+
+        .. versionadded:: 2.0"""
+        return 1 << 48
+
 
 def augment_from_permissions(cls):
     cls.VALID_NAMES = set(Permissions.VALID_FLAGS)
@@ -763,6 +770,7 @@ class PermissionOverwrite:
         use_soundboard: Optional[bool]
         use_external_sounds: Optional[bool]
         send_voice_messages: Optional[bool]
+        set_voice_channel_status: Optional[bool]
     
     def __init__(self, **kwargs: Optional[bool]) -> None:
         self._values = {}

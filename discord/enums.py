@@ -866,6 +866,8 @@ class AuditLogAction(Enum):
     onboarding_update                       = 167
     server_guide_create                     = 190
     server_guide_update                     = 191
+    voice_channel_status_update             = 192
+    voice_channel_status_clear              = 193
 
     @property
     def category(self):
@@ -932,6 +934,8 @@ class AuditLogAction(Enum):
             AuditLogAction.onboarding_update: AuditLogActionCategory.update,
             AuditLogAction.server_guide_create: AuditLogActionCategory.create,
             AuditLogAction.server_guide_update: AuditLogActionCategory.update,
+            AuditLogAction.voice_channel_status_update: AuditLogActionCategory.update,
+            AuditLogAction.voice_channel_status_clear: AuditLogActionCategory.delete,
         }
         return lookup[self]
 
@@ -978,8 +982,11 @@ class AuditLogAction(Enum):
             return 'onboarding_question'
         elif v < 168:
             return 'onboarding'
-        elif 189 < v < 200:
+        elif 189 < v < 192:
             return 'server_guide'
+        elif v < 194:
+            return 'voice_channel_status'
+
 
 
 class UserFlags(Enum):

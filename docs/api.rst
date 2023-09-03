@@ -892,6 +892,19 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param after: The voice state after the changes.
     :type after: :class:`VoiceState`
 
+.. function:: on_voice_channel_status_update(channel, before, after)
+
+    Called when the :attr:`~discord.VoiceChannel.status` gets changed by a member or cleared by discord automatically.
+
+    .. versionadded:: 2.0
+
+    :param channel: The voice channel that had its status updated.
+    :type channel: :class:`VoiceChannel`
+    :param before: The voice channel's old status.
+    :type before: :class:`str`
+    :param after: The voice channel's new status.
+    :type after: :class:`str`
+
 .. function:: on_member_ban(guild, user)
 
     Called when user gets banned from a :class:`Guild`.

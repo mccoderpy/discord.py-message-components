@@ -1143,6 +1143,19 @@ class HTTPClient:
     def delete_stage_instance(self, channel_id, *, reason=None):
         return self.request(Route('DELETE', '/stage-instances/{channel_id}', channel_id=channel_id), reason=reason)
 
+    # TODO: Add/remove this when we got a statement from Discord why bots can't set the channel status
+    # def set_voice_channel_status(
+    #         self,
+    #         channel_id: int,
+    #         status: Optional[str],
+    #         reason: Optional[str] = None
+    # ):
+    #     return self.request(
+    #         Route('PUT', '/channels/{channel_id}/voice-status', channel_id=channel_id),
+    #         json={'status': status},
+    #         reason=reason
+    #     )
+
     # Webhook management
 
     def create_webhook(self, channel_id, *, name, avatar=None, reason=None):

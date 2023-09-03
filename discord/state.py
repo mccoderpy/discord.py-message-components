@@ -833,6 +833,25 @@ class ConnectionState:
         else:
             log.debug('VOICE_CHANNEL_EFFECT_SEND referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
+    def parse_voice_channel_status_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        if guild is not None:
+            channel = guild.get_channel(int(data['id']))
+            if channel is not None:
+                before = copy.copy(channel.status)
+                channel._status = status = data['status']
+                self.dispatch('voice_channel_status_update', channel, before, status)
+            else:
+                log.debug(
+                    'VOICE_CHANNEL_STATUS_UPDATE referencing an unknown channel ID: %s. Discarding.',
+                    data['channel_id']
+                )
+        else:
+            log.debug(
+                'VOICE_CHANNEL_STATUS_UPDATE referencing an unknown guild ID: %s. Discarding.',
+                data['guild_id']
+            )
+
     def parse_message_reaction_add(self, data):
         emoji = data['emoji']
         emoji_id = utils._get_as_snowflake(emoji, 'id')
