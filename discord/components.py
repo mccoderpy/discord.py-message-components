@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 from . import utils, abc
-from .enums import try_enum, ComponentType, ButtonStyle, TextInputStyle, ChannelType
+from .enums import try_enum, ComponentType, ButtonStyle, TextInputStyle, ChannelType, SelectDefaultValueType
 from .emoji import Emoji
 from .partial_emoji import PartialEmoji
 from .errors import InvalidArgument, URLAndCustomIDNotAlowed
@@ -57,6 +57,7 @@ if TYPE_CHECKING:
         Button as ButtonPayload,
         SelectMenu as SelectMenuPayload,
         SelectOption as SelectOptionPayload,
+        SelectDefaultValue as SelectDefaultValuePayload,
         TextInput as TextInputPayload,
         Modal as ModalPayload
     )
@@ -75,6 +76,7 @@ __all__ = (
     'Button',
     'SelectMenu',
     'SelectOption',
+    'SelectDefaultValue',
     'TextInput',
     'UserSelect',
     'RoleSelect',
@@ -525,7 +527,8 @@ class BaseSelect(BaseComponent):
     def placeholder(self, value: str):
         if value and len(value) > 150:
             raise AttributeError(
-                'The maximum length of a the placeholder is 100 characters; your one is %d long (%d to long).' % (len(value), len(value) - 100)
+                'The maximum length of a the placeholder is 100 characters; your one is %d long (%d to long).' %
+                (len(value), len(value) - 100)
             )
         self._placeholder = value
 
@@ -802,12 +805,8 @@ class SelectMenu(BaseSelect):
         List[Union[:class:`int`, :class:`str`]]
             A list containing the values of all **not** selected options
         """
-        _not_selected = []
         values = self.values
-        for value in self.all_option_values:
-            if value not in values:
-                _not_selected.append(value)
-        return _not_selected
+        return [value for value in self.all_option_values if value not in values]
 
     def to_dict(self) -> Dict[str, Any]:
         base = super().to_dict()
@@ -956,13 +955,93 @@ class TextInput(BaseComponent):
         return new
 
 
+class SelectDefaultValue:
+    def __init__(self, id: Union[int, str, abc.Snowflake], type: Union[SelectDefaultValueType, str] = None) -> None:
+        """
+        A default value for a :class:`UserSelect`, :class:`RoleSelect`, :class:`MentionableSelect` or :class:`ChannelSelect`
+
+        .. note::
+            As all of those select types except :class:`MentionableSelect` accept only one type of value,
+            you can for those just use instances of the mentioned type or
+            a :class:`int`/:class:`str`/:class:`discord.Object` and the library will convert them to default values for you.
+            However, this might be slower than just providing instances of this class.
+
+        Parameters
+        ----------
+        id: Union[:class:`int`, :class:`str`, :class:`discord.Object`]
+            The ID of a user, role, or channel
+        type: Optional[:class:`SelectDefaultValueType`]
+            The type of the value that ``id`` represents.
+            If not passed, it will be tried to be inferred from the type of ``id``. (Must be not an int/str then)
+        """
+        self.id: int = getattr(id, 'id', int(id))
+        self.type: SelectDefaultValueType = try_enum(SelectDefaultValueType, type) or SelectDefaultValueType.from_type(
+            id
+        )
+
+    def to_dict(self) -> SelectDefaultValuePayload:
+        return {
+            'type': str(self.type),
+            'id': str(self.id)
+        }
+
+    @classmethod
+    def from_dict(cls, data: SelectDefaultValuePayload) -> SelectDefaultValue:
+        return cls(
+            id=data['id'],
+            type=data['type']
+        )
+
+
 class UserSelect(BaseSelect):
     """
     Very similar to :class:`SelectMenu` but you can select from a list of :class:`~discord.Member`/:class:`~discord.User`
 
     .. note::
-        :attr:`~SelectMenu.options` can't be set for this type
+        :attr:`~SelectMenu.options` can't be set for this type.
+        But you can set :attr:`~UserSelect.default_values` to a list of :class:`~discord.Member`/:class:`~discord.User`
+        to set the default values.
+
+        .. seealso::
+            :class:`SelectDefaultValue`
     """
+    __slots__ = BaseSelect.__slots__ + ('_default_values',)
+
+    def __init__(
+            self,
+            custom_id: Union[str, int],
+            placeholder: Optional[str] = None,
+            min_values: int = 1,
+            max_values: int = 1,
+            disabled: bool = False,
+            default_values: Optional[List[Union[User, Member, abc.Snowflake, int, str, SelectDefaultValue]]] = None
+    ) -> None:
+        super().__init__(
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled
+        )
+        self.default_values = default_values
+
+    @property
+    def default_values(self) -> Optional[List[SelectDefaultValue]]:
+        """List[:class:`SelectDefaultValue`]: A list of values to select by default,
+        must be within the range of :attr:`~UserSelect.min_values` and :attr:`~UserSelect.max_values`
+        """
+        return getattr(self, '_default_values', None)
+
+    @default_values.setter
+    def default_values(self, values: Optional[List[Union[Member, User, abc.Snowflake, int, str]]]):
+        if not values:
+            self._default_values = None
+            return
+        self._default_values = [
+            (v if isinstance(v, SelectDefaultValue) else SelectDefaultValue(v, SelectDefaultValueType.user))
+            for v in values
+        ]
+
     @property
     def type(self) -> ComponentType:
         return ComponentType.UserSelect
@@ -982,14 +1061,72 @@ class UserSelect(BaseSelect):
         """
         return super().values
 
+    def to_dict(self) -> SelectMenuPayload:
+        base = super().to_dict()
+        if self.default_values:
+            base['default_values'] = [v.to_dict() for v in self.default_values]
+        return base
+
+    @classmethod
+    def from_dict(cls, data: SelectMenuPayload) -> UserSelect:
+        return cls(
+            custom_id=data['custom_id'],
+            placeholder=data.get('placeholder'),
+            min_values=data.get('min_values', 1),
+            max_values=data.get('max_values', 1),
+            disabled=data.get('disabled', False),
+            default_values=[SelectDefaultValue.from_dict(v) for v in data.get('default_values', [])]
+        )
+
 
 class RoleSelect(BaseSelect):
     """
     Very similar to :class:`SelectMenu` but you can select from a list of :class:`~discord.Role`
 
     .. note::
-        :attr:`~discord.SelectMenu.options` can't be set for this type
+        :attr:`~discord.SelectMenu.options` can't be set for this type.
+        But you can set :attr:`~RoleSelect.default_values` to a list of :class:`~discord.Role`
+        to set the default values.
+
+        .. seealso::
+            :class:`SelectDefaultValue`
     """
+    __slots__ = BaseSelect.__slots__ + ('_default_values',)
+
+    def __init__(
+            self,
+            custom_id: Union[str, int],
+            placeholder: Optional[str] = None,
+            min_values: int = 1,
+            max_values: int = 1,
+            disabled: bool = False,
+            default_values: Optional[List[Union[User, Member, abc.Snowflake, int, str, SelectDefaultValue]]] = None
+    ) -> None:
+        super().__init__(
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled
+        )
+        self.default_values = default_values
+
+    @property
+    def default_values(self) -> Optional[List[SelectDefaultValue]]:
+        """List[:class:`SelectDefaultValue`]: A list of roles to select by default, must be within the range of
+        :attr:`~RoleSelect.min_values` and :attr:`~RoleSelect.max_values`
+        """
+        return getattr(self, '_default_values', None)
+
+    @default_values.setter
+    def default_values(self, values: Optional[List[Union[Role, abc.Snowflake, int, str]]]):
+        if not values:
+            self._default_values = None
+            return
+        self._default_values = [
+            (v if isinstance(v, SelectDefaultValue) else SelectDefaultValue(v, SelectDefaultValueType.role))
+            for v in values
+        ]
 
     @property
     def type(self) -> ComponentType:
@@ -1010,14 +1147,73 @@ class RoleSelect(BaseSelect):
         """
         return super().values
 
+    def to_dict(self) -> SelectMenuPayload:
+        base = super().to_dict()
+        if self.default_values:
+            base['default_values'] = [v.to_dict() for v in self.default_values]
+        return base
+
+    @classmethod
+    def from_dict(cls, data: SelectMenuPayload) -> RoleSelect:
+        return cls(
+            custom_id=data['custom_id'],
+            placeholder=data.get('placeholder'),
+            min_values=data.get('min_values', 1),
+            max_values=data.get('max_values', 1),
+            disabled=data.get('disabled', False),
+            default_values=[SelectDefaultValue.from_dict(v) for v in data.get('default_values', [])]
+        )
+
 
 class MentionableSelect(BaseSelect):
     """
-    Very similar to :class:`SelectMenu` but you can select from a list of both :class:`~discord.Member`/:class:`~discord.User` and :class:`~discord.Role`
+    Very similar to :class:`SelectMenu` but you can select from a list of both
+    :class:`~discord.Member`/:class:`~discord.User` and :class:`~discord.Role`
 
     .. note::
-        :attr:`~SelectMenu.options` can't be set for this type
+        :attr:`~SelectMenu.options` can't be set for this type.
+        But you can set :attr:`~MentionableSelect.default_values` to a list of
+        :class:`~discord.Member`/:class:`~discord.User`/:class:`~discord.Role` to set the default values.
+
+        .. seealso::
+            :class:`SelectDefaultValue`
     """
+    __slots__ = BaseSelect.__slots__ + ('_default_values',)
+
+    def __init__(
+            self,
+            custom_id: Union[str, int],
+            placeholder: Optional[str] = None,
+            min_values: int = 1,
+            max_values: int = 1,
+            disabled: bool = False,
+            default_values: Optional[List[Union[User, Member, Role, SelectDefaultValue]]] = None
+    ) -> None:
+        super().__init__(
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled
+        )
+        self.default_values = default_values
+
+    @property
+    def default_values(self) -> Optional[List[SelectDefaultValue]]:
+        """List[:class:`SelectDefaultValue`]: A list of values to select by default, must be within the range of
+        :attr:`~MentionableSelect.min_values` and :attr:`~MentionableSelect.max_values`
+        """
+        return getattr(self, '_default_values', None)
+
+    @default_values.setter
+    def default_values(self, values: Optional[List[Union[User, Member, Role, SelectDefaultValue]]]):
+        if not values:
+            self._default_values = None
+            return
+        self._default_values = [
+            (v if isinstance(v, SelectDefaultValue) else SelectDefaultValue(v)) for v in values
+        ]
+
     @property
     def type(self) -> ComponentType:
         return ComponentType.MentionableSelect
@@ -1037,30 +1233,52 @@ class MentionableSelect(BaseSelect):
         """
         return super().values
 
+    def to_dict(self) -> SelectMenuPayload:
+        base = super().to_dict()
+        if self.default_values:
+            base['default_values'] = [v.to_dict() for v in self.default_values]
+        return base
+
+    @classmethod
+    def from_dict(cls, data: SelectMenuPayload) -> MentionableSelect:
+        return cls(
+            custom_id=data['custom_id'],
+            placeholder=data.get('placeholder'),
+            min_values=data.get('min_values', 1),
+            max_values=data.get('max_values', 1),
+            disabled=data.get('disabled', False),
+            default_values=[SelectDefaultValue.from_dict(v) for v in data.get('default_values', [])]
+        )
+
 
 class ChannelSelect(BaseSelect):
     """
     Very similar to :class:`SelectMenu` but you can select from a list of channels.
 
     For this type there is an additional parameter ``channel_types``
-    wich can be a list of :class:`ChannelType` (or the type itself like :class:`TextChannel` or :class:`StageChannel`) that specify
+    wich can be a list of :class:`ChannelType` (or the type itself like :class:`TextChannel` or :class:`StageChannel`)
+    that specify
     from what channel types the user could choose.
 
     .. note::
-        :attr:`~SelectMenu.options` can't be set for this type
+        :attr:`~SelectMenu.options` can't be set for this type.
+        But you can set :attr:`~ChannelSelect.default_values` to a list of channels to set as the default values.
+
+        .. seealso::
+            :class:`SelectDefaultValue`
     """
-    __slots__ = ('_custom_id', '_placeholder', '_min_values', '_max_values', '_disabled', '_channel_types', '_values', '_interaction')
+    __slots__ = BaseSelect.__slots__ + ('_channel_types', '_default_values')
 
     def __init__(
             self,
             custom_id: Union[str, int],
             channel_types: Optional[List[Union[ChannelType, abc.GuildChannel]]] = None,
+            default_values: Optional[List[Union[abc.GuildChannel, abc.Snowflake, int, str, SelectDefaultValue]]] = None,
             placeholder: Optional[str] = None,
             min_values: int = 1,
             max_values: int = 1,
             disabled: bool = False
     ) -> None:
-        self.channel_types = channel_types
         super().__init__(
             custom_id=custom_id,
             placeholder=placeholder,
@@ -1068,6 +1286,8 @@ class ChannelSelect(BaseSelect):
             max_values=max_values,
             disabled=disabled
         )
+        self.channel_types = channel_types
+        self.default_values = default_values
 
     @property
     def type(self) -> ComponentType:
@@ -1089,6 +1309,24 @@ class ChannelSelect(BaseSelect):
                     types.append(c)
         self._channel_types = types
 
+    @property
+    def default_values(self) -> Optional[List[abc.GuildChannel]]:
+        """List[:class:`~discord.abc.GuildChannel`]:
+        A list of channels to select by default, must be within the range of
+        :attr:`~ChannelSelect.min_values` and :attr:`~ChannelSelect.max_values`
+        """
+        return getattr(self, '_default_values', None)
+
+    @default_values.setter
+    def default_values(self, values: Optional[List[Union[abc.GuildChannel, abc.Snowflake, int, str]]]):
+        if not values:
+            self._default_values = None
+            return
+        self._default_values = [
+            (v if isinstance(v, SelectDefaultValue) else SelectDefaultValue(v, SelectDefaultValueType.channel))
+            for v in values
+        ]
+
     @utils.cached_property
     def values(self) -> Optional[List[Union[GuildChannel, Messageable]]]:
         """
@@ -1108,7 +1346,21 @@ class ChannelSelect(BaseSelect):
         base = super().to_dict()
         if self.channel_types:
             base['channel_types'] = [int(t) for t in self.channel_types]
+        if self.default_values:
+            base['default_values'] = [v.to_dict() for v in self.default_values]
         return base
+
+    @classmethod
+    def from_dict(cls, data: SelectMenuPayload) -> ChannelSelect:
+        return cls(
+            custom_id=data['custom_id'],
+            channel_types=[ChannelType(t) for t in data.get('channel_types', [])],
+            placeholder=data.get('placeholder'),
+            min_values=data.get('min_values', 1),
+            max_values=data.get('max_values', 1),
+            disabled=data.get('disabled', False),
+            default_values=[SelectDefaultValue.from_dict(v) for v in data.get('default_values', [])]
+        )
 
 
 class ActionRow(Generic[T]):
@@ -1322,7 +1574,7 @@ class ActionRow(Generic[T]):
         try:
             component = self.components[index]
         except IndexError:
-            raise IndexError('component index %s out of range' % index)
+            raise IndexError(f'component index {index} out of range')
         component.disabled = True
         return self
 

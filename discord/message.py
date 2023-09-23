@@ -116,6 +116,7 @@ __all__ = (
     'PartialMessage',
     'MessageReference',
     'DeletedReferencedMessage',
+    'RoleSubscriptionInfo'
 )
 
 

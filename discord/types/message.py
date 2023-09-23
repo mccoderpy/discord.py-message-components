@@ -49,6 +49,7 @@ __all__ = (
     'Button',
     'SelectMenu',
     'SelectOption',
+    'DefaultValue',
     'TextInput',
     'MessageComponent',
     'Attachment',
@@ -68,6 +69,7 @@ __all__ = (
 ComponentType = Literal[1, 2, 3, 4, 5, 6, 7, 8]
 ButtonStyle = Literal[1, 2, 3, 4, 5]
 TextInputStyle = Literal[1, 2]
+SelectDefaultValueType = Literal['user', 'role', 'channel']
 MessageType = Literal[
     0,  # Default
     1,  # Recipient Add
@@ -106,6 +108,7 @@ MessageActivityType = Literal[1, 2, 3, 5]
 StickerFormatType = Literal[1, 2, 3, 4]
 ReactionType = Literal[1, 2]
 
+
 class ActionRow(TypedDict):
     type: Literal[1]
     components: List[MessageComponent]
@@ -121,6 +124,11 @@ class Button(TypedDict):
     disabled: NotRequired[bool]
 
 
+class DefaultValue(TypedDict):
+    id: SnowflakeID
+    type: SelectDefaultValueType
+
+
 class SelectMenu(TypedDict):
     type: Literal[3, 5, 6, 7, 8]
     custom_id: str
@@ -130,6 +138,7 @@ class SelectMenu(TypedDict):
     min_values: NotRequired[int]
     max_values: NotRequired[int]
     disabled: NotRequired[bool]
+    default_values: NotRequired[List[DefaultValue]]
 
 
 class SelectOption(TypedDict):
@@ -206,6 +215,7 @@ class EmbedVideo(TypedDict):
 class EmbedProvider(TypedDict):
     name: NotRequired[str]
     url: NotRequired[str]
+
 
 class EmbedAuthor(TypedDict):
     name: str

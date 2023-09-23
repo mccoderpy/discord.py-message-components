@@ -1430,6 +1430,20 @@ of :class:`enum.Enum`.
 
         Select menu for channels
 
+.. class:: SelectDefaultValueType
+
+    .. attribute:: user
+
+        The :attr:`~DefaultSelectValue.id` represents a user, only valid for :class:`UserSelect` and :class:`MentionableSelect`
+
+    .. attribute:: role
+
+        The :attr:`~DefaultSelectValue.id` represents a role, only valid for :class:`RoleSelect` and :class:`MentionableSelect`
+
+    .. attribute:: channel
+
+        The :attr:`~DefaultSelectValue.id` represents a channel, only valid for :class:`ChannelSelect`
+
 .. class:: ButtonStyle
 
    The possible styles for a :class:`~discord.Button`
@@ -3514,7 +3528,7 @@ MessageInteraction
 RoleSubscriptionInfo
 ~~~~~~~~~~~~~~~~~~~~
 
-.. attributable:: RoleSubscriptionInfo
+.. attributetable:: RoleSubscriptionInfo
 
 .. autoclass:: RoleSubscriptionInfo()
     :members:

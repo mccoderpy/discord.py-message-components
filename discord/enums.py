@@ -38,6 +38,7 @@ __all__ = (
     'ApplicationCommandType',
     'AppCommandPermissionType',
     'ComponentType',
+    'SelectDefaultValueType',
     'ButtonColor',
     'ButtonStyle',
     'PermissionType',
@@ -400,6 +401,25 @@ class TextInputStyle(Enum):
 
     def __int__(self):
         return getattr(self, 'value')
+
+
+class SelectDefaultValueType(Enum):
+    user = 'user'
+    role = 'role'
+    channel = 'channel'
+
+    def __str__(self):
+        return self.value
+
+    @classmethod
+    def from_type(cls, t):
+        class_name = t.__class__.__name__
+        if class_name == 'Role':
+            return cls.role
+        elif 'User' in class_name or 'Member' in class_name:  # To support user objects like from the oauth2 module
+            return cls.user
+        else:
+            return cls.channel
 
 
 class InteractionCallbackType(Enum):
