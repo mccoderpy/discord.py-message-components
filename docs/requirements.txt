@@ -3,6 +3,7 @@ sphinxcontrib-contentui==0.2.5
 sphinxcontrib-websupport
 sphinxcontrib-trio
 sphinxext-opengraph
+sphinx_inline_tabs
 Jinja2>0.3
 pygments
 typing-extensions
