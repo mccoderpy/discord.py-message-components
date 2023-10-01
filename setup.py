@@ -64,6 +64,7 @@ extras_require = {
         'sphinx==3.0.3',
         'sphinxcontrib_trio==1.1.2',
         'sphinxcontrib-websupport',
+        'sphinx-autobuild'
     ],
     'speedups': [
         'aiohttp[speedups]'
