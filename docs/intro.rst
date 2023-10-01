@@ -21,49 +21,106 @@ due to one of the dependencies (:doc:`aiohttp <aio:index>`) not supporting Pytho
 Installing
 -----------
 
-You can get the library directly from PyPI: ::
+To install the library from PyPI using ``pip``:
 
-    python3 -m pip install -U discord.py-message-components
+.. tab:: Linux/macOS
 
-If you are using Windows, then the following should be used instead: ::
+    .. code-block:: shell
 
-    py -3 -m pip install -U discord.py-message-components
+        python3 -m pip install -U discord.py-message-components
 
+.. tab:: Windows
 
-To get voice support, you should use ``discord.py-message-components[voice]`` instead of ``discord.py-message-components``, e.g. ::
+    .. code-block:: shell
 
-    python3 -m pip install -U discord.py-message-components[voice]
+        py -m pip install -U discord.py-message-components
 
-On Linux environments, installing voice requires getting the following dependencies:
+Voice support (e.g. playing audio in voice channels) is not enabled by default and can be enabled by installing ``discord.py-message-components[voice]`` instead of ``discord.py-message-components``.:
 
-- `libffi <https://github.com/libffi/libffi>`_
-- `libnacl <https://github.com/saltstack/libnacl>`_
-- `python3-dev <https://packages.debian.org/python3-dev>`_
+.. tab:: Linux/macOS
 
-For a Debian-based system, the following command will get these dependencies:
+    .. code-block:: shell
 
-.. code-block:: shell
+        python3 -m pip install -U discord.py-message-components[voice]
 
-    $ apt install libffi-dev libnacl-dev python3-dev
+    .. note::
+        On Linux environments, installing voice requires getting the following dependencies using your favourite package manager (e.g. ``apt``, ``yum``):
 
-**Remember to check your permissions!**
+        - `libffi <https://github.com/libffi/libffi>`_
+        - `libnacl <https://github.com/saltstack/libnacl>`_
+        - `python3-dev <https://packages.debian.org/python3-dev>`_
+
+        For a Debian-based system, the following command will get these dependencies:
+
+        .. code-block:: shell
+
+            $ apt install libffi-dev libnacl-dev python3-dev
+
+        **Remember to check your permissions!**
+
+.. tab:: Windows
+
+    .. code-block:: shell
+
+        py -m pip install -U discord.py-message-components[voice]
+
+    .. note::
+        On Windows, you need to install the `FFmpeg <https://www.ffmpeg.org/>`_ binary yourself.
+        You can download it `here <https://www.ffmpeg.org/download.html/>`_.
+
+        Save/extract the files somewhere where you won't accidentally delete them, e.g. ``C:\\ffmpeg`` or ``C:\\Program Files\ffmpeg``.
+
+        You then need to add the directory containing the binary(s) (should be a folder named ``bin``)
+        to your system's ``PATH`` environment variable.
+
+        The procedure for doing this varies depending on which version of Windows you are using.
+
+        .. tab:: Windows 10/11
+
+            1. Open the Start Menu.
+            2. Search for ``environment``.
+            3. Click :key:`Edit the system environment variables`
+            4. Click the :key:`Environment Variables...` button.
+            5. Select the `Path` variable under **System variables**.
+            6. Click the :key:`Edit...` button.
+            7. Click the :key:`New` button.
+            8. Paste the path to the directory containing the FFmpeg binary.
+            9. Click :key:`OK` to close all the windows you have opened.
+
+        .. tab:: Windows 7
+
+            1. Open the Start Menu.
+            2. Right-click "Computer".
+            3. Click "Properties".
+            4. Click "Advanced system settings".
+            5. Click the "Environment Variables..." button.
+            6. Select the "Path" variable under "System variables".
+            7. Click the "Edit..." button.
+            8. Click the "New" button.
+            9. Paste the path to the directory containing the FFmpeg binary.
+            10. Click "OK" to close all the windows you have opened.
 
 Installing the developer version
 ---------------------------------
 
-To install the developer (alpha/beta) version from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_ use:
-
-.. code-block:: sh
-
-    # Linux/macOS
-    python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
-
-    # Windows
-    py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+You can install the developer (alpha/beta) version from the `developer-branch <https://github.com/mccoderpy/discord.py-message-components/tree/developer>`_
+from GitHub. This version is not guaranteed to be stable and may have bugs. But it may have a lot of new features already implemented.
 
 .. warning::
+    In order to "clone" and install the repository of this library from GitHub you need to have git installed on your system.
+    If you need help with this take a look **→** `here <https://github.com/git-guides/install-git>`_ **←**
 
-    Of course you need to have git installed on your device. If you need help with this take a look **→** `here <https://github.com/git-guides/install-git>`_ **←**
+.. tab:: Linux/macOS
+
+    .. code-block:: shell
+
+        python3 -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
+
+.. tab:: Windows
+
+    .. code-block:: shell
+
+        py -m pip install -U git+https://github.com/mccoderpy/discord.py-message-components.git@developer
 
 Virtual Environments
 ~~~~~~~~~~~~~~~~~~~~~

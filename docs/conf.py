@@ -58,11 +58,13 @@ extensions = [
     'sphinxcontrib.contentui',
     'sphinx.ext.napoleon',
     'sphinxext.opengraph',
+    'sphinx_inline_tabs',
     'sphinxcontrib_trio',
     'details',
     'exception_hierarchy',
     'attributetable',
     'experimental_feature',
+    'keyboard_buttons',
     'operations',
     'resourcelinks',
 ]
@@ -90,7 +92,7 @@ autoclass_content = 'both'  # document class docstring and __init__ docstring
 intersphinx_mapping = {
     'py': ('https://docs.python.org/3', None),
     'aio': ('https://docs.aiohttp.org/en/stable/', None),
-    'req': ('http://docs.python-requests.org/en/latest/', 'requests.inv')
+    'req': ('https://docs.python-requests.org/en/latest/', 'requests.inv')
 }
 
 html_context = {
@@ -105,9 +107,9 @@ html_context = {
 
 resource_links = {
     'discord': 'https://discord.gg/sb69muSqsg',
-    'issues': 'https://github.com/mccoderpy/discord.py-message-components/issues',
-    'discussions': 'https://github.com/mccoderpy/discord.py-message-components/discussions',
-    'examples': 'https://github.com/mccoderpy/discord.py-message-components/tree/%s/examples' % branch,
+    'issues': f'{html_context["github_url"]}/issues',
+    'discussions': f'{html_context["github_url"]}/discussions',
+    'examples': f'{html_context["github_url"]}/tree/%s/examples' % branch,
 }
 
 ogp_site_url = 'https://docs.discord4py.dev/'
@@ -151,6 +153,7 @@ extlinks = {
     'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-%s'),
     'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-%s'),
     'dis-gd': ('https://dis.gd/%s', 'GH-%s'),
+    'ddocs': ('https://discord.com/developers/docs/%s', None),
 }
 
 rst_prolog = """
@@ -177,7 +180,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build']
 
 
 # -- Options for HTML output -------------------------------------------------

@@ -40,6 +40,7 @@ Historically however, thanks to:
   --grey-6: #4a4a4f;
   --grey-7: #38383d;
   --grey-8: #2a2a2e;
+  --grey-9: #1c1c1e;
   --black: #0c0c0d;
 
   --blue-1: #3399ff;
@@ -83,7 +84,6 @@ Historically however, thanks to:
   --main-h4-header-border: var(--grey-4);
   --header-link: var(--grey-6);
   --header-link-hover-text: var(--blue-2);
-  --header-link-hover-text-visited: var(--purple);
   --admonition-background: var(--grey-2);
   --note-background: var(--blue-1);
   --note-text: var(--white);
@@ -99,6 +99,7 @@ Historically however, thanks to:
   --codeblock-border: var(--grey-4);
   --codeblock-text: var(--grey-6);
   --inline-code-background: var(--grey-3);
+  --admonition-inline-code-background: var(--grey-3);
   --xref-code-background: transparent;
   --api-entry-background: var(--grey-2);
   --table-header-background: var(--grey-3);
@@ -122,6 +123,19 @@ Historically however, thanks to:
   --attribute-table-entry-hover-text: var(--blue-2);
   --attribute-table-badge: var(--grey-7);
   --highlighted-text: rgb(252, 233, 103);
+  --tabs--label-text: var(--main-text);
+  --tabs--label-text--hover: var(--main-text);
+  --tabs--label-text--active: var(--blue-1);
+  --tabs--label-text--active--hover: var(--blue-1);
+  --tabs--label-border--active: var(--blue-1);
+  --tabs--label-border--active--hover: var(--blue-1);
+  --key-background-color: var(--grey-1);
+  --key-border-color: var(--grey-2);
+  --key-border-color--active: var(--grey-5);
+  --key-shadow-color: var(--grey-5);
+  --key-shadow-color--active: var(--grey-4);
+  --key-content-color: var(--black);
+  --key-content-color--active: var(--grey-9);
 }
 
 :root[data-font="serif"] {
@@ -164,6 +178,7 @@ Historically however, thanks to:
   --codeblock-border: var(--black);
   --codeblock-text: var(--grey-1);
   --inline-code-background: var(--grey-8);
+  --admonition-inline-code-background: var(--grey-7);
   --xref-code-background: transparent;
   --api-entry-background: var(--grey-6);
   --table-header-background: var(--grey-6);
@@ -186,6 +201,13 @@ Historically however, thanks to:
   --highlighted-text: rgba(250, 166, 26, 0.2);
   --search-sidebar-background: var(--grey-7);
   --search-sidebar-text: var(--search-text);
+  --key-background-color: var(--grey-7);
+  --key-border-color: var(--grey-8);
+  --key-border-color--active: var(--grey-9);
+  --key-shadow-color: var(--grey-9);
+  --key-shadow-color--active: var(--grey-3);
+  --key-content-color: var(--grey-3);
+  --key-content-color--active: var(--white);
 }
 
 img[src$="banner_light.png"]  {
@@ -744,10 +766,6 @@ a.headerlink:hover {
   color: var(--header-link-hover-text);
 }
 
-a.headerlink:visited {
-    color: var(--header-link-hover-text-visited);
-}
-
 h1:hover > a.headerlink,
 h2:hover > a.headerlink,
 h3:hover > a.headerlink,
@@ -1094,6 +1112,10 @@ code {
   border-radius: 3px;
 }
 
+div.admonition code {
+  background-color: var(--admonition-inline-code-background);
+}
+
 code.descname {
   background-color: transparent;
   font-weight: bold;
@@ -1277,6 +1299,76 @@ section#welcome-to-discord-py-message-components > h1 {
 div.code-block-caption {
   font-size: medium;
   font-weight: bold;
+}
+
+.key-combo {
+    font-size: 12px;
+    line-height: 12px;
+    /*text-transform: uppercase;*/
+    font-weight: 600;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: inline-flex;
+}
+
+.key {
+    background-color: var(--key-background-color);
+    border: 1px solid var(--key-border-color);
+    display: block;
+    padding: 3px 6px 4px;
+    border-radius: 4px;
+    cursor: default;
+    min-width: 14px;
+    min-height: 14px;
+    text-align: center;
+    word-break-wrap: break-word;
+}
+
+.key-combo, .key {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    position: relative;
+    height: 23px;
+}
+
+.key-combo .key {
+    color: var(--key-content-color);
+    -webkit-box-shadow: inset 0 -4px 0 var(--key-shadow-color);
+    box-shadow: inset 0 -4px 0 var(--key-shadow-color);
+}
+
+.key:not(:last-child) {
+    margin-right: 3px;
+}
+
+
+li > p:hover span.key-combo .key {
+    color: var(--key-content-color--active);
+    box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
+    border: 1px solid var(--key-border-color--active);
+    -webkit-transform: translateY(2px);
+    transform: translateY(2px);
+    height: 21px;
+    padding-bottom: 2px;
+}
+
+
+.key-combo .key:hover {
+    color: var(--key-content-color--active);
+}
+
+.key-combo .key:active {
+    color: var(--key-content-color--active);
+    -webkit-box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
+    box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
+    border: 1px solid var(--key-border-color--active);
+}
+
+.key:active {
+    -webkit-transform: translateY(2px);
+    transform: translateY(2px);
+    height: 21px;
+    padding-bottom: 2px;
 }
 
 
