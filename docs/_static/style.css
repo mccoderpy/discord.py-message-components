@@ -287,6 +287,11 @@ a:hover {
   color: var(--link-hover-text);
 }
 
+/*get rid of the purple text on visited links*/
+a:visited {
+  color: var(--link-text);
+}
+
 /* headers */
 
 header.grid-item {
@@ -1314,7 +1319,7 @@ div.code-block-caption {
 .key {
     background-color: var(--key-background-color);
     border: 1px solid var(--key-border-color);
-    display: block;
+    display: inline-table; /* For very small phone screens that require line wrapping */
     padding: 3px 6px 4px;
     border-radius: 4px;
     cursor: default;
@@ -1341,21 +1346,9 @@ div.code-block-caption {
     margin-right: 3px;
 }
 
-
-li > p:hover span.key-combo .key {
-    color: var(--key-content-color--active);
-    box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
-    border: 1px solid var(--key-border-color--active);
-    -webkit-transform: translateY(2px);
-    transform: translateY(2px);
-    height: 21px;
-    padding-bottom: 2px;
-}
-
-
-.key-combo .key:hover {
-    color: var(--key-content-color--active);
-}
+/*.key-combo .key:hover {*/
+/*    color: var(--key-content-color--active);*/
+/*}*/
 
 .key-combo .key:active {
     color: var(--key-content-color--active);
@@ -1371,6 +1364,25 @@ li > p:hover span.key-combo .key {
     padding-bottom: 2px;
 }
 
+/*The following styles should only be applied when it is not a touch device*/
+@media (hover: hover) {
+    .key-combo .key:hover {
+        -webkit-box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
+        box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
+        border: 1px solid var(--key-border-color--active);
+    }
+
+    li > p:hover span.key-combo .key {
+        color: var(--key-content-color--active);
+        box-shadow: inset 0 -2px 0 var(--key-shadow-color--active);
+        border: 1px solid var(--key-border-color--active);
+        -webkit-transform: translateY(2px);
+        transform: translateY(2px);
+        height: 21px;
+        padding-bottom: 2px;
+    }
+
+}
 
 /* desktop stuff */
 

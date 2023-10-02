@@ -189,6 +189,7 @@ exclude_patterns = ['_build']
 # a list of builtin themes.
 #
 html_theme = 'basic'
+html_style = 'style.css'
 
 # The name of a javascript file (relative to the configuration directory) that
 # implements a search results scorer. If empty, the default will be used.
