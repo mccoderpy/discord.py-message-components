@@ -315,6 +315,11 @@ header > nav a {
   color: var(--white);
 }
 
+/*get rid of the blue icons on visited links too*/
+header > nav a:visited {
+  color: var(--white);
+}
+
 header > nav.mobile-only {
   width: 100%;
   position: absolute;
