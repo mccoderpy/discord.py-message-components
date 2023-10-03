@@ -52,7 +52,8 @@ def make_key_role(
 
         text = utils.unescape(text)
         has_explicit_title, title, key = split_explicit_title(text)
-        print(has_explicit_title, title, key)
+        # TODO: Add support for multiple keys in one role (e.g. :key:`Ctrl`+`C`)
+        # TODO: Add support for keys that work as an button
         pnode = nodes.inline('', '', nodes.inline(title, title, classes=['key']), classes=['key-combo'])
         return [pnode], []
 
