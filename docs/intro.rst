@@ -11,9 +11,9 @@ in creating applications that utilise the Discord API.
 Prerequisites
 ---------------
 
-discord.py-message-components works with Python 3.5.3 or higher. Support for earlier versions of Python
-is not provided. Python 2.7 or lower is not supported. Python 3.4 or lower is not supported
-due to one of the dependencies (:doc:`aiohttp <aio:index>`) not supporting Python 3.4.
+discord.py-message-components works with **Python 3.8 or higher**.
+Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
+Any version prior to 3.8 will no longer be supported as of **v2.0** due to decisions regarding the quality of our codebase.
 
 
 .. _installing:
