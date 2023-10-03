@@ -87,19 +87,6 @@ Voice support (e.g. playing audio in voice channels) is not enabled by default a
             8. Paste the path to the directory containing the FFmpeg binary.
             9. Click :key:`OK` to close all the windows you have opened.
 
-        .. tab:: Windows 7
-
-            1. Open the Start Menu.
-            2. Right-click "Computer".
-            3. Click "Properties".
-            4. Click "Advanced system settings".
-            5. Click the "Environment Variables..." button.
-            6. Select the "Path" variable under "System variables".
-            7. Click the "Edit..." button.
-            8. Click the "New" button.
-            9. Paste the path to the directory containing the FFmpeg binary.
-            10. Click "OK" to close all the windows you have opened.
-
 Installing the developer version
 ---------------------------------
 
@@ -127,37 +114,65 @@ Virtual Environments
 
 Sometimes you want to keep libraries from polluting system installs or use a different version of
 libraries than the ones installed on the system. You might also not have permissions to install libraries system-wide.
-For this purpose, the standard library as of Python 3.3 comes with a concept called "Virtual Environment"s to
-help maintain these separate versions.
+For this purpose, Pythons standard library comes with a concept called "Virtual Environment"s (often abbreviated to "venv").
 
 A more in-depth tutorial is found on :doc:`py:tutorial/venv`.
 
 However, for the quick and dirty:
 
-1. Go to your project's working directory:
+.. tab:: Linux/macOS
 
-    .. code-block:: shell
+    1. Go to your project's working directory:
 
-        $ cd your-bot-source
-        $ python3 -m venv bot-env
+        .. code-block:: shell
 
-2. Activate the virtual environment:
+            $ cd your-bot-source
+            $ python3 -m venv bot-env
 
-    .. code-block:: shell
+    2. Activate the virtual environment:
 
-        $ source bot-env/bin/activate
+        .. code-block:: shell
 
-    On Windows you activate it with:
+            $ source bot-env/bin/activate
 
-    .. code-block:: shell
+    3. Use pip like usual:
 
-        $ bot-env\Scripts\activate.bat
+        .. code-block:: shell
 
-3. Use pip like usual:
+            $ pip install -U discord.py-message-components
 
-    .. code-block:: shell
 
-        $ pip install -U discord.py-message-components
+.. tab:: Windows
+
+        1. Go to your project's working directory:
+
+            .. code-block:: shell
+
+                $ cd your-bot-source
+                $ py -m venv bot-env
+
+        2. Activate the virtual environment:
+
+            .. code-block:: shell
+
+                $ .\bot-env\Scripts\activate
+
+            .. note::
+                This might show you show an error that tells you that you are not allowed to run scripts on your system.
+                To fix this you need to run the following command in an **elevated** PowerShell:
+
+                .. code-block:: powershell
+
+                    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+                `More information about PowerShell execution policies <https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies>`_
+
+
+        3. Use pip like usual:
+
+            .. code-block:: shell
+
+                $ pip install -U discord.py-message-components
 
 Congratulations. You now have a virtual environment all set up.
 
