@@ -49,6 +49,10 @@ __all__ = (
 )
 
 
+class AvatarDecoration(TypedDict):
+    sku_id: SnowflakeID
+    asset: str
+
 class BaseUser(TypedDict):
     id: SnowflakeID
     username: str
@@ -62,6 +66,7 @@ class User(BaseUser, total=False):
     bot: NotRequired[bool]
     system: NotRequired[bool]
     avatar_decoration: NotRequired[str]
+    avatar_decoration_data: NotRequired[AvatarDecoration]
     banner: NotRequired[Optional[str]]
     accent_color: NotRequired[Optional[int]]
 

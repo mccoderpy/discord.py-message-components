@@ -112,7 +112,10 @@ class BaseUser(_BaseUser):
         self.discriminator: str = data.get('discriminator', '0')  # Deprecated
         self.avatar = data['avatar']
         self.banner = data.get('banner', None)
-        self.avatar_decoration = data.get('avatar_decoration', None)
+        avatar_decoration = data.get('avatar_decoration', None)
+        if not avatar_decoration:
+            avatar_decoration = data.get('avatar_decoration_data', {})
+            self.avatar_decoration = avatar_decoration.get('asset', None)
         self._accent_color = data.get('accent_color', None)
         self._public_flags = data.get('public_flags', 0)
         self.bot = data.get('bot', False)
@@ -329,6 +332,38 @@ class BaseUser(_BaseUser):
             The resulting CDN asset if any.
         """
         return Asset._from_banner(self._state, self, format=format, static_format=static_format, size=size)
+
+    def avatar_decoration_url_as(
+            self,
+            *,
+            format: Optional[Literal['png', 'jpg', 'jpeg', 'webp']] = None,
+            size: int = 1024
+    ) -> Optional[Asset]:
+        """Returns an :class:`Asset` for the avatar decoration the user has. Could be ``None``.
+
+        The format must be one of 'webp', 'jpeg', 'jpg', or 'png'.
+        The size must be a power of 2 between 16 and 4096.
+
+        Parameters
+        -----------
+        format: Optional[:class:`str`]
+            The format to attempt to convert the avatar decoration to.
+            If the format is ``None``, then it is automatically
+            detected into static_format.
+        size: :class:`int`
+            The size of the image to display.
+
+        Raises
+        ------
+        InvalidArgument
+            Bad image format passed to ``format``, or invalid ``size``.
+
+        Returns
+        --------
+        Optional[:class:`Asset`]
+            The resulting CDN asset if any.
+        """
+        return Asset._from_avatar_decoration(self._state, self, format=format, size=size)
 
     @property
     def colour(self) -> Colour:

@@ -165,6 +165,28 @@ class Asset:
         )
 
     @classmethod
+    def _from_avatar_decoration(
+            cls,
+            state: HAS_HTTP_CONNECTION,
+            user: Union[User, OAuth2User],
+            *,
+            format=None,
+            static_format='webp',
+            size=1024
+    ):
+        if not utils.valid_icon_size(size):
+            raise InvalidArgument("size must be a power of 2 between 16 and 4096")
+        if format is not None and format not in VALID_AVATAR_FORMATS:
+            raise InvalidArgument(f"format must be None or one of {VALID_AVATAR_FORMATS}")
+        if static_format not in VALID_STATIC_FORMATS:
+            raise InvalidArgument(f"static_format must be one of {VALID_STATIC_FORMATS}")
+
+        if user.avatar_decoration is None:
+            return None
+
+        return cls(state, '/avatar-decoration-presets/{0.avatar_decoration}.{1}?size={2}'.format(user, format, size))
+
+    @classmethod
     def _from_banner(
             cls,
             state: HAS_HTTP_CONNECTION,
