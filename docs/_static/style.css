@@ -1339,6 +1339,10 @@ div.code-block-caption {
     box-sizing: border-box;
     position: relative;
     height: 23px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .key-combo .key {
@@ -1367,6 +1371,16 @@ div.code-block-caption {
     transform: translateY(2px);
     height: 21px;
     padding-bottom: 2px;
+}
+
+/*Let the keys go back to normal on phone when you release the key*/
+@media (hover: none) {
+    .key-combo .key:active {
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+        height: 23px;
+        padding-bottom: 0;
+    }
 }
 
 /*The following styles should only be applied when it is not a touch device*/
