@@ -45,9 +45,7 @@ from typing_extensions import Literal
 
 if TYPE_CHECKING:
     from os import PathLike
-    from .types.guild import (
-        Guild as GuildData,
-    )
+    from .types import guild as g
     from .state import ConnectionState
     from .abc import Snowflake, GuildChannel
     from .ext.commands import Cog
@@ -362,6 +360,13 @@ class Guild(Hashable):
         .. versionadded:: 1.3
     premium_progress_bar_enabled: :class:`bool`
         Whether the guild has the boost progress bar enabled.
+    invites_disabled_until: Optional[:class:`~datetime.datetime`]
+        When this is set to a time in the future, then invites to the guild are disabled until that time.
+        .. versionadded:: 2.0
+    dms_disabled_until: Optional[:class:`~datetime.datetime`]
+        When this is set to a time in the future, then direct messages to members of the guild are disabled
+        (unless users are friends to each other) until that time.
+        .. versionadded:: 2.0
     """
 
     __slots__ = ('afk_timeout', 'afk_channel', '_members', '_channels', '_stage_instances',
@@ -375,7 +380,7 @@ class Guild(Hashable):
                  'preferred_locale', 'discovery_splash', '_rules_channel_id',
                  '_public_updates_channel_id', '_safety_alerts_channel_id',
                  'premium_progress_bar_enabled', '_welcome_screen',
-                 'stickers', '_automod_rules')
+                 'stickers', '_automod_rules', 'invites_disabled_until', 'dms_disabled_until',)
 
     _PREMIUM_GUILD_LIMITS = {
         None: _GuildLimit(emoji=50, sticker=5, bitrate=96e3, filesize=8388608),
@@ -384,6 +389,43 @@ class Guild(Hashable):
         2: _GuildLimit(emoji=150, sticker=30, bitrate=256e3, filesize=52428800),
         3: _GuildLimit(emoji=250, sticker=60, bitrate=384e3, filesize=104857600),
     }
+
+    if TYPE_CHECKING:
+        name: str
+        verification_level: VerificationLevel
+        default_notifications: NotificationLevel
+        explicit_content_filter: ContentFilter
+        afk_timeout: int
+        region: VoiceRegion
+        mfa_level: int
+        emojis: Tuple[Emoji, ...]
+        features: List[str]
+        splash: Optional[str]
+        banner: Optional[str]
+        icon: Optional[str]
+        id: int
+        owner_id: int
+        description: Optional[str]
+        max_presences: Optional[int]
+        max_members: Optional[int]
+        max_video_channel_users: Optional[int]
+        premium_tier: int
+        premium_subscription_count: int
+        preferred_locale: Locale
+        discovery_splash: Optional[str]
+        premium_progress_bar_enabled: bool
+        invites_disabled_until: Optional[datetime]
+        dms_disabled_until: Optional[datetime]
+        unavailable: bool
+        _roles: Dict[int, Role]
+        _system_channel_id: Optional[int]
+        _system_channel_flags: int
+        _rules_channel_id: Optional[int]
+        _public_updates_channel_id: Optional[int]
+        _safety_alerts_channel_id: Optional[int]
+        _welcome_screen: Optional[WelcomeScreen]
+        _member_count: Optional[int]
+        _large: Optional[bool]
 
     def __init__(self, *, data, state: ConnectionState):
         self._channels: Dict[int, Union[GuildChannel, ThreadChannel]] = {}
@@ -501,7 +543,7 @@ class Guild(Hashable):
 
         return role
 
-    def _from_data(self, guild: GuildData) -> None:
+    def _from_data(self, guild: g.Guild) -> None:
         # according to Stan, this is always available even if the guild is unavailable
         # I don't have this guarantee when someone updates the guild.
         member_count = guild.get('member_count', None)
@@ -509,7 +551,7 @@ class Guild(Hashable):
             self._member_count = member_count
 
         self.name = guild.get('name')
-        self.region = try_enum(VoiceRegion, guild.get('region'))
+        self.region = try_enum(VoiceRegion, guild.get('region'))  # TODO: remove in 2.0 release
         self.verification_level = try_enum(VerificationLevel, guild.get('verification_level'))
         self.default_notifications = try_enum(NotificationLevel, guild.get('default_message_notifications'))
         self.explicit_content_filter = try_enum(ContentFilter, guild.get('explicit_content_filter', 0))
@@ -518,7 +560,7 @@ class Guild(Hashable):
         self.banner = guild.get('banner')
         self.unavailable = guild.get('unavailable', False)
         self.id = int(guild['id'])
-        self._roles = {}
+        self._roles: Dict[int, Role] = {}
         state = self._state  # speed up attribute access
         for r in guild.get('roles', []):
             role = Role(guild=self, data=r, state=state)
@@ -542,7 +584,8 @@ class Guild(Hashable):
         self._rules_channel_id = utils._get_as_snowflake(guild, 'rules_channel_id')
         self._public_updates_channel_id = utils._get_as_snowflake(guild, 'public_updates_channel_id')
         self._safety_alerts_channel_id = utils._get_as_snowflake(guild, 'safety_alerts_channel_id')
-        self.premium_progress_bar_enabled: bool = guild.get('premium_progress_bar_enabled')
+        self.premium_progress_bar_enabled: bool = guild.get('premium_progress_bar_enabled', False)
+        self._handle_incidents_data(guild.get('incidents_data'))
         cache_online_members = self._state.member_cache_flags.online
         cache_joined = self._state.member_cache_flags.joined
         self_id = self._state.self_id
@@ -606,6 +649,20 @@ class Guild(Hashable):
                 stage = self.get_channel(int(i['channel_id']))
                 if stage is not None:
                     self._add_stage_instance(StageInstance(state=_state, channel=stage, data=i))
+
+    def _handle_incidents_data(self, incidents_data: Optional[g.IncidentsData]):
+        if incidents_data:
+            if invites_disabled_until := incidents_data.get('invites_disabled_until'):
+                self.invites_disabled_until = datetime.fromisoformat(invites_disabled_until)
+            else:
+                self.invites_disabled_until = None
+            if dms_disabled_until := incidents_data.get('dms_disabled_until'):
+                self.dms_disabled_until = datetime.fromisoformat(dms_disabled_until)
+            else:
+                self.dms_disabled_until = None
+        else:
+            self.invites_disabled_until = None
+            self.dms_disabled_until = None
 
     @property
     def application_commands(self) -> List[ApplicationCommand]:
@@ -3652,3 +3709,43 @@ class Guild(Hashable):
         rule = AutoModRule(state=self._state, guild=self, data=rule_data)
         self._add_automod_rule(rule)
         return rule
+
+    async def edit_incidents_actions(
+            self,
+            *,
+            invites_disabled_until: Optional[datetime],
+            dms_disabled_until: Optional[datetime],
+            reason: Optional[str] = None
+    ) -> None:
+        """|coro|
+
+        Edits the incident actions of the guild.
+        This requires the :attr:`~Permissions.manage_guild` permission.
+
+        Parameters
+        ----------
+        invites_disabled_until: Optional[:class:`datetime.datetime`]
+            When invites should be possible again (up to 24h in the future).
+            Set to ``None`` to enable invites again.
+        dms_disabled_until: Optional[:class:`datetime.datetime`]
+            When direct messages should be enabled again (up to 24h in the future).
+            Set to ``None`` to enable direct messages again.
+        reason: Optional[:class:`str`]
+            The reason for editing the incident actions. Shows up in the audit log.
+
+        Raises
+        ------
+        Forbidden
+            You don't have permissions to edit the incident actions.
+        HTTPException
+            Editing the incident actions failed.
+        """
+
+        data = await self._state.http.edit_guild_incident_actions(
+            guild_id=self.id,
+            invites_disabled_until=invites_disabled_until.isoformat() if invites_disabled_until else None,
+            dms_disabled_until=dms_disabled_until.isoformat() if dms_disabled_until else None,
+            reason=reason
+        )
+
+

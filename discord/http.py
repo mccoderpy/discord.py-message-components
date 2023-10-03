@@ -1226,6 +1226,10 @@ class HTTPClient:
     def edit_guild(self, guild_id, *, reason=None, **fields):
         return self.request(Route('PATCH', '/guilds/{guild_id}', guild_id=guild_id), json=fields, reason=reason)
 
+    def edit_guild_incident_actions(self, guild_id, *, reason=None, **fields):
+        r = Route('PUT', '/guilds/{guild_id}/incident-actions', guild_id=guild_id)
+        return self.request(r, json=fields, reason=reason)
+
     def get_welcome_screen(self, guild_id):
         return self.request(Route('GET', '/guilds/{guild_id}/welcome-screen', guild_id=guild_id))
 

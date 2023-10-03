@@ -205,8 +205,12 @@ class Role(TypedDict):
     tags: NotRequired[RoleTag]
 
 
-class Guild(TypedDict):
-    id: SnowflakeID
+class IncidentsData(TypedDict):
+    invites_disabled_until: Optional[str]
+    dms_disabled_until: Optional[str]
+
+
+class Guild(UnavailableGuild):
     name: str
     icon: str
     splash: Optional[str]
@@ -247,6 +251,7 @@ class Guild(TypedDict):
     nsfw_level: GuildNSFWLevel
     stickers: NotRequired[List[GuildSticker]]
     premium_progress_bar_enabled: bool
+    incidents_data: NotRequired[IncidentsData]
     members: NotRequired[List[Member]]
 
 
