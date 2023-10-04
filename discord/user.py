@@ -112,8 +112,8 @@ class BaseUser(_BaseUser):
         self.discriminator: str = data.get('discriminator', '0')  # Deprecated
         self.avatar = data['avatar']
         self.banner = data.get('banner', None)
-        avatar_decoration_data = data.get('avatar_decoration_data', {})
-        self.avatar_decoration = avatar_decoration_data.get('asset', None)
+        avatar_decoration_data = data.get('avatar_decoration_data') or {}
+        self.avatar_decoration = avatar_decoration_data.get('asset')
         self._accent_color = data.get('accent_color', None)
         self._public_flags = data.get('public_flags', 0)
         self.bot = data.get('bot', False)
