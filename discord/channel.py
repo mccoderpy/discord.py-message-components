@@ -835,6 +835,15 @@ class ThreadMember:
         self.joined_at: datetime.datetime = datetime.datetime.fromisoformat(data.get('join_timestamp'))
         self.flags: int = int(data.get('flags'))
 
+    def __repr__(self) -> str:
+        return (
+            f'<ThreadMember ({self.as_guild_member}) id={self.id} '
+            f'thread_id={self.thread_id} guild_id={self.guild_id}>'
+        )
+
+    def __eq__(self, other):
+        return other.id == self.id
+
     @classmethod
     def _from_thread(cls, *, thread, data):
         data['user_id'] = int(data.get('user_id', thread._state.self_id))
