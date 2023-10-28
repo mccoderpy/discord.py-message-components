@@ -968,11 +968,7 @@ class HTTPClient:
     # Member management
     def kick(self, user_id, guild_id, reason=None):
         r = Route('DELETE', '/guilds/{guild_id}/members/{user_id}', guild_id=guild_id, user_id=user_id)
-        if reason:
-            # thanks aiohttp
-            r.url = '{0.url}?reason={1}'.format(r, _uriquote(reason))
-
-        return self.request(r)
+        return self.request(r, reason=reason)
 
     def ban(self, user_id, guild_id, delete_message_seconds, *, reason=None):
         r = Route('PUT', '/guilds/{guild_id}/bans/{user_id}', guild_id=guild_id, user_id=user_id)
