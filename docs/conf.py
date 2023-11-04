@@ -30,8 +30,8 @@ sys.path.append(os.path.abspath('extensions'))
 
 
 project = 'discord.py-message-components'
-copyright = '2023, Mathieu Corsham aka. mccoder.py'
-author = 'Mathieu Corsham aka. mccoder.py'
+copyright = '2023, Mathieu C. aka. mccoder.py'
+author = 'Mathieu C. aka. mccoder.py'
 
 version = ''
 with open('../discord/__init__.py') as f:
@@ -147,13 +147,15 @@ html_logo = '../images/Banner_Konturen.png'
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = './images/discord4py-logo.ico'
+html_favicon = './images/favicon.ico'
 
 extlinks = {
     'issue': ('https://github.com/mccoderpy/discord.py-message-components/issues/%s', 'GH-%s'),
     'old-issue': ('https://github.com/Rapptz/discord.py/issues/%s', 'GH-%s'),
     'dis-gd': ('https://dis.gd/%s', 'GH-%s'),
-    'ddocs': ('https://discord.com/developers/docs/%s', None),
+    'ddocs': ('https://discord.com/developers/docs/%s', 'GH-%s'),
+    'sup-art': ('https://support.discord.com/hc/en-us/articles/%s', 'GH-%s'),
+    'dev-sup-art': ('https://support-dev.discord.com/hc/en-us/articles/%s', 'GH-%s'),
 }
 
 rst_prolog = """
@@ -211,7 +213,7 @@ master_doc = 'index'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['_static', 'images']
 
 
 def setup(app: App):

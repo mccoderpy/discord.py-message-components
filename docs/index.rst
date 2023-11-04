@@ -112,7 +112,7 @@ These pages go into great detail about everything the API can do.
 .. toctree::
   :maxdepth: 1
 
-  api
+  API Reference </api/index.rst>
   Interactions <Interactions/index.rst>
   OAuth2 <oauth2/index.rst>
   discord.ext.commands API Reference <ext/commands/api.rst>

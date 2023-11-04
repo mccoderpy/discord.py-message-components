@@ -418,6 +418,8 @@ footer {
   font-size: 14px;
   text-align: right;
   color: var(--footer-text);
+  margin-top: auto;
+  max-height: min-content;
 }
 
 footer a {
@@ -608,6 +610,8 @@ input[type=search]:focus ~ button[type=submit] {
 
 main {
   grid-area: c;
+  min-height: 100%;
+  margin: 0;
 }
 
 p {
@@ -979,6 +983,10 @@ div.experimental > p.admonition-title {
 div.experimental > p.admonition-title::before {
   font-family: FontAwesome, serif;
   content: '\f0c3';
+}
+
+div.seealso > p.admonition-title::before {
+  content: '\e0f0';
 }
 
 dl.field-list > dd {
@@ -1455,6 +1463,7 @@ div.code-block-caption {
     color: var(--nav-text);
     max-height: unset;
     overflow-y: unset;
+    display: flex; /**/
     overscroll-behavior-y: unset;
   }
 
