@@ -36,6 +36,7 @@ from typing import (
     Optional,
     overload,
     Sequence,
+    Set,
     Tuple,
     TYPE_CHECKING,
     Union
@@ -44,6 +45,7 @@ from typing import (
 from typing_extensions import Literal
 
 from . import abc, utils
+from .monetization import Entitlement
 from .object import Object
 from .channel import _channel_factory, DMChannel, TextChannel, ThreadChannel, VoiceChannel, ForumPost, PartialMessageable
 from .components import *
@@ -468,6 +470,11 @@ class BaseInteraction:
         The id of the user who triggered the interaction.
     channel_id: :class:`int`
         The id of the channel where the interaction was triggered.
+    entitlements: Optional[List[:class:`~discord.Entitlement`]]
+        For :ddocs:`monetized apps <monetization/overview>` entitlements of the user who triggered the interaction
+        and optionally, if any.
+
+        This is available for all interaction types.
     data: :class:`~discord.InteractionData`
         Some internal needed metadata for the interaction, depending on the type.
     author_locale: Optional[:class:`~discord.Locale`]
@@ -479,7 +486,7 @@ class BaseInteraction:
     app_permissions: Optional[:class:`~discord.Permissions`]
         The permissions of the bot in the channel where the interaction was triggered, if it was in a guild.
 
-        This is similar to `interaction.channel.permissions_for(innteraction.guild.me)` but calculated on discord side.
+        This is similar to `interaction.channel.permissions_for(interaction.guild.me)` but calculated on discord side.
     author_permissions: Optional[:class:`~discord.Permissions`]
         The author's permissions in the channel where the interaction was triggered, if it was in a guild.
 
@@ -490,12 +497,13 @@ class BaseInteraction:
         id: int
         guild_id: Optional[int]
         channel_id: int
-        app_permissions: Optional[Permissions]
-        author_permissions: Optional[Permissions]
         user_id: int
         user: User
-        member: Optional[Member]
         author_locale: Locale
+        entitlements: Set[Entitlement]
+        app_permissions: Optional[Permissions]
+        author_permissions: Optional[Permissions]
+        member: Optional[Member]
         guild_locale: Optional[Locale]
         data: Optional[InteractionData]
         message: Optional[Union[Message, EphemeralMessage]]
@@ -510,7 +518,7 @@ class BaseInteraction:
         self.type = InteractionType.try_value(data['type'])
         self.id = int(data['id'])
         self.guild_id = guild_id = utils._get_as_snowflake(data, 'guild_id')
-
+        self.entitlements = {Entitlement(data=e, state=state) for e in data.get('entitlements', [])}
         channel_data = data.get('channel', {})
         self.channel_id = channel_id = int(data.get('channel_id', channel_data.get('id', 0)))
 
@@ -650,6 +658,17 @@ class BaseInteraction:
             if not data and response_type.msg_with_source or response_type.deferred_msg_with_source:
                 msg = self.callback_message = await self.get_original_callback()
                 return msg
+
+    async def _premium_required(self) -> None:
+        """|coro|
+        Respond with an upgrade button, only available for apps
+        with :ddocs:`monetized apps <monetization/overview>` enabled.
+        """
+        await self._state.http.post_initial_response(
+            self.id,
+            self._token,
+            data={'type': InteractionCallbackType.premium_required.value, 'data': {}}
+        )
 
     async def edit(
             self,
@@ -1209,6 +1228,18 @@ class ApplicationCommandInteraction(BaseInteraction):
         data = await super()._defer(InteractionCallbackType.deferred_msg_with_source, hidden)
         return data
 
+    async def respond_with_premium_required(self) -> None:
+        """|coro|
+        Respond with an upgrade button, only available for apps
+        with :ddocs:`monetized apps <monetization/overview>` enabled.
+
+        .. note::
+            You must respond with this one directly, without using any of
+            :meth:`~discord.ApplicationCommandInteraction.defer` or
+            :meth:`~discord.ApplicationCommandInteraction.respond`.
+        """
+        await super()._premium_required()
+
 
 class ComponentInteraction(BaseInteraction):
     """
@@ -1302,6 +1333,17 @@ class ComponentInteraction(BaseInteraction):
         """
         return await super()._defer(type, hidden)
 
+    async def respond_with_premium_required(self) -> None:
+        """|coro|
+        Respond with an upgrade button, only available for apps
+        with :ddocs:`monetized apps <monetization/overview>` enabled.
+
+        .. note::
+            You must respond with this one directly, without using any of
+            :meth:`~discord.ApplicationCommandInteraction.defer` or
+            :meth:`~discord.ApplicationCommandInteraction.respond`.
+        """
+        await super()._premium_required()
 
 class AutocompleteInteraction(BaseInteraction):
     """
@@ -1513,6 +1555,18 @@ class ModalSubmitInteraction(BaseInteraction):
 
     async def respond_with_modal(self, modal: Modal) -> NotImplementedError:
         raise NotImplementedError('You can\'t respond to a modal submit with another modal.')
+
+    async def respond_with_premium_required(self) -> None:
+        """|coro|
+        Respond with an upgrade button, only available for apps
+        with :ddocs:`monetized apps <monetization/overview>` enabled.
+
+        .. note::
+            You must respond with this one directly, without using any of
+            :meth:`~discord.ApplicationCommandInteraction.defer` or
+            :meth:`~discord.ApplicationCommandInteraction.respond`.
+        """
+        await super()._premium_required()
 
 
 class InteractionData:

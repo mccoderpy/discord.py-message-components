@@ -61,6 +61,7 @@ from .object import Object
 from .invite import Invite
 from .automod import AutoModRule, AutoModActionPayload
 from .interactions import BaseInteraction, InteractionType
+from .monetization import Entitlement
 
 
 if TYPE_CHECKING:
@@ -540,6 +541,19 @@ class ConnectionState:
     def parse_resumed(self, data):
         self.call_handlers('resumed')
         self.dispatch('resumed')
+
+    async def parse_entitlement_create(self, data):
+        entitlement = Entitlement(data, self)
+        self.dispatch('entitlement_create', entitlement)
+
+    def parse_entitlement_update(self, data):
+        entitlement = Entitlement(data, self)
+        # TODO: Add this to advanced cache
+        self.dispatch('entitlement_update', entitlement)
+
+    def parse_entitlement_delete(self, data):
+        entitlement = Entitlement(data, self)
+        self.dispatch('entitlement_delete', entitlement)
 
     def parse_message_create(self, data):
         channel, _ = self._get_guild_channel(data)

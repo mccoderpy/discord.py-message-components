@@ -46,7 +46,8 @@ __all__ = (
     'GuildMemberFlags',
     'Intents',
     'MemberCacheFlags',
-    'ApplicationFlags'
+    'ApplicationFlags',
+    'SKUFlags',
 )
 
 
@@ -1398,3 +1399,100 @@ class ApplicationFlags(BaseFlags):
     def active_application(self):
         """:class:`bool`: Returns ``True`` is an active application (e.g. has at leas one app command executed in the last 30 days)."""
         return 1 << 24
+
+
+@fill_with_flags()
+class SKUFlags(BaseFlags):
+    """Wraps up the flags of a :class:`SKU`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Checks if two SKUFlags are equal.
+        .. describe:: x != y
+
+            Checks if two SKUFlags are not equal.
+        .. describe:: hash(x)
+
+            Return the flag's hash.
+        .. describe:: iter(x)
+
+            Returns an iterator of ``(name, value)`` pairs. This allows it
+            to be, for example, constructed as a dict or a list of pairs.
+            Note that aliases are not shown.
+
+    Attributes
+    -----------
+    value: :class:`int`
+        The raw value. This value is a bit array field of a 53-bit integer
+        representing the currently available flags. You should query
+        flags via the properties rather than using this raw value.
+    """
+
+    @flag_value
+    def premium_purchase(self):
+        """:class:`bool`: A premium purchase SKU"""
+        return 1 << 0
+
+    @flag_value
+    def has_free_premium_content(self):
+        """:class:`bool`: An SKU containing free premium content"""
+        return 1 << 1
+
+    @flag_value
+    def available(self):
+        """:class:`bool`: Whether the SKU is currently available for purchase"""
+        return 1 << 2
+
+    # @flag_value
+    # def premium_and_distribution(self):
+    #     """:class:`bool`: Undocumented"""
+    #     return 1 << 3
+
+    # @flag_value
+    # def sticker(self):
+    #     """":class:`bool`: Undocumented"""
+    #     return 1 << 4
+
+    @flag_value
+    def guild_role(self):
+        """:class:`bool`: A role that can be purchased for a guild"""
+        return 1 << 5
+
+    @flag_value
+    def available_for_subscription_gifting(self):
+        """:class:`bool`: An SKU that can be purchased as a gift for others."""
+        return 1 << 6
+
+    @flag_value
+    def app_guild_subscription(self):
+        """:class:`bool`: A recurring SKU that can be purchased by a user and applied to a single server.
+        Grants access to every user in that server."""
+        return 1 << 7
+
+    @flag_value
+    def app_user_subscription(self):
+        """:class:`bool`: Recurring SKU purchased by a user for themselves.
+        Grants access to the purchasing user in every server."""
+        return 1 << 8
+
+    # @flag_value
+    # def creator_monetization(self):
+    #     """:class:`bool`: Undocumented"""
+    #     return 1 << 9
+
+    @flag_value
+    def guild_product(self):
+        """:class:`bool`: A product in the guild store"""
+        return 1 << 10
+
+    # @flag_value
+    # def user_update_mask(self):
+    #     """:class:`bool`: Undocumented"""
+    #     return 0 << 0
+    #
+    # @flag_value
+    # def staff_create_subscription_group_listing_mask(self):
+    #     """:class:`bool`: Undocumented"""
+    #     return 384

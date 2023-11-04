@@ -62,7 +62,8 @@ if TYPE_CHECKING:
     from .embeds import Embed
     from .message import Attachment, MessageReference
     from .types import (
-        guild
+        guild,
+        monetization,
     )
     from .types.snowflake import SnowflakeID
     from .utils import SnowflakeList
@@ -1840,7 +1841,62 @@ class HTTPClient:
     # Misc
     def application_info(self):
         return self.request(Route('GET', '/oauth2/applications/@me'))
-    
+
+    def list_entitlements(
+            self,
+            application_id: int,
+            *,
+            limit: int = 100,
+            user_id: int = MISSING,
+            guild_id: int = MISSING,
+            sku_ids: List[int] = MISSING,
+            after: int = MISSING,
+            before: int = MISSING,
+            exclude_ended: int = False
+    ) -> Response[List[monetization.Entitlement]]:
+        params = {'limit': limit}
+
+        if user_id is not MISSING:
+            params['user_id'] = str(user_id)
+        if guild_id is not MISSING:  # FIXME: Can both be passed at the same time? Consider using elif instead
+            params['guild_id'] = str(guild_id)
+        if sku_ids is not MISSING:
+            params['sku_ids'] = [str(s) for s in sku_ids]
+        if after is not MISSING:
+            params['after'] = str(after)
+        if before is not MISSING:  # FIXME: Can both be passed at the same time? Consider using elif instead
+            params['before'] = str(before)
+        if exclude_ended is not False:  # TODO: what is the api default value?
+            params['exclude_ended'] = str(exclude_ended)
+
+        r = Route('GET', '/applications/{application_id}/entitlements', application_id=application_id)
+        return self.request(r, json=params)
+
+    def create_test_entitlement(
+            self,
+            application_id: int,
+            *,
+            sku_id: int,
+            owner_id: int,
+            owner_type: int
+    ) -> Response[monetization.TestEntitlement]:
+        payload = {
+            'sku_id': sku_id,
+            'owner_id': owner_id,
+            'owner_type': owner_type
+        }
+        r = Route('POST', '/applications/{application_id}/entitlements', application_id=application_id)
+        return self.request(r, json=payload)
+
+    def delete_test_entitlement(self, application_id: int, entitlement_id: int) -> Response[None]:
+        r = Route(
+            'DELETE',
+            '/applications/{application_id}/entitlements/{entitlement_id}',
+            application_id=application_id,
+            entitlement_id=entitlement_id
+        )
+        return self.request(r)
+
     async def get_gateway(self, *, encoding='json', v=10, zlib=True):
         try:
             data = await self.request(Route('GET', '/gateway'))

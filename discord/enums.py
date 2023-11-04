@@ -83,6 +83,7 @@ __all__ = (
     'ForumLayout',
     'OnboardingMode',
     'OnboardingPromptType',
+    'SKUType',
 )
 
 
@@ -423,13 +424,15 @@ class SelectDefaultValueType(Enum):
 
 
 class InteractionCallbackType(Enum):
-    pong = 1
-    msg_with_source = 4
+    pong                     = 1
+    msg_with_source          = 4
     deferred_msg_with_source = 5
-    deferred_update_msg = 6
-    update_msg = 7
-    autocomplete_callback = 8
-    modal = 9
+    deferred_update_msg      = 6
+    update_msg               = 7
+    autocomplete_callback    = 8
+    modal                    = 9
+    premium_required         = 10
+
 
     @classmethod
     def from_value(cls, value):
@@ -1140,6 +1143,15 @@ class OnboardingMode(Enum):
 class OnboardingPromptType(Enum):
     multiple_choice = 0
     dropdown        = 1
+
+
+class SKUType(Enum):
+    durable_primary     = 1
+    durable             = 2
+    consumable          = 3
+    bundle              = 4
+    subscription        = 5
+    subscription_group  = 6
 
 
 def try_enum(cls: Type[Enum], val: Any):

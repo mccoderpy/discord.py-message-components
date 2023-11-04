@@ -65,6 +65,7 @@ from .raw_models import *
 from .team import *
 from .sticker import Sticker, GuildSticker, StickerPack
 from .scheduled_event import GuildScheduledEvent
+from .monetization import *
 
 
 MISSING = utils.MISSING

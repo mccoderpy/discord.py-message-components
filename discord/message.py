@@ -116,7 +116,7 @@ __all__ = (
     'PartialMessage',
     'MessageReference',
     'DeletedReferencedMessage',
-    'RoleSubscriptionInfo'
+    'RoleSubscriptionInfo',
 )
 
 
@@ -1508,7 +1508,7 @@ class Message(Hashable, Generic[_MCH]):
 
         await self._state.http.publish_message(self.channel.id, self.id)
 
-    async def pin(self, *, reason: Optional[str] = None) -> None:
+    async def pin(self, *, suppress_system_message: bool = False, reason: Optional[str] = None) -> None:
         """|coro|
 
         Pins the message.
@@ -1518,6 +1518,10 @@ class Message(Hashable, Generic[_MCH]):
 
         Parameters
         -----------
+        suppress_system_message: :class:`bool`
+            When set to ``True``, the function will wait 5 seconds for the system message and delete it. Defaults to ``False``.
+
+            .. versionadded:: 2.0
         reason: Optional[:class:`str`]
             The reason for pinning the message. Shows up on the audit log.
 
@@ -1532,10 +1536,25 @@ class Message(Hashable, Generic[_MCH]):
         HTTPException
             Pinning the message failed, probably due to the channel
             having more than 50 pinned messages.
+        :exc:`~asyncio.TimeoutError`
+            Waiting for the system message timed out.
         """
 
         await self._state.http.pin_message(self.channel.id, self.id, reason=reason)
         self.pinned = True
+
+        # TODO: we don't get a message create for this...
+        if suppress_system_message:
+            try:
+                msg = await self._state._get_client().wait_for(
+                    'message',
+                    check=lambda m: m.type is MessageType.pins_add and m.channel == self.channel,
+                    timeout=5.0
+                )
+            except asyncio.TimeoutError as exc:
+                raise asyncio.TimeoutError('Timed out waiting for the system message to suppress.') from exc
+            else:
+                await msg.delete(reason='Suppressing system message for pinned message')
 
     async def unpin(self, *, reason: Optional[str] = None) -> None:
         """|coro|
