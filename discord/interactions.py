@@ -667,7 +667,7 @@ class BaseInteraction:
         await self._state.http.post_initial_response(
             self.id,
             self._token,
-            data={'type': InteractionCallbackType.premium_required.value, 'data': {}}
+            data={'type': InteractionCallbackType.premium_required.value}
         )
 
     async def edit(
