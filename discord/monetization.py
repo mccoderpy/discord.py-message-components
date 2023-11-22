@@ -126,8 +126,8 @@ class Entitlement:
         self.user_id: Optional[int] = utils._get_as_snowflake(data, 'user_id')
         self.guild_id: Optional[int] = utils._get_as_snowflake(data, 'guild_id')
         self.deleted: bool = data['deleted']
-        self.starts_at: datetime = utils.parse_time(data['starts_at'])
-        self.ends_at: datetime = utils.parse_time(data['ends_at'])
+        self.starts_at: datetime = utils.parse_time(data.get('starts_at'))
+        self.ends_at: datetime = utils.parse_time(data.get('ends_at'))
 
     @property
     def target(self):
