@@ -858,7 +858,7 @@ class ConnectionState:
             else:
                 log.debug(
                     'VOICE_CHANNEL_STATUS_UPDATE referencing an unknown channel ID: %s. Discarding.',
-                    data['channel_id']
+                    data['id']
                 )
         else:
             log.debug(
