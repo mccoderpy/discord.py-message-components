@@ -7,6 +7,6 @@ sphinx_inline_tabs
 Jinja2>0.3
 pygments
 typing-extensions
-aiohttp>=3.8.0,<4
+aiohttp>=3.9.1,<4
 colorama
 color-pprint

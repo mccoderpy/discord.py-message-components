@@ -1,4 +1,4 @@
-aiohttp>=3.8.0,<4
+aiohttp>=3.9.1,<4
 aiosignal
 typing-extensions
 importlib-metadata<4;python_version<"3.8.0"
