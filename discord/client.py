@@ -289,12 +289,12 @@ class Client:
 
     auto_check_for_updates: :class:`bool`
         Whether to check for available updates automatically, default :obj:`False` for legal reasons.
-        For more info see :class:`discord.on_update_available`.
+        For more info see :func:`discord.on_update_available`.
 
         .. note::
 
-            For now, this may only work on the original repository, **not in forks** how.
-            This is because it uses an internal API that only listen to a webhook from the original repo.
+            For now, this may only work on the original repository, **not on forks**.
+            This is because it uses an internal API that listens to a private application that is on the original repo.
 
             In the future this API might be open-sourced, or it will be possible to add your forks URL as a valid source.
 
