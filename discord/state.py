@@ -542,7 +542,7 @@ class ConnectionState:
         self.call_handlers('resumed')
         self.dispatch('resumed')
 
-    async def parse_entitlement_create(self, data):
+    def parse_entitlement_create(self, data):
         entitlement = Entitlement(data, self)
         self.dispatch('entitlement_create', entitlement)
 
