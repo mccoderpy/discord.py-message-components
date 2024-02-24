@@ -146,19 +146,20 @@ class StringView:
                 if is_quoted:
                     # unexpected EOF
                     raise ExpectedClosingQuoteError(close_quote)
-                return ''.join(result)
+                else:
+                    return ''.join(result)
 
             # currently we accept strings in the format of "hello world"
             # to embed a quote inside the string you must escape it: "a \"world\""
             if current == '\\':
                 next_char = self.get()
                 if not next_char:
-                    # string ends with \ and no character after it
                     if is_quoted:
                         # if we're quoted then we're expecting a closing quote
                         raise ExpectedClosingQuoteError(close_quote)
-                    # if we aren't then we just let it through
-                    return ''.join(result)
+                    else:
+                        # if we aren't then we just let it through
+                        return ''.join(result)
 
                 if next_char in _escaped_quotes:
                     # escaped quote
@@ -176,12 +177,12 @@ class StringView:
             # closing quote
             if is_quoted and current == close_quote:
                 next_char = self.get()
-                valid_eof = not next_char or next_char.isspace()
-                if not valid_eof:
-                    raise InvalidEndOfQuotedStringError(next_char)
+                if valid_eof := not next_char or next_char.isspace():
+                    # we're quoted so it's okay
+                    return ''.join(result)
 
-                # we're quoted so it's okay
-                return ''.join(result)
+                else:
+                    raise InvalidEndOfQuotedStringError(next_char)
 
             if current.isspace() and not is_quoted:
                 # end of word found

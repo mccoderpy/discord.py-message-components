@@ -141,8 +141,7 @@ class Context(discord.abc.Messageable):
         arguments.append(self)
         arguments.extend(args[1:])
 
-        ret = await command.callback(*arguments, **kwargs)
-        return ret
+        return await command.callback(*arguments, **kwargs)
 
     async def reinvoke(self, *, call_hooks=False, restart=True):
         """|coro|
@@ -218,9 +217,7 @@ class Context(discord.abc.Messageable):
     def cog(self):
         """Optional[:class:`.Cog`]: Returns the cog associated with this context's command. None if it does not exist."""
 
-        if self.command is None:
-            return None
-        return self.command.cog
+        return None if self.command is None else self.command.cog
 
     @discord.utils.cached_property
     def guild(self):
@@ -295,7 +292,7 @@ class Context(discord.abc.Messageable):
 
         cmd = cmd.copy()
         cmd.context = self
-        if len(args) == 0:
+        if not args:
             await cmd.prepare_help_command(self, None)
             mapping = cmd.get_bot_mapping()
             injected = wrap_callback(cmd.send_bot_help)

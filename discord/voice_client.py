@@ -353,14 +353,12 @@ class VoiceClient(VoiceProtocol):
                 self.ws = await self.connect_websocket()
                 break
             except (ConnectionClosed, asyncio.TimeoutError):
-                if reconnect:
-                    log.exception('Failed to connect to voice... Retrying...')
-                    await asyncio.sleep(1 + i * 2.0)
-                    await self.voice_disconnect()
-                    continue
-                else:
+                if not reconnect:
                     raise
 
+                log.exception('Failed to connect to voice... Retrying...')
+                await asyncio.sleep(1 + i * 2.0)
+                await self.voice_disconnect()
         if self._runner is None:
             self._runner = self.loop.create_task(self.poll_voice_ws(reconnect))
 
@@ -425,13 +423,12 @@ class VoiceClient(VoiceProtocol):
                     if exc.code == 4014:
                         log.info('Disconnected from voice by force... potentially reconnecting.')
                         successful = await self.potential_reconnect()
-                        if not successful:
-                            log.info('Reconnect was unsuccessful, disconnecting from voice normally...')
-                            await self.disconnect()
-                            break
-                        else:
+                        if successful:
                             continue
 
+                        log.info('Reconnect was unsuccessful, disconnecting from voice normally...')
+                        await self.disconnect()
+                        break
                 if not reconnect:
                     await self.disconnect()
                     raise
@@ -497,7 +494,7 @@ class VoiceClient(VoiceProtocol):
         struct.pack_into('>I', header, 4, self.timestamp)
         struct.pack_into('>I', header, 8, self.ssrc)
 
-        encrypt_packet = getattr(self, '_encrypt_' + self.mode)
+        encrypt_packet = getattr(self, f'_encrypt_{self.mode}')
         return encrypt_packet(header, data)
 
     def _encrypt_xsalsa20_poly1305(self, header, data):

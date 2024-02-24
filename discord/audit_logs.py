@@ -55,14 +55,10 @@ def _transform_channel(entry, data):
     return entry.guild.get_channel(int(data)) or Object(id=data)
 
 def _transform_owner_id(entry, data):
-    if data is None:
-        return None
-    return entry._get_member(int(data))
+    return None if data is None else entry._get_member(int(data))
 
 def _transform_inviter_id(entry, data):
-    if data is None:
-        return None
-    return entry._get_member(int(data))
+    return None if data is None else entry._get_member(int(data))
 
 def _transform_overwrites(entry, data):
     overwrites = []
@@ -94,7 +90,7 @@ class AuditLogDiff:
 
     def __repr__(self):
         values = ' '.join('%s=%r' % item for item in self.__dict__.items())
-        return '<AuditLogDiff %s>' % values
+        return f'<AuditLogDiff {values}>'
 
 class AuditLogChanges:
     TRANSFORMERS = {
@@ -307,7 +303,7 @@ class AuditLogEntry(Hashable):
     @utils.cached_property
     def target(self):
         try:
-            converter = getattr(self, '_convert_target_' + self.action.target_type)
+            converter = getattr(self, f'_convert_target_{self.action.target_type}')
         except AttributeError:
             return Object(id=self._target_id)
         else:
@@ -340,18 +336,14 @@ class AuditLogEntry(Hashable):
 
     def _convert_target_channel(self, target_id):
         ch = self.guild.get_channel(target_id)
-        if ch is None:
-            return Object(id=target_id)
-        return ch
+        return Object(id=target_id) if ch is None else ch
 
     def _convert_target_user(self, target_id):
         return self._get_member(target_id)
 
     def _convert_target_role(self, target_id):
         role = self.guild.get_role(target_id)
-        if role is None:
-            return Object(id=target_id)
-        return role
+        return Object(id=target_id) if role is None else role
 
     def _convert_target_invite(self, target_id):
         # invites have target_id set to null

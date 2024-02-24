@@ -185,7 +185,7 @@ def _load_default():
             _basedir = os.path.dirname(os.path.abspath(__file__))
             _bitness = struct.calcsize('P') * 8
             _target = 'x64' if _bitness > 32 else 'x86'
-            _filename = os.path.join(_basedir, 'bin', 'libopus-0.{}.dll'.format(_target))
+            _filename = os.path.join(_basedir, 'bin', f'libopus-0.{_target}.dll')
             _lib = libopus_loader(_filename)
         else:
             _lib = libopus_loader(ctypes.util.find_library('opus'))

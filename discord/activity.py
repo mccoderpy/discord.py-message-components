@@ -189,10 +189,7 @@ class Activity(BaseActivity):
         self.session_id = kwargs.pop('session_id', None)
         self.type = try_enum(ActivityType, kwargs.pop('type', -1))
         emoji = kwargs.pop('emoji', None)
-        if emoji is not None:
-            self.emoji = PartialEmoji.from_dict(emoji)
-        else:
-            self.emoji = None
+        self.emoji = PartialEmoji.from_dict(emoji) if emoji is not None else None
 
     def __repr__(self):
         attrs = (
@@ -205,7 +202,7 @@ class Activity(BaseActivity):
             'emoji',
         )
         mapped = ' '.join('%s=%r' % (attr, getattr(self, attr)) for attr in attrs)
-        return '<Activity %s>' % mapped
+        return f'<Activity {mapped}>'
 
     def to_dict(self):
         ret = {}
@@ -332,9 +329,9 @@ class Game(BaseActivity):
         try:
             dt = data[key]
         except KeyError:
-            setattr(self, '_' + key, 0)
+            setattr(self, f'_{key}', 0)
         else:
-            setattr(self, '_' + key, dt.timestamp() * 1000.0)
+            setattr(self, f'_{key}', dt.timestamp() * 1000.0)
 
     @property
     def type(self):
@@ -624,7 +621,7 @@ class Spotify:
         if large_image[:8] != 'spotify:':
             return ''
         album_image_id = large_image[8:]
-        return 'https://i.scdn.co/image/' + album_image_id
+        return f'https://i.scdn.co/image/{album_image_id}'
 
     @property
     def track_id(self):
@@ -737,12 +734,9 @@ class CustomActivity(BaseActivity):
         return hash((self.name, str(self.emoji)))
 
     def __str__(self):
-        if self.emoji:
-            if self.name:
-                return '%s %s' % (self.emoji, self.name)
-            return str(self.emoji)
-        else:
+        if not self.emoji:
             return str(self.name)
+        return f'{self.emoji} {self.name}' if self.name else str(self.emoji)
 
     def __repr__(self):
         return '<CustomActivity name={0.name!r} emoji={0.emoji!r}>'.format(self)
@@ -765,9 +759,7 @@ def create_activity(data):
         else:
             return CustomActivity(name=name, **data)
     elif game_type is ActivityType.streaming:
-        if 'url' in data:
-            return Streaming(**data)
-        return Activity(**data)
+        return Streaming(**data) if 'url' in data else Activity(**data)
     elif game_type is ActivityType.listening and 'sync_id' in data and 'session_id' in data:
         return Spotify(**data)
     return Activity(**data)

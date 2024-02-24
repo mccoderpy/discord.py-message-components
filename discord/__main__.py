@@ -35,14 +35,16 @@ import platform
 
 
 def show_version():
-    entries = []
+    entries = [
+        '- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(
+            sys.version_info
+        )
+    ]
 
-    entries.append('- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(sys.version_info))
     version_info = discord.version_info
     entries.append('- discord.py v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(version_info))
     if version_info.releaselevel != 'final':
-        pkg = pkg_resources.get_distribution('discord.py')
-        if pkg:
+        if pkg := pkg_resources.get_distribution('discord.py'):
             entries.append('    - discord.py pkg_resources: v{0}'.format(pkg.version))
 
     entries.append('- aiohttp v{0.__version__}'.format(aiohttp))
@@ -176,7 +178,7 @@ _base_table = {
 }
 
 # NUL (0) and 1-31 are disallowed
-_base_table.update((chr(i), None) for i in range(32))
+_base_table |= ((chr(i), None) for i in range(32))
 
 translation_table = str.maketrans(_base_table)
 
@@ -205,7 +207,7 @@ def newbot(parser, args):
     try:
         new_directory.mkdir(exist_ok=True, parents=True)
     except OSError as exc:
-        parser.error('could not create our bot directory ({})'.format(exc))
+        parser.error(f'could not create our bot directory ({exc})')
 
     cogs = new_directory / 'cogs'
 
@@ -214,27 +216,27 @@ def newbot(parser, args):
         init = cogs / '__init__.py'
         init.touch()
     except OSError as exc:
-        print('warning: could not create cogs directory ({})'.format(exc))
+        print(f'warning: could not create cogs directory ({exc})')
 
     try:
         with open(str(new_directory / 'config.py'), 'w', encoding='utf-8') as fp:
             fp.write('token = "place your token here"\ncogs = []\n')
     except OSError as exc:
-        parser.error('could not create config file ({})'.format(exc))
+        parser.error(f'could not create config file ({exc})')
 
     try:
         with open(str(new_directory / 'bot.py'), 'w', encoding='utf-8') as fp:
             base = 'Bot' if not args.sharded else 'AutoShardedBot'
             fp.write(bot_template.format(base=base, prefix=args.prefix))
     except OSError as exc:
-        parser.error('could not create bot file ({})'.format(exc))
+        parser.error(f'could not create bot file ({exc})')
 
     if not args.no_git:
         try:
             with open(str(new_directory / '.gitignore'), 'w', encoding='utf-8') as fp:
                 fp.write(gitignore_template)
         except OSError as exc:
-            print('warning: could not create .gitignore file ({})'.format(exc))
+            print(f'warning: could not create .gitignore file ({exc})')
 
     print('successfully made bot at', new_directory)
 
@@ -244,7 +246,7 @@ def newcog(parser, args):
     try:
         cog_dir.mkdir(exist_ok=True)
     except OSError as exc:
-        print('warning: could not create cogs directory ({})'.format(exc))
+        print(f'warning: could not create cogs directory ({exc})')
 
     directory = cog_dir / to_path(parser, args.name)
     directory = directory.with_suffix('.py')
@@ -263,12 +265,12 @@ def newcog(parser, args):
                     name = name.title()
 
             if args.display_name:
-                attrs += ', name="{}"'.format(args.display_name)
+                attrs += f', name="{args.display_name}"'
             if args.hide_commands:
                 attrs += ', command_attrs=dict(hidden=True)'
             fp.write(cog_template.format(name=name, extra=extra, attrs=attrs))
     except OSError as exc:
-        parser.error('could not create cog file ({})'.format(exc))
+        parser.error(f'could not create cog file ({exc})')
     else:
         print('successfully made cog at', directory)
 

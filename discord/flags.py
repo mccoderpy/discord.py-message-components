@@ -42,9 +42,7 @@ class flag_value:
         self.__doc__ = func.__doc__
 
     def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        return instance._has_flag(self.flag)
+        return self if instance is None else instance._has_flag(self.flag)
 
     def __set__(self, instance, value):
         instance._set_flag(self.flag, value)
@@ -99,7 +97,7 @@ class BaseFlags:
         return hash(self.value)
 
     def __repr__(self):
-        return '<%s value=%s>' % (self.__class__.__name__, self.value)
+        return f'<{self.__class__.__name__} value={self.value}>'
 
     def __iter__(self):
         for name, value in self.__class__.__dict__.items():
@@ -118,7 +116,7 @@ class BaseFlags:
         elif toggle is False:
             self.value &= ~o
         else:
-            raise TypeError('Value to set for %s must be a bool.' % self.__class__.__name__)
+            raise TypeError(f'Value to set for {self.__class__.__name__} must be a bool.')
 
 @fill_with_flags(inverted=True)
 class SystemChannelFlags(BaseFlags):

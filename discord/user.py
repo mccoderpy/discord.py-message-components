@@ -199,7 +199,7 @@ class BaseUser(_BaseUser):
     @property
     def default_avatar_url(self):
         """:class:`Asset`: Returns a URL for a user's default avatar."""
-        return Asset(self._state, '/embed/avatars/{}.png'.format(self.default_avatar.value))
+        return Asset(self._state, f'/embed/avatars/{self.default_avatar.value}.png')
 
     @property
     def colour(self):
@@ -474,11 +474,7 @@ class ClientUser(BaseUser):
         except KeyError:
             avatar = self.avatar
         else:
-            if avatar_bytes is not None:
-                avatar = _bytes_to_base64_data(avatar_bytes)
-            else:
-                avatar = None
-
+            avatar = None if avatar_bytes is None else _bytes_to_base64_data(avatar_bytes)
         not_bot_account = not self.bot
         password = fields.get('password')
         if not_bot_account and password is None:
@@ -643,38 +639,31 @@ class ClientUser(BaseUser):
         """
         payload = {}
 
-        content_filter = kwargs.pop('explicit_content_filter', None)
-        if content_filter:
-            payload.update({'explicit_content_filter': content_filter.value})
+        if content_filter := kwargs.pop('explicit_content_filter', None):
+            payload['explicit_content_filter'] = content_filter.value
 
-        friend_flags = kwargs.pop('friend_source_flags', None)
-        if friend_flags:
+        if friend_flags := kwargs.pop('friend_source_flags', None):
             dicts = [{}, {'mutual_guilds': True}, {'mutual_friends': True},
             {'mutual_guilds': True, 'mutual_friends': True}, {'all': True}]
-            payload.update({'friend_source_flags': dicts[friend_flags.value]})
+            payload['friend_source_flags'] = dicts[friend_flags.value]
 
-        guild_positions = kwargs.pop('guild_positions', None)
-        if guild_positions:
+        if guild_positions := kwargs.pop('guild_positions', None):
             guild_positions = [str(x.id) for x in guild_positions]
-            payload.update({'guild_positions': guild_positions})
+            payload['guild_positions'] = guild_positions
 
-        restricted_guilds = kwargs.pop('restricted_guilds', None)
-        if restricted_guilds:
+        if restricted_guilds := kwargs.pop('restricted_guilds', None):
             restricted_guilds = [str(x.id) for x in restricted_guilds]
-            payload.update({'restricted_guilds': restricted_guilds})
+            payload['restricted_guilds'] = restricted_guilds
 
-        status = kwargs.pop('status', None)
-        if status:
-            payload.update({'status': status.value})
+        if status := kwargs.pop('status', None):
+            payload['status'] = status.value
 
-        theme = kwargs.pop('theme', None)
-        if theme:
-            payload.update({'theme': theme.value})
+        if theme := kwargs.pop('theme', None):
+            payload['theme'] = theme.value
 
-        payload.update(kwargs)
+        payload |= kwargs
 
-        data = await self._state.http.edit_settings(**payload)
-        return data
+        return await self._state.http.edit_settings(**payload)
 
 class User(BaseUser, discord.abc.Messageable):
     """Represents a Discord user.
@@ -719,8 +708,7 @@ class User(BaseUser, discord.abc.Messageable):
         return '<User id={0.id} name={0.name!r} discriminator={0.discriminator!r} bot={0.bot}>'.format(self)
 
     async def _get_channel(self):
-        ch = await self.create_dm()
-        return ch
+        return await self.create_dm()
 
     @property
     def dm_channel(self):
@@ -815,9 +803,7 @@ class User(BaseUser, discord.abc.Messageable):
             This can only be used by non-bot accounts.
         """
         r = self.relationship
-        if r is None:
-            return False
-        return r.type is RelationshipType.friend
+        return False if r is None else r.type is RelationshipType.friend
 
     @deprecated()
     def is_blocked(self):
@@ -830,9 +816,7 @@ class User(BaseUser, discord.abc.Messageable):
             This can only be used by non-bot accounts.
         """
         r = self.relationship
-        if r is None:
-            return False
-        return r.type is RelationshipType.blocked
+        return False if r is None else r.type is RelationshipType.blocked
 
     @deprecated()
     async def block(self):

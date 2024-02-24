@@ -40,7 +40,7 @@ class ButtonClick:
         return self.__hash__
 
     def __repr__(self):
-        return f"<ButtonClick custom_id={self.custom_id}{', hash='+self.__hash__ if self.__hash__ else ''}>"
+        return f"<ButtonClick custom_id={self.custom_id}{f', hash={self.__hash__}' if self.__hash__ else ''}>"
 
 
 class SelectionSelect:
@@ -95,7 +95,7 @@ class Interaction:
 
     def __repr__(self):
         """Represents a :class:`discord.Interaction`-object."""
-        return f'<Interaction {", ".join(["%s=%s" % (a, getattr(self, a)) for a in self.__slots__ if a[0] != "_"])}>'
+        return f'<Interaction {", ".join([f"{a}={getattr(self, a)}" for a in self.__slots__ if a[0] != "_"])}>'
 
     async def defer(self, response_type: Literal[5, 6] = InteractionCallbackType.deferred_update_msg, hidden: bool = False) -> None:
         """
@@ -129,7 +129,9 @@ class Interaction:
         if isinstance(response_type, int):
             response_type = InteractionCallbackType.from_value(response_type)
         if response_type not in (InteractionCallbackType.deferred_msg_with_source, InteractionCallbackType.deferred_update_msg):
-            raise ValueError('response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg (e.g. 5 or 6), not %s.__class__.__name__' % response_type)
+            raise ValueError(
+                f'response_type has to bee discord.InteractionCallbackType.deferred_msg_with_source or discord.InteractionCallbackType.deferred_update_msg (e.g. 5 or 6), not {response_type}.__class__.__name__'
+            )
         if self.deferred:
             return log.warning("\033[91You have already responded to this Interaction!\033[0m")
         base = {"type": response_type.value, "data": {'flags': 64 if hidden else None}}
@@ -140,7 +142,11 @@ class Interaction:
             log.warning(f'Unknown Interaction {self.__interaction_id}')
         else:
             self.deferred = True
-            if hidden is True and response_type is InteractionCallbackType.deferred_msg_with_source:
+            if (
+                hidden
+                and response_type
+                is InteractionCallbackType.deferred_msg_with_source
+            ):
                 self.deferred_hidden = True
             return data
 
@@ -151,9 +157,15 @@ class Interaction:
         """
         if not self.channel:
             self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
-        await self.message.edit(__is_interaction_response=True, __deferred=False if (not self.deferred or self.callback_message) else True, __use_webhook=False,
-                                __interaction_id=self.__interaction_id, __interaction_token=self.__token,
-                                __application_id=self.__application_id, **fields)
+        await self.message.edit(
+            __is_interaction_response=True,
+            __deferred=bool(self.deferred and not self.callback_message),
+            __use_webhook=False,
+            __interaction_id=self.__interaction_id,
+            __interaction_token=self.__token,
+            __application_id=self.__application_id,
+            **fields
+        )
         self.deferred = True
         return self.message
 
@@ -168,13 +180,28 @@ class Interaction:
         """
         if not self.channel:
             self._channel = self._state.add_dm_channel(data=await self._http.get_channel(self.channel_id))
-        msg = await self.channel.send(content, tts=tts, embed=embed, embeds=embeds, components=components, file=file,
-                                      files=files, delete_after=delete_after, nonce=nonce,
-                                      allowed_mentions=allowed_mentions, reference=reference,
-                                      mention_author=mention_author, hidden=hidden, __is_interaction_response=True,
-                                      __deferred=self.deferred, __use_webhook=False, __interaction_id=self.__interaction_id,
-                                      __interaction_token=self.__token, __application_id=self.__application_id,
-                                      followup=True if self.callback_message else False)
+        msg = await self.channel.send(
+            content,
+            tts=tts,
+            embed=embed,
+            embeds=embeds,
+            components=components,
+            file=file,
+            files=files,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+            reference=reference,
+            mention_author=mention_author,
+            hidden=hidden,
+            __is_interaction_response=True,
+            __deferred=self.deferred,
+            __use_webhook=False,
+            __interaction_id=self.__interaction_id,
+            __interaction_token=self.__token,
+            __application_id=self.__application_id,
+            followup=bool(self.callback_message),
+        )
 
         if hidden is True:
             self.deferred_hidden = True

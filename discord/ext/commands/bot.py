@@ -46,7 +46,7 @@ def when_mentioned(bot, msg):
 
     These are meant to be passed into the :attr:`.Bot.command_prefix` attribute.
     """
-    return [bot.user.mention + ' ', '<@!%s> ' % bot.user.id]
+    return [f'{bot.user.mention} ', f'<@!{bot.user.id}> ']
 
 def when_mentioned_or(*prefixes):
     """A callable that implements when mentioned or other prefixes provided.
@@ -85,7 +85,7 @@ def when_mentioned_or(*prefixes):
     return inner
 
 def _is_submodule(parent, child):
-    return parent == child or child.startswith(parent + ".")
+    return parent == child or child.startswith(f"{parent}.")
 
 class _DefaultRepr:
     def __repr__(self):
@@ -131,7 +131,7 @@ class BotBase(GroupMixin):
 
     def dispatch(self, event_name, *args, **kwargs):
         super().dispatch(event_name, *args, **kwargs)
-        ev = 'on_' + event_name
+        ev = f'on_{event_name}'
         for event in self.extra_events.get(ev, []):
             self._schedule_event(event, ev, *args, **kwargs)
         for (func, check) in self.extra_interaction_events.get(event_name, []):
@@ -174,7 +174,7 @@ class BotBase(GroupMixin):
         if cog and Cog._get_overridden_method(cog.cog_command_error) is not None:
             return
 
-        print('Ignoring exception in command {}:'.format(context.command), file=sys.stderr)
+        print(f'Ignoring exception in command {context.command}:', file=sys.stderr)
         traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     # global check registration
@@ -695,11 +695,12 @@ class BotBase(GroupMixin):
 
         # remove all the listeners from the module
         for event_list in self.extra_events.copy().values():
-            remove = []
-            for index, event in enumerate(event_list):
-                if event.__module__ is not None and _is_submodule(name, event.__module__):
-                    remove.append(index)
-
+            remove = [
+                index
+                for index, event in enumerate(event_list)
+                if event.__module__ is not None
+                and _is_submodule(name, event.__module__)
+            ]
             for index in reversed(remove):
                 del event_list[index]
 
@@ -962,8 +963,9 @@ class BotBase(GroupMixin):
                 if isinstance(ret, collections.abc.Iterable):
                     raise
 
-                raise TypeError("command_prefix must be plain string, iterable of strings, or callable "
-                                "returning either of these, not {}".format(ret.__class__.__name__))
+                raise TypeError(
+                    f"command_prefix must be plain string, iterable of strings, or callable returning either of these, not {ret.__class__.__name__}"
+                )
 
             if not ret:
                 raise ValueError("Iterable command_prefix must contain at least one prefix")
@@ -1023,14 +1025,16 @@ class BotBase(GroupMixin):
 
             except TypeError:
                 if not isinstance(prefix, list):
-                    raise TypeError("get_prefix must return either a string or a list of string, "
-                                    "not {}".format(prefix.__class__.__name__))
+                    raise TypeError(
+                        f"get_prefix must return either a string or a list of string, not {prefix.__class__.__name__}"
+                    )
 
                 # It's possible a bad command_prefix got us here.
                 for value in prefix:
                     if not isinstance(value, str):
-                        raise TypeError("Iterable command_prefix or list returned from get_prefix must "
-                                        "contain only strings, not {}".format(value.__class__.__name__))
+                        raise TypeError(
+                            f"Iterable command_prefix or list returned from get_prefix must contain only strings, not {value.__class__.__name__}"
+                        )
 
                 # Getting here shouldn't happen
                 raise
@@ -1067,7 +1071,7 @@ class BotBase(GroupMixin):
             else:
                 self.dispatch('command_completion', ctx)
         elif ctx.invoked_with:
-            exc = errors.CommandNotFound('Command "{}" is not found'.format(ctx.invoked_with))
+            exc = errors.CommandNotFound(f'Command "{ctx.invoked_with}" is not found')
             self.dispatch('command_error', ctx, exc)
 
     async def process_commands(self, message):
