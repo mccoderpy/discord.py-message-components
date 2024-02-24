@@ -3639,6 +3639,28 @@ class Guild(Hashable):
         for rule in data:
             self._add_automod_rule(AutoModRule(state=self._state, guild=self, **rule))  # TODO: Advanced caching
         return self.cached_automod_rules
+    
+    async def fetch_automod_rule(self, rule_id: int) -> AutoModRule:
+        """|coro|
+
+        Fetches a Auto Moderation rule for this guild by their ID
+
+        Raises
+        -------
+        Forbidden
+            You do not have permissions to fetch the rule.
+        HTTPException
+            Fetching the rule failed.
+
+        Returns
+        --------
+        :class:`~discord.AutoModRule`
+            The AutoMod rule
+        """
+        data = await self._state.http.get_automod_rule(self.id, rule_id)
+        rule = AutoModRule(state=self._state, guild=self, **data)
+        self._add_automod_rule(rule)
+        return rule
 
     async def create_automod_rule(
             self,
@@ -3693,20 +3715,19 @@ class Guild(Hashable):
         """
         data = {
             'name': name,
-            'event_type': int(event_type),
-            'trigger_type': int(trigger_type),
+            'event_type': event_type if isinstance(event_type, int) else event_type.value,
+            'trigger_type': trigger_type if isinstance(trigger_type, int) else trigger_type.value,
             'trigger_metadata': trigger_metadata.to_dict(),
             'actions': [a.to_dict() for a in actions],
             'enabled': enabled,
-            'exempt_roles': [str(r.id) for r in exempt_roles]  # type: ignore
+            'exempt_roles': [str(r.id) for r in exempt_roles],  # type: ignore
         }
         for action in actions:  # Add the channels where messages should be logged to, to the exempted channels
             if action.type.send_alert_message and action.channel_id not in exempt_channels:
                 exempt_channels.append(action.channel_id)
-        exempt_channels = [str(c.id) for c in exempt_channels]
-        data['exempt_channels'] = exempt_channels
+        data['exempt_channels'] = [str(r.id) for r in exempt_channels]
         rule_data = await self._state.http.create_automod_rule(guild_id=self.id, data=data, reason=reason)
-        rule = AutoModRule(state=self._state, guild=self, data=rule_data)
+        rule = AutoModRule(state=self._state, guild=self, **rule_data)
         self._add_automod_rule(rule)
         return rule
 
