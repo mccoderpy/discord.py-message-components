@@ -405,7 +405,7 @@ class AutoModTriggerMetadata:
                 yield keyword
 
     def to_dict(self) -> Dict[str, Any]:
-        if self.keyword_filter:
+        if self.keyword_filter or self._regex_patterns:
             base = {
                 'keyword_filter': self.keyword_filter,
                 'regex_patterns': [
