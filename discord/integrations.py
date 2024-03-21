@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 __all__ = (
     'IntegrationAccount',
     'IntegrationApplication',
+    'PartialIntegration',
     'Integration',
     'StreamIntegration',
     'BotIntegration',
@@ -79,6 +80,46 @@ class IntegrationAccount:
 
     def __repr__(self) -> str:
         return f'<IntegrationAccount id={self.id} name={self.name!r}>'
+
+
+class PartialIntegration:
+    """Represents a partial integration.
+
+    .. versionadded:: 2.0
+
+    Attributes
+    -----------
+    id: :class:`int`
+        The integration ID.
+    name: :class:`str`
+        The integration name.
+    type: :class:`str`
+        The integration type (i.e. discord).
+    application_id: Optional[:class:`int`]
+        The ID of the application for this integration.
+    account: :class:`IntegrationAccount`
+        The account linked to this integration.
+    """
+
+    __slots__ = (
+        'id',
+        'name',
+        'type',
+        'application_id',
+        'account',
+        'guild',
+    )
+
+    def __init__(self, *, data: IntegrationPayload, guild: Guild) -> None:
+        self.guild: Guild = guild
+        self.id: int = int(data['id'])
+        self.name: str = data['name']
+        self.type: str = data['type']
+        self.application_id: Optional[int] = _get_as_snowflake(data, 'application_id')
+        self.account: IntegrationAccount = IntegrationAccount(data['account'])
+
+    def __repr__(self) -> str:
+        return f'<PartialIntegration id={self.id} name={self.name!r} type={self.type!r}>'
 
 
 class Integration:
@@ -395,3 +436,4 @@ def _integration_factory(value: IntegrationType):
         return StreamIntegration, value
     else:
         return Integration, value
+    # TODO: Add guild_integration type

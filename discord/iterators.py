@@ -36,6 +36,7 @@ from typing import (
     Union,
     List,
 )
+from typing_extensions import Literal
 
 if TYPE_CHECKING:
     from .types import (
@@ -514,7 +515,7 @@ class AuditLogIterator(_AsyncIterator):
 
     async def _fill(self):
         from .user import User
-        from .integrations import _integration_factory
+        from .integrations import _integration_factory, PartialIntegration
         from .webhook import Webhook
         from .scheduled_event import GuildScheduledEvent
         from .channel import ForumChannel, ForumPost, ThreadChannel
@@ -540,8 +541,8 @@ class AuditLogIterator(_AsyncIterator):
                 self._users[u.id] = u
 
             for integration in data.get('integrations', []):
-                i, _ = _integration_factory(integration['type'])
-                self._integrations[i.id] = i(data=integration, guild=_guild)
+                i = PartialIntegration(data=integration, guild=_guild)
+                self._integrations[i.id] = i
 
             for webhook in data.get('webhooks', []):
                 w = Webhook.from_state(data=webhook, state=_state)
@@ -877,7 +878,7 @@ class ArchivedThreadIterator(_AsyncIterator):
 
         self.threads = asyncio.Queue()
         self.getter = state.http.list_archived_threads
-        self.type = 'private' if private else 'public'
+        self.type: Literal['private', 'public'] = 'private' if private else 'public'
         self.joined_private = joined_private
         self.getter = state.http.list_archived_threads
 
@@ -898,7 +899,7 @@ class ArchivedThreadIterator(_AsyncIterator):
 
     async def fill_threads(self):
         # this is a hack because >circular imports<
-        if self._retrive_type == 0:
+        if self._retrieve_type == 0:
             from .channel import ThreadChannel as Factory
         else:
             from .channel import ForumPost as Factory
@@ -914,8 +915,10 @@ class ArchivedThreadIterator(_AsyncIterator):
             if self.limit is None or len(data) < 100 and not data.get('has_more'):
                 self.limit = 0
 
+            members_dict = {int(member['id']): member for member in data['members']}
+
             for element in data['threads']:
-                thread_member = data['members'].get(int(element['id']))
+                thread_member = members_dict.get(int(element['id']))
                 if thread_member is not None:
                     element['member'] = thread_member
                 await self.threads.put(Factory(guild=guild, state=self.state, data=element))
