@@ -1164,7 +1164,8 @@ class Messageable:
             reference: Optional[Union[Message, MessageReference]] = None,
             mention_author: Optional[bool] = None,
             suppress_embeds: bool = False,
-            suppress_notifications: bool = False
+            suppress_notifications: bool = False,
+            voice_message: bool = False
     ) -> Message:  # sourcery skip: raise-from-previous-error
         """|coro|
 
@@ -1239,6 +1240,10 @@ class Messageable:
             Users will still see a ping-symbol when they are mentioned in the message, or the message is in a dm channel.
             
             .. versionadded:: 2.0
+
+        voice_message: :class:`bool`
+            Whether to classify the attached file as a voice message, default to :obj:`False`
+            Voice messages require a single :class:`~discord.File` attachment with `waveform` and `duration` set.
             
         Raises
         --------
@@ -1276,11 +1281,12 @@ class Messageable:
         else:
             reference = MISSING
 
-        if suppress_embeds or suppress_notifications:
+        if suppress_embeds or suppress_notifications or voice_message:
             from .flags import MessageFlags
             flags = MessageFlags._from_value(0)
             flags.suppress_embeds = suppress_embeds
             flags.suppress_notifications = suppress_notifications
+            flags.is_voice_message = voice_message
         else:
             flags = MISSING
 
