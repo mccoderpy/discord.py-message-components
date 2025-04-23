@@ -1937,7 +1937,7 @@ class MessageCommand(ApplicationCommand):
         if 32 < len(name) < 1:
             raise ValueError('The name of the Message-Command has to be 1-32 characters long, got %s.' % len(name))
         super().__init__(3, name=name, name_localizations=name_localizations,
-                         default_member_permissions=default_member_permissions, allow_dm=allow_dm, integration_types=inntegration_types,
+                         default_member_permissions=default_member_permissions, allow_dm=allow_dm, integration_types=integration_types,
                          contexts=contexts, **kwargs
                          )
 
