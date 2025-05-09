@@ -81,6 +81,7 @@ from .webhook import Webhook
 from .iterators import GuildIterator, EntitlementIterator
 from .appinfo import AppInfo
 from .application_commands import *
+from .soundboard import SoundboardSound
 
 if TYPE_CHECKING:
     import datetime
@@ -467,12 +468,14 @@ class Client:
 
     def _schedule_event(self, coro: Coro, event_name: str, *args, **kwargs) -> _ClientEventTask:
         wrapped = self._run_event(coro, event_name, *args, **kwargs)
+        #print(coro, event_name, *args, **kwargs)
         # Schedules the task
         return _ClientEventTask(original_coro=coro, event_name=event_name, coro=wrapped, loop=self.loop)
 
     def dispatch(self, event: str, *args, **kwargs) -> None:
         log.debug('Dispatching event %s', event)
         method = 'on_' + event
+        #print(method)
 
         listeners = self._listeners.get(event)
         if listeners:
@@ -743,6 +746,44 @@ class Client:
 
         for guild in guilds:
             await self._connection.chunk_guild(guild)
+
+    async def fetch_soundboard_sounds(self, guild_id):
+        """|coro|
+
+        Requests all soundboard sounds for the given guilds.
+
+        This method retrieves the list of soundboard sounds from the Discord API for each guild ID provided.
+
+        .. note::
+
+            You must have the :attr:`~Permissions.manage_guild_expressions` permission
+            in each guild to retrieve its soundboard sounds.
+
+        Parameters
+        ----------
+        guild_ids: List[:class:`int`]
+            A list of guild IDs to fetch soundboard sounds from.
+
+        Raises
+        -------
+        HTTPException
+            Retrieving soundboard sounds failed.
+        NotFound
+            One of the provided guilds does not exist or is inaccessible.
+        Forbidden
+            Missing permissions to view soundboard sounds in one or more guilds.
+
+        Returns
+        -------
+        Dict[:class:`int`, List[:class:`SoundboardSound`]]
+            A dictionary mapping each guild ID to a list of its soundboard sounds.
+        """
+        guild = self.get_guild(guild_id)
+
+        data = await self.http.all_soundboard_sounds(guild_id)
+        data = data["items"]
+        return SoundboardSound._from_list(guild=guild, state=self._connection, data_list=data)
+        #await self.ws.request_soundboard_sounds(guild_ids)
 
     # hooks
 
