@@ -66,6 +66,7 @@ from .team import *
 from .sticker import Sticker, GuildSticker, StickerPack
 from .scheduled_event import GuildScheduledEvent
 from .monetization import *
+from .soundboard import *
 
 
 MISSING = utils.MISSING

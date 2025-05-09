@@ -1190,6 +1190,39 @@ class HTTPClient:
 
     # Guild management
 
+    def create_soundboard_sound(self, guild_id, volume=1.0, emoji_id=None, emoji_name=None, *, name, sound):
+        payload = {
+            "name": name,
+            "sound": sound,
+            "volume": volume,
+            "emoji_id": emoji_id,
+            "emoji_name": emoji_name
+        }
+
+        return self.request(Route("POST", "/guilds/{guild_id}/soundboard-sounds", guild_id=guild_id), json=payload)
+
+    def update_soundboard_sound(self, guild_id, sound_id, emoji_id=None, emoji_name=None, *, name, volume):
+        payload = {
+            "name": name,
+            "volume": volume,
+            "emoji_id": emoji_id,
+            "emoji_name": emoji_name
+        }
+
+        return self.request(Route("PATCH", "/guilds/{guild_id}/soundboard-sounds/{sound_id}", guild_id=guild_id, sound_id=sound_id), json=payload)
+
+    def delete_soundboard_sound(self, guild_id, sound_id):
+        return self.request(Route("DELETE", "/guilds/{guild_id}/soundboard-sounds/{sound_id}", guild_id=guild_id, sound_id=sound_id))
+
+    def get_soundboard_sound(self, guild_id, sound_id):
+        return self.request(Route("GET", "/guilds/{guild_id}/soundboard-sounds/{sound_id}", guild_id=guild_id, sound_id=sound_id))
+
+    def all_soundboard_sounds(self, guild_id):
+        return self.request(Route("GET", "/guilds/{guild_id}/soundboard-sounds", guild_id=guild_id))
+
+    def default_soundboard_sounds(self):
+        return self.request(Route("GET", "/soundboard-default-sounds"))
+
     def get_guilds(self, limit, before=None, after=None):
         params = {
             'limit': limit
