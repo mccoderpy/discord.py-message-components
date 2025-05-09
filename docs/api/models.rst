@@ -514,6 +514,14 @@ Sticker
     :members:
     :exclude-members: pack, pack_id, sort_value
 
+SoundboardSound
+~~~~~~~~
+
+.. attributetable:: SoundboardSound
+
+.. autoclass:: SoundboardSound()
+    :members:
+
 VoiceRegionInfo
 ~~~~~~~~~~~~~~~~
 

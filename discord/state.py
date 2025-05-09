@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+import traceback
 import asyncio
 from collections import deque, OrderedDict
 import copy
@@ -62,6 +63,7 @@ from .invite import Invite
 from .automod import AutoModRule, AutoModActionPayload
 from .interactions import BaseInteraction
 from .monetization import Entitlement, Subscription
+from .soundboard import SoundboardSound
 
 if TYPE_CHECKING:
     from .http import HTTPClient
@@ -569,6 +571,8 @@ class ConnectionState:
     def parse_message_create(self, data):
         channel, _ = self._get_guild_channel(data)
         message = Message(channel=channel, data=data, state=self)
+        #print("DEBUG: parse_message_create aufgerufen von:")
+        #traceback.print_stack()
         self.dispatch('message', message)
         if self._messages is not None:
             self._messages.append(message)
@@ -1358,6 +1362,52 @@ class ConnectionState:
             self.dispatch('guild_integrations_update', guild)
         else:
             log.debug('GUILD_INTEGRATIONS_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    # def parse_soundboard_sounds(self, data):
+    #     guild = self._get_guild(int(data['guild_id']))
+    #     soundboard_sounds = data["soundboard_sounds"]
+    #
+    #     if guild is not None:
+    #         self.dispatch('soundboard_sounds', soundboard_sounds, guild)
+    #     else:
+    #         log.debug('SOUNDBOARD_SOUNDS referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_guild_soundboard_sounds_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        sound = SoundboardSound(guild=guild, data=data, state=self)
+
+        if guild is not None:
+            self.dispatch('soundboard_sounds_update', sound, guild)
+        else:
+            log.debug('GUILD_SOUNDBOARD_SOUNDS_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_guild_soundboard_sound_create(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        sound = SoundboardSound(guild=guild, data=data, state=self)
+
+        if guild is not None:
+            self.dispatch('soundboard_create', sound, guild)
+        else:
+            log.debug('GUILD_SOUNDBOARD_SOUND_CREATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_guild_soundboard_sound_update(self, data):
+        guild = self._get_guild(int(data['guild_id']))
+        sound = SoundboardSound(guild=guild, data=data, state=self)
+
+        if guild is not None:
+            self.dispatch('soundboard_update', sound, guild)
+        else:
+            log.debug('GUILD_SOUNDBOARD_SOUND_UPDATE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
+
+    def parse_guild_soundboard_sound_delete(self, data):
+        print(f"parse_guild_soundboard_sound_delete: {data}")
+        guild = self._get_guild(int(data['guild_id']))
+        #sound = SoundboardSound(guild=guild, data=data, state=self)
+
+        if guild is not None:
+            self.dispatch('soundboard_delete', data["sound_id"], guild)
+        else:
+            log.debug('GUILD_SOUNDBOARD_SOUND_DELETE referencing an unknown guild ID: %s. Discarding.', data['guild_id'])
 
     def parse_webhooks_update(self, data):
         channel = self.get_channel(int(data['channel_id']))

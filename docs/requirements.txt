@@ -11,3 +11,4 @@ typing-extensions
 aiohttp>=3.9.1,<4
 colorama
 color-pprint
+pydub

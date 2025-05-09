@@ -71,16 +71,16 @@ ButtonStyle = Literal[1, 2, 3, 4, 5, 6]
 TextInputStyle = Literal[1, 2]
 SelectDefaultValueType = Literal['user', 'role', 'channel']
 MessageType = Literal[
-    0,  # Default
-    1,  # Recipient Add
-    2,  # Recipient Remove
-    3,  # Call
-    4,  # Channel Name Change
-    5,  # Channel Icon Change
-    6,  # Channel Pin
-    7,  # Guild Member Join
-    8,  # User Premium Guild Subscription
-    9,  # User Premium Guild Subscription Tier 1
+    0,   # Default
+    1,   # Recipient Add
+    2,   # Recipient Remove
+    3,   # Call
+    4,   # Channel Name Change
+    5,   # Channel Icon Change
+    6,   # Channel Pin
+    7,   # Guild Member Join
+    8,   # User Premium Guild Subscription
+    9,   # User Premium Guild Subscription Tier 1
     10,  # User Premium Guild Subscription Tier 2
     11,  # User Premium Guild Subscription Tier 3
     12,  # Channel Follow Add
@@ -101,7 +101,7 @@ MessageType = Literal[
     28,  # Stage end
     29,  # Stage speaker change
     31,  # Stage topic change
-    32  # Guild application premium subscription
+    32   # Guild application premium subscription
 ]
 EmbedType = Literal['rich', 'image', 'video', 'gifv', 'article', 'link']
 MessageActivityType = Literal[1, 2, 3, 5]
