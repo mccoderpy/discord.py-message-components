@@ -7,7 +7,7 @@ import os
 import base64
 import mimetypes
 from pathlib import Path
-import random
+import secrets
 
 from .mixins import Hashable
 from .abc import Snowflake
@@ -130,7 +130,7 @@ class SoundboardSound(Hashable):
         max_duration_ms = int(max_duration_sec * 1000)
 
         if duration_ms > max_duration_ms:
-            start = random.randint(0, duration_ms - max_duration_ms)
+            start = secrets.randbelow(duration_ms - max_duration_ms + 1)
             audio = audio[start:start + max_duration_ms]
         else:
             audio = audio[:max_duration_ms]
