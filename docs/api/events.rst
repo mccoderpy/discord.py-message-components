@@ -64,6 +64,42 @@ to handle it, which defaults to print a traceback and ignoring the exception.
     :param shard_id: The shard ID that has connected.
     :type shard_id: :class:`int`
 
+.. function:: on_soundboard_sounds_update(sounds, guild):
+
+        Called when multiple guild soundboard sounds are updated.
+
+        :param sounds: A list of sounds being updated.
+        :type sounds: list of :class:`SoundboardSound`
+        :param guild: The guild where the sounds were updated.
+        :type guild: :class:`Guild`
+
+.. function:: on_soundboard_create(sound, guild):
+
+        Called when a user creates a soundboard sound.
+
+        :param sound: The sound being created.
+        :type sound: :class:`SoundboardSound`
+        :param guild: The guild where the sound was created.
+        :type guild: :class:`Guild`
+
+.. function:: on_soundboard_update(sound, guild):
+
+        Called when a user updated a soundboard sound.
+
+        :param sound: The sound being updated.
+        :type sound: :class:`SoundboardSound`
+        :param guild: The guild where the sound was updated.
+        :type guild: :class:`Guild`
+
+.. function:: on_soundboard_delete(sound_id, guild):
+
+        Called when a user deletes a soundboard sound.
+
+        :param sound_id: The sound_id being deleted.
+        :type sound: :class:`SoundboardSound`
+        :param guild: The guild where the sound was deleted.
+        :type guild: :class:`Guild`
+
 .. function:: on_disconnect()
 
     Called when the client has disconnected from Discord, or a connection attempt to Discord has failed.
@@ -1029,39 +1065,3 @@ to handle it, which defaults to print a traceback and ignoring the exception.
         :type channel: :class:`VoiceChannel`
         :param payload: The payload containing info about the effect.
         :type payload: :class:`VoiceChannelEffectSendEvent`
-
-.. function:: on_soundboard_sounds_update(sounds, guild):
-
-        Called when multiple guild soundboard sounds are updated.
-
-        :param sounds: A list of sounds being updated.
-        :type sounds: list of :class:`SoundboardSound`
-        :param guild: The guild where the sounds were updated.
-        :type guild: :class:`Guild`
-
-.. function:: on_soundboard_create(sound, guild):
-
-        Called when a user creates a soundboard sound.
-
-        :param sound: The sound being created.
-        :type sound: :class:`SoundboardSound`
-        :param guild: The guild where the sound was created.
-        :type guild: :class:`Guild`
-
-.. function:: on_soundboard_update(sound, guild):
-
-        Called when a user updated a soundboard sound.
-
-        :param sound: The sound being updated.
-        :type sound: :class:`SoundboardSound`
-        :param guild: The guild where the sound was updated.
-        :type guild: :class:`Guild`
-
-.. function:: on_soundboard_delete(sound_id, guild):
-
-        Called when a user deletes a soundboard sound.
-
-        :param sound_id: The sound_id being deleted.
-        :type sound: :class:`SoundboardSound`
-        :param guild: The guild where the sound was deleted.
-        :type guild: :class:`Guild`
