@@ -61,7 +61,6 @@ __all__ = (
     'WelcomeScreenChannel',
     'ScheduledEventEntityMetadata',
     'ScheduledEvent',
-    'SoundboardSound'
 )
 
 DefaultMessageNotificationLevel = Literal[0, 1]
@@ -357,13 +356,3 @@ class ScheduledEvent(TypedDict):
     user_count: NotRequired[int]
     image: NotRequired[Optional[str]]
     broadcast_to_directory_channels: NotRequired[bool]
-
-class SoundboardSound(TypedDict):
-    name: str
-    sound_id: SnowflakeID
-    volume: float
-    emoji_id: NotRequired[Optional[SnowflakeID]]
-    emoji_name: NotRequired[Optional[str]]
-    guild_id: NotRequired[int]
-    available: bool
-    user: NotRequired[User]

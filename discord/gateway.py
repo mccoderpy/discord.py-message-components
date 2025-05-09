@@ -268,28 +268,25 @@ class DiscordWebSocket:
         a connection issue.
     GUILD_SYNC
         Send only. Requests a guild sync.
-    REQUEST_SOUNDBOARD_SOUNDs
-        Send only. Used to request soundboard sounds for a list of guilds.
     gateway
         The gateway we are currently connected to.
     token
         The authentication token for discord.
     """
 
-    DISPATCH                  = 0
-    HEARTBEAT                 = 1
-    IDENTIFY                  = 2
-    PRESENCE                  = 3
-    VOICE_STATE               = 4
-    VOICE_PING                = 5
-    RESUME                    = 6
-    RECONNECT                 = 7
-    REQUEST_MEMBERS           = 8
-    INVALIDATE_SESSION        = 9
-    HELLO                     = 10
-    HEARTBEAT_ACK             = 11
-    GUILD_SYNC                = 12
-    REQUEST_SOUNDBOARD_SOUNDs = 31
+    DISPATCH           = 0
+    HEARTBEAT          = 1
+    IDENTIFY           = 2
+    PRESENCE           = 3
+    VOICE_STATE        = 4
+    VOICE_PING         = 5
+    RESUME             = 6
+    RECONNECT          = 7
+    REQUEST_MEMBERS    = 8
+    INVALIDATE_SESSION = 9
+    HELLO              = 10
+    HEARTBEAT_ACK      = 11
+    GUILD_SYNC         = 12
 
     def __init__(self, socket, *, loop):
         self.socket = socket
@@ -719,18 +716,6 @@ class DiscordWebSocket:
         }
 
         log.debug('Updating our voice state to %s.', payload)
-        await self.send_as_json(payload)
-
-    async def request_soundboard_sounds(self, guild_ids):
-        if not isinstance(guild_ids, list):
-            raise TypeError("guild_ids has to be a list.")
-
-        payload = {
-            'op': self.REQUEST_SOUNDBOARD_SOUNDs,
-            'd': {
-                'guild_ids': guild_ids
-            }
-        }
         await self.send_as_json(payload)
 
     async def close(self, code=4000):
