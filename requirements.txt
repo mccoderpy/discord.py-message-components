@@ -10,3 +10,4 @@ multidict
 idna
 color-pprint>=0.0.3
 colorama
+pydub
