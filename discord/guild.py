@@ -1372,7 +1372,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        :class:`~SoundboardSound`
+        :class:`SoundboardSound`
             The created SoundboardSound object.
         """
 
@@ -1430,7 +1430,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        :class:`~SoundboardSound`
+        :class:`SoundboardSound`
             The updated soundboard sound object.
         """
 
@@ -1467,7 +1467,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        :class:`~SoundboardSound`
+        :class:`SoundboardSound`
             The deleted sound_id.
         """
 
@@ -1496,7 +1496,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        :class:`~SoundboardSound`
+        :class:`SoundboardSound`
             The retrieved SoundboardSound object.
         """
 
@@ -1520,7 +1520,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        List[:class:`~SoundboardSound`]
+        List[:class:`SoundboardSound`]
             A list of soundboard sounds available in the guild.
         """
 
@@ -1540,7 +1540,7 @@ class Guild(Hashable):
 
         Returns
         -------
-        List[:class:`~SoundboardSound`]
+        List[:class:`SoundboardSound`]
             A list of default SoundboardSound objects.
         """
 
