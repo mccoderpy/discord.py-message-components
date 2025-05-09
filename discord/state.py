@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 from __future__ import annotations
 
+import traceback
 import asyncio
 from collections import deque, OrderedDict
 import copy
@@ -570,6 +571,8 @@ class ConnectionState:
     def parse_message_create(self, data):
         channel, _ = self._get_guild_channel(data)
         message = Message(channel=channel, data=data, state=self)
+        #print("DEBUG: parse_message_create aufgerufen von:")
+        #traceback.print_stack()
         self.dispatch('message', message)
         if self._messages is not None:
             self._messages.append(message)
